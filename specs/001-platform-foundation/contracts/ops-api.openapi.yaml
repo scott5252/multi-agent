@@ -1,0 +1,153 @@
+openapi: 3.1.0
+info:
+  title: Platform Foundation Operational API
+  version: 0.1.0
+  summary: Operational placeholder endpoints for the platform foundation
+servers:
+  - url: http://localhost:8000
+paths:
+  /health/live:
+    get:
+      summary: Liveness probe
+      operationId: getLiveness
+      tags: [operations]
+      responses:
+        '200':
+          description: API process is live
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveResponse'
+  /health/ready:
+    get:
+      summary: Strict readiness probe
+      description: >
+        Returns ready only when configuration is valid, PostgreSQL is reachable,
+        required migrations are current, and required worker dependencies are
+        healthy.
+      operationId: getReadiness
+      tags: [operations]
+      responses:
+        '200':
+          description: The service is ready to accept work
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyResponse'
+        '503':
+          description: The service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyResponse'
+  /version:
+    get:
+      summary: Build and runtime version information
+      operationId: getVersion
+      tags: [operations]
+      responses:
+        '200':
+          description: Service version metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+  /dependencies:
+    get:
+      summary: Dependency status details
+      operationId: getDependencyStatus
+      tags: [operations]
+      responses:
+        '200':
+          description: Dependency status payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DependencyStatusResponse'
+components:
+  schemas:
+    LiveResponse:
+      type: object
+      additionalProperties: false
+      required: [service, status, version, checked_at]
+      properties:
+        service:
+          type: string
+          example: multi-agent-platform
+        status:
+          type: string
+          enum: [live]
+        version:
+          type: string
+          example: 0.1.0
+        checked_at:
+          type: string
+          format: date-time
+    ReadyResponse:
+      type: object
+      additionalProperties: false
+      required: [service, status, checks, checked_at]
+      properties:
+        service:
+          type: string
+        status:
+          type: string
+          enum: [ready, not_ready]
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DependencyCheck'
+        checked_at:
+          type: string
+          format: date-time
+    VersionResponse:
+      type: object
+      additionalProperties: false
+      required: [service, version, commit_sha, build_time, python_version]
+      properties:
+        service:
+          type: string
+        version:
+          type: string
+        commit_sha:
+          type: string
+        build_time:
+          type: string
+          format: date-time
+        python_version:
+          type: string
+    DependencyStatusResponse:
+      type: object
+      additionalProperties: false
+      required: [service, status, dependencies, checked_at]
+      properties:
+        service:
+          type: string
+        status:
+          type: string
+          enum: [ready, degraded, not_ready]
+        dependencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/DependencyCheck'
+        checked_at:
+          type: string
+          format: date-time
+    DependencyCheck:
+      type: object
+      additionalProperties: false
+      required: [name, required, status, checked_at]
+      properties:
+        name:
+          type: string
+          example: postgres
+        required:
+          type: boolean
+        status:
+          type: string
+          enum: [ready, degraded, unavailable]
+        detail:
+          type: string
+        checked_at:
+          type: string
+          format: date-time

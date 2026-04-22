@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -37,7 +37,7 @@ class UnitOfWork:
                 "workflow_run_id": workflow_run_id,
                 "node_name": node_name,
                 "state_snapshot": state_snapshot,
-                "created_at": datetime.now(timezone.utc),
+                "created_at": datetime.now(UTC),
             }
         )
 
@@ -54,7 +54,7 @@ class UnitOfWork:
                 event_type=event_type,
                 payload=payload,
                 idempotency_key=idempotency_key or str(uuid4()),
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
         )
 
