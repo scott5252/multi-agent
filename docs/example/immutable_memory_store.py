@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -53,7 +53,7 @@ class ImmutableMemoryStore:
             content=content,
             created_by_agent=created_by_agent,
             workflow_run_id=workflow_run_id,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             parent_version_no=parent_version_no,
         )
         history.append(version)

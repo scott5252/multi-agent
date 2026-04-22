@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -20,9 +20,7 @@ class AgentHandoffEnvelope(BaseModel):
     to_agent: str
     contract_name: str
     contract_version: str
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     trace_id: str
     payload: dict[str, Any]
 
@@ -34,7 +32,9 @@ class ResearchCompletedPayload(BaseModel):
 
     @field_validator("findings")
     @classmethod
-    def findings_must_not_be_empty(cls, value: list[ResearchFinding]) -> list[ResearchFinding]:
+    def findings_must_not_be_empty(
+        cls, value: list[ResearchFinding]
+    ) -> list[ResearchFinding]:
         if not value:
             raise ValueError("at least one research finding is required")
         return value
@@ -47,7 +47,9 @@ class ResearchCompletedPayload(BaseModel):
         return value
 
 
-def validate_research_handoff(envelope: AgentHandoffEnvelope) -> ResearchCompletedPayload:
+def validate_research_handoff(
+    envelope: AgentHandoffEnvelope,
+) -> ResearchCompletedPayload:
     if envelope.contract_name != "research_completed":
         raise ValueError("unexpected contract for research handoff")
 

@@ -1,0 +1,86 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "multi-agent-platform"
+version = "0.1.0"
+description = "Platform foundation for a multi-tenant multi-agent system."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "alembic>=1.16.0",
+  "fastapi>=0.116.0",
+  "greenlet>=3.2.0",
+  "httpx>=0.28.0",
+  "langchain>=0.3.0",
+  "langgraph>=0.3.0",
+  "prometheus-client>=0.23.0",
+  "pydantic>=2.11.0",
+  "pydantic-settings>=2.10.0",
+  "psycopg[binary]>=3.2.0",
+  "python-multipart>=0.0.20",
+  "sqlalchemy>=2.0.40",
+  "uvicorn>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+  "aiosqlite>=0.21.0",
+  "mypy>=1.17.0",
+  "pytest>=8.4.0",
+  "pytest-asyncio>=1.1.0",
+  "pytest-cov>=6.2.0",
+  "ruff>=0.12.0",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/multi_agent_platform"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/multi_agent_platform"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "F",
+  "I",
+  "B",
+  "UP",
+  "N",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+mypy_path = "src"
+plugins = []
+
+[[tool.mypy.overrides]]
+module = [
+  "prometheus_client.*",
+]
+ignore_missing_imports = true
