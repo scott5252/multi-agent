@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Workflow Registry</title>
+    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
+  </head>
+  <body class="workflow-page">
+    <main class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Admin Workflow Studio</p>
+          <h1>Workflow Registry</h1>
+          <p class="subhead">Drafts and immutable published versions are listed here, with scope-aware visibility for tenant and platform assets.</p>
+        </div>
+        <form id="create-draft-form" class="card create-card" method="post" action="{{ page.create_endpoint }}">
+          <h2>Create Draft</h2>
+          <label>
+            Scope
+            <select name="scope_type">
+              <option value="tenant">Tenant</option>
+              <option value="platform">Platform</option>
+            </select>
+          </label>
+          <label>
+            Slug
+            <input type="text" name="slug" value="customer-intake">
+          </label>
+          <label>
+            Display Name
+            <input type="text" name="display_name" value="Customer Intake">
+          </label>
+          <button type="button" data-create-draft>Open API payload example</button>
+        </form>
+      </header>
+      <section class="registry-grid" aria-label="Workflow registry list">
+        {% if page.items %}
+          {% for item in page.items %}
+            <article class="card registry-card">
+              <div class="card-top">
+                <span class="badge">{{ item.scope_type.value }}</span>
+                <span class="badge muted">{{ item.workflow_kind.value }}</span>
+              </div>
+              <h2>{{ item.display_name }}</h2>
+              <p class="mono">{{ item.slug }}</p>
+              {% if item.visibility_status.value == "draft" %}
+                <p>Current revision: {{ item.current_revision_number }}</p>
+                <a class="button-link" href="{{ page.editor_base_path }}/{{ item.workflow_draft_id }}/editor">Open Draft</a>
+              {% else %}
+                <p>Published version: {{ item.display_version }}</p>
+                <a class="button-link" href="{{ page.version_base_path }}/{{ item.workflow_version_bundle_id }}/detail">View Version</a>
+              {% endif %}
+            </article>
+          {% endfor %}
+        {% else %}
+          <article class="card empty-state">
+            <h2>No drafts yet</h2>
+            <p>Create a tenant or platform draft through the JSON API, then come back here to review and edit it.</p>
+          </article>
+        {% endif %}
+      </section>
+    </main>
+    <script src="/admin/static/workflow_studio.js"></script>
+  </body>
+</html>

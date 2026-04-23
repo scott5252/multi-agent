@@ -31,6 +31,20 @@ from multi_agent_platform.db.models.tenant import (
     TenantLimitPolicy,
     TenantStatus,
 )
+from multi_agent_platform.db.models.workflow_registry import (
+    RegistrySharingGrant,
+    RegistrySharingGrantStatus,
+    ValidationResult,
+    ValidationResultStatus,
+    WorkflowDraft,
+    WorkflowDraftRevision,
+    WorkflowDraftStatus,
+    WorkflowKind,
+    WorkflowLineage,
+    WorkflowLineageStatus,
+    WorkflowVersionBundle,
+    WorkflowVersionStatus,
+)
 
 
 def import_models() -> None:
@@ -63,6 +77,18 @@ def import_models() -> None:
         Tenant,
         TenantLimitPolicy,
         TenantStatus,
+        RegistrySharingGrant,
+        RegistrySharingGrantStatus,
+        ValidationResult,
+        ValidationResultStatus,
+        WorkflowDraft,
+        WorkflowDraftRevision,
+        WorkflowDraftStatus,
+        WorkflowKind,
+        WorkflowLineage,
+        WorkflowLineageStatus,
+        WorkflowVersionBundle,
+        WorkflowVersionStatus,
     )
     return None
 
@@ -95,5 +121,17 @@ __all__ = [
     "Tenant",
     "TenantLimitPolicy",
     "TenantStatus",
+    "RegistrySharingGrant",
+    "RegistrySharingGrantStatus",
+    "ValidationResult",
+    "ValidationResultStatus",
+    "WorkflowDraft",
+    "WorkflowDraftRevision",
+    "WorkflowDraftStatus",
+    "WorkflowKind",
+    "WorkflowLineage",
+    "WorkflowLineageStatus",
+    "WorkflowVersionBundle",
+    "WorkflowVersionStatus",
     "import_models",
 ]

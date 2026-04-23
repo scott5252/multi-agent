@@ -75,6 +75,7 @@ class Settings(BaseSettings):
     auth0_jwks_path: str = "/.well-known/jwks.json"
 
     local_principal_header: str = "X-Local-Principal"
+    local_principal_cookie_name: str = "map_local_principal"
     local_principal_catalog_json: dict[str, LocalPrincipalCatalogEntry] = Field(
         default_factory=dict
     )
@@ -163,6 +164,22 @@ class Settings(BaseSettings):
                 scope_type="platform",
             ),
         }
+
+    @cached_property
+    def web_admin_root(self) -> Path:
+        return Path(__file__).resolve().parents[1] / "web_admin"
+
+    @cached_property
+    def web_admin_templates_dir(self) -> Path:
+        return self.web_admin_root / "templates"
+
+    @cached_property
+    def web_admin_static_dir(self) -> Path:
+        return self.web_admin_root / "static"
+
+    @cached_property
+    def workflow_registry_artifact_prefix(self) -> str:
+        return "workflow-registry"
 
     def ensure_directories(self) -> None:
         self.filesystem_storage_root.mkdir(parents=True, exist_ok=True)

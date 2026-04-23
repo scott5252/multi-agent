@@ -1,0 +1,31 @@
+<article class="card section-card full-width">
+  <h2>Validation And Publish</h2>
+  <p data-testid="validation-panel-placeholder">
+    {% if page.latest_validation %}
+      {% if page.publish_ready %}
+        Validation passed. Publish ready.
+      {% else %}
+        Validation found blocking issues. Publish is blocked until the latest draft revision passes.
+      {% endif %}
+    {% else %}
+      No validation result has been recorded for this draft revision yet.
+    {% endif %}
+  </p>
+  {% if page.latest_validation %}
+    <div class="validation-summary">
+      <p><strong>Status:</strong> {{ page.latest_validation.status }}</p>
+      <p><strong>Blocking issues:</strong> {{ page.latest_validation.blocking_issue_count }}</p>
+      <p><strong>Advisory issues:</strong> {{ page.latest_validation.advisory_issue_count }}</p>
+      {% if page.latest_validation.findings %}
+        <ul class="validation-findings">
+          {% for finding in page.latest_validation.findings %}
+            <li>
+              <strong>{{ finding.category }}</strong>: {{ finding.message }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  {% endif %}
+  <p class="mono">Publish endpoint: {{ page.publish_endpoint }}</p>
+</article>

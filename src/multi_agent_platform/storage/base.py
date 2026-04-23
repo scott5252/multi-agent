@@ -22,3 +22,7 @@ class StorageProvider(ABC):
     @abstractmethod
     async def get(self, key: str) -> bytes:
         raise NotImplementedError
+
+
+def build_artifact_key(*parts: str) -> str:
+    return "/".join(part.strip("/") for part in parts if part)

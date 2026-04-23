@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from multi_agent_platform.db.base import Base
 from multi_agent_platform.db.models import import_models
+from multi_agent_platform.db.models.tenant import Tenant
 from multi_agent_platform.db.session import create_engine, session_scope
 from tests.fixtures.config import make_settings
 
@@ -25,7 +26,7 @@ async def engine(tmp_path) -> AsyncIterator[AsyncEngine]:
         await connection.execute(
             text(
                 "INSERT INTO alembic_version(version_num) "
-                "VALUES ('0002_auth_access_control')"
+                "VALUES ('0003_workflow_registry')"
             )
         )
     yield engine
@@ -43,3 +44,15 @@ async def session(
 ) -> AsyncIterator[AsyncSession]:
     async with session_scope(session_factory) as session:
         yield session
+
+
+@pytest_asyncio.fixture
+async def seeded_tenant(session: AsyncSession, settings) -> Tenant:
+    tenant = Tenant(
+        tenant_id=settings.local_principal_catalog_json["tenant-admin-acme"].tenant_id,
+        slug="acme",
+        display_name="Acme",
+    )
+    session.add(tenant)
+    await session.flush()
+    return tenant

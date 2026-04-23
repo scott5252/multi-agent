@@ -67,3 +67,30 @@
   responses without leaking raw token material.
 - Delegated-credential review: verify approved-tool enforcement and secret-free
   audit evidence for delegated access.
+
+## Workflow Registry Operations
+
+### Local Browser QA
+
+- Use `/auth/local-login?redirect_to=/admin/workflows/ui` for local browser
+  access when `AUTH_MODE=local_principal`.
+- Use `platform-admin` for publish and sharing-grant checks.
+- Use `tenant-admin-acme` to verify tenant-scoped drafting and granted platform
+  asset visibility.
+
+### Draft And Publish Recovery
+
+1. If publish returns `409`, re-fetch the draft and re-run validation.
+2. If publish returns `503`, verify artifact storage and rerun publish.
+3. If a platform asset is missing for a tenant, confirm the exact published
+   version has an active sharing grant.
+4. If a draft is unexpectedly immutable, confirm its status is
+   `published_source` and create a successor draft from the published version.
+
+### Workflow Registry Review Notes
+
+- Validation messages should stay field-targeted and clear for blocked drafts.
+- Published versions must remain immutable after artifact write and DB commit.
+- Platform sharing grants must not mutate the published bundle.
+- Draft authoring must remain free of secret values and delegated-credential
+  payloads.

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{{ page.version.display_name }} {{ page.version.display_version }}</title>
+    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
+  </head>
+  <body class="workflow-page">
+    <main class="page-shell">
+      <article class="card">
+        <p class="eyebrow">Published Version Detail</p>
+        <h1>{{ page.version.display_name }} {{ page.version.display_version }}</h1>
+        <p class="mono">{{ page.version.slug }}</p>
+        <p><strong>Compiled Bundle Digest:</strong> {{ page.version.compiled_bundle_digest }}</p>
+        <p><strong>Compiler Version:</strong> {{ page.version.compiler_version }}</p>
+        <p><strong>Scope:</strong> {{ page.version.scope_type.value }}</p>
+        <p><strong>Status:</strong> {{ page.version.status }}</p>
+        <p><strong>Sharing Grants:</strong> {{ page.version.sharing_grants|length }}</p>
+      </article>
+    </main>
+  </body>
+</html>

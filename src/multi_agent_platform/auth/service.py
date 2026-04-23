@@ -82,15 +82,17 @@ class AuthService:
             )
 
         if self.settings.auth_mode is AuthMode.LOCAL_PRINCIPAL:
-            header = request.headers.get(self.settings.local_principal_header)
-            if not header:
+            local_principal = request.headers.get(
+                self.settings.local_principal_header
+            ) or request.cookies.get(self.settings.local_principal_cookie_name)
+            if not local_principal:
                 raise AuthorizationError(
                     status_code=401,
                     reason_code=AccessReasonCode.UNAUTHENTICATED,
-                    detail="missing local principal header",
+                    detail="missing local principal header or cookie",
                 )
             principal = self.local_principal_catalog.as_principal_context(
-                header,
+                local_principal,
                 trace_id=trace_id,
                 request_id=request_id,
             )
@@ -100,13 +102,15 @@ class AuthService:
                     reason_code=AccessReasonCode.UNAUTHENTICATED,
                     detail="unknown local principal",
                 )
-            identity = await self.access_repository.get_principal_by_subject(header)
+            identity = await self.access_repository.get_principal_by_subject(
+                local_principal
+            )
             if identity is None:
                 identity = await self.access_repository.upsert_principal(
                     PrincipalIdentity(
                         auth_provider=AuthProviderType.LOCAL_PRINCIPAL,
-                        external_subject=header,
-                        display_name=header,
+                        external_subject=local_principal,
+                        display_name=local_principal,
                     )
                 )
             return principal.model_copy(

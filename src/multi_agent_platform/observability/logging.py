@@ -41,3 +41,26 @@ def configure_logging(level: str = "INFO") -> logging.Logger:
     logger.addHandler(handler)
     logger.setLevel(level.upper())
     return logger
+
+
+def workflow_log_context(
+    *,
+    action: str,
+    scope_type: str,
+    trace_id: str,
+    workflow_lineage_id: str | None = None,
+    workflow_draft_id: str | None = None,
+    principal_id: str | None = None,
+) -> dict[str, dict[str, str]]:
+    payload = {
+        "action": action,
+        "scope_type": scope_type,
+        "trace_id": trace_id,
+    }
+    if workflow_lineage_id is not None:
+        payload["workflow_lineage_id"] = workflow_lineage_id
+    if workflow_draft_id is not None:
+        payload["workflow_draft_id"] = workflow_draft_id
+    if principal_id is not None:
+        payload["principal_id"] = principal_id
+    return {"extra": payload}

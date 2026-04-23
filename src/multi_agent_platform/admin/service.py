@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from logging import Logger
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from multi_agent_platform.admin.support_overrides import build_override_expiration
 from multi_agent_platform.audit.access import AccessAuditRecorder
+from multi_agent_platform.audit.service import AuditService
+from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.db.models.access_control import (
     GrantSource,
     RoleGrant,
@@ -11,7 +15,28 @@ from multi_agent_platform.db.models.access_control import (
 )
 from multi_agent_platform.db.models.tenant import TenantLimitPolicy
 from multi_agent_platform.db.repositories.access_control import AccessControlRepository
+from multi_agent_platform.db.repositories.artifact import ArtifactRepository
 from multi_agent_platform.db.repositories.tenant_limits import TenantLimitRepository
+from multi_agent_platform.db.repositories.workflow_registry import (
+    WorkflowRegistryRepository,
+)
+from multi_agent_platform.storage.base import StorageProvider
+
+if TYPE_CHECKING:
+    from multi_agent_platform.admin.workflow_registry.service import (
+        WorkflowRegistryService,
+    )
+    from multi_agent_platform.api.schemas.workflow_registry import (
+        PublishDraftRequest,
+        RegistrySharingGrantCreateRequest,
+        RegistrySharingGrantResponse,
+        ValidationResultResponse,
+        WorkflowDraftCreateRequest,
+        WorkflowDraftResponse,
+        WorkflowDraftSaveRequest,
+        WorkflowRegistryItem,
+        WorkflowVersionResponse,
+    )
 
 
 class AdminService:
@@ -20,10 +45,22 @@ class AdminService:
         repository: TenantLimitRepository | None = None,
         access_repository: AccessControlRepository | None = None,
         audit_recorder: AccessAuditRecorder | None = None,
+        workflow_repository: WorkflowRegistryRepository | None = None,
+        artifact_repository: ArtifactRepository | None = None,
+        audit_service: AuditService | None = None,
+        storage_provider: StorageProvider | None = None,
+        workflow_registry_artifact_prefix: str = "workflow-registry",
+        logger: Logger | None = None,
     ) -> None:
         self.repository = repository
         self.access_repository = access_repository
         self.audit_recorder = audit_recorder
+        self.workflow_repository = workflow_repository
+        self.artifact_repository = artifact_repository
+        self.audit_service = audit_service
+        self.storage_provider = storage_provider
+        self.workflow_registry_artifact_prefix = workflow_registry_artifact_prefix
+        self.logger = logger
 
     async def update_limits(self, policy: TenantLimitPolicy) -> TenantLimitPolicy:
         if self.repository is None:
@@ -82,4 +119,120 @@ class AdminService:
             support_override_request_id,
             approver_principal_id=approver_principal_id,
             expires_at=build_override_expiration(hours=expires_in_hours),
+        )
+
+    def workflow_registry_service(self) -> WorkflowRegistryService:
+        from multi_agent_platform.admin.workflow_registry.service import (
+            WorkflowRegistryService,
+        )
+
+        if self.workflow_repository is None:
+            raise RuntimeError("workflow registry repository is not configured")
+        if self.artifact_repository is None:
+            raise RuntimeError("artifact repository is not configured")
+        if self.storage_provider is None:
+            raise RuntimeError("storage provider is not configured")
+        return WorkflowRegistryService(
+            repository=self.workflow_repository,
+            artifact_repository=self.artifact_repository,
+            audit_service=self.audit_service,
+            storage_provider=self.storage_provider,
+            artifact_prefix=self.workflow_registry_artifact_prefix,
+            logger=self.logger,
+        )
+
+    async def list_workflows(
+        self,
+        *,
+        principal: PrincipalContext,
+        scope_filter: str = "all",
+        status: str | None = None,
+    ) -> list[WorkflowRegistryItem]:
+        return await self.workflow_registry_service().list_registry(
+            principal=principal,
+            scope_filter=scope_filter,
+            status=status,
+        )
+
+    async def create_workflow_draft(
+        self,
+        *,
+        principal: PrincipalContext,
+        payload: WorkflowDraftCreateRequest,
+    ) -> WorkflowDraftResponse:
+        return await self.workflow_registry_service().create_draft(
+            principal=principal,
+            payload=payload,
+        )
+
+    async def get_workflow_draft(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+    ) -> WorkflowDraftResponse:
+        return await self.workflow_registry_service().get_draft(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+        )
+
+    async def save_workflow_draft(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: WorkflowDraftSaveRequest,
+    ) -> WorkflowDraftResponse:
+        return await self.workflow_registry_service().save_draft(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            payload=payload,
+        )
+
+    async def validate_workflow_draft(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+    ) -> ValidationResultResponse:
+        return await self.workflow_registry_service().validate_draft(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+        )
+
+    async def publish_workflow_draft(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: PublishDraftRequest,
+    ) -> WorkflowVersionResponse:
+        return await self.workflow_registry_service().publish_draft(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            payload=payload,
+        )
+
+    async def get_workflow_version(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_version_bundle_id: UUID,
+    ) -> WorkflowVersionResponse:
+        return await self.workflow_registry_service().get_version(
+            principal=principal,
+            workflow_version_bundle_id=workflow_version_bundle_id,
+        )
+
+    async def create_workflow_sharing_grant(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_version_bundle_id: UUID,
+        payload: RegistrySharingGrantCreateRequest,
+    ) -> RegistrySharingGrantResponse:
+        return await self.workflow_registry_service().create_sharing_grant(
+            principal=principal,
+            workflow_version_bundle_id=workflow_version_bundle_id,
+            payload=payload,
         )

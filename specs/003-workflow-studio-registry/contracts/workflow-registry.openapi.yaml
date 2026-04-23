@@ -1,0 +1,788 @@
+openapi: 3.1.0
+info:
+  title: Workflow Registry Admin API
+  version: 0.1.0
+  description: >
+    Admin API for authoring workflow drafts, validating designs, publishing
+    immutable workflow version bundles, retrieving registry metadata, and
+    serving editor metadata for the embedded admin Web UI.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /admin/workflows:
+    get:
+      summary: List drafts and published workflow assets visible to the current admin
+      tags: [workflow-registry]
+      parameters:
+        - in: query
+          name: scope_filter
+          schema:
+            type: string
+            enum: [all, tenant, platform]
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [draft, published, hidden, retired]
+      responses:
+        "200":
+          description: Registry results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowRegistryListResponse"
+    post:
+      summary: Create a new workflow draft
+      tags: [workflow-registry]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowDraftCreateRequest"
+      responses:
+        "201":
+          description: Draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowDraftResponse"
+  /admin/workflows/editor-metadata:
+    get:
+      summary: Load UI field-help metadata and editor lookup options
+      tags: [workflow-registry]
+      responses:
+        "200":
+          description: Editor metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowEditorMetadataResponse"
+  /admin/workflows/drafts/{workflow_draft_id}:
+    get:
+      summary: Retrieve a workflow draft and its latest revision
+      tags: [workflow-registry]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      responses:
+        "200":
+          description: Draft payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowDraftResponse"
+    put:
+      summary: Save a workflow draft using optimistic concurrency
+      tags: [workflow-registry]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowDraftSaveRequest"
+      responses:
+        "200":
+          description: Draft saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowDraftResponse"
+        "409":
+          description: Stale draft revision conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/workflows/drafts/{workflow_draft_id}/validate:
+    post:
+      summary: Validate the latest revision of a workflow draft
+      tags: [workflow-registry]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      responses:
+        "200":
+          description: Validation complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationResultResponse"
+  /admin/workflows/drafts/{workflow_draft_id}/publish:
+    post:
+      summary: Publish a validated draft as an immutable workflow version bundle
+      tags: [workflow-registry]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishDraftRequest"
+      responses:
+        "201":
+          description: Draft published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowVersionResponse"
+        "409":
+          description: Validation result superseded or revision conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Compiled bundle artifact persistence failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/workflows/versions/{workflow_version_bundle_id}:
+    get:
+      summary: Retrieve immutable published workflow version metadata
+      tags: [workflow-registry]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowVersionBundleId"
+      responses:
+        "200":
+          description: Published workflow version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowVersionResponse"
+  /admin/workflows/versions/{workflow_version_bundle_id}/sharing-grants:
+    post:
+      summary: Grant a tenant access to a platform-scoped published workflow
+      tags: [workflow-registry]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowVersionBundleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrySharingGrantCreateRequest"
+      responses:
+        "201":
+          description: Sharing grant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrySharingGrantResponse"
+
+components:
+  parameters:
+    WorkflowDraftId:
+      in: path
+      name: workflow_draft_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    WorkflowVersionBundleId:
+      in: path
+      name: workflow_version_bundle_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+
+    WorkflowRegistryListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowRegistryItem"
+
+    WorkflowRegistryItem:
+      type: object
+      required:
+        - workflow_lineage_id
+        - display_name
+        - workflow_kind
+        - scope_type
+        - visibility_status
+      properties:
+        workflow_lineage_id:
+          type: string
+          format: uuid
+        workflow_draft_id:
+          type: string
+          format: uuid
+          nullable: true
+        workflow_version_bundle_id:
+          type: string
+          format: uuid
+          nullable: true
+        display_name:
+          type: string
+        workflow_kind:
+          type: string
+          enum: [main_workflow, subworkflow]
+        scope_type:
+          type: string
+          enum: [tenant, platform]
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        visibility_status:
+          type: string
+          enum: [draft, published, hidden, retired]
+        current_revision_number:
+          type: integer
+          nullable: true
+        display_version:
+          type: string
+          nullable: true
+
+    WorkflowDraftCreateRequest:
+      type: object
+      required: [scope_type, workflow_kind, slug, display_name, document]
+      properties:
+        scope_type:
+          type: string
+          enum: [tenant, platform]
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        workflow_kind:
+          type: string
+          enum: [main_workflow, subworkflow]
+        slug:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        created_from_version_id:
+          type: string
+          format: uuid
+          nullable: true
+        document:
+          $ref: "#/components/schemas/WorkflowDraftDocument"
+
+    WorkflowDraftSaveRequest:
+      type: object
+      required: [base_revision_number, document]
+      properties:
+        base_revision_number:
+          type: integer
+        change_summary:
+          type: string
+          nullable: true
+        document:
+          $ref: "#/components/schemas/WorkflowDraftDocument"
+
+    WorkflowDraftResponse:
+      type: object
+      required:
+        - workflow_lineage_id
+        - workflow_draft_id
+        - slug
+        - display_name
+        - scope_type
+        - status
+        - current_revision_number
+        - document
+      properties:
+        workflow_lineage_id:
+          type: string
+          format: uuid
+        workflow_draft_id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        scope_type:
+          type: string
+          enum: [tenant, platform]
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [active, published_source, archived, replaced]
+        current_revision_number:
+          type: integer
+        created_from_version_id:
+          type: string
+          format: uuid
+          nullable: true
+        latest_revision:
+          $ref: "#/components/schemas/WorkflowDraftRevisionResponse"
+        latest_validation:
+          $ref: "#/components/schemas/ValidationResultResponse"
+        document:
+          $ref: "#/components/schemas/WorkflowDraftDocument"
+        updated_at:
+          type: string
+          format: date-time
+
+    WorkflowDraftRevisionResponse:
+      type: object
+      required:
+        - workflow_draft_revision_id
+        - revision_number
+        - document_sha256
+        - created_at
+      properties:
+        workflow_draft_revision_id:
+          type: string
+          format: uuid
+        revision_number:
+          type: integer
+        document_sha256:
+          type: string
+        change_summary:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    ValidationResultResponse:
+      type: object
+      required:
+        - validation_result_id
+        - status
+        - blocking_issue_count
+        - advisory_issue_count
+        - findings
+      properties:
+        validation_result_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [passed, failed, superseded]
+        blocking_issue_count:
+          type: integer
+        advisory_issue_count:
+          type: integer
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationFinding"
+
+    ValidationFinding:
+      type: object
+      required: [severity, category, message]
+      properties:
+        severity:
+          type: string
+          enum: [blocking, advisory]
+        category:
+          type: string
+          enum:
+            - structure
+            - compatibility
+            - subworkflow
+            - join_policy
+            - approval_gate
+            - skill_binding
+            - publish_readiness
+        field_path:
+          type: string
+          nullable: true
+        message:
+          type: string
+
+    PublishDraftRequest:
+      type: object
+      required: [validation_result_id]
+      properties:
+        validation_result_id:
+          type: string
+          format: uuid
+
+    WorkflowVersionResponse:
+      type: object
+      required:
+        - workflow_version_bundle_id
+        - workflow_lineage_id
+        - slug
+        - display_name
+        - display_version
+        - scope_type
+        - status
+        - published_from_draft_id
+        - published_from_revision_id
+        - published_at
+      properties:
+        workflow_version_bundle_id:
+          type: string
+          format: uuid
+        workflow_lineage_id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        display_name:
+          type: string
+        scope_type:
+          type: string
+          enum: [tenant, platform]
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        display_version:
+          type: string
+        status:
+          type: string
+          enum: [published, hidden, retired]
+        compiled_bundle_digest:
+          type: string
+          nullable: true
+        compiler_version:
+          type: string
+          nullable: true
+        published_from_draft_id:
+          type: string
+          format: uuid
+        published_from_revision_id:
+          type: string
+          format: uuid
+        previous_version_bundle_id:
+          type: string
+          format: uuid
+          nullable: true
+        compiled_bundle_artifact_id:
+          type: string
+          format: uuid
+          nullable: true
+        summary_json:
+          type: object
+          additionalProperties: true
+        sharing_grants:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegistrySharingGrantResponse"
+        published_at:
+          type: string
+          format: date-time
+
+    RegistrySharingGrantCreateRequest:
+      type: object
+      required: [grantee_tenant_id]
+      properties:
+        grantee_tenant_id:
+          type: string
+          format: uuid
+
+    RegistrySharingGrantResponse:
+      type: object
+      required:
+        - registry_sharing_grant_id
+        - workflow_version_bundle_id
+        - grantee_tenant_id
+        - status
+      properties:
+        registry_sharing_grant_id:
+          type: string
+          format: uuid
+        workflow_version_bundle_id:
+          type: string
+          format: uuid
+        grantee_tenant_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, revoked]
+        created_at:
+          type: string
+          format: date-time
+
+    WorkflowEditorMetadataResponse:
+      type: object
+      required: [join_policy_options, approver_scope_options, field_help]
+      properties:
+        join_policy_options:
+          type: array
+          items:
+            type: string
+            enum: [all_success, quorum, first_success, manual_resolution]
+        approver_scope_options:
+          type: array
+          items:
+            type: string
+            enum: [tenant_admin, platform_admin, named_role]
+        field_help:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldHelpDefinition"
+
+    FieldHelpDefinition:
+      type: object
+      required: [field_path, modal_title, what_this_controls, why_it_matters]
+      properties:
+        field_path:
+          type: string
+        modal_title:
+          type: string
+        what_this_controls:
+          type: string
+        why_it_matters:
+          type: string
+        runtime_effect:
+          type: string
+          nullable: true
+        example_values:
+          type: array
+          items:
+            type: string
+
+    WorkflowDraftDocument:
+      type: object
+      required:
+        - workflow_key
+        - display_name
+        - workflow_kind
+        - entry_node_key
+        - roles
+        - contracts
+        - nodes
+        - edges
+        - join_policies
+        - approval_gates
+        - subworkflow_refs
+      properties:
+        workflow_key:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        workflow_kind:
+          type: string
+          enum: [main_workflow, subworkflow]
+        entry_node_key:
+          type: string
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentRoleDefinition"
+        contracts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContractSchemaDefinition"
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowNodeDefinition"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowEdgeDefinition"
+        join_policies:
+          type: array
+          items:
+            $ref: "#/components/schemas/JoinPolicyDefinition"
+        approval_gates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApprovalGateDefinition"
+        subworkflow_refs:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubworkflowReference"
+
+    AgentRoleDefinition:
+      type: object
+      required:
+        - role_key
+        - display_name
+        - role_kind
+        - input_contract_key
+        - output_contract_key
+        - skill_bindings
+      properties:
+        role_key:
+          type: string
+        display_name:
+          type: string
+        role_kind:
+          type: string
+          enum: [agent, subagent]
+        purpose:
+          type: string
+        input_contract_key:
+          type: string
+        output_contract_key:
+          type: string
+        skill_bindings:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillBinding"
+
+    SkillBinding:
+      type: object
+      required: [binding_key, skill_slug, skill_version, binding_mode]
+      properties:
+        binding_key:
+          type: string
+        skill_slug:
+          type: string
+        skill_version:
+          type: string
+        binding_mode:
+          type: string
+          enum: [required, optional]
+        purpose:
+          type: string
+          nullable: true
+
+    ContractSchemaDefinition:
+      type: object
+      required: [contract_key, display_name, semantic_version, schema_kind, json_schema]
+      properties:
+        contract_key:
+          type: string
+        display_name:
+          type: string
+        semantic_version:
+          type: string
+        schema_kind:
+          type: string
+          enum: [workflow_input, workflow_output, handoff, approval]
+        json_schema:
+          type: object
+          additionalProperties: true
+        example_payload:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    WorkflowNodeDefinition:
+      type: object
+      required: [node_key, node_type, display_name]
+      properties:
+        node_key:
+          type: string
+        node_type:
+          type: string
+          enum: [agent_step, parallel_group, condition, approval_gate, subworkflow_ref]
+        display_name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        role_key:
+          type: string
+          nullable: true
+        approval_gate_key:
+          type: string
+          nullable: true
+        subworkflow_ref_key:
+          type: string
+          nullable: true
+        join_policy_key:
+          type: string
+          nullable: true
+
+    WorkflowEdgeDefinition:
+      type: object
+      required: [edge_key, from_node_key, to_node_key, contract_key]
+      properties:
+        edge_key:
+          type: string
+        from_node_key:
+          type: string
+        to_node_key:
+          type: string
+        contract_key:
+          type: string
+        transition_label:
+          type: string
+          nullable: true
+
+    SubworkflowReference:
+      type: object
+      required:
+        - subworkflow_ref_key
+        - alias
+        - target_workflow_version_bundle_id
+        - input_contract_key
+        - output_contract_key
+      properties:
+        subworkflow_ref_key:
+          type: string
+        alias:
+          type: string
+        target_workflow_version_bundle_id:
+          type: string
+          format: uuid
+        input_contract_key:
+          type: string
+        output_contract_key:
+          type: string
+
+    JoinPolicyDefinition:
+      type: object
+      required: [join_policy_key, strategy, required_branch_keys, failure_behavior]
+      properties:
+        join_policy_key:
+          type: string
+        strategy:
+          type: string
+          enum: [all_success, quorum, first_success, manual_resolution]
+        required_branch_keys:
+          type: array
+          items:
+            type: string
+        quorum_count:
+          type: integer
+          nullable: true
+        failure_behavior:
+          type: string
+          enum: [fail_fast, wait_for_all, manual_resolution]
+
+    ApprovalGateDefinition:
+      type: object
+      required:
+        - approval_gate_key
+        - display_name
+        - approver_scope
+        - decision_contract_key
+      properties:
+        approval_gate_key:
+          type: string
+        display_name:
+          type: string
+        approver_scope:
+          type: string
+          enum: [tenant_admin, platform_admin, named_role]
+        named_role_key:
+          type: string
+          nullable: true
+        decision_contract_key:
+          type: string
+        timeout_policy:
+          type: string
+          enum: [none, expire, escalate]
+        instructions_markdown:
+          type: string
+          nullable: true

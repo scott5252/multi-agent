@@ -14,3 +14,9 @@ def test_process_profiles_include_api_and_worker(settings: Settings) -> None:
     assert settings.profiles["api"].readiness_policy == "strict"
     assert settings.profiles["api"].required_dependencies[1] == "auth"
     assert settings.profiles["worker"].required_dependencies[-1] == "queue"
+
+
+def test_settings_expose_web_admin_paths(settings: Settings) -> None:
+    assert settings.web_admin_templates_dir.name == "templates"
+    assert settings.web_admin_static_dir.name == "static"
+    assert settings.workflow_registry_artifact_prefix == "workflow-registry"

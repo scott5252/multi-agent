@@ -8,6 +8,7 @@
 - [ ] `./scripts/check.sh`
 - [ ] `./scripts/smoke_foundation.sh` against a running API when runtime code changed
 - [ ] `uv run pytest tests/contract/test_access_control_contract.py tests/integration/api/test_auth_routes.py tests/integration/auth/test_support_overrides.py`
+- [ ] Workflow-registry validation and UI slice was run when admin workflow code changed
 
 ## Review Checklist
 
@@ -19,3 +20,5 @@
 - [ ] Migration upgrade and downgrade expectations were validated
 - [ ] Readiness behavior is documented when dependencies or migrations are unavailable
 - [ ] Updated docs cover setup, troubleshooting, and recovery impact
+- [ ] Workflow-registry changes include validation, publish, and sharing evidence
+- [ ] Workflow-registry UI changes include updated route or HTML verification evidence

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{{ page.draft.display_name }}</title>
+    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
+  </head>
+  <body class="workflow-page">
+    <main class="page-shell editor-shell">
+      <header class="hero compact">
+        <div>
+          <p class="eyebrow">Draft Editor</p>
+          <h1>{{ page.draft.display_name }}</h1>
+          <p class="subhead">Revision {{ page.draft.current_revision_number }} for {{ page.draft.scope_type.value }} scope.</p>
+        </div>
+      </header>
+      {% if page.conflict_message %}
+        <section class="conflict-banner" role="alert">
+          {{ page.conflict_message }}
+        </section>
+      {% endif %}
+      <section class="editor-grid">
+        <article class="card section-card">
+          <h2>Overview</h2>
+          <label class="field-row">
+            <span>Scope <button type="button" class="help-button" data-help-key="scope_type" aria-haspopup="dialog">?</button></span>
+            <input value="{{ page.draft.scope_type.value }}" readonly>
+          </label>
+          <label class="field-row">
+            <span>Display Name <button type="button" class="help-button" data-help-key="display_name" aria-haspopup="dialog">?</button></span>
+            <input value="{{ page.draft.display_name }}" readonly>
+          </label>
+          <label class="field-row">
+            <span>Workflow Kind <button type="button" class="help-button" data-help-key="workflow_kind" aria-haspopup="dialog">?</button></span>
+            <input value="{{ page.draft.workflow_kind.value }}" readonly>
+          </label>
+        </article>
+        <article class="card section-card">
+          <h2>Roles And Skills</h2>
+          <p>
+            Input Contract
+            <button type="button" class="help-button" data-help-key="roles[].input_contract_key" aria-haspopup="dialog">?</button>
+          </p>
+          <p>
+            Output Contract
+            <button type="button" class="help-button" data-help-key="roles[].output_contract_key" aria-haspopup="dialog">?</button>
+          </p>
+          <p>
+            Skill Version
+            <button type="button" class="help-button" data-help-key="roles[].skill_bindings[].skill_version" aria-haspopup="dialog">?</button>
+          </p>
+        </article>
+        <article class="card section-card">
+          <h2>Subworkflow References</h2>
+          <p>
+            Published Version Reference
+            <button type="button" class="help-button" data-help-key="subworkflow_refs[].workflow_version_ref" aria-haspopup="dialog">?</button>
+          </p>
+        </article>
+        <article class="card section-card">
+          <h2>Join Policies</h2>
+          <p>
+            Strategy
+            <button type="button" class="help-button" data-help-key="join_policies[].strategy" aria-haspopup="dialog">?</button>
+          </p>
+        </article>
+        <article class="card section-card">
+          <h2>Approval Gates</h2>
+          <p>
+            Approver Scope
+            <button type="button" class="help-button" data-help-key="approval_gates[].approver_scope" aria-haspopup="dialog">?</button>
+          </p>
+        </article>
+        <article class="card section-card full-width">
+          <h2>Authoring Document</h2>
+          <textarea id="document-json" rows="22" readonly>{{ page.document_json }}</textarea>
+        </article>
+        {% include "workflows/components/validation_panel.html" %}
+      </section>
+    </main>
+    {% include "workflows/components/field_help_modal.html" %}
+    <script id="field-help-data" type="application/json">{{ page.metadata.model_dump_json() }}</script>
+    <script src="/admin/static/workflow_studio.js"></script>
+  </body>
+</html>

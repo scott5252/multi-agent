@@ -8,6 +8,12 @@ REQUEST_COUNTER = Counter(
     labelnames=("route", "status"),
 )
 
+WORKFLOW_REGISTRY_ACTION_COUNTER = Counter(
+    "multi_agent_platform_workflow_registry_actions_total",
+    "Workflow registry actions by scope.",
+    labelnames=("action", "scope_type"),
+)
+
 READINESS_GAUGE = Gauge(
     "multi_agent_platform_readiness",
     "Readiness state of the platform foundation.",
