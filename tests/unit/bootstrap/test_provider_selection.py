@@ -9,6 +9,7 @@ from multi_agent_platform.config.settings import Settings
 
 def test_provider_selection_supports_secret_manager_and_s3(tmp_path) -> None:
     settings = Settings(
+        _env_file=None,
         secret_provider="secret_manager",
         storage_provider="s3",
         database_url=f"sqlite+aiosqlite:///{tmp_path / 'app.db'}",

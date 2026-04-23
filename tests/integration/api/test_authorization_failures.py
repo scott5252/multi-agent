@@ -33,6 +33,7 @@ def prepare_database(database_path: Path) -> None:
 
 
 def test_missing_local_principal_header_returns_401(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
     database_path = tmp_path / "missing-header.db"
     prepare_database(database_path)
     tenant_id = uuid4()
@@ -62,6 +63,7 @@ def test_missing_local_principal_header_returns_401(tmp_path, monkeypatch) -> No
 
 
 def test_cross_tenant_access_returns_403(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
     database_path = tmp_path / "cross-tenant.db"
     prepare_database(database_path)
     tenant_id = uuid4()
@@ -94,6 +96,7 @@ def test_cross_tenant_access_returns_403(tmp_path, monkeypatch) -> None:
 
 
 def test_empty_local_principal_catalog_returns_503(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
     database_path = tmp_path / "empty-catalog.db"
     prepare_database(database_path)
     monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{database_path}")

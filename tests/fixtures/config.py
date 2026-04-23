@@ -13,6 +13,7 @@ def make_settings(tmp_path: Path) -> Settings:
     database_path = tmp_path / "platform.db"
     tenant_id = uuid4()
     return Settings(
+        _env_file=None,
         app_env="test",
         auth_mode="local_principal",
         local_principal_catalog_json={
@@ -69,4 +70,4 @@ def settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("APP_VERSION", "0.1.0")
     monkeypatch.setenv("COMMIT_SHA", "test-sha")
     monkeypatch.setenv("BUILD_TIME", "2026-04-22T00:00:00+00:00")
-    return Settings()
+    return Settings(_env_file=None)

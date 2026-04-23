@@ -14,6 +14,7 @@ from multi_agent_platform.config.settings import Settings
 
 def build_auth0_settings() -> Settings:
     return Settings(
+        _env_file=None,
         app_env="test",
         auth_mode="auth0",
         auth0_domain="tenant.example.com",

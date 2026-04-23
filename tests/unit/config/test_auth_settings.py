@@ -8,12 +8,13 @@ from multi_agent_platform.config.settings import Settings
 
 def test_auth0_requires_domain_issuer_and_audience() -> None:
     with pytest.raises(ValueError):
-        Settings(app_env="test", auth_mode="auth0")
+        Settings(_env_file=None, app_env="test", auth_mode="auth0")
 
 
 def test_production_rejects_local_principal_mode() -> None:
     with pytest.raises(ValueError):
         Settings(
+            _env_file=None,
             app_env="production",
             auth_mode="local_principal",
             local_principal_catalog_json={

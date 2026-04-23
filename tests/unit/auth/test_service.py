@@ -48,6 +48,7 @@ def build_auth_service(session, settings) -> AuthService:
 
 def build_auth0_service(session) -> AuthService:
     settings = Settings(
+        _env_file=None,
         app_env="test",
         auth_mode="auth0",
         auth0_domain="tenant.example.com",
