@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from starlette.templating import Jinja2Templates
 
 from multi_agent_platform.auth.config import auth_configuration_error
 from multi_agent_platform.auth.jwt_validator import Auth0JwtValidator
@@ -39,6 +40,10 @@ def build_storage_provider(settings: Settings) -> StorageProvider:
     return FilesystemStorageProvider(root=settings.filesystem_storage_root)
 
 
+def build_template_renderer(settings: Settings) -> Jinja2Templates:
+    return Jinja2Templates(directory=str(settings.web_admin_templates_dir))
+
+
 @dataclass(slots=True)
 class Container:
     settings: Settings
@@ -46,6 +51,7 @@ class Container:
     session_factory: async_sessionmaker[AsyncSession]
     secret_provider: SecretProvider
     storage_provider: StorageProvider
+    workflow_ui_templates: Jinja2Templates
     jwt_validator: Auth0JwtValidator | None
     local_principal_catalog: LocalPrincipalCatalog
     logger: logging.Logger
@@ -68,6 +74,7 @@ def build_container(settings: Settings | None = None) -> Container:
         session_factory=session_factory,
         secret_provider=build_secret_provider(resolved_settings),
         storage_provider=build_storage_provider(resolved_settings),
+        workflow_ui_templates=build_template_renderer(resolved_settings),
         jwt_validator=Auth0JwtValidator(resolved_settings)
         if resolved_settings.auth_mode.value == "auth0"
         else None,

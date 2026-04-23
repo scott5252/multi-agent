@@ -14,3 +14,8 @@ def static_secret_provider() -> StaticSecretProvider:
 @pytest.fixture
 def filesystem_storage_provider(tmp_path) -> FilesystemStorageProvider:
     return FilesystemStorageProvider(tmp_path / "artifacts")
+
+
+@pytest.fixture
+def workflow_registry_artifact_prefix(settings) -> str:
+    return settings.workflow_registry_artifact_prefix

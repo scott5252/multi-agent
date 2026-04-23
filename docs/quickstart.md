@@ -63,6 +63,20 @@ Run auth/access validation explicitly:
 uv run pytest tests/contract/test_access_control_contract.py tests/integration/api/test_auth_routes.py tests/integration/auth/test_support_overrides.py
 ```
 
+Run the workflow-registry authoring slice explicitly:
+
+```bash
+uv run pytest \
+  tests/unit/admin/test_workflow_registry_service.py \
+  tests/unit/admin/test_field_help.py \
+  tests/unit/api/test_workflow_registry_schemas.py \
+  tests/unit/api/test_admin_workflow_ui_models.py \
+  tests/unit/db/test_workflow_registry_models.py \
+  tests/contract/test_workflow_registry_contract.py \
+  tests/integration/api/test_admin_workflows_api.py \
+  tests/integration/api/test_admin_workflow_ui.py
+```
+
 ## Troubleshooting
 
 - `503 /health/ready`: confirm `.env` is present, PostgreSQL is reachable, and

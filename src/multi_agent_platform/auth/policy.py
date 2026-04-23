@@ -84,6 +84,41 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         required_roles=("platform_admin",),
         required_permissions=("admin:support-overrides:approve",),
     ),
+    "GET:/admin/workflows": ProtectedSurface(
+        surface_key="GET:/admin/workflows",
+        requested_action="read_workflow_registry",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/workflows": ProtectedSurface(
+        surface_key="POST:/admin/workflows",
+        requested_action="create_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/workflows/editor-metadata": ProtectedSurface(
+        surface_key="GET:/admin/workflows/editor-metadata",
+        requested_action="read_workflow_editor_metadata",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/workflows/drafts/{workflow_draft_id}": ProtectedSurface(
+        surface_key="GET:/admin/workflows/drafts/{workflow_draft_id}",
+        requested_action="read_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "PUT:/admin/workflows/drafts/{workflow_draft_id}": ProtectedSurface(
+        surface_key="PUT:/admin/workflows/drafts/{workflow_draft_id}",
+        requested_action="save_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/workflows/ui": ProtectedSurface(
+        surface_key="GET:/admin/workflows/ui",
+        requested_action="render_workflow_registry_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    ("GET:/admin/workflows/drafts/{workflow_draft_id}/editor"): ProtectedSurface(
+        surface_key="GET:/admin/workflows/drafts/{workflow_draft_id}/editor",
+        requested_action="render_workflow_draft_editor_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
 }
 
 

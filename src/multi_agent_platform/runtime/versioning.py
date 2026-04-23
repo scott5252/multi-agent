@@ -18,6 +18,12 @@ class VersionBundle(BaseModel):
     claim_mapping_version: str = "2026-04-22"
 
 
+class RunVersionBundle(BaseModel):
+    workflow_lineage_id: str
+    compiled_bundle_digest: str
+    compiler_version: str
+
+
 def get_version_bundle(settings: Settings) -> VersionBundle:
     return VersionBundle(
         service=settings.app_name,
@@ -26,3 +32,7 @@ def get_version_bundle(settings: Settings) -> VersionBundle:
         build_time=settings.build_time,
         python_version=platform.python_version(),
     )
+
+
+def get_workflow_registry_compiler_version() -> str:
+    return "workflow-registry-0.1"

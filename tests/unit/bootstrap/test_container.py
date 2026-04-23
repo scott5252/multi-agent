@@ -10,5 +10,7 @@ async def test_build_container_uses_selected_providers(settings: Settings) -> No
         assert container.secret_provider.provider_name == "static"
         assert container.storage_provider.provider_name == "filesystem"
         assert container.logger.name == "multi_agent_platform"
+        search_path = container.workflow_ui_templates.env.loader.searchpath
+        assert any(path.endswith("/templates") for path in search_path)
     finally:
         await container.dispose()

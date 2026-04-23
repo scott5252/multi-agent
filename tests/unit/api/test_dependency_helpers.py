@@ -17,6 +17,9 @@ def test_dependency_helpers_return_container_members(settings) -> None:
         settings=settings,
         secret_provider=SimpleNamespace(provider_name="static"),
         storage_provider=SimpleNamespace(provider_name="filesystem"),
+        workflow_ui_templates=SimpleNamespace(
+            directory=settings.web_admin_templates_dir
+        ),
     )
     request = SimpleNamespace(
         app=SimpleNamespace(state=SimpleNamespace(container=container))
@@ -25,6 +28,7 @@ def test_dependency_helpers_return_container_members(settings) -> None:
     assert get_settings(container) is settings
     assert get_secret_provider(container).provider_name == "static"
     assert get_storage_provider(container).provider_name == "filesystem"
+    assert str(container.workflow_ui_templates.directory).endswith("/templates")
 
 
 def test_get_scope_raises_when_missing() -> None:

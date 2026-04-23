@@ -2,7 +2,8 @@
 
 This repository now includes the platform foundation plus a production-style
 authentication and authorization layer for the multi-tenant FastAPI and worker
-service. The platform supports Auth0 JWT validation in production,
+service. The platform also now includes the first workflow-studio authoring
+slice for registry-backed draft creation and review. The platform supports Auth0 JWT validation in production,
 deterministic local principals in `local`/`test`/`ci`, tenant-aware protected
 routes, platform-admin role grants, support-override approvals, delegated
 credential linkage, durable access-decision audit records, operational health
@@ -16,6 +17,9 @@ endpoints, Alembic migrations, and CI quality gates.
 - auth and admin-access API surfaces: `/auth/me`,
   `/auth/tenant-context/{tenant_id}`, `/admin/role-grants`, and
   `/admin/support-overrides`
+- workflow-registry authoring APIs for listing, creating, fetching, and saving
+  immutable draft revisions under `/admin/workflows`
+- embedded admin workflow registry pages under `/admin/workflows/ui`
 - tenant, artifact, secret-reference, queue, audit, principal-identity,
   role-grant, support-override, delegated-credential, and access-decision
   persistence models
@@ -40,6 +44,7 @@ endpoints, Alembic migrations, and CI quality gates.
 ## Operations And Review
 
 - [Quickstart](/Users/scottcornell/src/my-projects/multi-agent/docs/quickstart.md)
+- [Admin Workflow Studio](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-workflow-studio.md)
 - [Foundation Runbook](/Users/scottcornell/src/my-projects/multi-agent/docs/foundation-runbook.md)
 - [Architecture](/Users/scottcornell/src/my-projects/multi-agent/docs/architecture.md)
 - [Constitution](/Users/scottcornell/src/my-projects/multi-agent/.specify/memory/constitution.md)

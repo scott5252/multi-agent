@@ -14,4 +14,11 @@ def test_alembic_upgrade_creates_foundation_tables(tmp_path, monkeypatch) -> Non
     command.upgrade(config, "head")
     engine = create_engine(f"sqlite:///{database_path}")
     tables = set(inspect(engine).get_table_names())
-    assert {"tenants", "queue_jobs", "audit_events", "alembic_version"} <= tables
+    assert {
+        "tenants",
+        "queue_jobs",
+        "audit_events",
+        "workflow_lineages",
+        "workflow_drafts",
+        "alembic_version",
+    } <= tables
