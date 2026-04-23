@@ -102,9 +102,7 @@ def sample_document() -> dict[str, object]:
     }
 
 
-def test_local_browser_login_sets_cookie_and_unlocks_ui(
-    tmp_path, monkeypatch
-) -> None:
+def test_local_browser_login_sets_cookie_and_unlocks_ui(tmp_path, monkeypatch) -> None:
     tenant_id = uuid4()
     configure_env(monkeypatch, tmp_path, tenant_id)
     app = create_app()

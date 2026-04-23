@@ -19,9 +19,19 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "workflow_lineages",
-        sa.Column("workflow_lineage_id", sa.Uuid(), primary_key=True, nullable=False),
+        sa.Column(
+            "workflow_lineage_id",
+            sa.Uuid(),
+            primary_key=True,
+            nullable=False,
+        ),
         sa.Column("scope_type", sa.String(length=32), nullable=False),
-        sa.Column("tenant_id", sa.Uuid(), sa.ForeignKey("tenants.tenant_id"), nullable=True),
+        sa.Column(
+            "tenant_id",
+            sa.Uuid(),
+            sa.ForeignKey("tenants.tenant_id"),
+            nullable=True,
+        ),
         sa.Column("slug", sa.String(length=128), nullable=False),
         sa.Column("display_name", sa.String(length=255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
@@ -59,7 +69,12 @@ def upgrade() -> None:
     )
     op.create_table(
         "workflow_draft_revisions",
-        sa.Column("workflow_draft_revision_id", sa.Uuid(), primary_key=True, nullable=False),
+        sa.Column(
+            "workflow_draft_revision_id",
+            sa.Uuid(),
+            primary_key=True,
+            nullable=False,
+        ),
         sa.Column("workflow_draft_id", sa.Uuid(), nullable=False),
         sa.Column("revision_number", sa.Integer(), nullable=False),
         sa.Column("authoring_document_json", sa.JSON(), nullable=False),
@@ -84,7 +99,12 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("scope_type", sa.String(length=32), nullable=False),
-        sa.Column("tenant_id", sa.Uuid(), sa.ForeignKey("tenants.tenant_id"), nullable=True),
+        sa.Column(
+            "tenant_id",
+            sa.Uuid(),
+            sa.ForeignKey("tenants.tenant_id"),
+            nullable=True,
+        ),
         sa.Column(
             "status",
             sa.Enum(
@@ -125,7 +145,10 @@ def upgrade() -> None:
         sa.Column(
             "workflow_draft_revision_id",
             sa.Uuid(),
-            sa.ForeignKey("workflow_draft_revisions.workflow_draft_revision_id", ondelete="CASCADE"),
+            sa.ForeignKey(
+                "workflow_draft_revisions.workflow_draft_revision_id",
+                ondelete="CASCADE",
+            ),
             nullable=False,
         ),
         sa.Column("rule_set_version", sa.String(length=64), nullable=False),
@@ -143,7 +166,12 @@ def upgrade() -> None:
         sa.Column("blocking_issue_count", sa.Integer(), nullable=False),
         sa.Column("advisory_issue_count", sa.Integer(), nullable=False),
         sa.Column("findings_json", sa.JSON(), nullable=False),
-        sa.Column("report_artifact_id", sa.Uuid(), sa.ForeignKey("artifacts.artifact_id"), nullable=True),
+        sa.Column(
+            "report_artifact_id",
+            sa.Uuid(),
+            sa.ForeignKey("artifacts.artifact_id"),
+            nullable=True,
+        ),
         sa.Column(
             "executed_by_principal_id",
             sa.Uuid(),
@@ -154,7 +182,12 @@ def upgrade() -> None:
     )
     op.create_table(
         "workflow_version_bundles",
-        sa.Column("workflow_version_bundle_id", sa.Uuid(), primary_key=True, nullable=False),
+        sa.Column(
+            "workflow_version_bundle_id",
+            sa.Uuid(),
+            primary_key=True,
+            nullable=False,
+        ),
         sa.Column(
             "workflow_lineage_id",
             sa.Uuid(),
@@ -162,7 +195,12 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("scope_type", sa.String(length=32), nullable=False),
-        sa.Column("tenant_id", sa.Uuid(), sa.ForeignKey("tenants.tenant_id"), nullable=True),
+        sa.Column(
+            "tenant_id",
+            sa.Uuid(),
+            sa.ForeignKey("tenants.tenant_id"),
+            nullable=True,
+        ),
         sa.Column("version_sequence", sa.Integer(), nullable=False),
         sa.Column("display_version", sa.String(length=32), nullable=False),
         sa.Column(
@@ -176,11 +214,31 @@ def upgrade() -> None:
             ),
             nullable=False,
         ),
-        sa.Column("published_from_draft_id", sa.Uuid(), sa.ForeignKey("workflow_drafts.workflow_draft_id"), nullable=False),
-        sa.Column("published_from_revision_id", sa.Uuid(), sa.ForeignKey("workflow_draft_revisions.workflow_draft_revision_id"), nullable=False),
-        sa.Column("validation_result_id", sa.Uuid(), sa.ForeignKey("validation_results.validation_result_id"), nullable=True),
+        sa.Column(
+            "published_from_draft_id",
+            sa.Uuid(),
+            sa.ForeignKey("workflow_drafts.workflow_draft_id"),
+            nullable=False,
+        ),
+        sa.Column(
+            "published_from_revision_id",
+            sa.Uuid(),
+            sa.ForeignKey("workflow_draft_revisions.workflow_draft_revision_id"),
+            nullable=False,
+        ),
+        sa.Column(
+            "validation_result_id",
+            sa.Uuid(),
+            sa.ForeignKey("validation_results.validation_result_id"),
+            nullable=True,
+        ),
         sa.Column("previous_version_bundle_id", sa.Uuid(), nullable=True),
-        sa.Column("compiled_bundle_artifact_id", sa.Uuid(), sa.ForeignKey("artifacts.artifact_id"), nullable=True),
+        sa.Column(
+            "compiled_bundle_artifact_id",
+            sa.Uuid(),
+            sa.ForeignKey("artifacts.artifact_id"),
+            nullable=True,
+        ),
         sa.Column("compiled_bundle_digest", sa.String(length=64), nullable=True),
         sa.Column("compiler_version", sa.String(length=32), nullable=True),
         sa.Column("summary_json", sa.JSON(), nullable=False),
@@ -197,14 +255,27 @@ def upgrade() -> None:
     )
     op.create_table(
         "registry_sharing_grants",
-        sa.Column("registry_sharing_grant_id", sa.Uuid(), primary_key=True, nullable=False),
+        sa.Column(
+            "registry_sharing_grant_id",
+            sa.Uuid(),
+            primary_key=True,
+            nullable=False,
+        ),
         sa.Column(
             "workflow_version_bundle_id",
             sa.Uuid(),
-            sa.ForeignKey("workflow_version_bundles.workflow_version_bundle_id", ondelete="CASCADE"),
+            sa.ForeignKey(
+                "workflow_version_bundles.workflow_version_bundle_id",
+                ondelete="CASCADE",
+            ),
             nullable=False,
         ),
-        sa.Column("grantee_tenant_id", sa.Uuid(), sa.ForeignKey("tenants.tenant_id"), nullable=False),
+        sa.Column(
+            "grantee_tenant_id",
+            sa.Uuid(),
+            sa.ForeignKey("tenants.tenant_id"),
+            nullable=False,
+        ),
         sa.Column(
             "status",
             sa.Enum(
