@@ -11,6 +11,7 @@ async def test_dependency_status_aggregates_required_failures(settings) -> None:
         assert report.status == "not_ready"
         assert {item.name for item in report.dependencies} >= {
             "config",
+            "auth",
             "postgres",
             "migrations",
             "worker",

@@ -1,4 +1,4 @@
-# Platform Foundation Quickstart
+# Platform Quickstart
 
 ## Prerequisites
 
@@ -10,10 +10,24 @@
 
 1. Install dependencies with `uv sync`.
 2. Copy `.env.example` to `.env`.
-3. Start PostgreSQL with `docker compose up -d postgres`.
-4. Optionally start MinIO for S3-compatible storage validation:
+3. Choose an auth mode:
+   `AUTH_MODE=local_principal` for deterministic local identities in
+   `local`/`test`/`ci`, or `AUTH_MODE=auth0` for production-style Auth0
+   validation.
+4. Start PostgreSQL with `docker compose up -d postgres`.
+5. Optionally start MinIO for S3-compatible storage validation:
    `docker compose --profile storage up -d minio`.
-5. Apply migrations with `uv run alembic upgrade head`.
+6. Apply migrations with `uv run alembic upgrade head`.
+
+### Local Principal Example
+
+Use a deterministic non-production catalog entry:
+
+```bash
+export AUTH_MODE=local_principal
+export LOCAL_PRINCIPAL_HEADER=X-Local-Principal
+export LOCAL_PRINCIPAL_CATALOG_JSON='{"tenant-admin-acme":{"catalog_key":"tenant-admin-acme","display_name":"Tenant Admin","tenant_id":"11111111-1111-1111-1111-111111111111","org_id":"org-acme","role_codes":["tenant_user","tenant_admin"],"permission_codes":["tenant:read","tenant:admin"]}}'
+```
 
 ## Run The Services
 
@@ -43,10 +57,22 @@ Capture operational smoke output against a running API:
 ./scripts/smoke_foundation.sh
 ```
 
+Run auth/access validation explicitly:
+
+```bash
+uv run pytest tests/contract/test_access_control_contract.py tests/integration/api/test_auth_routes.py tests/integration/auth/test_support_overrides.py
+```
+
 ## Troubleshooting
 
 - `503 /health/ready`: confirm `.env` is present, PostgreSQL is reachable, and
-  `uv run alembic upgrade head` has run successfully.
+  `uv run alembic upgrade head` has run successfully, and confirm auth settings
+  are valid for the selected `AUTH_MODE`.
+- `401` or `403` on protected routes: verify the local principal exists in
+  `LOCAL_PRINCIPAL_CATALOG_JSON`, or verify the Auth0 token issuer, audience,
+  org claim, permissions, and tenant context.
+- Support override access stays denied: ensure a second platform admin approved
+  the request and the override is still active.
 - Missing artifacts in local mode: verify `FILESYSTEM_STORAGE_ROOT` exists and
   is writable.
 - Secret lookup failures in local mode: confirm the configured static secret or

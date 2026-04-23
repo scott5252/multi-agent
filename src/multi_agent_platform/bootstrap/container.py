@@ -6,6 +6,9 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from multi_agent_platform.auth.config import auth_configuration_error
+from multi_agent_platform.auth.jwt_validator import Auth0JwtValidator
+from multi_agent_platform.auth.local_principals import LocalPrincipalCatalog
 from multi_agent_platform.config.settings import (
     SecretProviderKind,
     Settings,
@@ -43,7 +46,10 @@ class Container:
     session_factory: async_sessionmaker[AsyncSession]
     secret_provider: SecretProvider
     storage_provider: StorageProvider
+    jwt_validator: Auth0JwtValidator | None
+    local_principal_catalog: LocalPrincipalCatalog
     logger: logging.Logger
+    auth_failure_detail: str | None = None
     worker_dependencies_ready: bool = True
     state: dict[str, object] = field(default_factory=dict)
 
@@ -62,5 +68,12 @@ def build_container(settings: Settings | None = None) -> Container:
         session_factory=session_factory,
         secret_provider=build_secret_provider(resolved_settings),
         storage_provider=build_storage_provider(resolved_settings),
+        jwt_validator=Auth0JwtValidator(resolved_settings)
+        if resolved_settings.auth_mode.value == "auth0"
+        else None,
+        local_principal_catalog=LocalPrincipalCatalog(
+            resolved_settings.local_principal_catalog_json
+        ),
         logger=configure_logging(resolved_settings.log_level),
+        auth_failure_detail=auth_configuration_error(resolved_settings),
     )

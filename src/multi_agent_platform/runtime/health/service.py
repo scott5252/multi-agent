@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from multi_agent_platform.bootstrap.container import Container
 from multi_agent_platform.runtime.health.checks import (
+    check_auth_configuration,
     check_configuration,
     check_database,
     check_migrations,
@@ -23,6 +24,7 @@ class HealthService:
     async def dependency_checks(self) -> list[DependencyHealthCheck]:
         return [
             await check_configuration(self.container),
+            await check_auth_configuration(self.container),
             await check_database(self.container),
             await check_migrations(self.container),
             await check_worker_dependencies(self.container),

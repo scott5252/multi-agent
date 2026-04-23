@@ -13,6 +13,9 @@ class VersionBundle(BaseModel):
     commit_sha: str
     build_time: str
     python_version: str
+    auth_policy_version: str = "2026-04-22"
+    surface_policy_version: str = "2026-04-22"
+    claim_mapping_version: str = "2026-04-22"
 
 
 def get_version_bundle(settings: Settings) -> VersionBundle:

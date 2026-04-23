@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from multi_agent_platform.db.base import Base
+from multi_agent_platform.db.models import import_models
 from multi_agent_platform.db.session import create_engine, session_scope
 from tests.fixtures.config import make_settings
 
@@ -15,6 +16,7 @@ from tests.fixtures.config import make_settings
 async def engine(tmp_path) -> AsyncIterator[AsyncEngine]:
     settings = make_settings(tmp_path)
     engine = create_engine(settings)
+    import_models()
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
         await connection.execute(
@@ -23,7 +25,7 @@ async def engine(tmp_path) -> AsyncIterator[AsyncEngine]:
         await connection.execute(
             text(
                 "INSERT INTO alembic_version(version_num) "
-                "VALUES ('0001_platform_foundation')"
+                "VALUES ('0002_auth_access_control')"
             )
         )
     yield engine

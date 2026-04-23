@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, status
 
 @dataclass(frozen=True)
 class Settings:
-    auth_enabled: bool = True
+    auth_mode: str = "local_principal"
 
 
 @dataclass(frozen=True)
@@ -17,7 +17,7 @@ class Principal:
     roles: frozenset[str]
 
 
-settings = Settings(auth_enabled=False)
+settings = Settings(auth_mode="local_principal")
 app = FastAPI()
 
 
@@ -25,8 +25,13 @@ def get_settings() -> Settings:
     return settings
 
 
-def get_dev_principal() -> Principal:
-    return Principal(user_id="dev-user", roles=frozenset({"admin"}))
+def get_local_principal(local_principal: str | None) -> Principal:
+    if local_principal != "tenant-admin-acme":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="unknown local principal",
+        )
+    return Principal(user_id="tenant-admin-acme", roles=frozenset({"admin"}))
 
 
 def validate_auth0_token(authorization: str | None) -> Principal:
@@ -49,9 +54,10 @@ def validate_auth0_token(authorization: str | None) -> Principal:
 def get_principal(
     settings: Annotated[Settings, Depends(get_settings)],
     authorization: Annotated[str | None, Header()] = None,
+    local_principal: Annotated[str | None, Header(alias="X-Local-Principal")] = None,
 ) -> Principal:
-    if not settings.auth_enabled:
-        return get_dev_principal()
+    if settings.auth_mode == "local_principal":
+        return get_local_principal(local_principal)
     return validate_auth0_token(authorization)
 
 

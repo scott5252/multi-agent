@@ -3,6 +3,9 @@
 Auto-generated from all feature plans. Last updated: 2026-04-22
 
 ## Active Technologies
+- Python 3.12 + FastAPI security dependencies, Auth0 JWT validation, Pydantic
+  Settings, SQLAlchemy 2.x, Alembic, PostgreSQL auth metadata, pytest,
+  pytest-asyncio, httpx, Ruff, mypy, uv (002-platform-auth-access)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -32,6 +35,9 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 002-platform-auth-access: Planned Auth0-backed authentication,
+  dependency-based authorization, deterministic local principals, support
+  overrides, access-decision auditing, and delegated-credential linkage.
 
 - 001-platform-foundation: Added the platform foundation plan, operational
   placeholder API contract, modular service layout, PostgreSQL-backed durability
