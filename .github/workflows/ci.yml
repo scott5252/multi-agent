@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: ["main", "codex/**", "001-platform-foundation"]
+    branches: ["main", "codex/**", "001-platform-foundation", "002-platform-auth-access"]
   pull_request:
 
 jobs:
@@ -17,4 +17,5 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy src
+      - run: uv run pytest tests/contract/test_access_control_contract.py tests/integration/api/test_auth_routes.py tests/integration/auth/test_support_overrides.py --no-cov
       - run: uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90

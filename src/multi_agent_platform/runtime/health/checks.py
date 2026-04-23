@@ -22,6 +22,21 @@ async def check_configuration(container: Container) -> DependencyHealthCheck:
     )
 
 
+async def check_auth_configuration(container: Container) -> DependencyHealthCheck:
+    if container.auth_failure_detail is not None:
+        return DependencyHealthCheck(
+            name="auth",
+            required=True,
+            status=DependencyStatus.UNAVAILABLE,
+            detail=container.auth_failure_detail,
+        )
+    return DependencyHealthCheck(
+        name="auth",
+        required=True,
+        status=DependencyStatus.READY,
+    )
+
+
 async def check_database(container: Container) -> DependencyHealthCheck:
     try:
         async with container.engine.begin() as connection:

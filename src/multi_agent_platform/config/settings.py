@@ -3,9 +3,12 @@ from __future__ import annotations
 from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from multi_agent_platform.auth.principal import AuthMode
 
 
 class AppEnvironment(StrEnum):
@@ -32,6 +35,16 @@ class StorageProviderKind(StrEnum):
     S3 = "s3"
 
 
+class LocalPrincipalCatalogEntry(BaseModel):
+    catalog_key: str
+    display_name: str
+    tenant_id: UUID | None = None
+    org_id: str | None = None
+    role_codes: tuple[str, ...] = Field(default_factory=tuple)
+    permission_codes: tuple[str, ...] = Field(default_factory=tuple)
+    enabled: bool = True
+
+
 class ProcessProfile(BaseModel):
     process_role: ProcessRole
     required_dependencies: tuple[str, ...]
@@ -52,7 +65,19 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     log_level: str = "INFO"
-    auth_enabled: bool = False
+    auth_mode: AuthMode = AuthMode.LOCAL_PRINCIPAL
+
+    auth0_domain: str | None = None
+    auth0_issuer: str | None = None
+    auth0_audience: str | None = None
+    auth0_algorithms: tuple[str, ...] = ("RS256",)
+    auth0_required_org_claim: bool = True
+    auth0_jwks_path: str = "/.well-known/jwks.json"
+
+    local_principal_header: str = "X-Local-Principal"
+    local_principal_catalog_json: dict[str, LocalPrincipalCatalogEntry] = Field(
+        default_factory=dict
+    )
 
     database_url: str = "sqlite+aiosqlite:///./.data/multi_agent_platform.db"
     database_echo: bool = False
@@ -77,6 +102,27 @@ class Settings(BaseSettings):
     commit_sha: str = "dev"
     build_time: str = "1970-01-01T00:00:00+00:00"
 
+    @model_validator(mode="after")
+    def validate_auth_configuration(self) -> Settings:
+        if self.auth_mode is AuthMode.AUTH0:
+            required = {
+                "auth0_domain": self.auth0_domain,
+                "auth0_issuer": self.auth0_issuer,
+                "auth0_audience": self.auth0_audience,
+            }
+            missing = sorted(name for name, value in required.items() if not value)
+            if missing:
+                joined = ", ".join(missing)
+                raise ValueError(
+                    f"auth0 mode requires the following settings: {joined}"
+                )
+        elif self.app_env is AppEnvironment.PRODUCTION:
+            raise ValueError("local_principal auth mode is not allowed in production")
+
+        if not self.local_principal_header.startswith("X-"):
+            raise ValueError("local_principal_header must be an X- prefixed header")
+        return self
+
     @cached_property
     def database_migration_url(self) -> str:
         if self.database_url.startswith("sqlite+aiosqlite:///"):
@@ -84,11 +130,23 @@ class Settings(BaseSettings):
         return self.database_url
 
     @cached_property
+    def auth0_jwks_url(self) -> str | None:
+        if self.auth0_domain is None:
+            return None
+        return f"https://{self.auth0_domain.rstrip('/')}{self.auth0_jwks_path}"
+
+    @cached_property
     def profiles(self) -> dict[ProcessRole, ProcessProfile]:
         return {
             ProcessRole.API: ProcessProfile(
                 process_role=ProcessRole.API,
-                required_dependencies=("config", "database", "migrations", "worker"),
+                required_dependencies=(
+                    "config",
+                    "auth",
+                    "database",
+                    "migrations",
+                    "worker",
+                ),
                 readiness_policy="strict",
                 scope_type="platform",
             ),

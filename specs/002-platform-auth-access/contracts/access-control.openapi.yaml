@@ -1,0 +1,393 @@
+openapi: 3.1.0
+info:
+  title: Platform Access Control API
+  version: 0.2.0
+  summary: Principal context, role-grant, and support-override contracts
+  x-policy-version: 2026-04-22
+servers:
+  - url: http://localhost:8000
+paths:
+  /auth/me:
+    get:
+      summary: Return the resolved principal context for the current caller
+      operationId: getResolvedPrincipal
+      tags: [auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Resolved principal context for an authenticated caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalContextResponse'
+        '401':
+          description: Caller could not be authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Caller was authenticated but not authorized for this surface
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Access control dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/tenant-context/{tenant_id}:
+    get:
+      summary: Validate tenant-scoped access for the current principal
+      operationId: getTenantContextAccess
+      tags: [auth]
+      security:
+        - bearerAuth: []
+      x-required-classification: tenant_user
+      parameters:
+        - name: tenant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tenant-scoped access metadata for the current principal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalContextResponse'
+        '401':
+          description: Caller could not be authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Caller was authenticated but not authorized for this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Target tenant could not be resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Access control dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /admin/tenants/{tenant_id}/role-grants:
+    get:
+      summary: List tenant-scoped role assignments for a tenant admin
+      operationId: listTenantRoleGrants
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      x-required-classification: tenant_admin
+      parameters:
+        - name: tenant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tenant-scoped role assignments for the requested tenant
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleGrantResponse'
+        '403':
+          description: Caller lacks tenant-admin privileges for this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Target tenant could not be resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /admin/role-grants:
+    post:
+      summary: Create or update a role grant
+      operationId: upsertRoleGrant
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      x-required-classification: platform_admin
+      responses:
+        '201':
+          description: Role grant created or updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleGrantResponse'
+        '400':
+          description: Invalid grant payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Caller lacks platform-admin privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleGrantUpsertRequest'
+  /admin/support-overrides:
+    post:
+      summary: Request tenant-specific support override access
+      operationId: createSupportOverride
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      x-required-classification: platform_admin
+      responses:
+        '201':
+          description: Support override request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportOverrideResponse'
+        '403':
+          description: Caller lacks platform-admin privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportOverrideCreateRequest'
+  /admin/support-overrides/{support_override_request_id}/approve:
+    post:
+      summary: Approve a pending support override request
+      operationId: approveSupportOverride
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      x-required-classification: platform_admin
+      parameters:
+        - name: support_override_request_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Support override approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportOverrideResponse'
+        '403':
+          description: Caller is not allowed to approve this request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    PrincipalContextResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - principal_id
+        - auth_mode
+        - auth_provider
+        - role_codes
+        - permission_codes
+        - scope_type
+      properties:
+        principal_id:
+          type: string
+        auth_mode:
+          type: string
+          enum: [auth0, local_principal]
+        auth_provider:
+          type: string
+          enum: [auth0, local_principal]
+        tenant_id:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        org_id:
+          type:
+            - string
+            - 'null'
+        role_codes:
+          type: array
+          items:
+            type: string
+        permission_codes:
+          type: array
+          items:
+            type: string
+        scope_type:
+          type: string
+          enum: [platform, tenant]
+        support_override_request_id:
+          type:
+            - string
+            - 'null'
+          format: uuid
+    RoleGrantUpsertRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - principal_id
+        - role_code
+        - scope_type
+      properties:
+        principal_id:
+          type: string
+        role_code:
+          type: string
+          enum: [tenant_user, tenant_admin, platform_admin]
+        scope_type:
+          type: string
+          enum: [platform, tenant]
+        tenant_id:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        expires_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+    RoleGrantResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - role_grant_id
+        - principal_id
+        - role_code
+        - scope_type
+        - status
+      properties:
+        role_grant_id:
+          type: string
+          format: uuid
+        principal_id:
+          type: string
+        role_code:
+          type: string
+          enum: [tenant_user, tenant_admin, platform_admin]
+        scope_type:
+          type: string
+          enum: [platform, tenant]
+        tenant_id:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        status:
+          type: string
+          enum: [active, revoked, expired]
+    SupportOverrideCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - target_tenant_id
+        - justification
+      properties:
+        target_tenant_id:
+          type: string
+          format: uuid
+        justification:
+          type: string
+          minLength: 10
+        expires_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+    SupportOverrideResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - support_override_request_id
+        - requester_principal_id
+        - target_tenant_id
+        - justification
+        - status
+        - requested_at
+      properties:
+        support_override_request_id:
+          type: string
+          format: uuid
+        requester_principal_id:
+          type: string
+        approver_principal_id:
+          type:
+            - string
+            - 'null'
+        target_tenant_id:
+          type: string
+          format: uuid
+        justification:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected, expired, revoked]
+        requested_at:
+          type: string
+          format: date-time
+        decided_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        expires_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, trace_id]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        trace_id:
+          type: string
