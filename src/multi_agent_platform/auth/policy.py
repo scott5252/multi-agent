@@ -109,6 +109,30 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="save_workflow_draft",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "POST:/admin/workflows/drafts/{workflow_draft_id}/validate": ProtectedSurface(
+        surface_key="POST:/admin/workflows/drafts/{workflow_draft_id}/validate",
+        requested_action="validate_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/workflows/drafts/{workflow_draft_id}/publish": ProtectedSurface(
+        surface_key="POST:/admin/workflows/drafts/{workflow_draft_id}/publish",
+        requested_action="publish_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/workflows/versions/{workflow_version_bundle_id}": ProtectedSurface(
+        surface_key="GET:/admin/workflows/versions/{workflow_version_bundle_id}",
+        requested_action="read_workflow_version",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/workflows/versions/{workflow_version_bundle_id}/sharing-grants"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/workflows/versions/{workflow_version_bundle_id}/sharing-grants"
+        ),
+        requested_action="create_workflow_sharing_grant",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
     "GET:/admin/workflows/ui": ProtectedSurface(
         surface_key="GET:/admin/workflows/ui",
         requested_action="render_workflow_registry_ui",
@@ -117,6 +141,13 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
     ("GET:/admin/workflows/drafts/{workflow_draft_id}/editor"): ProtectedSurface(
         surface_key="GET:/admin/workflows/drafts/{workflow_draft_id}/editor",
         requested_action="render_workflow_draft_editor_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/workflows/versions/{workflow_version_bundle_id}/detail"
+    ): ProtectedSurface(
+        surface_key="GET:/admin/workflows/versions/{workflow_version_bundle_id}/detail",
+        requested_action="render_workflow_version_detail_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
 }

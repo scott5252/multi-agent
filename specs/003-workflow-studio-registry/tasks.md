@@ -112,19 +112,19 @@ the latest revision.
 
 > Write these tests first and ensure they fail before implementation.
 
-- [ ] T019 [P] [US2] Add unit tests for contract compatibility, exact skill-version checks, subworkflow reference rules, join-policy rules, and approval-gate validation in `tests/unit/admin/test_validation.py`
-- [ ] T039 [P] [US2] Add unit and contract tests proving workflow drafts and published bundles reject embedded secret values, delegated credential identifiers, and non-reference tool or credential payloads in `tests/unit/admin/test_validation.py`, `tests/unit/api/test_workflow_registry_schemas.py`, `tests/contract/test_workflow_registry_contract.py`, and `tests/integration/api/test_admin_workflows_api.py`
-- [ ] T020 [P] [US2] Add contract and integration tests for validation endpoint responses and blocking-versus-advisory findings in `tests/contract/test_workflow_registry_contract.py` and `tests/integration/api/test_admin_workflows_api.py`
-- [ ] T021 [US2] Add integration tests for validation panel rendering, field-level findings, and invalid-draft UX in `tests/integration/api/test_admin_workflow_ui.py`
+- [X] T019 [P] [US2] Add unit tests for contract compatibility, exact skill-version checks, subworkflow reference rules, join-policy rules, and approval-gate validation in `tests/unit/admin/test_validation.py`
+- [X] T039 [P] [US2] Add unit and contract tests proving workflow drafts and published bundles reject embedded secret values, delegated credential identifiers, and non-reference tool or credential payloads in `tests/unit/admin/test_validation.py`, `tests/unit/api/test_workflow_registry_schemas.py`, `tests/contract/test_workflow_registry_contract.py`, and `tests/integration/api/test_admin_workflows_api.py`
+- [X] T020 [P] [US2] Add contract and integration tests for validation endpoint responses and blocking-versus-advisory findings in `tests/contract/test_workflow_registry_contract.py` and `tests/integration/api/test_admin_workflows_api.py`
+- [X] T021 [US2] Add integration tests for validation panel rendering, field-level findings, and invalid-draft UX in `tests/integration/api/test_admin_workflow_ui.py`
 
 ### Implementation for User Story 2
 
-- [ ] T022 [P] [US2] Implement structural and compatibility validation for contracts, roles, and exact skill bindings in `src/multi_agent_platform/admin/workflow_registry/validation.py`, `src/multi_agent_platform/admin/workflow_registry/service.py`, and `src/multi_agent_platform/api/schemas/workflow_registry.py`
-- [ ] T023 [P] [US2] Implement subworkflow, join-policy, approval-gate, and sharing-grant validation rules in `src/multi_agent_platform/admin/workflow_registry/validation.py`, `src/multi_agent_platform/admin/workflow_registry/sharing.py`, and `src/multi_agent_platform/db/repositories/workflow_registry.py`
-- [ ] T040 [P] [US2] Implement schema, validation, and publish-compilation guards that allow only approved skill-version and tool-policy references and reject secret-like fields or delegated credential references in `src/multi_agent_platform/api/schemas/workflow_registry.py`, `src/multi_agent_platform/admin/workflow_registry/validation.py`, `src/multi_agent_platform/admin/workflow_registry/compiler.py`, and `src/multi_agent_platform/api/routers/admin_workflows.py`
-- [ ] T024 [US2] Implement validation APIs and UI feedback surfaces in `src/multi_agent_platform/api/routers/admin_workflows.py`, `src/multi_agent_platform/api/ui/admin_workflows.py`, `src/multi_agent_platform/web_admin/templates/workflows/components/validation_panel.html`, and `src/multi_agent_platform/web_admin/static/workflow_studio.js`
-- [ ] T025 [US2] Persist validation results and add audit and metrics for validation runs in `src/multi_agent_platform/db/models/workflow_registry.py`, `src/multi_agent_platform/db/repositories/workflow_registry.py`, `src/multi_agent_platform/audit/service.py`, and `src/multi_agent_platform/observability/metrics.py`
-- [ ] T026 [US2] Enforce publish-readiness guards against stale revisions and superseded validation results in `src/multi_agent_platform/admin/workflow_registry/service.py`, `src/multi_agent_platform/api/routers/admin_workflows.py`, and `src/multi_agent_platform/auth/policy.py`
+- [X] T022 [P] [US2] Implement structural and compatibility validation for contracts, roles, and exact skill bindings in `src/multi_agent_platform/admin/workflow_registry/validation.py`, `src/multi_agent_platform/admin/workflow_registry/service.py`, and `src/multi_agent_platform/api/schemas/workflow_registry.py`
+- [X] T023 [P] [US2] Implement subworkflow, join-policy, approval-gate, and sharing-grant validation rules in `src/multi_agent_platform/admin/workflow_registry/validation.py`, `src/multi_agent_platform/admin/workflow_registry/sharing.py`, and `src/multi_agent_platform/db/repositories/workflow_registry.py`
+- [X] T040 [P] [US2] Implement schema, validation, and publish-compilation guards that allow only approved skill-version and tool-policy references and reject secret-like fields or delegated credential references in `src/multi_agent_platform/api/schemas/workflow_registry.py`, `src/multi_agent_platform/admin/workflow_registry/validation.py`, `src/multi_agent_platform/admin/workflow_registry/compiler.py`, and `src/multi_agent_platform/api/routers/admin_workflows.py`
+- [X] T024 [US2] Implement validation APIs and UI feedback surfaces in `src/multi_agent_platform/api/routers/admin_workflows.py`, `src/multi_agent_platform/api/ui/admin_workflows.py`, `src/multi_agent_platform/web_admin/templates/workflows/components/validation_panel.html`, and `src/multi_agent_platform/web_admin/static/workflow_studio.js`
+- [X] T025 [US2] Persist validation results and add audit and metrics for validation runs in `src/multi_agent_platform/db/models/workflow_registry.py`, `src/multi_agent_platform/db/repositories/workflow_registry.py`, `src/multi_agent_platform/audit/service.py`, and `src/multi_agent_platform/observability/metrics.py`
+- [X] T026 [US2] Enforce publish-readiness guards against stale revisions and superseded validation results in `src/multi_agent_platform/admin/workflow_registry/service.py`, `src/multi_agent_platform/api/routers/admin_workflows.py`, and `src/multi_agent_platform/auth/policy.py`
 
 **Checkpoint**: User Stories 1 and 2 are both independently functional.
 
@@ -147,16 +147,16 @@ unauthorized cross-tenant reuse attempts are rejected.
 
 > Write these tests first and ensure they fail before implementation.
 
-- [ ] T027 [P] [US3] Add unit tests for publish compilation, exact dependency pinning, run-version bundle blueprint generation, and sharing-grant policy in `tests/unit/admin/test_compiler.py`, `tests/unit/admin/test_workflow_registry_service.py`, and `tests/unit/runtime/test_versioning.py`
-- [ ] T028 [P] [US3] Add contract and integration tests for publish, version detail, sharing-grant, and successor-draft flows in `tests/contract/test_workflow_registry_contract.py`, `tests/integration/api/test_admin_workflows_api.py`, and `tests/integration/admin/test_publish_compilation.py`
-- [ ] T029 [US3] Add failure-path integration tests for stale validation, immutable version protection, artifact persistence recovery, and cross-tenant reuse rules in `tests/integration/admin/test_publish_compilation.py` and `tests/integration/runtime/test_artifact_storage.py`
+- [X] T027 [P] [US3] Add unit tests for publish compilation, exact dependency pinning, run-version bundle blueprint generation, and sharing-grant policy in `tests/unit/admin/test_compiler.py`, `tests/unit/admin/test_workflow_registry_service.py`, and `tests/unit/runtime/test_versioning.py`
+- [X] T028 [P] [US3] Add contract and integration tests for publish, version detail, sharing-grant, and successor-draft flows in `tests/contract/test_workflow_registry_contract.py`, `tests/integration/api/test_admin_workflows_api.py`, and `tests/integration/admin/test_publish_compilation.py`
+- [X] T029 [US3] Add failure-path integration tests for stale validation, immutable version protection, artifact persistence recovery, and cross-tenant reuse rules in `tests/integration/admin/test_publish_compilation.py` and `tests/integration/runtime/test_artifact_storage.py`
 
 ### Implementation for User Story 3
 
-- [ ] T030 [P] [US3] Implement publish compilation and exact pinning for skills, contracts, subworkflows, join policies, approval metadata, and run-version bundle blueprints in `src/multi_agent_platform/admin/workflow_registry/compiler.py`, `src/multi_agent_platform/runtime/workflow_bundle.py`, and `src/multi_agent_platform/runtime/versioning.py`
-- [ ] T031 [P] [US3] Implement publish, lineage sequencing, successor-draft creation, and sharing-grant services in `src/multi_agent_platform/admin/service.py`, `src/multi_agent_platform/admin/workflow_registry/service.py`, `src/multi_agent_platform/admin/workflow_registry/sharing.py`, and `src/multi_agent_platform/db/repositories/workflow_registry.py`
-- [ ] T032 [US3] Implement publish, version-detail, registry-status, and sharing-grant APIs plus version-detail UI in `src/multi_agent_platform/api/routers/admin_workflows.py`, `src/multi_agent_platform/api/routers/admin_workflow_ui.py`, `src/multi_agent_platform/api/ui/admin_workflows.py`, `src/multi_agent_platform/web_admin/templates/workflows/version_detail.html`, `src/multi_agent_platform/web_admin/templates/workflows/index.html`, and `src/multi_agent_platform/web_admin/static/workflow_studio.js`
-- [ ] T033 [US3] Add publish, registry-status, and sharing audit and observability plus compiled-bundle artifact writes in `src/multi_agent_platform/admin/workflow_registry/service.py`, `src/multi_agent_platform/audit/service.py`, `src/multi_agent_platform/observability/logging.py`, `src/multi_agent_platform/observability/tracing.py`, and `src/multi_agent_platform/storage/base.py`
+- [X] T030 [P] [US3] Implement publish compilation and exact pinning for skills, contracts, subworkflows, join policies, approval metadata, and run-version bundle blueprints in `src/multi_agent_platform/admin/workflow_registry/compiler.py`, `src/multi_agent_platform/runtime/workflow_bundle.py`, and `src/multi_agent_platform/runtime/versioning.py`
+- [X] T031 [P] [US3] Implement publish, lineage sequencing, successor-draft creation, and sharing-grant services in `src/multi_agent_platform/admin/service.py`, `src/multi_agent_platform/admin/workflow_registry/service.py`, `src/multi_agent_platform/admin/workflow_registry/sharing.py`, and `src/multi_agent_platform/db/repositories/workflow_registry.py`
+- [X] T032 [US3] Implement publish, version-detail, registry-status, and sharing-grant APIs plus version-detail UI in `src/multi_agent_platform/api/routers/admin_workflows.py`, `src/multi_agent_platform/api/routers/admin_workflow_ui.py`, `src/multi_agent_platform/api/ui/admin_workflows.py`, `src/multi_agent_platform/web_admin/templates/workflows/version_detail.html`, `src/multi_agent_platform/web_admin/templates/workflows/index.html`, and `src/multi_agent_platform/web_admin/static/workflow_studio.js`
+- [X] T033 [US3] Add publish, registry-status, and sharing audit and observability plus compiled-bundle artifact writes in `src/multi_agent_platform/admin/workflow_registry/service.py`, `src/multi_agent_platform/audit/service.py`, `src/multi_agent_platform/observability/logging.py`, `src/multi_agent_platform/observability/tracing.py`, and `src/multi_agent_platform/storage/base.py`
 
 **Checkpoint**: All user stories are independently functional and publishable.
 
@@ -167,11 +167,11 @@ unauthorized cross-tenant reuse attempts are rejected.
 **Purpose**: Finish documentation, review guidance, CI, and validation work
 that spans multiple stories.
 
-- [ ] T034 [P] Update workflow studio documentation and operator guidance in `docs/admin-workflow-studio.md`, `docs/quickstart.md`, and `docs/foundation-runbook.md`
-- [ ] T035 Update repository README and feature quickstart usage and testing instructions in `README.md` and `specs/003-workflow-studio-registry/quickstart.md`
-- [ ] T036 [P] Update PR review guidance and required evidence for workflow-registry changes in `.github/pull_request_template.md` and `docs/admin-workflow-studio.md`
-- [ ] T037 [P] Update CI and contract-validation guidance for workflow-registry API and UI coverage in `.github/workflows/ci.yml`, `specs/003-workflow-studio-registry/contracts/workflow-registry.openapi.yaml`, and `specs/003-workflow-studio-registry/contracts/admin-workflow-ui.md`
-- [ ] T038 Record coverage, timed quickstart validation, latency evidence for draft load or list, draft save, validation, publish, and registry detail retrieval, sampled validation-message clarity review for blocked drafts, manual UI verification, and security-review outcomes in `specs/003-workflow-studio-registry/quickstart.md`, `docs/admin-workflow-studio.md`, and `README.md`
+- [X] T034 [P] Update workflow studio documentation and operator guidance in `docs/admin-workflow-studio.md`, `docs/quickstart.md`, and `docs/foundation-runbook.md`
+- [X] T035 Update repository README and feature quickstart usage and testing instructions in `README.md` and `specs/003-workflow-studio-registry/quickstart.md`
+- [X] T036 [P] Update PR review guidance and required evidence for workflow-registry changes in `.github/pull_request_template.md` and `docs/admin-workflow-studio.md`
+- [X] T037 [P] Update CI and contract-validation guidance for workflow-registry API and UI coverage in `.github/workflows/ci.yml`, `specs/003-workflow-studio-registry/contracts/workflow-registry.openapi.yaml`, and `specs/003-workflow-studio-registry/contracts/admin-workflow-ui.md`
+- [X] T038 Record coverage, timed quickstart validation, latency evidence for draft load or list, draft save, validation, publish, and registry detail retrieval, sampled validation-message clarity review for blocked drafts, manual UI verification, and security-review outcomes in `specs/003-workflow-studio-registry/quickstart.md`, `docs/admin-workflow-studio.md`, and `README.md`
 
 ---
 

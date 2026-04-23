@@ -167,6 +167,7 @@ class WorkflowDraftCreateRequest(BaseModel):
     slug: str
     display_name: str
     description: str | None = None
+    created_from_version_id: UUID | None = None
     document: WorkflowDraftDocument
 
 
@@ -197,7 +198,9 @@ class WorkflowDraftResponse(BaseModel):
     workflow_kind: WorkflowKind
     status: str
     current_revision_number: int
+    created_from_version_id: UUID | None = None
     latest_revision: WorkflowDraftRevisionResponse
+    latest_validation: ValidationResultResponse | None = None
     document: WorkflowDraftDocument
     updated_at: datetime
 
@@ -225,6 +228,7 @@ class ValidationFindingResponse(BaseModel):
     category: str
     severity: str
     message: str
+    field_path: str | None = None
 
 
 class ValidationResultResponse(BaseModel):
@@ -242,10 +246,21 @@ class PublishDraftRequest(BaseModel):
 class WorkflowVersionResponse(BaseModel):
     workflow_version_bundle_id: UUID
     workflow_lineage_id: UUID
+    slug: str
     display_name: str
     display_version: str
     scope_type: WorkflowScopeType
     tenant_id: UUID | None = None
+    status: str
+    compiled_bundle_digest: str | None = None
+    compiler_version: str | None = None
+    published_from_draft_id: UUID
+    published_from_revision_id: UUID
+    previous_version_bundle_id: UUID | None = None
+    compiled_bundle_artifact_id: UUID | None = None
+    summary_json: dict[str, object] = Field(default_factory=dict)
+    sharing_grants: list[RegistrySharingGrantResponse] = Field(default_factory=list)
+    published_at: datetime
 
 
 class RegistrySharingGrantCreateRequest(BaseModel):
@@ -257,3 +272,4 @@ class RegistrySharingGrantResponse(BaseModel):
     workflow_version_bundle_id: UUID
     grantee_tenant_id: UUID
     status: str
+    created_at: datetime

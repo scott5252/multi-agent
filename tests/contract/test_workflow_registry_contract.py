@@ -155,3 +155,69 @@ def test_workflow_registry_create_fetch_and_save_contract(
     assert fetched.status_code == 200
     assert saved.status_code == 200
     assert saved.json()["current_revision_number"] == 2
+
+
+def test_workflow_registry_validate_publish_and_sharing_contract(
+    tmp_path, monkeypatch
+) -> None:
+    tenant_id = uuid4()
+    configure_env(monkeypatch, tmp_path, tenant_id)
+    app = create_app()
+    with TestClient(app) as client:
+        created = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "contract-publish",
+                "display_name": "Contract Publish",
+                "document": {
+                    **sample_document(),
+                    "workflow_key": "contract-publish",
+                    "display_name": "Contract Publish",
+                },
+            },
+        )
+        draft_id = created.json()["workflow_draft_id"]
+        validated = client.post(
+            f"/admin/workflows/drafts/{draft_id}/validate",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        published = client.post(
+            f"/admin/workflows/drafts/{draft_id}/publish",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "validation_result_id": validated.json()["validation_result_id"],
+            },
+        )
+        version_id = published.json()["workflow_version_bundle_id"]
+        detail = client.get(
+            f"/admin/workflows/versions/{version_id}",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        shared = client.post(
+            f"/admin/workflows/versions/{version_id}/sharing-grants",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={"grantee_tenant_id": str(tenant_id)},
+        )
+
+    assert validated.status_code == 200
+    assert {
+        "validation_result_id",
+        "status",
+        "blocking_issue_count",
+        "advisory_issue_count",
+        "findings",
+    }.issubset(validated.json())
+    assert published.status_code == 201
+    assert {
+        "workflow_version_bundle_id",
+        "workflow_lineage_id",
+        "display_name",
+        "display_version",
+        "scope_type",
+        "compiled_bundle_digest",
+    }.issubset(published.json())
+    assert detail.status_code == 200
+    assert shared.status_code == 201

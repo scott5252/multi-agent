@@ -11,7 +11,7 @@
         <div>
           <p class="eyebrow">Admin Workflow Studio</p>
           <h1>Workflow Registry</h1>
-          <p class="subhead">Drafts are listed here before later validation and publish phases are wired in.</p>
+          <p class="subhead">Drafts and immutable published versions are listed here, with scope-aware visibility for tenant and platform assets.</p>
         </div>
         <form id="create-draft-form" class="card create-card" method="post" action="{{ page.create_endpoint }}">
           <h2>Create Draft</h2>
@@ -43,8 +43,13 @@
               </div>
               <h2>{{ item.display_name }}</h2>
               <p class="mono">{{ item.slug }}</p>
-              <p>Current revision: {{ item.current_revision_number }}</p>
-              <a class="button-link" href="{{ page.editor_base_path }}/{{ item.workflow_draft_id }}/editor">Open Draft</a>
+              {% if item.visibility_status.value == "draft" %}
+                <p>Current revision: {{ item.current_revision_number }}</p>
+                <a class="button-link" href="{{ page.editor_base_path }}/{{ item.workflow_draft_id }}/editor">Open Draft</a>
+              {% else %}
+                <p>Published version: {{ item.display_version }}</p>
+                <a class="button-link" href="{{ page.version_base_path }}/{{ item.workflow_version_bundle_id }}/detail">View Version</a>
+              {% endif %}
             </article>
           {% endfor %}
         {% else %}

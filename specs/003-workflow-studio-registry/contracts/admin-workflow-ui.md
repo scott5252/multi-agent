@@ -10,9 +10,9 @@ field-help modal behavior so backend and UI work stay aligned.
 
 | Route | Purpose | Data Source |
 |---|---|---|
-| `/admin/workflows` | Registry list for drafts and published versions | `GET /admin/workflows` |
-| `/admin/workflows/drafts/{workflow_draft_id}` | Draft editor for the active draft revision | `GET /admin/workflows/drafts/{workflow_draft_id}` + `GET /admin/workflows/editor-metadata` |
-| `/admin/workflows/versions/{workflow_version_bundle_id}` | Published version detail and dependency view | `GET /admin/workflows/versions/{workflow_version_bundle_id}` |
+| `/admin/workflows/ui` | Registry list for drafts and published versions | `GET /admin/workflows` |
+| `/admin/workflows/drafts/{workflow_draft_id}/editor` | Draft editor for the active draft revision | `GET /admin/workflows/drafts/{workflow_draft_id}` + `GET /admin/workflows/editor-metadata` |
+| `/admin/workflows/versions/{workflow_version_bundle_id}/detail` | Published version detail and dependency view | `GET /admin/workflows/versions/{workflow_version_bundle_id}` |
 
 ## Registry Page
 
@@ -162,10 +162,17 @@ Required interaction behavior:
   - blocking findings count
   - advisory findings count
   - grouped findings by category
+  - field-targeted messages when available
 - Publish panel with:
   - publish-eligible indicator
   - immutable publish explanation
   - action button disabled until latest validation passes
+
+## Local QA Access
+
+- In `AUTH_MODE=local_principal`, browser access is expected to start from
+  `/auth/local-login?redirect_to=/admin/workflows/ui`.
+- The UI should not require a browser header extension for local QA.
 
 ## Conflict And Error UX
 

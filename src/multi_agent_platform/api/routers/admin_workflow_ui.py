@@ -16,10 +16,12 @@ from multi_agent_platform.api.deps import ContainerDep, get_session
 from multi_agent_platform.api.ui.admin_workflows import (
     build_workflow_draft_editor_model,
     build_workflow_registry_page_model,
+    build_workflow_version_detail_model,
 )
 from multi_agent_platform.audit.service import AuditService
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
+from multi_agent_platform.db.repositories.artifact import ArtifactRepository
 from multi_agent_platform.db.repositories.audit import AuditRepository
 from multi_agent_platform.db.repositories.workflow_registry import (
     WorkflowRegistryRepository,
@@ -35,7 +37,10 @@ def _build_admin_service(
 ) -> AdminService:
     return AdminService(
         workflow_repository=WorkflowRegistryRepository(session),
+        artifact_repository=ArtifactRepository(session),
         audit_service=AuditService(AuditRepository(session)),
+        storage_provider=container.storage_provider,
+        workflow_registry_artifact_prefix=container.settings.workflow_registry_artifact_prefix,
         logger=container.logger,
     )
 
@@ -95,6 +100,39 @@ async def workflow_draft_editor_page(
     return container.workflow_ui_templates.TemplateResponse(
         request,
         "workflows/draft_editor.html",
+        {
+            "page": page,
+            "principal": principal,
+        },
+    )
+
+
+@router.get(
+    "/admin/workflows/versions/{workflow_version_bundle_id}/detail",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def workflow_version_detail_page(
+    workflow_version_bundle_id: UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    service = _build_admin_service(session, container)
+    try:
+        version = await service.get_workflow_version(
+            principal=principal,
+            workflow_version_bundle_id=workflow_version_bundle_id,
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    page = build_workflow_version_detail_model(version=version)
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "workflows/version_detail.html",
         {
             "page": page,
             "principal": principal,

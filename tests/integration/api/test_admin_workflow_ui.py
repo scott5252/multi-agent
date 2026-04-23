@@ -140,3 +140,169 @@ def test_registry_and_editor_pages_render_help_metadata(tmp_path, monkeypatch) -
     assert "validation-panel-placeholder" in editor.text
     assert conflict.status_code == 200
     assert "newer draft revision already exists" in conflict.text
+
+
+def test_editor_and_version_pages_render_validation_and_publish_details(
+    tmp_path, monkeypatch
+) -> None:
+    tenant_id = uuid4()
+    configure_env(monkeypatch, tmp_path, tenant_id)
+    monkeypatch.setenv(
+        "LOCAL_PRINCIPAL_CATALOG_JSON",
+        json.dumps(
+            {
+                "tenant-admin-acme": {
+                    "catalog_key": "tenant-admin-acme",
+                    "display_name": "Tenant Admin",
+                    "tenant_id": str(tenant_id),
+                    "org_id": "org-acme",
+                    "role_codes": ["tenant_user", "tenant_admin"],
+                    "permission_codes": ["tenant:read", "tenant:admin"],
+                },
+                "platform-admin": {
+                    "catalog_key": "platform-admin",
+                    "display_name": "Platform Admin",
+                    "role_codes": ["platform_admin"],
+                    "permission_codes": ["tenant:admin"],
+                },
+            }
+        ),
+    )
+    app = create_app()
+    with TestClient(app) as client:
+        created = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "ui-publish",
+                "display_name": "UI Publish",
+                "document": {
+                    **sample_document(),
+                    "workflow_key": "ui-publish",
+                    "display_name": "UI Publish",
+                },
+            },
+        )
+        draft_id = created.json()["workflow_draft_id"]
+        validated = client.post(
+            f"/admin/workflows/drafts/{draft_id}/validate",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        published = client.post(
+            f"/admin/workflows/drafts/{draft_id}/publish",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "validation_result_id": validated.json()["validation_result_id"],
+            },
+        )
+        version_id = published.json()["workflow_version_bundle_id"]
+        editor = client.get(
+            f"/admin/workflows/drafts/{draft_id}/editor",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        registry = client.get(
+            "/admin/workflows/ui",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        version = client.get(
+            f"/admin/workflows/versions/{version_id}/detail",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+
+    assert editor.status_code == 200
+    assert "Validation passed" in editor.text
+    assert "Publish ready" in editor.text
+    assert registry.status_code == 200
+    assert "View Version" in registry.text
+    assert version.status_code == 200
+    assert "Compiled Bundle Digest" in version.text
+    assert "v1" in version.text
+
+
+def test_editor_and_version_pages_return_expected_404s(tmp_path, monkeypatch) -> None:
+    tenant_id = uuid4()
+    configure_env(monkeypatch, tmp_path, tenant_id)
+    app = create_app()
+    with TestClient(app) as client:
+        missing_editor = client.get(
+            f"/admin/workflows/drafts/{uuid4()}/editor",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+        missing_version = client.get(
+            f"/admin/workflows/versions/{uuid4()}/detail",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+
+    assert missing_editor.status_code == 404
+    assert missing_version.status_code == 404
+
+
+def test_editor_and_version_pages_enforce_scope_visibility(
+    tmp_path, monkeypatch
+) -> None:
+    tenant_id = uuid4()
+    configure_env(monkeypatch, tmp_path, tenant_id)
+    monkeypatch.setenv(
+        "LOCAL_PRINCIPAL_CATALOG_JSON",
+        json.dumps(
+            {
+                "tenant-admin-acme": {
+                    "catalog_key": "tenant-admin-acme",
+                    "display_name": "Tenant Admin",
+                    "tenant_id": str(tenant_id),
+                    "org_id": "org-acme",
+                    "role_codes": ["tenant_user", "tenant_admin"],
+                    "permission_codes": ["tenant:read", "tenant:admin"],
+                },
+                "platform-admin": {
+                    "catalog_key": "platform-admin",
+                    "display_name": "Platform Admin",
+                    "role_codes": ["platform_admin"],
+                    "permission_codes": ["tenant:admin"],
+                },
+            }
+        ),
+    )
+    app = create_app()
+    with TestClient(app) as client:
+        created = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "ui-forbidden",
+                "display_name": "UI Forbidden",
+                "document": {
+                    **sample_document(),
+                    "workflow_key": "ui-forbidden",
+                    "display_name": "UI Forbidden",
+                },
+            },
+        )
+        draft_id = created.json()["workflow_draft_id"]
+        validated = client.post(
+            f"/admin/workflows/drafts/{draft_id}/validate",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        published = client.post(
+            f"/admin/workflows/drafts/{draft_id}/publish",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "validation_result_id": validated.json()["validation_result_id"],
+            },
+        )
+        version_id = published.json()["workflow_version_bundle_id"]
+        forbidden_editor = client.get(
+            f"/admin/workflows/drafts/{draft_id}/editor",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+        forbidden_version = client.get(
+            f"/admin/workflows/versions/{version_id}/detail",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+
+    assert forbidden_editor.status_code == 403
+    assert forbidden_version.status_code == 403

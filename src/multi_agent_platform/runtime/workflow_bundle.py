@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from hashlib import sha256
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from multi_agent_platform.storage.base import build_artifact_key
 
@@ -13,6 +13,11 @@ class CompiledWorkflowBundle(BaseModel):
     source_revision_sha256: str
     workflow_key: str
     workflow_kind: str
+    version_sequence: int = 0
+    display_version: str = ""
+    compiler_version: str = ""
+    dependencies: dict[str, object] = Field(default_factory=dict)
+    run_version_blueprint: dict[str, object] = Field(default_factory=dict)
     document: dict[str, object]
 
     def canonical_json(self) -> bytes:

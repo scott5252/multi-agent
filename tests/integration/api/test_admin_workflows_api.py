@@ -189,3 +189,272 @@ def test_platform_admin_can_create_platform_scoped_workflow(
 
     assert created.status_code == 201
     assert created.json()["scope_type"] == "platform"
+
+
+def test_admin_workflows_api_validation_publish_and_version_detail(
+    tmp_path, monkeypatch
+) -> None:
+    tenant_id = uuid4()
+    configure_env(monkeypatch, tmp_path, tenant_id)
+    app = create_app()
+    with TestClient(app) as client:
+        created = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "platform-publish",
+                "display_name": "Platform Publish",
+                "document": sample_document("platform-publish"),
+            },
+        )
+        draft_id = created.json()["workflow_draft_id"]
+        validated = client.post(
+            f"/admin/workflows/drafts/{draft_id}/validate",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        published = client.post(
+            f"/admin/workflows/drafts/{draft_id}/publish",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "validation_result_id": validated.json()["validation_result_id"],
+            },
+        )
+        version_id = published.json()["workflow_version_bundle_id"]
+        detail = client.get(
+            f"/admin/workflows/versions/{version_id}",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        shared = client.post(
+            f"/admin/workflows/versions/{version_id}/sharing-grants",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={"grantee_tenant_id": str(tenant_id)},
+        )
+
+    assert validated.status_code == 200
+    assert validated.json()["status"] == "passed"
+    assert published.status_code == 201
+    assert published.json()["display_version"] == "v1"
+    assert detail.status_code == 200
+    assert detail.json()["compiled_bundle_digest"]
+    assert shared.status_code == 201
+
+
+def test_validation_and_publish_reject_stale_or_invalid_states(
+    tmp_path, monkeypatch
+) -> None:
+    tenant_id = uuid4()
+    configure_env(monkeypatch, tmp_path, tenant_id)
+    app = create_app()
+    with TestClient(app) as client:
+        invalid = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+            json={
+                "scope_type": "tenant",
+                "workflow_kind": "main_workflow",
+                "slug": "invalid-flow",
+                "display_name": "Invalid Flow",
+                "document": {
+                    **sample_document("invalid-flow"),
+                    "roles": [
+                        {
+                            **sample_document("invalid-flow")["roles"][0],
+                            "skill_bindings": [
+                                {
+                                    "binding_key": "triage-binding",
+                                    "skill_slug": "triage-agent",
+                                    "skill_version": "latest",
+                                    "purpose": "Assess",
+                                }
+                            ],
+                        }
+                    ],
+                },
+            },
+        )
+        draft_id = invalid.json()["workflow_draft_id"]
+        failed_validation = client.post(
+            f"/admin/workflows/drafts/{draft_id}/validate",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+        fixed = client.put(
+            f"/admin/workflows/drafts/{draft_id}",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+            json={
+                "base_revision_number": 1,
+                "display_name": "Invalid Flow Fixed",
+                "document": {
+                    **sample_document("invalid-flow"),
+                    "display_name": "Invalid Flow Fixed",
+                },
+            },
+        )
+        stale_publish = client.post(
+            f"/admin/workflows/drafts/{draft_id}/publish",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+            json={
+                "validation_result_id": failed_validation.json()[
+                    "validation_result_id"
+                ],
+            },
+        )
+
+    assert failed_validation.status_code == 200
+    assert failed_validation.json()["status"] == "failed"
+    assert failed_validation.json()["blocking_issue_count"] >= 1
+    assert fixed.status_code == 200
+    assert stale_publish.status_code == 409
+
+
+def test_workflow_version_and_sharing_routes_enforce_scope_and_not_found(
+    tmp_path, monkeypatch
+) -> None:
+    tenant_id = uuid4()
+    configure_env(monkeypatch, tmp_path, tenant_id)
+    app = create_app()
+    with TestClient(app) as client:
+        missing_version = client.get(
+            f"/admin/workflows/versions/{uuid4()}",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        missing_validation = client.post(
+            f"/admin/workflows/drafts/{uuid4()}/validate",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        created = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "forbidden-share",
+                "display_name": "Forbidden Share",
+                "document": sample_document("forbidden-share"),
+            },
+        )
+        draft_id = created.json()["workflow_draft_id"]
+        validated = client.post(
+            f"/admin/workflows/drafts/{draft_id}/validate",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        published = client.post(
+            f"/admin/workflows/drafts/{draft_id}/publish",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "validation_result_id": validated.json()["validation_result_id"],
+            },
+        )
+        forbidden_share = client.post(
+            f"/admin/workflows/versions/{published.json()['workflow_version_bundle_id']}/sharing-grants",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+            json={"grantee_tenant_id": str(tenant_id)},
+        )
+
+    assert missing_version.status_code == 404
+    assert missing_validation.status_code == 404
+    assert forbidden_share.status_code == 403
+
+
+def test_workflow_route_error_branches_return_expected_status_codes(
+    tmp_path, monkeypatch
+) -> None:
+    tenant_id = uuid4()
+    configure_env(monkeypatch, tmp_path, tenant_id)
+    app = create_app()
+    with TestClient(app) as client:
+        metadata = client.get(
+            "/admin/workflows/editor-metadata",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+        platform_created = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "access-denied",
+                "display_name": "Access Denied",
+                "document": sample_document("access-denied"),
+            },
+        )
+        draft_id = platform_created.json()["workflow_draft_id"]
+        duplicate = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "access-denied",
+                "display_name": "Access Denied",
+                "document": sample_document("access-denied"),
+            },
+        )
+        forbidden_create = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+            json={
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "tenant-forbidden",
+                "display_name": "Tenant Forbidden",
+                "document": sample_document("tenant-forbidden"),
+            },
+        )
+        forbidden_fetch = client.get(
+            f"/admin/workflows/drafts/{draft_id}",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+        forbidden_validate = client.post(
+            f"/admin/workflows/drafts/{draft_id}/validate",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+        forbidden_publish = client.post(
+            f"/admin/workflows/drafts/{draft_id}/publish",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+            json={"validation_result_id": str(uuid4())},
+        )
+        version_created = client.post(
+            "/admin/workflows",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "version-denied",
+                "display_name": "Version Denied",
+                "document": sample_document("version-denied"),
+            },
+        )
+        version_draft_id = version_created.json()["workflow_draft_id"]
+        version_validation = client.post(
+            f"/admin/workflows/drafts/{version_draft_id}/validate",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+        version_publish = client.post(
+            f"/admin/workflows/drafts/{version_draft_id}/publish",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={
+                "validation_result_id": version_validation.json()[
+                    "validation_result_id"
+                ],
+            },
+        )
+        forbidden_version_detail = client.get(
+            f"/admin/workflows/versions/{version_publish.json()['workflow_version_bundle_id']}",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+        missing_share = client.post(
+            f"/admin/workflows/versions/{uuid4()}/sharing-grants",
+            headers={"X-Local-Principal": "platform-admin"},
+            json={"grantee_tenant_id": str(tenant_id)},
+        )
+
+    assert metadata.status_code == 200
+    assert duplicate.status_code == 409
+    assert forbidden_create.status_code == 403
+    assert forbidden_fetch.status_code == 403
+    assert forbidden_validate.status_code == 403
+    assert forbidden_publish.status_code == 403
+    assert forbidden_version_detail.status_code == 403
+    assert missing_share.status_code == 404

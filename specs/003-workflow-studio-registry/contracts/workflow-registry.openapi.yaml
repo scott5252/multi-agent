@@ -133,6 +133,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Compiled bundle artifact persistence failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /admin/workflows/versions/{workflow_version_bundle_id}:
     get:
       summary: Retrieve immutable published workflow version metadata
@@ -287,6 +293,8 @@ components:
       required:
         - workflow_lineage_id
         - workflow_draft_id
+        - slug
+        - display_name
         - scope_type
         - status
         - current_revision_number
@@ -298,6 +306,13 @@ components:
         workflow_draft_id:
           type: string
           format: uuid
+        slug:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+          nullable: true
         scope_type:
           type: string
           enum: [tenant, platform]
@@ -310,10 +325,41 @@ components:
           enum: [active, published_source, archived, replaced]
         current_revision_number:
           type: integer
+        created_from_version_id:
+          type: string
+          format: uuid
+          nullable: true
+        latest_revision:
+          $ref: "#/components/schemas/WorkflowDraftRevisionResponse"
         latest_validation:
           $ref: "#/components/schemas/ValidationResultResponse"
         document:
           $ref: "#/components/schemas/WorkflowDraftDocument"
+        updated_at:
+          type: string
+          format: date-time
+
+    WorkflowDraftRevisionResponse:
+      type: object
+      required:
+        - workflow_draft_revision_id
+        - revision_number
+        - document_sha256
+        - created_at
+      properties:
+        workflow_draft_revision_id:
+          type: string
+          format: uuid
+        revision_number:
+          type: integer
+        document_sha256:
+          type: string
+        change_summary:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
 
     ValidationResultResponse:
       type: object
@@ -375,11 +421,14 @@ components:
       required:
         - workflow_version_bundle_id
         - workflow_lineage_id
-        - scope_type
-        - version_sequence
+        - slug
+        - display_name
         - display_version
+        - scope_type
         - status
-        - compiled_bundle_digest
+        - published_from_draft_id
+        - published_from_revision_id
+        - published_at
       properties:
         workflow_version_bundle_id:
           type: string
@@ -387,6 +436,10 @@ components:
         workflow_lineage_id:
           type: string
           format: uuid
+        slug:
+          type: string
+        display_name:
+          type: string
         scope_type:
           type: string
           enum: [tenant, platform]
@@ -394,8 +447,6 @@ components:
           type: string
           format: uuid
           nullable: true
-        version_sequence:
-          type: integer
         display_version:
           type: string
         status:
@@ -403,22 +454,34 @@ components:
           enum: [published, hidden, retired]
         compiled_bundle_digest:
           type: string
-        dependency_manifest:
+          nullable: true
+        compiler_version:
+          type: string
+          nullable: true
+        published_from_draft_id:
+          type: string
+          format: uuid
+        published_from_revision_id:
+          type: string
+          format: uuid
+        previous_version_bundle_id:
+          type: string
+          format: uuid
+          nullable: true
+        compiled_bundle_artifact_id:
+          type: string
+          format: uuid
+          nullable: true
+        summary_json:
+          type: object
+          additionalProperties: true
+        sharing_grants:
           type: array
           items:
-            $ref: "#/components/schemas/BundleDependency"
-
-    BundleDependency:
-      type: object
-      required: [dependency_type, key, pinned_version]
-      properties:
-        dependency_type:
+            $ref: "#/components/schemas/RegistrySharingGrantResponse"
+        published_at:
           type: string
-          enum: [subworkflow, contract_schema, skill_version, prompt_template, model_configuration, tool_policy]
-        key:
-          type: string
-        pinned_version:
-          type: string
+          format: date-time
 
     RegistrySharingGrantCreateRequest:
       type: object
@@ -448,6 +511,9 @@ components:
         status:
           type: string
           enum: [active, revoked]
+        created_at:
+          type: string
+          format: date-time
 
     WorkflowEditorMetadataResponse:
       type: object

@@ -6,8 +6,10 @@ from multi_agent_platform.api.schemas.workflow_editor import (
     WorkflowEditorMetadataResponse,
 )
 from multi_agent_platform.api.schemas.workflow_registry import (
+    ValidationResultResponse,
     WorkflowDraftResponse,
     WorkflowRegistryItem,
+    WorkflowVersionResponse,
 )
 
 
@@ -15,6 +17,7 @@ class WorkflowRegistryPageModel(BaseModel):
     items: list[WorkflowRegistryItem] = Field(default_factory=list)
     create_endpoint: str = "/admin/workflows"
     editor_base_path: str = "/admin/workflows/drafts"
+    version_base_path: str = "/admin/workflows/versions"
 
 
 class WorkflowDraftEditorPageModel(BaseModel):
@@ -22,7 +25,14 @@ class WorkflowDraftEditorPageModel(BaseModel):
     metadata: WorkflowEditorMetadataResponse
     document_json: str
     save_endpoint: str
+    publish_endpoint: str
+    publish_ready: bool = False
+    latest_validation: ValidationResultResponse | None = None
     conflict_message: str | None = None
+
+
+class WorkflowVersionDetailPageModel(BaseModel):
+    version: WorkflowVersionResponse
 
 
 def build_workflow_registry_page_model(
@@ -42,5 +52,18 @@ def build_workflow_draft_editor_model(
         metadata=metadata,
         document_json=draft.document.model_dump_json(indent=2),
         save_endpoint=f"/admin/workflows/drafts/{draft.workflow_draft_id}",
+        publish_endpoint=f"/admin/workflows/drafts/{draft.workflow_draft_id}/publish",
+        publish_ready=(
+            draft.latest_validation is not None
+            and draft.latest_validation.status == "passed"
+        ),
+        latest_validation=draft.latest_validation,
         conflict_message=conflict_message,
     )
+
+
+def build_workflow_version_detail_model(
+    *,
+    version: WorkflowVersionResponse,
+) -> WorkflowVersionDetailPageModel:
+    return WorkflowVersionDetailPageModel(version=version)
