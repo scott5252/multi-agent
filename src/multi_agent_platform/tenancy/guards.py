@@ -54,3 +54,7 @@ def can_view_workflow_scope(
     if scope_type == ScopeType.PLATFORM.value:
         return "platform_admin" in principal.role_codes
     return principal.tenant_id == tenant_id and "tenant_admin" in principal.role_codes
+
+
+def ensure_runtime_tenant_access(scope: ScopeContext, tenant_id: UUID | None) -> None:
+    ensure_scope_matches(scope, tenant_id)

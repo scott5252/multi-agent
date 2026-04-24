@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 
 import multi_agent_platform.workers.main as workers_main
@@ -39,3 +40,83 @@ async def test_worker_main_builds_container_and_disposes(monkeypatch) -> None:
     await workers_main.main(iterations=1)
 
     assert events == ["build_container", "build_bootstrap", "run_loop", "dispose"]
+
+
+async def test_worker_main_treats_cancellation_as_graceful_shutdown(
+    monkeypatch,
+) -> None:
+    events: list[str] = []
+
+    class FakeContainer:
+        async def dispose(self) -> None:
+            events.append("dispose")
+
+    fake_container = FakeContainer()
+
+    def fake_build_container(_settings):
+        events.append("build_container")
+        return fake_container
+
+    def fake_build_worker_bootstrap(container):
+        assert container is fake_container
+        events.append("build_bootstrap")
+        return SimpleNamespace(container=container, worker_id="worker-1")
+
+    async def fake_run_polling_loop(_bootstrap, iterations=None):
+        assert iterations is None
+        events.append("cancelled")
+        raise asyncio.CancelledError
+
+    monkeypatch.setattr(workers_main, "build_container", fake_build_container)
+    monkeypatch.setattr(
+        workers_main,
+        "build_worker_bootstrap",
+        fake_build_worker_bootstrap,
+    )
+    monkeypatch.setattr(workers_main, "run_polling_loop", fake_run_polling_loop)
+
+    await workers_main.main()
+
+    assert events == ["build_container", "build_bootstrap", "cancelled", "dispose"]
+
+
+async def test_orchestration_main_treats_cancellation_as_graceful_shutdown(
+    monkeypatch,
+) -> None:
+    events: list[str] = []
+
+    class FakeContainer:
+        async def dispose(self) -> None:
+            events.append("dispose")
+
+    fake_container = FakeContainer()
+
+    def fake_build_container(_settings):
+        events.append("build_container")
+        return fake_container
+
+    def fake_build_worker_bootstrap(container):
+        assert container is fake_container
+        events.append("build_bootstrap")
+        return SimpleNamespace(container=container, worker_id="worker-1")
+
+    async def fake_run_orchestration_polling_loop(_bootstrap, iterations=None):
+        assert iterations is None
+        events.append("cancelled")
+        raise asyncio.CancelledError
+
+    monkeypatch.setattr(workers_main, "build_container", fake_build_container)
+    monkeypatch.setattr(
+        workers_main,
+        "build_worker_bootstrap",
+        fake_build_worker_bootstrap,
+    )
+    monkeypatch.setattr(
+        workers_main,
+        "run_orchestration_polling_loop",
+        fake_run_orchestration_polling_loop,
+    )
+
+    await workers_main.orchestration_main()
+
+    assert events == ["build_container", "build_bootstrap", "cancelled", "dispose"]

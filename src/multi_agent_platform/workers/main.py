@@ -5,7 +5,10 @@ import asyncio
 from multi_agent_platform.bootstrap.container import build_container
 from multi_agent_platform.bootstrap.worker import build_worker_bootstrap
 from multi_agent_platform.config.settings import Settings
-from multi_agent_platform.workers.loops import run_polling_loop
+from multi_agent_platform.workers.loops import (
+    run_orchestration_polling_loop,
+    run_polling_loop,
+)
 
 
 async def main(iterations: int | None = None) -> None:
@@ -13,6 +16,19 @@ async def main(iterations: int | None = None) -> None:
     bootstrap = build_worker_bootstrap(container)
     try:
         await run_polling_loop(bootstrap, iterations=iterations)
+    except asyncio.CancelledError:
+        return
+    finally:
+        await container.dispose()
+
+
+async def orchestration_main(iterations: int | None = None) -> None:
+    container = build_container(Settings())
+    bootstrap = build_worker_bootstrap(container)
+    try:
+        await run_orchestration_polling_loop(bootstrap, iterations=iterations)
+    except asyncio.CancelledError:
+        return
     finally:
         await container.dispose()
 

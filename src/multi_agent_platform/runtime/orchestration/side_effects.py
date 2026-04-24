@@ -1,0 +1,87 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import StrEnum
+from uuid import UUID, uuid4
+
+from multi_agent_platform.runtime.orchestration.contracts import sha256_digest
+from multi_agent_platform.runtime.orchestration.models import now_utc
+
+
+class SideEffectStatus(StrEnum):
+    PLANNED = "planned"
+    EXECUTING = "executing"
+    APPLIED = "applied"
+    FAILED = "failed"
+    COMPENSATING = "compensating"
+    COMPENSATED = "compensated"
+    CANCELLED = "cancelled"
+
+
+class SideEffectKind(StrEnum):
+    TOOL_CALL = "tool_call"
+    HTTP_REQUEST = "http_request"
+    FILE_WRITE = "file_write"
+    EMAIL = "email"
+    OBJECT_STORAGE_WRITE = "object_storage_write"
+    DELEGATED_ACTION = "delegated_action"
+    COMPENSATION = "compensation"
+
+
+def make_idempotency_key(
+    *,
+    tenant_id: UUID | None,
+    workflow_run_id: UUID,
+    run_step_id: UUID,
+    bundle_digest: str,
+    operation_kind: str,
+    attempt: int,
+) -> str:
+    return sha256_digest(
+        {
+            "tenant_id": str(tenant_id) if tenant_id else None,
+            "workflow_run_id": str(workflow_run_id),
+            "run_step_id": str(run_step_id),
+            "bundle_digest": bundle_digest,
+            "operation_kind": operation_kind,
+            "attempt": attempt,
+        }
+    )
+
+
+@dataclass(slots=True)
+class SideEffectIntent:
+    tenant_id: UUID | None
+    workflow_run_id: UUID
+    run_step_id: UUID
+    intent_kind: SideEffectKind
+    idempotency_key: str
+    tool_policy_ref: str
+    delegated_credential_ref: str | None = None
+    request_ref: dict[str, object] | None = None
+    result_ref: dict[str, object] | None = None
+    error_ref: dict[str, object] | None = None
+    compensation_hook_ref: str | None = None
+    side_effect_intent_id: UUID = field(default_factory=uuid4)
+    status: SideEffectStatus = SideEffectStatus.PLANNED
+    created_at: datetime = field(default_factory=now_utc)
+    executed_at: datetime | None = None
+    updated_at: datetime = field(default_factory=now_utc)
+
+    def begin(self) -> None:
+        if self.status is not SideEffectStatus.PLANNED:
+            raise ValueError("only planned side effects can execute")
+        self.status = SideEffectStatus.EXECUTING
+        self.updated_at = now_utc()
+
+    def mark_applied(self, result_ref: dict[str, object]) -> None:
+        self.status = SideEffectStatus.APPLIED
+        self.result_ref = result_ref
+        self.executed_at = now_utc()
+        self.updated_at = self.executed_at
+
+    def reuse_applied_result(self) -> dict[str, object] | None:
+        if self.status is SideEffectStatus.APPLIED:
+            return self.result_ref
+        return None

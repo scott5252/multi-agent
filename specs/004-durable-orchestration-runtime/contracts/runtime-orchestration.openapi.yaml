@@ -1,0 +1,490 @@
+openapi: 3.1.0
+info:
+  title: Durable Orchestration Runtime API
+  version: 0.1.0
+  description: >
+    API for starting published workflow runs, inspecting durable runtime state,
+    approving or rejecting approval gates, cancelling runs, and viewing lineage,
+    handoffs, and side-effect intent evidence.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /runtime/runs:
+    post:
+      summary: Start a published workflow run
+      tags: [runtime]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunStartRequest"
+      responses:
+        "202":
+          description: Run accepted and durably initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunStartResponse"
+        "400":
+          description: Invalid request or missing published workflow
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not authorized for workflow or tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /runtime/runs/{workflow_run_id}:
+    get:
+      summary: Inspect workflow run status
+      tags: [runtime]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+      responses:
+        "200":
+          description: Run status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunStatusResponse"
+        "404":
+          description: Run not found in caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /runtime/runs/{workflow_run_id}/cancel:
+    post:
+      summary: Cancel an active or paused workflow run
+      tags: [runtime]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunCancelRequest"
+      responses:
+        "202":
+          description: Cancellation accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunStatusResponse"
+        "409":
+          description: Run is already terminal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /runtime/runs/{workflow_run_id}/timeline:
+    get:
+      summary: List timeline events for a run
+      tags: [runtime]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Timeline events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunTimelineResponse"
+  /runtime/runs/{workflow_run_id}/lineage:
+    get:
+      summary: Retrieve parent-child run lineage
+      tags: [runtime]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+      responses:
+        "200":
+          description: Lineage tree
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunLineageResponse"
+  /runtime/runs/{workflow_run_id}/approval-gates:
+    get:
+      summary: List approval gates for a run
+      tags: [runtime]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, approved, rejected, cancelled, timed_out]
+      responses:
+        "200":
+          description: Approval gates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalGateListResponse"
+  /runtime/runs/{workflow_run_id}/approval-gates/{approval_gate_id}/decisions:
+    post:
+      summary: Approve, reject, or cancel an approval gate
+      tags: [runtime]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+        - $ref: "#/components/parameters/ApprovalGateId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalDecisionRequest"
+      responses:
+        "202":
+          description: Decision accepted and resume work queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalDecisionResponse"
+        "409":
+          description: Gate already decided or decision conflicts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /runtime/runs/{workflow_run_id}/handoffs:
+    get:
+      summary: List handoff envelopes for a run
+      tags: [runtime]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+      responses:
+        "200":
+          description: Handoff envelopes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HandoffEnvelopeListResponse"
+  /runtime/runs/{workflow_run_id}/side-effects:
+    get:
+      summary: List side-effect intents for a run
+      tags: [runtime]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+      responses:
+        "200":
+          description: Side-effect intents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SideEffectIntentListResponse"
+components:
+  parameters:
+    WorkflowRunId:
+      in: path
+      name: workflow_run_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ApprovalGateId:
+      in: path
+      name: approval_gate_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+    RunStartRequest:
+      type: object
+      required: [published_workflow_version_id, input]
+      properties:
+        published_workflow_version_id:
+          type: string
+          format: uuid
+        idempotency_key:
+          type: string
+          minLength: 8
+          maxLength: 128
+        input:
+          type: object
+          additionalProperties: true
+        trace_id:
+          type: string
+        delegated_credential_refs:
+          type: array
+          items:
+            type: string
+    RunStartResponse:
+      type: object
+      required: [workflow_run_id, status, run_bundle_id, bundle_digest]
+      properties:
+        workflow_run_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/RunStatus"
+        run_bundle_id:
+          type: string
+          format: uuid
+        bundle_digest:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    RunStatus:
+      type: string
+      enum:
+        - pending
+        - runnable
+        - running
+        - paused
+        - waiting_child
+        - recoverable_failed
+        - cancelling
+        - cancelled
+        - succeeded
+        - failed
+    RunStatusResponse:
+      type: object
+      required:
+        - workflow_run_id
+        - tenant_id
+        - status
+        - bundle_digest
+        - created_at
+      properties:
+        workflow_run_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+        status:
+          $ref: "#/components/schemas/RunStatus"
+        active_step_key:
+          type: string
+        pause_reason:
+          type: string
+        bundle_digest:
+          type: string
+        current_checkpoint_id:
+          type: string
+        terminal_reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+    RunCancelRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+        child_cancellation_override:
+          type: string
+          enum: [use_workflow_policy, cascade_cancel, leave_running, pause_children]
+          default: use_workflow_policy
+    RunTimelineResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineEvent"
+    TimelineEvent:
+      type: object
+      required: [event_id, event_type, severity, created_at]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+        severity:
+          type: string
+          enum: [debug, info, warning, error]
+        run_step_id:
+          type: string
+          format: uuid
+        payload:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+    RunLineageResponse:
+      type: object
+      required: [root_run_id, nodes, edges]
+      properties:
+        root_run_id:
+          type: string
+          format: uuid
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/LineageNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/LineageEdge"
+    LineageNode:
+      type: object
+      required: [workflow_run_id, status, bundle_digest]
+      properties:
+        workflow_run_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/RunStatus"
+        bundle_digest:
+          type: string
+    LineageEdge:
+      type: object
+      required: [parent_run_id, child_run_id, relationship_reason]
+      properties:
+        parent_run_id:
+          type: string
+          format: uuid
+        child_run_id:
+          type: string
+          format: uuid
+        parent_step_id:
+          type: string
+          format: uuid
+        relationship_reason:
+          type: string
+    ApprovalGateListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApprovalGate"
+    ApprovalGate:
+      type: object
+      required: [approval_gate_id, status, requested_action, created_at]
+      properties:
+        approval_gate_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, approved, rejected, cancelled, timed_out]
+        requested_action:
+          type: object
+          additionalProperties: true
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    ApprovalDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approve, reject, cancel]
+        decision_payload:
+          type: object
+          additionalProperties: true
+        reason:
+          type: string
+    ApprovalDecisionResponse:
+      type: object
+      required: [approval_decision_id, accepted, workflow_run_id]
+      properties:
+        approval_decision_id:
+          type: string
+          format: uuid
+        accepted:
+          type: boolean
+        workflow_run_id:
+          type: string
+          format: uuid
+        resume_queued:
+          type: boolean
+    HandoffEnvelopeListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HandoffEnvelope"
+    HandoffEnvelope:
+      type: object
+      required: [handoff_envelope_id, sender_step_id, receiver_step_key, status]
+      properties:
+        handoff_envelope_id:
+          type: string
+          format: uuid
+        sender_step_id:
+          type: string
+          format: uuid
+        receiver_step_key:
+          type: string
+        contract_digest:
+          type: string
+        status:
+          type: string
+          enum: [created, validating, valid, invalid, consumed, failed_route_applied]
+        validation_errors:
+          type: array
+          items:
+            type: string
+    SideEffectIntentListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SideEffectIntent"
+    SideEffectIntent:
+      type: object
+      required: [side_effect_intent_id, intent_kind, status, idempotency_key]
+      properties:
+        side_effect_intent_id:
+          type: string
+          format: uuid
+        intent_kind:
+          type: string
+        status:
+          type: string
+          enum: [planned, executing, applied, failed, compensating, compensated, cancelled]
+        idempotency_key:
+          type: string
+        tool_policy_ref:
+          type: string
+        compensation_hook_ref:
+          type: string

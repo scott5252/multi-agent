@@ -52,6 +52,10 @@ def make_settings(tmp_path: Path) -> Settings:
             },
         },
         database_url=f"sqlite+aiosqlite:///{database_path}",
+        runtime_worker_poll_interval_seconds=0.1,
+        runtime_worker_lease_seconds=120,
+        runtime_checkpoint_retention_days=90,
+        runtime_payload_ref_retention_days=90,
         filesystem_storage_root=tmp_path / "artifacts",
         static_secrets_json={"example/api-key": "fixture-secret"},
     )

@@ -1,0 +1,1077 @@
+{
+  "info": {
+    "_postman_id": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+    "name": "Spec 004 Durable Orchestration Runtime QA",
+    "description": "Postman Collection v2.1 for specs/004-durable-orchestration-runtime/qa004.md. Set published_workflow_version_id after publishing the QA workflow, or run the Published Workflow Prep folder first.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const defaults = {",
+          "  base_url: 'http://127.0.0.1:8000',",
+          "  tenant_admin_principal: 'tenant-admin-acme',",
+          "  tenant_user_principal: 'tenant-user-acme',",
+          "  globex_admin_principal: 'tenant-admin-globex',",
+          "  platform_admin_principal: 'platform-admin',",
+          "  acme_tenant_id: '11111111-1111-1111-1111-111111111111',",
+          "  globex_tenant_id: '22222222-2222-2222-2222-222222222222'",
+          "};",
+          "Object.entries(defaults).forEach(([key, value]) => {",
+          "  if (!pm.environment.get(key) && !pm.collectionVariables.get(key)) {",
+          "    pm.collectionVariables.set(key, value);",
+          "  }",
+          "});"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function maybeJson() {",
+          "  const body = pm.response.text();",
+          "  if (!body) { return null; }",
+          "  try { return pm.response.json(); } catch (error) { return null; }",
+          "}",
+          "function saveVariable(key, value) {",
+          "  if (value === undefined || value === null || value === '') { return; }",
+          "  const stringValue = String(value);",
+          "  pm.environment.set(key, stringValue);",
+          "  pm.collectionVariables.set(key, stringValue);",
+          "}",
+          "saveVariable('last_status_code', pm.response.code);",
+          "saveVariable('last_response_body', pm.response.text());",
+          "const json = maybeJson();",
+          "if (json && json.detail) {",
+          "  saveVariable('last_response_detail', typeof json.detail === 'string' ? json.detail : JSON.stringify(json.detail));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "tenant_admin_principal",
+      "value": "tenant-admin-acme",
+      "type": "string"
+    },
+    {
+      "key": "tenant_user_principal",
+      "value": "tenant-user-acme",
+      "type": "string"
+    },
+    {
+      "key": "globex_admin_principal",
+      "value": "tenant-admin-globex",
+      "type": "string"
+    },
+    {
+      "key": "platform_admin_principal",
+      "value": "platform-admin",
+      "type": "string"
+    },
+    {
+      "key": "acme_tenant_id",
+      "value": "11111111-1111-1111-1111-111111111111",
+      "type": "string"
+    },
+    {
+      "key": "globex_tenant_id",
+      "value": "22222222-2222-2222-2222-222222222222",
+      "type": "string"
+    },
+    {
+      "key": "workflow_draft_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "validation_result_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "published_workflow_version_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "compiled_bundle_digest",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "workflow_run_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "run_bundle_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bundle_digest",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contract_failure_run_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "approval_run_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "approval_gate_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subworkflow_run_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "last_status_code",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "last_response_body",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Published Workflow Prep",
+      "description": "Create, validate, publish, and inspect the QA workflow version used by runtime runs.",
+      "item": [
+        {
+          "name": "05.1 Create runtime QA draft",
+          "description": "Creates the tenant-scoped workflow draft used for Spec 004 runtime QA.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scope_type\": \"tenant\",\n  \"workflow_kind\": \"main_workflow\",\n  \"slug\": \"qa004-durable-demo\",\n  \"display_name\": \"QA004 Durable Demo\",\n  \"document\": {\n    \"workflow_key\": \"qa004-durable-demo\",\n    \"display_name\": \"QA004 Durable Demo\",\n    \"description\": \"Runtime QA workflow for durable execution checks.\",\n    \"workflow_kind\": \"main_workflow\",\n    \"entry_node_key\": \"triage-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"triage-role\",\n        \"display_name\": \"Triage Role\",\n        \"purpose\": \"Process the runtime QA input.\",\n        \"input_contract_key\": \"runtime-request\",\n        \"output_contract_key\": \"runtime-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"triage-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Handle deterministic QA execution.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"runtime-request\",\n        \"json_schema\": {\n          \"type\": \"object\",\n          \"required\": [\n            \"prompt\"\n          ],\n          \"properties\": {\n            \"prompt\": {\n              \"type\": \"string\"\n            },\n            \"mode\": {\n              \"type\": \"string\"\n            }\n          }\n        }\n      },\n      {\n        \"contract_key\": \"runtime-result\",\n        \"json_schema\": {\n          \"type\": \"object\",\n          \"required\": [\n            \"status\"\n          ],\n          \"properties\": {\n            \"status\": {\n              \"type\": \"string\"\n            },\n            \"summary\": {\n              \"type\": \"string\"\n            }\n          }\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"triage-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Triage\",\n        \"role_key\": \"triage-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/workflows",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "workflows"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is one of 201, 409', function () {",
+                  "  pm.expect([201,409]).to.include(pm.response.code);",
+                  "});",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "if (json.workflow_draft_id) { saveVariable('workflow_draft_id', json.workflow_draft_id); }",
+                  "pm.test('Draft id is available or slug already exists', function () {",
+                  "  pm.expect(Boolean(json.workflow_draft_id || json.detail)).to.equal(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.2 Validate runtime QA draft",
+          "description": "Validates the latest draft revision and stores validation_result_id.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/workflows/drafts/{{workflow_draft_id}}/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "workflows",
+                "drafts",
+                "{{workflow_draft_id}}",
+                "validate"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('validation_result_id', json.validation_result_id);",
+                  "pm.test('Validation passed', function () { pm.expect(json.status).to.equal('passed'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.3 Publish runtime QA draft",
+          "description": "Publishes the validated draft and stores published_workflow_version_id.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"validation_result_id\": \"{{validation_result_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/workflows/drafts/{{workflow_draft_id}}/publish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "workflows",
+                "drafts",
+                "{{workflow_draft_id}}",
+                "publish"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('published_workflow_version_id', json.workflow_version_bundle_id);",
+                  "saveVariable('compiled_bundle_digest', json.compiled_bundle_digest);",
+                  "pm.test('Published workflow version id saved', function () { pm.expect(json.workflow_version_bundle_id).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.4 Inspect published workflow version",
+          "description": "Confirms the published workflow version is visible to the Acme tenant admin.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/workflows/versions/{{published_workflow_version_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "workflows",
+                "versions",
+                "{{published_workflow_version_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Version detail returned', function () { pm.expect(pm.response.json().workflow_version_bundle_id).to.equal(pm.collectionVariables.get('published_workflow_version_id') || pm.environment.get('published_workflow_version_id')); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Durable Run Lifecycle",
+      "description": "Start, inspect, list timeline, list side effects, and cancel a durable workflow run.",
+      "item": [
+        {
+          "name": "08 Start durable workflow run",
+          "description": "Starts a published workflow run and stores workflow_run_id, run_bundle_id, and bundle_digest.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"published_workflow_version_id\": \"{{published_workflow_version_id}}\",\n  \"idempotency_key\": \"qa004-durable-run-001\",\n  \"input\": {\n    \"prompt\": \"Run the durable orchestration QA path\",\n    \"mode\": \"happy_path\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/runtime/runs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202', function () {",
+                  "  pm.response.to.have.status(202);",
+                  "});",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('workflow_run_id', json.workflow_run_id);",
+                  "saveVariable('run_bundle_id', json.run_bundle_id);",
+                  "saveVariable('bundle_digest', json.bundle_digest);",
+                  "pm.test('Run is accepted', function () { pm.expect(['pending', 'runnable']).to.include(json.status); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 Inspect workflow run",
+          "description": "Inspects the durable run status.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/runtime/runs/{{workflow_run_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs",
+                "{{workflow_run_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Run id matches variable', function () { pm.expect(pm.response.json().workflow_run_id).to.equal(pm.collectionVariables.get('workflow_run_id') || pm.environment.get('workflow_run_id')); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10 List timeline events",
+          "description": "Lists runtime timeline evidence for the run.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/runtime/runs/{{workflow_run_id}}/timeline?limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs",
+                "{{workflow_run_id}}",
+                "timeline"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Timeline response is list-shaped', function () { pm.expect(pm.response.json().items || []).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "14 List side-effect intents",
+          "description": "Lists side-effect intents for idempotency evidence.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/runtime/runs/{{workflow_run_id}}/side-effects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs",
+                "{{workflow_run_id}}",
+                "side-effects"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Side-effect response is list-shaped', function () { pm.expect(pm.response.json().items || []).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Optional Cancel workflow run",
+          "description": "Cancels the saved workflow run. Run this only after inspection checks that need an active run.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"QA cancellation check\",\n  \"child_cancellation_override\": \"use_workflow_policy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/runtime/runs/{{workflow_run_id}}/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs",
+                "{{workflow_run_id}}",
+                "cancel"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is one of 202, 409', function () {",
+                  "  pm.expect([202,409]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Cancel response is JSON', function () { pm.expect(pm.response.json()).to.be.an('object'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Contract-Gated Routing",
+      "description": "Start an invalid handoff run and list handoff envelopes. Current scaffold may return an empty items array.",
+      "item": [
+        {
+          "name": "15 Start invalid handoff run",
+          "description": "Starts a run with mode invalid_handoff and stores contract_failure_run_id.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"published_workflow_version_id\": \"{{published_workflow_version_id}}\",\n  \"idempotency_key\": \"qa004-contract-failure-001\",\n  \"input\": {\n    \"prompt\": \"Trigger invalid handoff payload\",\n    \"mode\": \"invalid_handoff\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/runtime/runs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202', function () {",
+                  "  pm.response.to.have.status(202);",
+                  "});",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('contract_failure_run_id', json.workflow_run_id);",
+                  "pm.test('Contract failure run id saved', function () { pm.expect(json.workflow_run_id).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "15 List handoff envelopes",
+          "description": "Lists handoff envelopes. For the current scaffold, {\"items\":[]} is expected.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/runtime/runs/{{contract_failure_run_id}}/handoffs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs",
+                "{{contract_failure_run_id}}",
+                "handoffs"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Handoff response is list-shaped', function () { pm.expect(pm.response.json().items || []).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Approval Pause Resume",
+      "description": "Start an approval-mode run, list gates, and submit a decision when an approval_gate_id exists.",
+      "item": [
+        {
+          "name": "17 Start approval run",
+          "description": "Starts a run with mode approval_required and stores approval_run_id.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"published_workflow_version_id\": \"{{published_workflow_version_id}}\",\n  \"idempotency_key\": \"qa004-approval-001\",\n  \"input\": {\n    \"prompt\": \"Pause for approval\",\n    \"mode\": \"approval_required\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/runtime/runs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202', function () {",
+                  "  pm.response.to.have.status(202);",
+                  "});",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('approval_run_id', json.workflow_run_id);",
+                  "pm.test('Approval run id saved', function () { pm.expect(json.workflow_run_id).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "17 List approval gates",
+          "description": "Lists approval gates. For the current scaffold, {\"items\":[]} is expected.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/runtime/runs/{{approval_run_id}}/approval-gates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs",
+                "{{approval_run_id}}",
+                "approval-gates"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "const gates = json.items || [];",
+                  "pm.test('Approval gates response is list-shaped', function () { pm.expect(gates).to.be.an('array'); });",
+                  "if (gates.length > 0) { saveVariable('approval_gate_id', gates[0].approval_gate_id || gates[0].id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "17 Approve approval gate",
+          "description": "Submits an approval decision. Requires approval_gate_id from the previous request once approval gates are implemented.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"approve\",\n  \"decision_payload\": {\n    \"approved\": true,\n    \"review_note\": \"QA approval\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/runtime/runs/{{approval_run_id}}/approval-gates/{{approval_gate_id}}/decisions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs",
+                "{{approval_run_id}}",
+                "approval-gates",
+                "{{approval_gate_id}}",
+                "decisions"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is one of 202, 404, 422', function () {",
+                  "  pm.expect([202,404,422]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Approval decision response is JSON', function () { pm.expect(pm.response.json()).to.be.an('object'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Subworkflow Lineage",
+      "description": "Start a subworkflow-mode run and inspect lineage.",
+      "item": [
+        {
+          "name": "18 Start subworkflow run",
+          "description": "Starts a run with mode subworkflow and stores subworkflow_run_id.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"published_workflow_version_id\": \"{{published_workflow_version_id}}\",\n  \"idempotency_key\": \"qa004-subworkflow-001\",\n  \"input\": {\n    \"prompt\": \"Run parent workflow with child\",\n    \"mode\": \"subworkflow\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/runtime/runs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202', function () {",
+                  "  pm.response.to.have.status(202);",
+                  "});",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('subworkflow_run_id', json.workflow_run_id);",
+                  "pm.test('Subworkflow run id saved', function () { pm.expect(json.workflow_run_id).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "18 Get lineage",
+          "description": "Gets parent-child lineage. Current scaffold may return empty nodes and edges.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{tenant_admin_principal}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/runtime/runs/{{subworkflow_run_id}}/lineage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs",
+                "{{subworkflow_run_id}}",
+                "lineage"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Lineage response has arrays', function () { const json = pm.response.json(); pm.expect(json.nodes || []).to.be.an('array'); pm.expect(json.edges || []).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authorization Guardrails",
+      "description": "Validate cross-tenant denial behavior.",
+      "item": [
+        {
+          "name": "19 Cross-tenant run inspection denial",
+          "description": "Attempts to inspect an Acme run using the Globex principal.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Local-Principal",
+                "value": "{{globex_admin_principal}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/runtime/runs/{{workflow_run_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "runtime",
+                "runs",
+                "{{workflow_run_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is one of 403, 404', function () {",
+                  "  pm.expect([403,404]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('No successful cross-tenant leak', function () { pm.expect(pm.response.code).to.not.equal(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

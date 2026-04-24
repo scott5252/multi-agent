@@ -99,6 +99,11 @@ class Settings(BaseSettings):
 
     worker_poll_interval_seconds: float = 0.1
     worker_lease_seconds: int = 60
+    runtime_worker_poll_interval_seconds: float = 0.1
+    runtime_worker_lease_seconds: int = 120
+    runtime_checkpoint_retention_days: int = 90
+    runtime_payload_ref_retention_days: int = 90
+    runtime_checkpointer_database_url: str | None = None
 
     commit_sha: str = "dev"
     build_time: str = "1970-01-01T00:00:00+00:00"
@@ -153,7 +158,7 @@ class Settings(BaseSettings):
             ),
             ProcessRole.WORKER: ProcessProfile(
                 process_role=ProcessRole.WORKER,
-                required_dependencies=("config", "database", "queue"),
+                required_dependencies=("config", "database", "queue", "runtime"),
                 readiness_policy="strict",
                 scope_type="platform",
             ),
@@ -180,6 +185,10 @@ class Settings(BaseSettings):
     @cached_property
     def workflow_registry_artifact_prefix(self) -> str:
         return "workflow-registry"
+
+    @cached_property
+    def runtime_checkpoint_database_url(self) -> str:
+        return self.runtime_checkpointer_database_url or self.database_url
 
     def ensure_directories(self) -> None:
         self.filesystem_storage_root.mkdir(parents=True, exist_ok=True)
