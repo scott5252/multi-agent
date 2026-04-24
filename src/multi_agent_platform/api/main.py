@@ -13,6 +13,7 @@ from multi_agent_platform.api.routers.admin_workflows import (
 )
 from multi_agent_platform.api.routers.auth import router as auth_router
 from multi_agent_platform.api.routers.ops import router as ops_router
+from multi_agent_platform.api.routers.runtime_runs import router as runtime_runs_router
 from multi_agent_platform.config.settings import Settings
 from multi_agent_platform.tenancy.middleware import TenancyMiddleware
 
@@ -30,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_access_router)
     app.include_router(admin_workflows_router)
     app.include_router(admin_workflow_ui_router)
+    app.include_router(runtime_runs_router)
     return app
 
 

@@ -150,6 +150,57 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_workflow_version_detail_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "POST:/runtime/runs": ProtectedSurface(
+        surface_key="POST:/runtime/runs",
+        requested_action="start_runtime_run",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/runtime/runs/{workflow_run_id}": ProtectedSurface(
+        surface_key="GET:/runtime/runs/{workflow_run_id}",
+        requested_action="inspect_runtime_run",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/runtime/runs/{workflow_run_id}/cancel": ProtectedSurface(
+        surface_key="POST:/runtime/runs/{workflow_run_id}/cancel",
+        requested_action="cancel_runtime_run",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/runtime/runs/{workflow_run_id}/timeline": ProtectedSurface(
+        surface_key="GET:/runtime/runs/{workflow_run_id}/timeline",
+        requested_action="read_runtime_timeline",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/runtime/runs/{workflow_run_id}/lineage": ProtectedSurface(
+        surface_key="GET:/runtime/runs/{workflow_run_id}/lineage",
+        requested_action="read_runtime_lineage",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/runtime/runs/{workflow_run_id}/approval-gates": ProtectedSurface(
+        surface_key="GET:/runtime/runs/{workflow_run_id}/approval-gates",
+        requested_action="list_runtime_approval_gates",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/runtime/runs/{workflow_run_id}/approval-gates/"
+        "{approval_gate_id}/decisions"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/runtime/runs/{workflow_run_id}/approval-gates/"
+            "{approval_gate_id}/decisions"
+        ),
+        requested_action="decide_runtime_approval_gate",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/runtime/runs/{workflow_run_id}/handoffs": ProtectedSurface(
+        surface_key="GET:/runtime/runs/{workflow_run_id}/handoffs",
+        requested_action="list_runtime_handoffs",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/runtime/runs/{workflow_run_id}/side-effects": ProtectedSurface(
+        surface_key="GET:/runtime/runs/{workflow_run_id}/side-effects",
+        requested_action="list_runtime_side_effects",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
 }
 
 

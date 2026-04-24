@@ -15,8 +15,9 @@ dependencies = [
   "greenlet>=3.2.0",
   "httpx>=0.28.0",
   "jinja2>=3.1.0",
-  "langchain>=0.3.0",
-  "langgraph>=0.3.0",
+  "langchain>=1.2.15",
+  "langgraph>=1.1.9",
+  "langgraph-checkpoint-postgres>=3.0.5",
   "prometheus-client>=0.23.0",
   "PyJWT>=2.10.0",
   "pydantic>=2.11.0",
@@ -47,6 +48,9 @@ packages = ["src/multi_agent_platform"]
 addopts = "--cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90"
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+  "performance: latency and performance validation tests",
+]
 
 [tool.coverage.run]
 branch = true

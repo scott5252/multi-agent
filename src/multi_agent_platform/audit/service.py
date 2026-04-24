@@ -59,3 +59,27 @@ class AuditService:
                 payload_redacted=payload_redacted,
             )
         )
+
+    async def record_runtime_event(
+        self,
+        *,
+        tenant_id: UUID | None,
+        scope_type: str,
+        action: str,
+        workflow_run_id: UUID,
+        trace_id: str,
+        payload_redacted: dict[str, str],
+    ) -> AuditEvent:
+        return await self.record(
+            AuditEventCreate(
+                tenant_id=tenant_id,
+                scope_type=scope_type,
+                actor_type=AuditActorType.SYSTEM,
+                actor_id="runtime",
+                action=action,
+                entity_type="workflow_run",
+                entity_id=str(workflow_run_id),
+                trace_id=trace_id,
+                payload_redacted=payload_redacted,
+            )
+        )
