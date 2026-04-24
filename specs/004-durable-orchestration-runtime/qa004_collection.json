@@ -1,0 +1,633 @@
+{
+  "version": 1,
+  "collections": [
+    {
+      "id": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+      "name": "Spec 004 Durable Orchestration Runtime QA",
+      "description": "Postman collection generated from specs/004-durable-orchestration-runtime/qa004.md. Import this file as a Postman data dump, select a local environment, set published_workflow_version_id, and run requests after starting the API and runtime worker.",
+      "events": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const defaults = {",
+              "  base_url: 'http://127.0.0.1:8000',",
+              "  tenant_admin_principal: 'tenant-admin-acme',",
+              "  tenant_user_principal: 'tenant-user-acme',",
+              "  globex_admin_principal: 'tenant-admin-globex',",
+              "  platform_admin_principal: 'platform-admin',",
+              "  acme_tenant_id: '11111111-1111-1111-1111-111111111111',",
+              "  globex_tenant_id: '22222222-2222-2222-2222-222222222222',",
+              "  published_workflow_version_id: '00000000-0000-0000-0000-000000000004'",
+              "};",
+              "",
+              "Object.entries(defaults).forEach(([key, value]) => {",
+              "  if (!pm.environment.get(key) && !pm.collectionVariables.get(key)) {",
+              "    pm.environment.set(key, value);",
+              "    pm.collectionVariables.set(key, value);",
+              "  }",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function maybeJson() {",
+              "  const body = pm.response.text();",
+              "  if (!body) { return null; }",
+              "  try { return pm.response.json(); } catch (error) { return null; }",
+              "}",
+              "",
+              "function saveVariable(key, value) {",
+              "  if (value === undefined || value === null || value === '') { return; }",
+              "  const stringValue = String(value);",
+              "  pm.environment.set(key, stringValue);",
+              "  pm.collectionVariables.set(key, stringValue);",
+              "}",
+              "",
+              "saveVariable('last_status_code', pm.response.code);",
+              "saveVariable('last_response_body', pm.response.text());",
+              "",
+              "const json = maybeJson();",
+              "if (json && json.detail) {",
+              "  saveVariable('last_response_detail', typeof json.detail === 'string' ? json.detail : JSON.stringify(json.detail));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "variables": [
+        {
+          "id": "004-var-base-url",
+          "key": "base_url",
+          "value": "http://127.0.0.1:8000",
+          "type": "string"
+        },
+        {
+          "id": "004-var-tenant-admin",
+          "key": "tenant_admin_principal",
+          "value": "tenant-admin-acme",
+          "type": "string"
+        },
+        {
+          "id": "004-var-globex-admin",
+          "key": "globex_admin_principal",
+          "value": "tenant-admin-globex",
+          "type": "string"
+        },
+        {
+          "id": "004-var-platform-admin",
+          "key": "platform_admin_principal",
+          "value": "platform-admin",
+          "type": "string"
+        },
+        {
+          "id": "004-var-published-workflow",
+          "key": "published_workflow_version_id",
+          "value": "00000000-0000-0000-0000-000000000004",
+          "type": "string"
+        },
+        {
+          "id": "004-var-workflow-run",
+          "key": "workflow_run_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "004-var-run-bundle",
+          "key": "run_bundle_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "004-var-bundle-digest",
+          "key": "bundle_digest",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "004-var-contract-run",
+          "key": "contract_failure_run_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "004-var-approval-run",
+          "key": "approval_run_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "004-var-approval-gate",
+          "key": "approval_gate_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "004-var-subworkflow-run",
+          "key": "subworkflow_run_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "004-var-child-run",
+          "key": "child_run_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "004-var-last-status",
+          "key": "last_status_code",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "004-var-last-body",
+          "key": "last_response_body",
+          "value": "",
+          "type": "string"
+        }
+      ],
+      "order": [],
+      "folders_order": [
+        "004-folder-durable-run",
+        "004-folder-contracts",
+        "004-folder-approvals",
+        "004-folder-lineage",
+        "004-folder-guardrails"
+      ],
+      "folders": [
+        {
+          "id": "004-folder-durable-run",
+          "name": "Durable Run Lifecycle",
+          "order": [
+            "004-req-start-run",
+            "004-req-inspect-run",
+            "004-req-timeline",
+            "004-req-side-effects",
+            "004-req-cancel-run"
+          ],
+          "folders_order": [],
+          "description": "Spec 004 QA steps 8 through 14.",
+          "collection": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "folder": null,
+          "folderId": "004-folder-durable-run",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        },
+        {
+          "id": "004-folder-contracts",
+          "name": "Contract-Gated Routing",
+          "order": [
+            "004-req-start-invalid-handoff",
+            "004-req-list-handoffs"
+          ],
+          "folders_order": [],
+          "description": "Spec 004 QA step 15.",
+          "collection": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "folder": null,
+          "folderId": "004-folder-contracts",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        },
+        {
+          "id": "004-folder-approvals",
+          "name": "Approval Pause Resume",
+          "order": [
+            "004-req-start-approval-run",
+            "004-req-list-approval-gates",
+            "004-req-approve-gate"
+          ],
+          "folders_order": [],
+          "description": "Spec 004 QA step 17.",
+          "collection": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "folder": null,
+          "folderId": "004-folder-approvals",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        },
+        {
+          "id": "004-folder-lineage",
+          "name": "Subworkflow Lineage",
+          "order": [
+            "004-req-start-subworkflow-run",
+            "004-req-get-lineage"
+          ],
+          "folders_order": [],
+          "description": "Spec 004 QA step 18.",
+          "collection": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "folder": null,
+          "folderId": "004-folder-lineage",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        },
+        {
+          "id": "004-folder-guardrails",
+          "name": "Authorization Guardrails",
+          "order": [
+            "004-req-cross-tenant-denial"
+          ],
+          "folders_order": [],
+          "description": "Spec 004 QA step 19.",
+          "collection": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "folder": null,
+          "folderId": "004-folder-guardrails",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        }
+      ],
+      "requests": [
+        {
+          "id": "004-req-start-run",
+          "name": "08 Start durable workflow run",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "POST",
+          "description": "Starts a published workflow run and stores workflow_run_id, run_bundle_id, and bundle_digest variables.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"published_workflow_version_id\": \"{{published_workflow_version_id}}\",\n  \"idempotency_key\": \"qa004-durable-run-001\",\n  \"input\": {\n    \"prompt\": \"Run the durable orchestration QA path\",\n    \"mode\": \"happy_path\"\n  }\n}",
+          "url": "{{base_url}}/runtime/runs",
+          "tests": "pm.test('Status code is 202', function () {\n  pm.response.to.have.status(202);\n});\npm.test('Response includes workflow_run_id and bundle details', function () {\n  const json = pm.response.json();\n  pm.expect(json.workflow_run_id).to.exist;\n  pm.expect(json.run_bundle_id).to.exist;\n  pm.expect(json.bundle_digest).to.exist;\n});\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('workflow_run_id', json.workflow_run_id);\nsaveVariable('run_bundle_id', json.run_bundle_id);\nsaveVariable('bundle_digest', json.bundle_digest);",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "version": 2
+        },
+        {
+          "id": "004-req-inspect-run",
+          "name": "09 Inspect durable workflow run",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "GET",
+          "description": "Fetches run state and verifies the pinned bundle digest remains stable.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "url": "{{base_url}}/runtime/runs/{{workflow_run_id}}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\npm.test('Run id matches the saved workflow_run_id', function () {\n  const json = pm.response.json();\n  pm.expect(json.workflow_run_id).to.eql(pm.environment.get('workflow_run_id') || pm.collectionVariables.get('workflow_run_id'));\n});\npm.test('Bundle digest stays pinned when present', function () {\n  const json = pm.response.json();\n  const expected = pm.environment.get('bundle_digest') || pm.collectionVariables.get('bundle_digest');\n  if (expected && json.bundle_digest) {\n    pm.expect(json.bundle_digest).to.eql(expected);\n  }\n});",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "version": 2
+        },
+        {
+          "id": "004-req-timeline",
+          "name": "10 Inspect run timeline",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "GET",
+          "description": "Lists runtime timeline events used as durability and audit evidence.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "url": "{{base_url}}/runtime/runs/{{workflow_run_id}}/timeline?limit=100",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\npm.test('Timeline response is list-shaped', function () {\n  const json = pm.response.json();\n  pm.expect(json.events || json.items || []).to.be.an('array');\n});",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [
+            {
+              "key": "limit",
+              "value": "100",
+              "equals": true,
+              "description": ""
+            }
+          ],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "version": 2
+        },
+        {
+          "id": "004-req-side-effects",
+          "name": "14 Inspect side-effect intents",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "GET",
+          "description": "Lists side-effect intents for idempotent retry evidence.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "url": "{{base_url}}/runtime/runs/{{workflow_run_id}}/side-effects",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\npm.test('Side-effect response is list-shaped', function () {\n  const json = pm.response.json();\n  pm.expect(json.side_effects || json.items || []).to.be.an('array');\n});",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "version": 2
+        },
+        {
+          "id": "004-req-cancel-run",
+          "name": "Cancel durable workflow run",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "POST",
+          "description": "Cancels an active or paused run. If the selected run is already terminal, 409 is acceptable.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"reason\": \"QA cancellation check\"\n}",
+          "url": "{{base_url}}/runtime/runs/{{workflow_run_id}}/cancel",
+          "tests": "pm.test('Status code is 202 or 409', function () {\n  pm.expect([202, 409]).to.include(pm.response.code);\n});",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "version": 2
+        },
+        {
+          "id": "004-req-start-invalid-handoff",
+          "name": "15 Start invalid handoff run",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "POST",
+          "description": "Starts a run that should trigger contract-gated routing diagnostics.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"published_workflow_version_id\": \"{{published_workflow_version_id}}\",\n  \"idempotency_key\": \"qa004-contract-failure-001\",\n  \"input\": {\n    \"prompt\": \"Trigger invalid handoff payload\",\n    \"mode\": \"invalid_handoff\"\n  }\n}",
+          "url": "{{base_url}}/runtime/runs",
+          "tests": "pm.test('Status code is 202', function () {\n  pm.response.to.have.status(202);\n});\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('contract_failure_run_id', json.workflow_run_id);",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "version": 2
+        },
+        {
+          "id": "004-req-list-handoffs",
+          "name": "15 List handoff envelopes",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "GET",
+          "description": "Lists handoff envelopes and validation diagnostics for the invalid handoff run.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "url": "{{base_url}}/runtime/runs/{{contract_failure_run_id}}/handoffs",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\npm.test('Handoff response is list-shaped', function () {\n  const json = pm.response.json();\n  pm.expect(json.handoffs || json.items || []).to.be.an('array');\n});",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "version": 2
+        },
+        {
+          "id": "004-req-start-approval-run",
+          "name": "17 Start approval-gated run",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "POST",
+          "description": "Starts a run expected to pause at an approval gate.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"published_workflow_version_id\": \"{{published_workflow_version_id}}\",\n  \"idempotency_key\": \"qa004-approval-001\",\n  \"input\": {\n    \"prompt\": \"Pause for approval\",\n    \"mode\": \"approval_required\"\n  }\n}",
+          "url": "{{base_url}}/runtime/runs",
+          "tests": "pm.test('Status code is 202', function () {\n  pm.response.to.have.status(202);\n});\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('approval_run_id', json.workflow_run_id);",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "version": 2
+        },
+        {
+          "id": "004-req-list-approval-gates",
+          "name": "17 List approval gates",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "GET",
+          "description": "Lists approval gates and stores the first pending approval_gate_id when present.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "url": "{{base_url}}/runtime/runs/{{approval_run_id}}/approval-gates",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nconst gates = json.approval_gates || json.items || [];\npm.expect(gates).to.be.an('array');\nif (gates.length > 0) {\n  saveVariable('approval_gate_id', gates[0].approval_gate_id || gates[0].id);\n}",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "version": 2
+        },
+        {
+          "id": "004-req-approve-gate",
+          "name": "17 Approve approval gate",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "POST",
+          "description": "Submits an approval decision. Run List approval gates first so approval_gate_id is populated.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"decision\": \"approve\",\n  \"decision_payload\": {\n    \"approved\": true,\n    \"review_note\": \"QA approval from Postman\"\n  }\n}",
+          "url": "{{base_url}}/runtime/runs/{{approval_run_id}}/approval-gates/{{approval_gate_id}}/decisions",
+          "tests": "pm.test('Status code is 202 or actionable conflict', function () {\n  pm.expect([202, 409]).to.include(pm.response.code);\n});",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "version": 2
+        },
+        {
+          "id": "004-req-start-subworkflow-run",
+          "name": "18 Start subworkflow lineage run",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "POST",
+          "description": "Starts a run expected to create at least one child run.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"published_workflow_version_id\": \"{{published_workflow_version_id}}\",\n  \"idempotency_key\": \"qa004-subworkflow-001\",\n  \"input\": {\n    \"prompt\": \"Run parent workflow with child\",\n    \"mode\": \"subworkflow\"\n  }\n}",
+          "url": "{{base_url}}/runtime/runs",
+          "tests": "pm.test('Status code is 202', function () {\n  pm.response.to.have.status(202);\n});\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('subworkflow_run_id', json.workflow_run_id);",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "version": 2
+        },
+        {
+          "id": "004-req-get-lineage",
+          "name": "18 Get run lineage",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "GET",
+          "description": "Fetches parent-child lineage for the subworkflow run.",
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "url": "{{base_url}}/runtime/runs/{{subworkflow_run_id}}/lineage",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\npm.test('Lineage response includes nodes or relationships', function () {\n  const json = pm.response.json();\n  pm.expect(json.nodes || json.relationships || json.edges || []).to.be.an('array');\n});",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "version": 2
+        },
+        {
+          "id": "004-req-cross-tenant-denial",
+          "name": "19 Cross-tenant run denial",
+          "collectionId": "7f8d6d2a-8e5c-4f7c-9e4d-004000000001",
+          "method": "GET",
+          "description": "Confirms Globex cannot inspect an Acme runtime run.",
+          "headers": "X-Local-Principal: {{globex_admin_principal}}",
+          "url": "{{base_url}}/runtime/runs/{{workflow_run_id}}",
+          "tests": "pm.test('Status code is 403 or 404', function () {\n  pm.expect([403, 404]).to.include(pm.response.code);\n});",
+          "preRequestScript": "",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{globex_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "version": 2
+        }
+      ]
+    }
+  ]
+}
