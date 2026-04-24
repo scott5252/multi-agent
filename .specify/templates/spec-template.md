@@ -8,18 +8,25 @@
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by
-  importance. Each user story/journey must be independently testable so a
-  single completed story still delivers value.
+  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
+  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
+  you should still have a viable MVP (Minimum Viable Product) that delivers value.
+  
+  Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
+  Think of each story as a standalone slice of functionality that can be:
+  - Developed independently
+  - Tested independently
+  - Deployed independently
+  - Demonstrated to users independently
 -->
 
 ### User Story 1 - [Brief Title] (Priority: P1)
 
 [Describe this user journey in plain language]
 
-**Why this priority**: [Explain why this is the highest-value outcome]
+**Why this priority**: [Explain the value and why it has this priority level]
 
-**Independent Test**: [Describe how this story can be validated on its own]
+**Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
 
 **Acceptance Scenarios**:
 
@@ -32,9 +39,9 @@
 
 [Describe this user journey in plain language]
 
-**Why this priority**: [Explain the value and ordering]
+**Why this priority**: [Explain the value and why it has this priority level]
 
-**Independent Test**: [Describe how this story can be validated on its own]
+**Independent Test**: [Describe how this can be tested independently]
 
 **Acceptance Scenarios**:
 
@@ -46,9 +53,9 @@
 
 [Describe this user journey in plain language]
 
-**Why this priority**: [Explain the value and ordering]
+**Why this priority**: [Explain the value and why it has this priority level]
 
-**Independent Test**: [Describe how this story can be validated on its own]
+**Independent Test**: [Describe how this can be tested independently]
 
 **Acceptance Scenarios**:
 
@@ -58,101 +65,64 @@
 
 [Add more user stories as needed, each with an assigned priority]
 
-## Edge Cases *(mandatory)*
+### Edge Cases
+
+<!--
+  ACTION REQUIRED: The content in this section represents placeholders.
+  Fill them out with the right edge cases.
+-->
 
 - What happens when [boundary condition]?
-- How does the system recover from [error or timeout scenario]?
-- What happens when tenant, auth, or quota context is missing or invalid?
+- How does system handle [error scenario]?
 
 ## Requirements *(mandatory)*
 
+<!--
+  ACTION REQUIRED: The content in this section represents placeholders.
+  Fill them out with the right functional requirements.
+-->
+
 ### Functional Requirements
 
-- **FR-001**: System MUST [specific capability]
-- **FR-002**: System MUST [specific capability]
-- **FR-003**: Users MUST be able to [key interaction]
-- **FR-004**: System MUST [data or workflow requirement]
-- **FR-005**: System MUST [audit, security, or observability requirement]
+- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
+- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
+- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
+- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
+- **FR-005**: System MUST [behavior, e.g., "log all security events"]
 
 *Example of marking unclear requirements:*
 
-- **FR-006**: System MUST [NEEDS CLARIFICATION: unresolved decision]
+- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
+- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
 ### Key Entities *(include if feature involves data)*
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
 
-## Constitution Alignment *(mandatory)*
-
-### Durability And Recovery Impact
-
-- [State whether the feature changes workflow state, retries, compensation,
-  idempotency, or resume behavior. If not applicable, say "Not in scope" and
-  why.]
-
-### Tenant Isolation And Fair Use Impact
-
-- [State how tenant context, quotas, fairness, or noisy-neighbor protections
-  apply. If not applicable, say "Not in scope" and why.]
-
-### Contracts, Versioning, And Lineage Impact
-
-- [State whether schemas, workflow versions, prompt/model/tool-policy versions,
-  or parent-child lineage are affected.]
-
-### Security, Secrets, And Tooling Impact
-
-- [State Auth0, authorization, delegated credentials, secret references,
-  allowlists, or outbound egress implications.]
-
-### Artifact And Data Storage Impact
-
-- [State whether PostgreSQL metadata, object storage, retention, or auditability
-  are affected.]
-
-### Approval, Resume, And Human Interaction Impact
-
-- [State whether approvals, pauses, resumes, or supplemental user input are in
-  scope.]
-
-### Observability And Audit Impact
-
-- [State the logs, metrics, traces, audit events, lineage visibility, or replay
-  surfaces users and operators need.]
-
 ## Success Criteria *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Define measurable success criteria.
+  These must be technology-agnostic and measurable.
+-->
 
 ### Measurable Outcomes
 
-- **SC-001**: [Measurable user or business outcome]
-- **SC-002**: [Measurable scale, latency, or throughput outcome]
-- **SC-003**: [Measurable quality or task-completion outcome]
-- **SC-004**: [Measurable operational or support outcome]
+- **SC-001**: [Measurable metric, e.g., "Users can complete account creation in under 2 minutes"]
+- **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
+- **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
+- **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
 
 ## Assumptions
 
-- [Assumption about target users]
-- [Assumption about scope boundaries]
-- [Assumption about required environment or dependencies]
-- [Assumption about existing systems or data]
+<!--
+  ACTION REQUIRED: The content in this section represents placeholders.
+  Fill them out with the right assumptions based on reasonable defaults
+  chosen when the feature description did not specify certain details.
+-->
 
-## Review And Delivery Guidance *(mandatory)*
-
-### Testing Instructions
-
-- [List required unit, integration, contract, failure-recovery, or manual test
-  expectations.]
-- [State any required coverage target evidence or tooling.]
-
-### PR Review Guidance
-
-- [Call out the highest-risk files, flows, invariants, and review focus areas.]
-- [Identify any security, tenant-isolation, or operability concerns reviewers
-  must verify.]
-
-### Documentation Impact
-
-- [State the required `README.md` updates.]
-- [State the required quickstart, operator, API, or admin documentation
-  updates.]
+- [Assumption about target users, e.g., "Users have stable internet connectivity"]
+- [Assumption about scope boundaries, e.g., "Mobile support is out of scope for v1"]
+- [Assumption about data/environment, e.g., "Existing authentication system will be reused"]
+- [Dependency on existing system/service, e.g., "Requires access to the existing user profile API"]
