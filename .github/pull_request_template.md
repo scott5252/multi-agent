@@ -9,6 +9,7 @@
 - [ ] `./scripts/smoke_foundation.sh` against a running API when runtime code changed
 - [ ] `uv run pytest tests/contract/test_access_control_contract.py tests/integration/api/test_auth_routes.py tests/integration/auth/test_support_overrides.py`
 - [ ] Workflow-registry validation and UI slice was run when admin workflow code changed
+- [ ] Durable runtime validation was run when orchestration, worker, checkpoint, approval, handoff, lineage, or side-effect code changed
 
 ## Review Checklist
 
@@ -22,3 +23,4 @@
 - [ ] Updated docs cover setup, troubleshooting, and recovery impact
 - [ ] Workflow-registry changes include validation, publish, and sharing evidence
 - [ ] Workflow-registry UI changes include updated route or HTML verification evidence
+- [ ] Durable runtime changes include worker lease, checkpoint/resume, idempotency, contract-version pinning, approval authorization, lineage, tenant isolation, and retention evidence

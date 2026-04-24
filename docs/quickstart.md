@@ -64,6 +64,35 @@ uv run uvicorn multi_agent_platform.api.main:app --reload
 uv run python -m multi_agent_platform.workers.main
 ```
 
+## Durable Runtime Quickstart
+
+Start a published workflow run with a local-principal tenant context:
+
+```bash
+curl -sS -X POST http://127.0.0.1:8000/runtime/runs \
+  -H "Content-Type: application/json" \
+  -H "X-Local-Principal: tenant-admin-acme" \
+  -d '{
+    "published_workflow_version_id": "00000000-0000-0000-0000-000000000004",
+    "idempotency_key": "demo-durable-run-001",
+    "input": {"prompt": "Run the durable orchestration demo"}
+  }'
+```
+
+Inspect runtime status and timeline evidence:
+
+```bash
+curl -sS http://127.0.0.1:8000/runtime/runs/{workflow_run_id} \
+  -H "X-Local-Principal: tenant-admin-acme"
+
+curl -sS http://127.0.0.1:8000/runtime/runs/{workflow_run_id}/timeline \
+  -H "X-Local-Principal: tenant-admin-acme"
+```
+
+Use the worker command above to validate claim, resume, and lease behavior.
+Approval, handoff, side-effect, and lineage endpoints are documented in the
+feature quickstart and runbook.
+
 ## Workflow Studio Quickstart
 
 1. Open [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui).
@@ -104,6 +133,22 @@ uv run pytest \
   tests/contract/test_workflow_registry_contract.py
 ```
 
+Target the durable orchestration runtime explicitly:
+
+```bash
+uv run pytest \
+  tests/unit/runtime/orchestration \
+  tests/unit/api/test_runtime_run_schemas.py \
+  tests/unit/db/test_runtime_orchestration_models.py \
+  tests/contract/test_runtime_orchestration_contract.py \
+  tests/integration/runtime/test_langgraph_checkpoint_resume.py \
+  tests/integration/runtime/test_orchestration_crash_resume.py \
+  tests/integration/runtime/test_runtime_api_flows.py \
+  tests/integration/runtime/test_runtime_repository.py \
+  tests/integration/workers/test_orchestration_worker.py \
+  tests/performance/runtime/test_runtime_latency.py
+```
+
 ## Troubleshooting
 
 - `401 missing local principal header or cookie`: sign in through
@@ -123,3 +168,4 @@ uv run pytest \
 
 - [Foundation Runbook](/Users/scottcornell/src/my-projects/multi-agent/docs/foundation-runbook.md)
 - [Architecture](/Users/scottcornell/src/my-projects/multi-agent/docs/architecture.md)
+- [Durable Orchestration Runtime](/Users/scottcornell/src/my-projects/multi-agent/docs/durable-orchestration-runtime.md)
