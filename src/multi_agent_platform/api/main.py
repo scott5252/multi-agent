@@ -12,6 +12,7 @@ from multi_agent_platform.api.routers.admin_workflows import (
     router as admin_workflows_router,
 )
 from multi_agent_platform.api.routers.auth import router as auth_router
+from multi_agent_platform.api.routers.memory import router as memory_router
 from multi_agent_platform.api.routers.ops import router as ops_router
 from multi_agent_platform.api.routers.runtime_runs import router as runtime_runs_router
 from multi_agent_platform.config.settings import Settings
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_workflows_router)
     app.include_router(admin_workflow_ui_router)
     app.include_router(runtime_runs_router)
+    app.include_router(memory_router)
     return app
 
 

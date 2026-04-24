@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
+from multi_agent_platform.memory.models import RuntimeMemoryContext
+from multi_agent_platform.memory.service import MemoryService
 from multi_agent_platform.observability.tracing import generate_trace_id
 from multi_agent_platform.runtime.orchestration.compiler import (
     PublishedWorkflowBundle,
@@ -90,3 +92,44 @@ class RuntimeOrchestrationService:
             )
         )
         return run
+
+    async def get_current_memory_head(
+        self,
+        *,
+        memory_service: MemoryService,
+        context: RuntimeMemoryContext,
+    ) -> object:
+        return await memory_service.get_current_head_for_runtime(context=context)
+
+    async def write_memory_version(
+        self,
+        *,
+        memory_service: MemoryService,
+        context: RuntimeMemoryContext,
+        content: object,
+        expected_current_version_id: UUID | None,
+        assert_no_current_head: bool,
+        idempotency_key: str | None,
+    ) -> object:
+        result = await memory_service.write_version_for_runtime(
+            context=context,
+            content=content,
+            expected_current_version_id=expected_current_version_id,
+            assert_no_current_head=assert_no_current_head,
+            idempotency_key=idempotency_key,
+        )
+        await self.repository.add_timeline_event(
+            RuntimeTimelineEvent(
+                tenant_id=context.tenant_id,
+                workflow_run_id=context.workflow_run_id,
+                event_type=RuntimeEventType.CHECKPOINT,
+                trace_id=context.trace_id,
+                payload={
+                    "memory_action": "create_version",
+                    "memory_scope_id": str(result.scope.memory_scope_id),
+                    "memory_version_id": str(result.version.memory_version_id),
+                    "content_sha256": result.version.content_sha256,
+                },
+            )
+        )
+        return result

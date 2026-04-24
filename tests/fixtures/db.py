@@ -26,7 +26,7 @@ async def engine(tmp_path) -> AsyncIterator[AsyncEngine]:
         await connection.execute(
             text(
                 "INSERT INTO alembic_version(version_num) "
-                "VALUES ('0004_durable_runtime')"
+                "VALUES ('0005_immutable_memory')"
             )
         )
     yield engine

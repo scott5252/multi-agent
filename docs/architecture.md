@@ -89,6 +89,9 @@ flowchart LR
     RuntimeAPI --> Postgres["PostgreSQL System Of Record"]
     Workers --> Postgres
     Admin --> Postgres
+    RuntimeAPI --> MemoryAPI["Immutable Memory API"]
+    Workers --> MemoryAPI
+    MemoryAPI --> Postgres
     Recovery --> Postgres
     RuntimeAPI --> Artifacts
 

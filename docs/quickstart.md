@@ -149,6 +149,25 @@ uv run pytest \
   tests/performance/runtime/test_runtime_latency.py
 ```
 
+Target immutable memory explicitly:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/memory \
+  tests/unit/db/test_memory_models.py \
+  tests/contract/test_memory_contract.py \
+  tests/integration/db/test_memory_migration.py \
+  tests/integration/runtime/test_runtime_memory_flows.py \
+  tests/integration/api/test_memory_api.py \
+  tests/performance/memory/test_memory_latency.py
+```
+
+Manual immutable-memory QA:
+
+- [Spec 005 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/005-immutable-memory/qa005.md)
+- [Spec 005 Postman Collection](/Users/scottcornell/src/my-projects/multi-agent/specs/005-immutable-memory/qa005_collection.json)
+- [Immutable Memory Operations](/Users/scottcornell/src/my-projects/multi-agent/docs/immutable-memory.md)
+
 ## Troubleshooting
 
 - `401 missing local principal header or cookie`: sign in through
@@ -169,3 +188,4 @@ uv run pytest \
 - [Foundation Runbook](/Users/scottcornell/src/my-projects/multi-agent/docs/foundation-runbook.md)
 - [Architecture](/Users/scottcornell/src/my-projects/multi-agent/docs/architecture.md)
 - [Durable Orchestration Runtime](/Users/scottcornell/src/my-projects/multi-agent/docs/durable-orchestration-runtime.md)
+- [Immutable Memory](/Users/scottcornell/src/my-projects/multi-agent/docs/immutable-memory.md)

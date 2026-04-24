@@ -1,10 +1,12 @@
 # Multi-Agent AI Platform
 
 This repository now includes the platform foundation, the auth and access
-layer, the full Spec `003` workflow-studio registry flow, and the Spec `004`
-durable orchestration runtime. Admins can author workflow drafts, publish
-immutable version bundles, start pinned durable runs, inspect runtime timeline
-evidence, and operate background workers that resume interrupted work.
+layer, the full Spec `003` workflow-studio registry flow, the Spec `004`
+durable orchestration runtime, and the Spec `005` immutable versioned memory
+subsystem. Admins can author workflow drafts, publish immutable version
+bundles, start pinned durable runs, inspect runtime timeline evidence, create
+append-only memory versions, and operate background workers that resume
+interrupted work.
 
 ## Current Scope
 
@@ -14,11 +16,14 @@ evidence, and operate background workers that resume interrupted work.
 - workflow-registry APIs under `/admin/workflows`
 - embedded workflow registry UI under `/admin/workflows/ui`
 - durable runtime APIs under `/runtime/runs`
+- immutable memory APIs under `/memory`
 - browser-friendly local QA login under `/auth/local-login`
 - durable lineage, draft, revision, validation-result, published-version, and
   sharing-grant persistence
 - per-run execution bundle pinning, worker leases, timeline events, approval
   gates, handoff envelopes, side-effect intents, lineage, and retention models
+- append-only memory scopes, versions, current heads, replay, diff, audit, and
+  runtime source links
 - filesystem or provider-backed artifact storage for compiled workflow bundles
 
 ## Quickstart
@@ -50,6 +55,7 @@ Latest full validation run: `2026-04-24`
 - [Quickstart](/Users/scottcornell/src/my-projects/multi-agent/docs/quickstart.md)
 - [Admin Workflow Studio](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-workflow-studio.md)
 - [Durable Orchestration Runtime](/Users/scottcornell/src/my-projects/multi-agent/docs/durable-orchestration-runtime.md)
+- [Immutable Memory](/Users/scottcornell/src/my-projects/multi-agent/docs/immutable-memory.md)
 - [Foundation Runbook](/Users/scottcornell/src/my-projects/multi-agent/docs/foundation-runbook.md)
 - [Architecture](/Users/scottcornell/src/my-projects/multi-agent/docs/architecture.md)
 - [Constitution](/Users/scottcornell/src/my-projects/multi-agent/.specify/memory/constitution.md)

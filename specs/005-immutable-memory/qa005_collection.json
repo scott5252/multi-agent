@@ -1,0 +1,371 @@
+{
+  "info": {
+    "_postman_id": "7f8d6d2a-8e5c-4f7c-9e4d-005000000001",
+    "name": "Spec 005 Immutable Memory QA",
+    "description": "Postman Collection v2.1 for specs/005-immutable-memory/qa005.md. This collection is self-contained for testing immutable memory APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const defaults = {",
+          "  base_url: 'http://127.0.0.1:8000',",
+          "  tenant_admin_principal: 'tenant-admin-acme',",
+          "  globex_admin_principal: 'tenant-admin-globex',",
+          "  workflow_lineage_id: 'workflow.qa005-memory',",
+          "  missing_workflow_lineage_id: 'workflow.qa005-missing',",
+          "  agent_key: 'triage-agent',",
+          "  memory_key: 'patient-preferences'",
+          "};",
+          "Object.entries(defaults).forEach(([key, value]) => {",
+          "  if (!pm.environment.get(key) && !pm.collectionVariables.get(key)) {",
+          "    pm.collectionVariables.set(key, value);",
+          "  }",
+          "});"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function maybeJson() {",
+          "  const body = pm.response.text();",
+          "  if (!body) { return null; }",
+          "  try { return pm.response.json(); } catch (error) { return null; }",
+          "}",
+          "function saveVariable(key, value) {",
+          "  if (value === undefined || value === null || value === '') { return; }",
+          "  const stringValue = String(value);",
+          "  pm.environment.set(key, stringValue);",
+          "  pm.collectionVariables.set(key, stringValue);",
+          "}",
+          "saveVariable('last_status_code', pm.response.code);",
+          "saveVariable('last_response_body', pm.response.text());",
+          "const json = maybeJson();",
+          "if (json && json.detail) {",
+          "  saveVariable('last_response_detail', typeof json.detail === 'string' ? json.detail : JSON.stringify(json.detail));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {"key": "base_url", "value": "http://127.0.0.1:8000", "type": "string"},
+    {"key": "tenant_admin_principal", "value": "tenant-admin-acme", "type": "string"},
+    {"key": "globex_admin_principal", "value": "tenant-admin-globex", "type": "string"},
+    {"key": "workflow_lineage_id", "value": "workflow.qa005-memory", "type": "string"},
+    {"key": "missing_workflow_lineage_id", "value": "workflow.qa005-missing", "type": "string"},
+    {"key": "agent_key", "value": "triage-agent", "type": "string"},
+    {"key": "memory_key", "value": "patient-preferences", "type": "string"},
+    {"key": "memory_scope_id", "value": "", "type": "string"},
+    {"key": "version_1_id", "value": "", "type": "string"},
+    {"key": "version_2_id", "value": "", "type": "string"},
+    {"key": "current_memory_version_id", "value": "", "type": "string"},
+    {"key": "last_status_code", "value": "", "type": "string"},
+    {"key": "last_response_body", "value": "", "type": "string"}
+  ],
+  "item": [
+    {
+      "name": "Immutable Memory Flow",
+      "item": [
+        {
+          "name": "05.1 Create initial memory version",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{tenant_admin_principal}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scope\": {\n    \"workflow_lineage_id\": \"{{workflow_lineage_id}}\",\n    \"agent_key\": \"{{agent_key}}\",\n    \"memory_key\": \"{{memory_key}}\"\n  },\n  \"assert_no_current_head\": true,\n  \"content\": {\n    \"preferred_contact\": \"sms\",\n    \"removed_fields\": {\"$memory_removed\": [\"legacy_phone\"]}\n  },\n  \"change_reason\": \"initial preference capture\",\n  \"change_summary_redacted\": \"Captured preferred contact channel\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {"raw": "{{base_url}}/memory/versions", "host": ["{{base_url}}"], "path": ["memory", "versions"]}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 or head already exists', function () { pm.expect([201,409]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.environment.set('memory_scope_id', json.scope.memory_scope_id);",
+                  "  pm.environment.set('version_1_id', json.version.memory_version_id);",
+                  "  pm.environment.set('current_memory_version_id', json.version.memory_version_id);",
+                  "  pm.collectionVariables.set('memory_scope_id', json.scope.memory_scope_id);",
+                  "  pm.collectionVariables.set('version_1_id', json.version.memory_version_id);",
+                  "  pm.collectionVariables.set('current_memory_version_id', json.version.memory_version_id);",
+                  "  pm.test('Initial sequence is 1', function () { pm.expect(json.version.version_sequence).to.eql(1); });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.2 Get current head",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{tenant_admin_principal}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/memory/head?workflow_lineage_id={{workflow_lineage_id}}&agent_key={{agent_key}}&memory_key={{memory_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["memory", "head"],
+              "query": [
+                {"key": "workflow_lineage_id", "value": "{{workflow_lineage_id}}"},
+                {"key": "agent_key", "value": "{{agent_key}}"},
+                {"key": "memory_key", "value": "{{memory_key}}"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Head has memory', function () { pm.expect(json.has_memory).to.eql(true); });",
+                  "if (json.head) { pm.environment.set('current_memory_version_id', json.head.memory_version_id); pm.collectionVariables.set('current_memory_version_id', json.head.memory_version_id); }",
+                  "if (json.scope && json.scope.memory_scope_id) { pm.environment.set('memory_scope_id', json.scope.memory_scope_id); pm.collectionVariables.set('memory_scope_id', json.scope.memory_scope_id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.3 Get missing current head",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{tenant_admin_principal}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/memory/head?workflow_lineage_id={{missing_workflow_lineage_id}}&agent_key={{agent_key}}&memory_key={{memory_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["memory", "head"],
+              "query": [
+                {"key": "workflow_lineage_id", "value": "{{missing_workflow_lineage_id}}"},
+                {"key": "agent_key", "value": "{{agent_key}}"},
+                {"key": "memory_key", "value": "{{memory_key}}"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Missing scope has no memory', function () { pm.expect(pm.response.json().has_memory).to.eql(false); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.4 Create successor memory version",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{tenant_admin_principal}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scope\": {\n    \"workflow_lineage_id\": \"{{workflow_lineage_id}}\",\n    \"agent_key\": \"{{agent_key}}\",\n    \"memory_key\": \"{{memory_key}}\"\n  },\n  \"expected_current_version_id\": \"{{current_memory_version_id}}\",\n  \"content\": {\n    \"preferred_contact\": \"email\",\n    \"timezone\": \"America/New_York\",\n    \"removed_fields\": {\"$memory_removed\": [\"legacy_phone\"]}\n  },\n  \"change_reason\": \"user updated preference\",\n  \"change_summary_redacted\": \"Updated preferred contact channel\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {"raw": "{{base_url}}/memory/versions", "host": ["{{base_url}}"], "path": ["memory", "versions"]}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('version_2_id', json.version.memory_version_id);",
+                  "pm.environment.set('current_memory_version_id', json.version.memory_version_id);",
+                  "pm.collectionVariables.set('version_2_id', json.version.memory_version_id);",
+                  "pm.collectionVariables.set('current_memory_version_id', json.version.memory_version_id);",
+                  "pm.test('Successor sequence is 2+', function () { pm.expect(json.version.version_sequence).to.be.above(1); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.5 Stale write is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{tenant_admin_principal}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scope\": {\n    \"workflow_lineage_id\": \"{{workflow_lineage_id}}\",\n    \"agent_key\": \"{{agent_key}}\",\n    \"memory_key\": \"{{memory_key}}\"\n  },\n  \"expected_current_version_id\": \"{{version_1_id}}\",\n  \"content\": {\"preferred_contact\": \"phone\"},\n  \"change_summary_redacted\": \"Attempt stale write\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {"raw": "{{base_url}}/memory/versions", "host": ["{{base_url}}"], "path": ["memory", "versions"]}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('Stale conflict is returned', function () { pm.expect(pm.response.text()).to.include('stale_expected_head'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.6 List history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{tenant_admin_principal}}", "type": "text"}
+            ],
+            "url": {"raw": "{{base_url}}/memory/scopes/{{memory_scope_id}}/versions?include_content=false", "host": ["{{base_url}}"], "path": ["memory", "scopes", "{{memory_scope_id}}", "versions"], "query": [{"key": "include_content", "value": "false"}]}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('History contains versions', function () { pm.expect(pm.response.json().versions.length).to.be.above(0); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.7 Replay first version",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{tenant_admin_principal}}", "type": "text"}
+            ],
+            "url": {"raw": "{{base_url}}/memory/versions/{{version_1_id}}/replay", "host": ["{{base_url}}"], "path": ["memory", "versions", "{{version_1_id}}", "replay"]}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Replay returns sms snapshot', function () { pm.expect(pm.response.json().content.preferred_contact).to.eql('sms'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.8 Diff first and second version",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{tenant_admin_principal}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"base_memory_version_id\": \"{{version_1_id}}\",\n  \"compare_memory_version_id\": \"{{version_2_id}}\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {"raw": "{{base_url}}/memory/diffs", "host": ["{{base_url}}"], "path": ["memory", "diffs"]}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Diff reports preferred_contact change', function () { pm.expect(pm.response.text()).to.include('/preferred_contact'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.9 List audit events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{tenant_admin_principal}}", "type": "text"}
+            ],
+            "url": {"raw": "{{base_url}}/memory/audit?memory_scope_id={{memory_scope_id}}", "host": ["{{base_url}}"], "path": ["memory", "audit"], "query": [{"key": "memory_scope_id", "value": "{{memory_scope_id}}"}]}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Audit has events', function () { pm.expect(pm.response.json().events.length).to.be.above(0); });",
+                  "pm.test('Audit does not expose raw content values', function () { pm.expect(pm.response.text()).to.not.include('America/New_York'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05.10 Cross-tenant version read fails closed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Local-Principal", "value": "{{globex_admin_principal}}", "type": "text"}
+            ],
+            "url": {"raw": "{{base_url}}/memory/versions/{{version_1_id}}", "host": ["{{base_url}}"], "path": ["memory", "versions", "{{version_1_id}}"]}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is fail-closed', function () { pm.expect([403,404]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}
