@@ -3,45 +3,35 @@
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See
-`.specify/templates/commands/plan.md` for project-specific planning rules.
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach]
+[Extract from feature spec: primary requirement + technical approach from research]
 
 ## Technical Context
 
-**Language/Version**: [e.g., Python 3.12 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, LangChain, LangGraph, SQLAlchemy or
-NEEDS CLARIFICATION]  
-**Storage**: [e.g., PostgreSQL + object storage or NEEDS CLARIFICATION]  
-**Testing**: [e.g., pytest, contract tests, integration tests]  
-**Target Platform**: [e.g., Linux server + Web UI + Telegram webhook]  
-**Project Type**: [e.g., multi-service web platform]  
-**Performance Goals**: [domain-specific targets]  
-**Constraints**: [latency, durability, compliance, quota, or security limits]  
-**Scale/Scope**: [tenant, user, or workload scale]
+<!--
+  ACTION REQUIRED: Replace the content in this section with the technical details
+  for the project. The structure here is presented in advisory capacity to guide
+  the iteration process.
+-->
+
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-| Principle | Status | Notes |
-|-----------|--------|-------|
-| Durable By Default | [PASS/FAIL] | [Checkpoint, retry, compensation, and idempotency notes] |
-| Immutable State And Memory | [PASS/FAIL] | [Snapshot and append-only state notes] |
-| Contract-First Agent Coordination | [PASS/FAIL] | [Schema, validation, and versioning notes] |
-| Security With Practical Development Ergonomics | [PASS/FAIL] | [Auth0, dev bypass, authz, and audit notes] |
-| Operability Is A Product Requirement | [PASS/FAIL] | [Logs, metrics, traces, timeline, replay notes] |
-| Spec-Driven Delivery | [PASS/FAIL] | [Spec/plan/tasks traceability notes] |
-| Test And Documentation Discipline | [PASS/FAIL] | [Coverage, docs, README, and quickstart notes] |
-| Clear Ownership And Small Safe Changes | [PASS/FAIL] | [File ownership, sequencing, and rollback notes] |
-| Tenant Isolation And Fair Scheduling | [PASS/FAIL] | [Tenant context, quotas, fairness notes] |
-| Version-Pinned Execution | [PASS/FAIL] | [Pinned bundle and resume notes] |
-| Secret Hygiene And Controlled Tool Access | [PASS/FAIL] | [Secret manager and tool policy notes] |
-| Tiered Storage For Large Payloads | [PASS/FAIL] | [PostgreSQL metadata vs object storage notes] |
-| Human Approval Is Durable State | [PASS/FAIL] | [Approval wait-state and resume notes] |
+[Gates determined based on constitution file]
 
 ## Project Structure
 
@@ -54,97 +44,55 @@ specs/[###-feature]/
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
 ├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
 ### Source Code (repository root)
+<!--
+  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
+  for this feature. Delete unused options and expand the chosen structure with
+  real paths (e.g., apps/admin, packages/something). The delivered plan must
+  not include Option labels.
+-->
 
 ```text
-[Replace with the real planned directories and files for this feature]
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
+
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: [Document the selected structure and the reasons]
-
-## Failure Recovery And Durability Decisions
-
-- **Checkpoint Boundaries**: [Where durable state is written and why]
-- **Retry Strategy**: [Retry limits, backoff, lease handling, and stop
-  conditions]
-- **Compensation Strategy**: [How external side effects are reversed or
-  reconciled]
-- **Idempotency Strategy**: [Keys, deduplication, and replay-safe behavior]
-
-## Tenant Isolation And Fair Use Decisions
-
-- **Tenant Context Propagation**: [How tenant_id flows through API, workers,
-  storage, audits, and child runs]
-- **Isolation Controls**: [RLS, policy guards, access patterns, or boundaries]
-- **Quota And Fairness Controls**: [Concurrency, rate, spend, or storage limits]
-
-## Subworkflow And Parent-Child Lineage Decisions
-
-- **Subworkflow Boundaries**: [What is reusable and why]
-- **Parent-Child Run Model**: [How lineage is created, persisted, and queried]
-- **Replay And Debug Visibility**: [How operators inspect lineage and joins]
-
-## Version Bundle And Contract Decisions
-
-- **Pinned Bundle Contents**: [Workflow, subworkflow, contract, prompt, model,
-  tool-policy versions]
-- **Resume Policy**: [Why resumes are bundle-stable and how migrations work]
-- **Contract Compatibility Plan**: [Schema evolution and validation rules]
-
-## Secret Management And Tool Policy Decisions
-
-- **Secret Manager Integration**: [How secrets are referenced and resolved]
-- **Delegated Credential Handling**: [How user-linked credentials differ from
-  platform secrets]
-- **Tool Access Policy**: [Allowlists, outbound egress, audit, and failure
-  behavior]
-
-## Artifact Storage Decisions
-
-- **Transactional Metadata**: [What remains in PostgreSQL]
-- **Blob Storage**: [What moves to object storage]
-- **Retention And Access**: [Lifecycle, signed access, and audit controls]
-
-## Approval And Resume Decisions
-
-- **Approval Triggers**: [Which states require human action]
-- **Persisted Wait State**: [How pause state is modeled and resumed]
-- **Audit Trail**: [What is captured for approval, rejection, and supplemental
-  input]
-
-## Observability Requirements
-
-- **Logs**: [Structured events, redaction, correlation IDs]
-- **Metrics**: [SLOs, counters, latency, quota, or error metrics]
-- **Traces**: [Distributed tracing scope and propagation]
-- **Timeline And Replay**: [Workflow timeline, lineage, and replay surfaces]
-- **Operational Runbooks**: [Dashboards, alerts, or operator workflows]
-
-## Test Strategy
-
-- **Unit Tests**: [Core logic and coverage plan, target >= 90% for relevant
-  code]
-- **Integration And Contract Tests**: [Interfaces, workflows, and channel paths]
-- **Failure And Recovery Tests**: [Crash, retry, resume, and idempotency cases]
-- **Operational Validation**: [Load, quota, observability, or replay checks]
-
-## Documentation Tasks
-
-- **README.md Updates**: [What repository-level guidance changes]
-- **Quickstart Updates**: [What setup or validation docs must change]
-- **Feature Docs**: [API, admin, operator, or runbook docs to add or revise]
-- **PR Evidence Requirements**: [Coverage summary, screenshots, traces, or
-  validation logs reviewers should expect]
-
-## Security Review Notes
-
-- **Auth/Authz Impact**: [Auth0, roles, bypass, or access control changes]
-- **Tenant/Security Boundaries**: [Cross-tenant or privilege risks]
-- **Secret/Tool Risk Review**: [Credential and egress review items]
-- **Additional Review Needed**: [Threat model, privacy, compliance, or "None"]
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
 ## Complexity Tracking
 
@@ -152,4 +100,5 @@ specs/[###-feature]/
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| [e.g., temporary exception] | [current need] | [why compliant option is not yet viable] |
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
