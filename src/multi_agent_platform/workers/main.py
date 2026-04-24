@@ -16,6 +16,8 @@ async def main(iterations: int | None = None) -> None:
     bootstrap = build_worker_bootstrap(container)
     try:
         await run_polling_loop(bootstrap, iterations=iterations)
+    except asyncio.CancelledError:
+        return
     finally:
         await container.dispose()
 
@@ -25,6 +27,8 @@ async def orchestration_main(iterations: int | None = None) -> None:
     bootstrap = build_worker_bootstrap(container)
     try:
         await run_orchestration_polling_loop(bootstrap, iterations=iterations)
+    except asyncio.CancelledError:
+        return
     finally:
         await container.dispose()
 
