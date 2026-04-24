@@ -29,3 +29,21 @@ RUNTIME_ACTIVE_LEASES_GAUGE = Gauge(
     "multi_agent_platform_runtime_active_leases",
     "Active durable orchestration worker leases.",
 )
+
+MEMORY_ACTION_COUNTER = Counter(
+    "multi_agent_platform_memory_actions_total",
+    "Immutable memory actions by action and outcome.",
+    labelnames=("action", "outcome"),
+)
+
+MEMORY_CONFLICT_COUNTER = Counter(
+    "multi_agent_platform_memory_conflicts_total",
+    "Immutable memory conflicts by conflict type.",
+    labelnames=("conflict_type",),
+)
+
+MEMORY_NOISY_NEIGHBOR_COUNTER = Counter(
+    "multi_agent_platform_memory_budget_denials_total",
+    "Tenant memory operation budget denials.",
+    labelnames=("operation",),
+)

@@ -64,3 +64,30 @@ def workflow_log_context(
     if principal_id is not None:
         payload["principal_id"] = principal_id
     return {"extra": payload}
+
+
+def memory_log_context(
+    *,
+    action: str,
+    trace_id: str,
+    tenant_id: str | None = None,
+    memory_scope_id: str | None = None,
+    memory_version_id: str | None = None,
+    content_sha256: str | None = None,
+    conflict_type: str | None = None,
+    latency_ms: float | None = None,
+) -> dict[str, dict[str, str]]:
+    payload: dict[str, str] = {"action": action, "trace_id": trace_id}
+    if tenant_id is not None:
+        payload["tenant_id"] = tenant_id
+    if memory_scope_id is not None:
+        payload["memory_scope_id"] = memory_scope_id
+    if memory_version_id is not None:
+        payload["memory_version_id"] = memory_version_id
+    if content_sha256 is not None:
+        payload["content_sha256"] = content_sha256
+    if conflict_type is not None:
+        payload["conflict_type"] = conflict_type
+    if latency_ms is not None:
+        payload["latency_ms"] = str(latency_ms)
+    return {"extra": payload}

@@ -1,0 +1,528 @@
+openapi: 3.1.0
+info:
+  title: Immutable Memory API
+  version: 0.1.0
+  description: >
+    API for creating append-only memory versions, retrieving current heads,
+    listing memory history, replaying snapshots, diffing versions, and viewing
+    content-free audit evidence.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /memory/head:
+    get:
+      summary: Retrieve the current head for a memory scope
+      tags: [memory]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowLineageId"
+        - $ref: "#/components/parameters/AgentKey"
+        - $ref: "#/components/parameters/MemoryKey"
+      responses:
+        "200":
+          description: Current head or explicit no-memory result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryHeadResponse"
+        "403":
+          description: Caller is not authorized for this memory scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memory/versions:
+    post:
+      summary: Create a new immutable memory version
+      tags: [memory]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryWriteRequest"
+      responses:
+        "201":
+          description: Version created and head advanced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryWriteResponse"
+        "400":
+          description: Invalid request or invalid concurrency precondition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not authorized to write this memory scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Initial head exists or expected current version is stale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryConflictResponse"
+  /memory/scopes/{memory_scope_id}/versions:
+    get:
+      summary: List version history for a memory scope
+      tags: [memory]
+      parameters:
+        - $ref: "#/components/parameters/MemoryScopeId"
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - in: query
+          name: include_content
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Version history page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryHistoryResponse"
+        "404":
+          description: Scope not found in caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memory/versions/{memory_version_id}:
+    get:
+      summary: Retrieve one memory version
+      tags: [memory]
+      parameters:
+        - $ref: "#/components/parameters/MemoryVersionId"
+        - in: query
+          name: include_content
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Memory version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryVersionResponse"
+        "404":
+          description: Version not found in caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memory/versions/{memory_version_id}/replay:
+    get:
+      summary: Replay memory state to the selected version
+      tags: [memory]
+      parameters:
+        - $ref: "#/components/parameters/MemoryVersionId"
+      responses:
+        "200":
+          description: Replayed memory snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryReplayResponse"
+        "404":
+          description: Version not found in caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memory/diffs:
+    post:
+      summary: Diff two memory versions in the same scope
+      tags: [memory]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryDiffRequest"
+      responses:
+        "200":
+          description: Diff result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryDiffResponse"
+        "400":
+          description: Versions are incompatible or request is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: One or both versions not found in caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memory/audit:
+    get:
+      summary: List content-free memory audit events
+      tags: [memory]
+      parameters:
+        - in: query
+          name: memory_scope_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: memory_version_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: workflow_run_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: action_type
+          schema:
+            $ref: "#/components/schemas/MemoryAuditAction"
+        - in: query
+          name: base_memory_version_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: compare_memory_version_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Audit event page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryAuditResponse"
+components:
+  parameters:
+    WorkflowLineageId:
+      in: query
+      name: workflow_lineage_id
+      required: true
+      schema:
+        type: string
+    AgentKey:
+      in: query
+      name: agent_key
+      required: true
+      schema:
+        type: string
+    MemoryKey:
+      in: query
+      name: memory_key
+      required: true
+      schema:
+        type: string
+    MemoryScopeId:
+      in: path
+      name: memory_scope_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MemoryVersionId:
+      in: path
+      name: memory_version_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+    MemoryScopeRef:
+      type: object
+      required: [workflow_lineage_id, agent_key, memory_key]
+      properties:
+        memory_scope_id:
+          type: string
+          format: uuid
+        workflow_lineage_id:
+          type: string
+        agent_key:
+          type: string
+        memory_key:
+          type: string
+    RuntimeSourceRef:
+      type: object
+      properties:
+        workflow_run_id:
+          type: string
+          format: uuid
+        run_step_id:
+          type: string
+          format: uuid
+        run_bundle_id:
+          type: string
+          format: uuid
+        bundle_digest:
+          type: string
+          minLength: 64
+          maxLength: 64
+        run_lineage_id:
+          type: string
+          format: uuid
+    MemoryContent:
+      description: Canonical JSON snapshot. Removals use explicit marker objects.
+      oneOf:
+        - type: object
+        - type: array
+        - type: string
+        - type: number
+        - type: boolean
+        - type: "null"
+    MemoryVersionSummary:
+      type: object
+      required:
+        - memory_version_id
+        - memory_scope_id
+        - version_sequence
+        - content_sha256
+        - created_at
+      properties:
+        memory_version_id:
+          type: string
+          format: uuid
+        memory_scope_id:
+          type: string
+          format: uuid
+        previous_memory_version_id:
+          type: string
+          format: uuid
+        version_sequence:
+          type: integer
+          minimum: 1
+        content_sha256:
+          type: string
+          minLength: 64
+          maxLength: 64
+        change_summary_redacted:
+          type: string
+        source:
+          $ref: "#/components/schemas/RuntimeSourceRef"
+        created_at:
+          type: string
+          format: date-time
+    MemoryHeadResponse:
+      type: object
+      required: [has_memory, scope]
+      properties:
+        has_memory:
+          type: boolean
+        scope:
+          $ref: "#/components/schemas/MemoryScopeRef"
+        head:
+          $ref: "#/components/schemas/MemoryVersionSummary"
+        content:
+          $ref: "#/components/schemas/MemoryContent"
+    MemoryWriteRequest:
+      type: object
+      required: [scope, content]
+      properties:
+        scope:
+          $ref: "#/components/schemas/MemoryScopeRef"
+        content:
+          $ref: "#/components/schemas/MemoryContent"
+        expected_current_version_id:
+          type: string
+          format: uuid
+        assert_no_current_head:
+          type: boolean
+          default: false
+        idempotency_key:
+          type: string
+          maxLength: 128
+        change_reason:
+          type: string
+          maxLength: 500
+        change_summary_redacted:
+          type: string
+          maxLength: 1000
+        source:
+          $ref: "#/components/schemas/RuntimeSourceRef"
+    MemoryWriteResponse:
+      type: object
+      required: [scope, version, head_advanced]
+      properties:
+        scope:
+          $ref: "#/components/schemas/MemoryScopeRef"
+        version:
+          $ref: "#/components/schemas/MemoryVersionSummary"
+        head_advanced:
+          type: boolean
+    MemoryConflictResponse:
+      type: object
+      required: [detail, conflict_type]
+      properties:
+        detail:
+          type: string
+        conflict_type:
+          type: string
+          enum: [head_exists, stale_expected_head, idempotency_conflict]
+        latest_memory_version_id:
+          type: string
+          format: uuid
+    MemoryHistoryResponse:
+      type: object
+      required: [scope, versions]
+      properties:
+        scope:
+          $ref: "#/components/schemas/MemoryScopeRef"
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemoryVersionResponse"
+        next_cursor:
+          type: string
+    MemoryVersionResponse:
+      allOf:
+        - $ref: "#/components/schemas/MemoryVersionSummary"
+        - type: object
+          properties:
+            scope:
+              $ref: "#/components/schemas/MemoryScopeRef"
+            content:
+              $ref: "#/components/schemas/MemoryContent"
+    MemoryReplayResponse:
+      type: object
+      required: [target, content, lineage]
+      properties:
+        target:
+          $ref: "#/components/schemas/MemoryVersionSummary"
+        content:
+          $ref: "#/components/schemas/MemoryContent"
+        lineage:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemoryVersionSummary"
+    MemoryDiffRequest:
+      type: object
+      required: [base_memory_version_id, compare_memory_version_id]
+      properties:
+        base_memory_version_id:
+          type: string
+          format: uuid
+        compare_memory_version_id:
+          type: string
+          format: uuid
+    MemoryDiffEntry:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          description: JSON Pointer path
+        before:
+          $ref: "#/components/schemas/MemoryContent"
+        after:
+          $ref: "#/components/schemas/MemoryContent"
+    MemoryDiffResponse:
+      type: object
+      required: [base, compare, additions, removals, changes]
+      properties:
+        base:
+          $ref: "#/components/schemas/MemoryVersionSummary"
+        compare:
+          $ref: "#/components/schemas/MemoryVersionSummary"
+        additions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemoryDiffEntry"
+        removals:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemoryDiffEntry"
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemoryDiffEntry"
+    MemoryAuditAction:
+      type: string
+      enum:
+        - create_version
+        - get_head
+        - get_version
+        - list_history
+        - replay
+        - diff
+        - archive_mark
+    MemoryAuditEvent:
+      type: object
+      required: [memory_audit_event_id, action_type, outcome, created_at]
+      properties:
+        memory_audit_event_id:
+          type: string
+          format: uuid
+        memory_scope_id:
+          type: string
+          format: uuid
+        memory_version_id:
+          type: string
+          format: uuid
+        workflow_run_id:
+          type: string
+          format: uuid
+        run_bundle_id:
+          type: string
+          format: uuid
+        action_type:
+          $ref: "#/components/schemas/MemoryAuditAction"
+        outcome:
+          type: string
+          enum: [allowed, denied, not_found, conflict, invalid]
+        content_sha256:
+          type: string
+        base_memory_version_id:
+          type: string
+          format: uuid
+        compare_memory_version_id:
+          type: string
+          format: uuid
+        change_summary_redacted:
+          type: string
+        denial_reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    MemoryAuditResponse:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemoryAuditEvent"
+        next_cursor:
+          type: string

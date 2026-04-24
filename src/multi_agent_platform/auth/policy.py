@@ -201,6 +201,41 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="list_runtime_side_effects",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/memory/head": ProtectedSurface(
+        surface_key="GET:/memory/head",
+        requested_action="read_memory_head",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/memory/versions": ProtectedSurface(
+        surface_key="POST:/memory/versions",
+        requested_action="create_memory_version",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/memory/versions/{memory_version_id}": ProtectedSurface(
+        surface_key="GET:/memory/versions/{memory_version_id}",
+        requested_action="read_memory_version",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/memory/scopes/{memory_scope_id}/versions": ProtectedSurface(
+        surface_key="GET:/memory/scopes/{memory_scope_id}/versions",
+        requested_action="list_memory_history",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/memory/versions/{memory_version_id}/replay": ProtectedSurface(
+        surface_key="GET:/memory/versions/{memory_version_id}/replay",
+        requested_action="replay_memory_version",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/memory/diffs": ProtectedSurface(
+        surface_key="POST:/memory/diffs",
+        requested_action="diff_memory_versions",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/memory/audit": ProtectedSurface(
+        surface_key="GET:/memory/audit",
+        requested_action="list_memory_audit",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
 }
 
 
