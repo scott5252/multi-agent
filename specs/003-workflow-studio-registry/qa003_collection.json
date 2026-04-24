@@ -1,0 +1,1894 @@
+{
+  "version": 1,
+  "collections": [
+    {
+      "id": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+      "name": "Spec 003 Workflow Studio Registry QA",
+      "description": "Postman collection generated from specs/003-workflow-studio-registry/qa003.md. Import this file as a Postman data dump, select the QA003 Local environment, and run requests in order after starting the API and seeding tenants from the QA guide.",
+      "events": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const defaults = {",
+              "  base_url: 'http://127.0.0.1:8000',",
+              "  tenant_admin_principal: 'tenant-admin-acme',",
+              "  tenant_user_principal: 'tenant-user-acme',",
+              "  platform_admin_principal: 'platform-admin',",
+              "  acme_tenant_id: '11111111-1111-1111-1111-111111111111',",
+              "  tenant_workflow_slug: 'customer-intake',",
+              "  tenant_workflow_display_name: 'Customer Intake',",
+              "  platform_workflow_slug: 'document-extraction',",
+              "  platform_workflow_display_name: 'Document Extraction',",
+              "  guardrail_workflow_slug: 'qa-guardrail-design',",
+              "  guardrail_workflow_display_name: 'QA Guardrail Design'",
+              "};",
+              "",
+              "Object.entries(defaults).forEach(([key, value]) => {",
+              "  if (!pm.environment.get(key) && !pm.collectionVariables.get(key)) {",
+              "    pm.environment.set(key, value);",
+              "    pm.collectionVariables.set(key, value);",
+              "  }",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function maybeJson() {",
+              "  const body = pm.response.text();",
+              "  if (!body) {",
+              "    return null;",
+              "  }",
+              "  try {",
+              "    return pm.response.json();",
+              "  } catch (error) {",
+              "    return null;",
+              "  }",
+              "}",
+              "",
+              "function saveVariable(key, value) {",
+              "  if (value === undefined || value === null || value === '') {",
+              "    return;",
+              "  }",
+              "  const stringValue = String(value);",
+              "  pm.environment.set(key, stringValue);",
+              "  pm.collectionVariables.set(key, stringValue);",
+              "}",
+              "",
+              "saveVariable('last_status_code', pm.response.code);",
+              "saveVariable('last_response_body', pm.response.text());",
+              "",
+              "const json = maybeJson();",
+              "if (json && json.detail) {",
+              "  saveVariable('last_response_detail', typeof json.detail === 'string' ? json.detail : JSON.stringify(json.detail));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "variables": [
+        {
+          "id": "e122d691-c8d4-49e7-9f9b-7f89c04544a2",
+          "key": "base_url",
+          "value": "http://127.0.0.1:8000",
+          "type": "string"
+        },
+        {
+          "id": "e6b2fd25-ed7f-4321-a49d-17be5d84f048",
+          "key": "tenant_admin_principal",
+          "value": "tenant-admin-acme",
+          "type": "string"
+        },
+        {
+          "id": "cc57bfe6-cd76-4d68-baf3-1270f15c4e2f",
+          "key": "tenant_user_principal",
+          "value": "tenant-user-acme",
+          "type": "string"
+        },
+        {
+          "id": "ea37d423-0d8c-4d6e-b5b7-64307ee1951e",
+          "key": "platform_admin_principal",
+          "value": "platform-admin",
+          "type": "string"
+        },
+        {
+          "id": "5989cf7d-53d8-4abb-9636-71184d1a435f",
+          "key": "acme_tenant_id",
+          "value": "11111111-1111-1111-1111-111111111111",
+          "type": "string"
+        },
+        {
+          "id": "929e7de9-a762-4c82-9616-b69510d2a91e",
+          "key": "tenant_workflow_slug",
+          "value": "customer-intake",
+          "type": "string"
+        },
+        {
+          "id": "4231381f-a1fa-4c46-a946-ea613af10745",
+          "key": "tenant_workflow_display_name",
+          "value": "Customer Intake",
+          "type": "string"
+        },
+        {
+          "id": "193ddc09-e7ce-4a1c-841f-95b3620f14e3",
+          "key": "platform_workflow_slug",
+          "value": "document-extraction",
+          "type": "string"
+        },
+        {
+          "id": "2639c3c1-7eda-4bc1-91d5-73f5fd28be63",
+          "key": "platform_workflow_display_name",
+          "value": "Document Extraction",
+          "type": "string"
+        },
+        {
+          "id": "c82db547-3622-419a-a81a-413e18a9bb20",
+          "key": "guardrail_workflow_slug",
+          "value": "qa-guardrail-design",
+          "type": "string"
+        },
+        {
+          "id": "cd8cb2a3-5257-47c8-a02b-c733f1d575c8",
+          "key": "guardrail_workflow_display_name",
+          "value": "QA Guardrail Design",
+          "type": "string"
+        },
+        {
+          "id": "0a29890d-4a4a-4a20-b14c-02e44910ffcf",
+          "key": "tenant_workflow_draft_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "ce6808ef-441a-4ee5-a753-58bcc0b9264f",
+          "key": "tenant_workflow_lineage_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "92a93287-f1b0-4189-afe4-7ea4902ec8d2",
+          "key": "tenant_current_revision_number",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "9d04886a-b0c4-4100-ab20-35611395d954",
+          "key": "tenant_latest_revision_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "4d534599-bdf4-4981-9c1e-964184e5cbd5",
+          "key": "tenant_latest_revision_sha256",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "12815a89-5812-4ce3-ba8b-b5bd1c4d3028",
+          "key": "platform_workflow_draft_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "07fb1b4d-8c6a-4e57-8b10-d0fdf5b0e127",
+          "key": "platform_workflow_lineage_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "505176d4-35c3-47ca-805a-87c2ffa31d96",
+          "key": "platform_current_revision_number",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "4040f4f7-db27-4042-a940-d1b6d0af0d2b",
+          "key": "platform_latest_revision_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "fd8ee953-15a0-4bc7-a871-4a3fa0f197af",
+          "key": "platform_latest_revision_sha256",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "65e674e2-5ee8-4bab-9b6b-4bd255ddde29",
+          "key": "failed_validation_result_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "15f05463-a06e-4495-ab20-4f1a1a785a77",
+          "key": "passing_validation_result_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "f9ac9e79-816c-4105-9126-db90e4be7b4d",
+          "key": "workflow_version_bundle_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "dd42053f-49a7-4a27-87b0-bf718f6ba865",
+          "key": "workflow_display_version",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "f830e5ab-1744-4882-8491-5b2833e3c501",
+          "key": "compiled_bundle_digest",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "db2b0411-4710-47ea-a61a-50462c3ddc78",
+          "key": "compiled_bundle_artifact_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "fc778fe0-ad69-46c2-9459-480b6378e24a",
+          "key": "published_from_draft_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "3a0d1b41-3895-4c30-b0b8-6e345c860480",
+          "key": "published_from_revision_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "9c66a7c0-392a-4d26-9f1e-7aef1333ca0a",
+          "key": "registry_sharing_grant_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "54dfc994-cf6c-49cb-8257-bf552fdc4794",
+          "key": "successor_workflow_draft_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "51138433-b3e0-47f0-a60d-65db89268e24",
+          "key": "successor_current_revision_number",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "b74f817b-da67-4d92-9308-5b5d25a9d3f9",
+          "key": "guardrail_workflow_draft_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "55b3b509-8d29-4ba0-986f-e9e7a58e238c",
+          "key": "guardrail_validation_result_id",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "12b8c5fd-4a7c-450d-9df6-e3461975702a",
+          "key": "last_status_code",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "1d23a7ab-d3e0-4ecd-b4a3-a140206b2d30",
+          "key": "last_response_body",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "id": "264df9b6-69a4-4954-bfdb-5338466eb3b9",
+          "key": "last_response_detail",
+          "value": "",
+          "type": "string"
+        }
+      ],
+      "order": [],
+      "folders_order": [
+        "2ce2cec3-1322-4ad3-b567-2fc641269e9e",
+        "dca50ae9-1c2f-43c0-8e4f-de16eb5005e4",
+        "9545f6f2-b4c0-42f2-aa9c-34ba10345c38",
+        "2687cb3b-fc6c-4157-a470-0ae61980e474",
+        "11aaf520-084b-48b6-b01e-bd979f420f68",
+        "97ec9615-c3e9-466d-a66f-b19cc8c24785"
+      ],
+      "folders": [
+        {
+          "id": "2ce2cec3-1322-4ad3-b567-2fc641269e9e",
+          "name": "Tenant Draft Lifecycle",
+          "order": [
+            "3377520a-ec7e-436c-aa1e-3eeaa35ad709",
+            "d95ec2e2-a4c3-47e1-8553-8794ed72e3e8",
+            "af6c93fd-e0b5-4334-8aad-ccda69d45491",
+            "0d2d4182-7d42-45e5-8b88-a852ef3fae0a",
+            "47a00515-ac42-462d-a1bc-7188e93ea6f3"
+          ],
+          "folders_order": [],
+          "description": "Spec 003 QA steps 6 through 9.",
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "folder": null,
+          "folderId": "2ce2cec3-1322-4ad3-b567-2fc641269e9e",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        },
+        {
+          "id": "dca50ae9-1c2f-43c0-8e4f-de16eb5005e4",
+          "name": "Platform Validation And Publish",
+          "order": [
+            "5193934c-3683-4b18-b117-7af69eb5b71c",
+            "94b8c341-4f00-4267-a94a-582339012543",
+            "25578eea-4e7d-43d1-bbb7-c010b835a81c",
+            "b4c5c9f9-ed0c-4348-9b06-205dd32171f3",
+            "a6ff6cea-7d5b-4581-871d-1e101d4a1f26",
+            "a0516e26-04b0-43a9-b131-04618603711e",
+            "8b9dcbcf-01d3-4d6c-a9fd-373f681a309b"
+          ],
+          "folders_order": [],
+          "description": "Spec 003 QA steps 12 through 16.",
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "folder": null,
+          "folderId": "dca50ae9-1c2f-43c0-8e4f-de16eb5005e4",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        },
+        {
+          "id": "9545f6f2-b4c0-42f2-aa9c-34ba10345c38",
+          "name": "Sharing And Tenant Discovery",
+          "order": [
+            "e78d45ca-9372-4b8e-be2b-f62a9dedc4be",
+            "5f308324-0082-4564-930b-e3b43b6106c9",
+            "5aedb2a9-f316-4a0b-919e-af690bceed63",
+            "08274903-aadf-4911-9f7b-05c4f2f6dd67"
+          ],
+          "folders_order": [],
+          "description": "Spec 003 QA steps 17 through 19, plus the sharing-grant authorization guardrail from step 18.",
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "folder": null,
+          "folderId": "9545f6f2-b4c0-42f2-aa9c-34ba10345c38",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        },
+        {
+          "id": "2687cb3b-fc6c-4157-a470-0ae61980e474",
+          "name": "Immutability And Successor Drafts",
+          "order": [
+            "a363a83f-f0a4-455f-ac7d-49b9c9a0a288",
+            "b613045d-7205-46ef-9ac4-f62f57da32ab",
+            "553842a5-050d-42c2-8cf2-716ee12c53b0"
+          ],
+          "folders_order": [],
+          "description": "Spec 003 QA steps 20 through 22.",
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "folder": null,
+          "folderId": "2687cb3b-fc6c-4157-a470-0ae61980e474",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        },
+        {
+          "id": "11aaf520-084b-48b6-b01e-bd979f420f68",
+          "name": "Validation Guardrails",
+          "order": [
+            "3c98fca9-eae6-4f9d-ba3a-fbcd31892148",
+            "265253d1-527a-4cdd-b8ee-b72519adcce1"
+          ],
+          "folders_order": [],
+          "description": "Spec 003 QA step 23.",
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "folder": null,
+          "folderId": "11aaf520-084b-48b6-b01e-bd979f420f68",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        },
+        {
+          "id": "97ec9615-c3e9-466d-a66f-b19cc8c24785",
+          "name": "Authorization Guardrails",
+          "order": [
+            "49f50f09-e715-48f9-9cc5-7b2652eb1d70"
+          ],
+          "folders_order": [],
+          "description": "Spec 003 QA step 24.",
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "folder": null,
+          "folderId": "97ec9615-c3e9-466d-a66f-b19cc8c24785",
+          "auth": null,
+          "events": null,
+          "protocolProfileBehavior": {}
+        }
+      ],
+      "requests": [
+        {
+          "id": "3377520a-ec7e-436c-aa1e-3eeaa35ad709",
+          "name": "06 Create tenant-scoped draft",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Creates the Acme tenant workflow draft and stores its draft, lineage, revision, and digest variables.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response includes workflow_draft_id', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.workflow_draft_id).to.exist;",
+                  "});",
+                  "",
+                  "pm.test('Response includes current_revision_number', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.current_revision_number).to.exist;",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('tenant_workflow_draft_id', json.workflow_draft_id);",
+                  "saveVariable('tenant_workflow_lineage_id', json.workflow_lineage_id);",
+                  "saveVariable('tenant_current_revision_number', json.current_revision_number);",
+                  "saveVariable('tenant_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);",
+                  "saveVariable('tenant_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"scope_type\": \"tenant\",\n  \"workflow_kind\": \"main_workflow\",\n  \"slug\": \"{{tenant_workflow_slug}}\",\n  \"display_name\": \"{{tenant_workflow_display_name}}\",\n  \"document\": {\n    \"workflow_key\": \"{{tenant_workflow_slug}}\",\n    \"display_name\": \"{{tenant_workflow_display_name}}\",\n    \"description\": \"Collect incoming work and route it.\",\n    \"workflow_kind\": \"main_workflow\",\n    \"entry_node_key\": \"triage-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"triage-role\",\n        \"display_name\": \"Triage Role\",\n        \"purpose\": \"Assess the incoming payload.\",\n        \"input_contract_key\": \"intake-request\",\n        \"output_contract_key\": \"triage-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"triage-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Perform triage.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"intake-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"triage-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"triage-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Triage\",\n        \"role_key\": \"triage-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+          "tests": "pm.test('Status code is 201', function () {\n  pm.response.to.have.status(201);\n});\n\npm.test('Response includes workflow_draft_id', function () {\n  const json = pm.response.json();\n  pm.expect(json.workflow_draft_id).to.exist;\n});\n\npm.test('Response includes current_revision_number', function () {\n  const json = pm.response.json();\n  pm.expect(json.current_revision_number).to.exist;\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('tenant_workflow_draft_id', json.workflow_draft_id);\nsaveVariable('tenant_workflow_lineage_id', json.workflow_lineage_id);\nsaveVariable('tenant_current_revision_number', json.current_revision_number);\nsaveVariable('tenant_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);\nsaveVariable('tenant_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "d95ec2e2-a4c3-47e1-8553-8794ed72e3e8",
+          "name": "07 List visible drafts",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "GET",
+          "description": "Lists registry items visible to the tenant admin and confirms the tenant draft is present.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('Response includes items', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.items).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Tenant draft is visible when the draft id is already known', function () {",
+                  "  const draftId = pm.environment.get('tenant_workflow_draft_id') || pm.collectionVariables.get('tenant_workflow_draft_id');",
+                  "  if (!draftId) {",
+                  "    pm.expect(true).to.equal(true);",
+                  "    return;",
+                  "  }",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.items.some((item) => item.workflow_draft_id === draftId)).to.equal(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\n\n\npm.test('Response includes items', function () {\n  const json = pm.response.json();\n  pm.expect(json.items).to.be.an('array');\n});\n\npm.test('Tenant draft is visible when the draft id is already known', function () {\n  const draftId = pm.environment.get('tenant_workflow_draft_id') || pm.collectionVariables.get('tenant_workflow_draft_id');\n  if (!draftId) {\n    pm.expect(true).to.equal(true);\n    return;\n  }\n  const json = pm.response.json();\n  pm.expect(json.items.some((item) => item.workflow_draft_id === draftId)).to.equal(true);\n});",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "af6c93fd-e0b5-4334-8aad-ccda69d45491",
+          "name": "07 Fetch tenant draft",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "GET",
+          "description": "Fetches the stored tenant draft by id and refreshes revision metadata variables.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('tenant_workflow_draft_id', json.workflow_draft_id);",
+                  "saveVariable('tenant_current_revision_number', json.current_revision_number);",
+                  "saveVariable('tenant_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);",
+                  "saveVariable('tenant_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('tenant_workflow_draft_id', json.workflow_draft_id);\nsaveVariable('tenant_current_revision_number', json.current_revision_number);\nsaveVariable('tenant_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);\nsaveVariable('tenant_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{tenant_workflow_draft_id}}",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "0d2d4182-7d42-45e5-8b88-a852ef3fae0a",
+          "name": "08 Save tenant draft revision 2",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "PUT",
+          "description": "Saves the updated Customer Intake draft and advances the tenant current revision number to 2.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Current revision is 2', function () {",
+                  "  pm.expect(pm.response.json().current_revision_number).to.eql(2);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('tenant_current_revision_number', json.current_revision_number);",
+                  "saveVariable('tenant_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);",
+                  "saveVariable('tenant_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"base_revision_number\": 1,\n  \"display_name\": \"Customer Intake Updated\",\n  \"change_summary\": \"Refine the editor title\",\n  \"document\": {\n    \"workflow_key\": \"{{tenant_workflow_slug}}\",\n    \"display_name\": \"Customer Intake Updated\",\n    \"description\": \"Collect incoming work and route it.\",\n    \"workflow_kind\": \"main_workflow\",\n    \"entry_node_key\": \"triage-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"triage-role\",\n        \"display_name\": \"Triage Role\",\n        \"purpose\": \"Assess the incoming payload.\",\n        \"input_contract_key\": \"intake-request\",\n        \"output_contract_key\": \"triage-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"triage-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Perform triage.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"intake-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"triage-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"triage-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Triage\",\n        \"role_key\": \"triage-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\n\npm.test('Current revision is 2', function () {\n  pm.expect(pm.response.json().current_revision_number).to.eql(2);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('tenant_current_revision_number', json.current_revision_number);\nsaveVariable('tenant_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);\nsaveVariable('tenant_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{tenant_workflow_draft_id}}",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "47a00515-ac42-462d-a1bc-7188e93ea6f3",
+          "name": "09 Verify stale tenant save is rejected",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "PUT",
+          "description": "Repeats the Step 8 save with base_revision_number 1 and expects a stale-write conflict.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"base_revision_number\": 1,\n  \"display_name\": \"Customer Intake Updated\",\n  \"change_summary\": \"Refine the editor title\",\n  \"document\": {\n    \"workflow_key\": \"{{tenant_workflow_slug}}\",\n    \"display_name\": \"Customer Intake Updated\",\n    \"description\": \"Collect incoming work and route it.\",\n    \"workflow_kind\": \"main_workflow\",\n    \"entry_node_key\": \"triage-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"triage-role\",\n        \"display_name\": \"Triage Role\",\n        \"purpose\": \"Assess the incoming payload.\",\n        \"input_contract_key\": \"intake-request\",\n        \"output_contract_key\": \"triage-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"triage-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Perform triage.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"intake-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"triage-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"triage-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Triage\",\n        \"role_key\": \"triage-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+          "tests": "pm.test('Status code is 409', function () {\n  pm.response.to.have.status(409);\n});",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{tenant_workflow_draft_id}}",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "5193934c-3683-4b18-b117-7af69eb5b71c",
+          "name": "12 Create invalid platform draft",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Creates a platform-scoped draft with skill_version latest so validation can report a blocking finding.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('platform_workflow_draft_id', json.workflow_draft_id);",
+                  "saveVariable('platform_workflow_lineage_id', json.workflow_lineage_id);",
+                  "saveVariable('platform_current_revision_number', json.current_revision_number);",
+                  "saveVariable('platform_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);",
+                  "saveVariable('platform_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"scope_type\": \"platform\",\n  \"workflow_kind\": \"subworkflow\",\n  \"slug\": \"{{platform_workflow_slug}}\",\n  \"display_name\": \"{{platform_workflow_display_name}}\",\n  \"document\": {\n    \"workflow_key\": \"{{platform_workflow_slug}}\",\n    \"display_name\": \"{{platform_workflow_display_name}}\",\n    \"description\": \"Extract a document and return structured data.\",\n    \"workflow_kind\": \"subworkflow\",\n    \"entry_node_key\": \"extract-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"extract-role\",\n        \"display_name\": \"Extract Role\",\n        \"purpose\": \"Extract structured information.\",\n        \"input_contract_key\": \"extract-request\",\n        \"output_contract_key\": \"extract-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"extract-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"latest\",\n            \"purpose\": \"Extract structured information.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"extract-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"extract-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"extract-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Extract\",\n        \"role_key\": \"extract-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+          "tests": "pm.test('Status code is 201', function () {\n  pm.response.to.have.status(201);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('platform_workflow_draft_id', json.workflow_draft_id);\nsaveVariable('platform_workflow_lineage_id', json.workflow_lineage_id);\nsaveVariable('platform_current_revision_number', json.current_revision_number);\nsaveVariable('platform_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);\nsaveVariable('platform_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "94b8c341-4f00-4267-a94a-582339012543",
+          "name": "13 Validate invalid platform draft",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Runs validation and stores the failed validation result id for stale/failed publish checks.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('Validation fails because the skill version is not pinned', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('failed');",
+                  "  pm.expect(json.blocking_issue_count).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test('Finding targets skill_version', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.findings.some((finding) => String(finding.field_path || '').includes('skill_version'))).to.equal(true);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('failed_validation_result_id', json.validation_result_id);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\n\n\npm.test('Validation fails because the skill version is not pinned', function () {\n  const json = pm.response.json();\n  pm.expect(json.status).to.eql('failed');\n  pm.expect(json.blocking_issue_count).to.be.above(0);\n});\n\npm.test('Finding targets skill_version', function () {\n  const json = pm.response.json();\n  pm.expect(json.findings.some((finding) => String(finding.field_path || '').includes('skill_version'))).to.equal(true);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('failed_validation_result_id', json.validation_result_id);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{platform_workflow_draft_id}}/validate",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "25578eea-4e7d-43d1-bbb7-c010b835a81c",
+          "name": "14 Fix platform draft",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "PUT",
+          "description": "Pins the platform draft skill version and advances the draft to revision 2.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Current platform revision is 2', function () {",
+                  "  pm.expect(pm.response.json().current_revision_number).to.eql(2);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('platform_current_revision_number', json.current_revision_number);",
+                  "saveVariable('platform_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);",
+                  "saveVariable('platform_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"base_revision_number\": 1,\n  \"display_name\": \"{{platform_workflow_display_name}}\",\n  \"change_summary\": \"Pin the skill version for publish readiness\",\n  \"document\": {\n    \"workflow_key\": \"{{platform_workflow_slug}}\",\n    \"display_name\": \"{{platform_workflow_display_name}}\",\n    \"description\": \"Extract a document and return structured data.\",\n    \"workflow_kind\": \"subworkflow\",\n    \"entry_node_key\": \"extract-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"extract-role\",\n        \"display_name\": \"Extract Role\",\n        \"purpose\": \"Extract structured information.\",\n        \"input_contract_key\": \"extract-request\",\n        \"output_contract_key\": \"extract-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"extract-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Extract structured information.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"extract-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"extract-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"extract-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Extract\",\n        \"role_key\": \"extract-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\n\npm.test('Current platform revision is 2', function () {\n  pm.expect(pm.response.json().current_revision_number).to.eql(2);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('platform_current_revision_number', json.current_revision_number);\nsaveVariable('platform_latest_revision_id', json.latest_revision && json.latest_revision.workflow_draft_revision_id);\nsaveVariable('platform_latest_revision_sha256', json.latest_revision && json.latest_revision.document_sha256);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{platform_workflow_draft_id}}",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "b4c5c9f9-ed0c-4348-9b06-205dd32171f3",
+          "name": "14 Re-validate fixed platform draft",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Runs validation against revision 2 and stores the passing validation result id used by publish.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('Validation passes after pinning the skill version', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('passed');",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('passing_validation_result_id', json.validation_result_id);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\n\n\npm.test('Validation passes after pinning the skill version', function () {\n  const json = pm.response.json();\n  pm.expect(json.status).to.eql('passed');\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('passing_validation_result_id', json.validation_result_id);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{platform_workflow_draft_id}}/validate",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "a6ff6cea-7d5b-4581-871d-1e101d4a1f26",
+          "name": "15 Publish validated platform draft",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Publishes the fixed draft and stores the immutable workflow version bundle identifiers.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('Published display version is v1', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.display_version).to.eql('v1');",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('workflow_version_bundle_id', json.workflow_version_bundle_id);",
+                  "saveVariable('workflow_display_version', json.display_version);",
+                  "saveVariable('compiled_bundle_digest', json.compiled_bundle_digest);",
+                  "saveVariable('compiled_bundle_artifact_id', json.compiled_bundle_artifact_id);",
+                  "saveVariable('published_from_draft_id', json.published_from_draft_id);",
+                  "saveVariable('published_from_revision_id', json.published_from_revision_id);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"validation_result_id\": \"{{passing_validation_result_id}}\"\n}",
+          "tests": "pm.test('Status code is 201', function () {\n  pm.response.to.have.status(201);\n});\n\n\npm.test('Published display version is v1', function () {\n  const json = pm.response.json();\n  pm.expect(json.display_version).to.eql('v1');\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('workflow_version_bundle_id', json.workflow_version_bundle_id);\nsaveVariable('workflow_display_version', json.display_version);\nsaveVariable('compiled_bundle_digest', json.compiled_bundle_digest);\nsaveVariable('compiled_bundle_artifact_id', json.compiled_bundle_artifact_id);\nsaveVariable('published_from_draft_id', json.published_from_draft_id);\nsaveVariable('published_from_revision_id', json.published_from_revision_id);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{platform_workflow_draft_id}}/publish",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "a0516e26-04b0-43a9-b131-04618603711e",
+          "name": "15b Reject publish with failed validation result",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Attempts publish with the old failed validation result and expects a conflict.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"validation_result_id\": \"{{failed_validation_result_id}}\"\n}",
+          "tests": "pm.test('Status code is 409', function () {\n  pm.response.to.have.status(409);\n});",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{platform_workflow_draft_id}}/publish",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "8b9dcbcf-01d3-4d6c-a9fd-373f681a309b",
+          "name": "16 Fetch version detail",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "GET",
+          "description": "Fetches the immutable version detail and refreshes published bundle metadata variables.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('workflow_version_bundle_id', json.workflow_version_bundle_id);",
+                  "saveVariable('workflow_display_version', json.display_version);",
+                  "saveVariable('compiled_bundle_digest', json.compiled_bundle_digest);",
+                  "saveVariable('compiled_bundle_artifact_id', json.compiled_bundle_artifact_id);",
+                  "saveVariable('published_from_draft_id', json.published_from_draft_id);",
+                  "saveVariable('published_from_revision_id', json.published_from_revision_id);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('workflow_version_bundle_id', json.workflow_version_bundle_id);\nsaveVariable('workflow_display_version', json.display_version);\nsaveVariable('compiled_bundle_digest', json.compiled_bundle_digest);\nsaveVariable('compiled_bundle_artifact_id', json.compiled_bundle_artifact_id);\nsaveVariable('published_from_draft_id', json.published_from_draft_id);\nsaveVariable('published_from_revision_id', json.published_from_revision_id);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/versions/{{workflow_version_bundle_id}}",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "e78d45ca-9372-4b8e-be2b-f62a9dedc4be",
+          "name": "17 Verify tenant cannot inspect unshared version",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "GET",
+          "description": "Confirms the tenant admin cannot read the platform-scoped published version before a sharing grant exists.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 403', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "tests": "pm.test('Status code is 403', function () {\n  pm.response.to.have.status(403);\n});",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/versions/{{workflow_version_bundle_id}}",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "5f308324-0082-4564-930b-e3b43b6106c9",
+          "name": "18 Grant Acme tenant access",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Creates the platform sharing grant and stores the registry_sharing_grant_id.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('registry_sharing_grant_id', json.registry_sharing_grant_id);",
+                  "saveVariable('workflow_version_bundle_id', json.workflow_version_bundle_id);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"grantee_tenant_id\": \"{{acme_tenant_id}}\"\n}",
+          "tests": "pm.test('Status code is 201', function () {\n  pm.response.to.have.status(201);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('registry_sharing_grant_id', json.registry_sharing_grant_id);\nsaveVariable('workflow_version_bundle_id', json.workflow_version_bundle_id);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/versions/{{workflow_version_bundle_id}}/sharing-grants",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "5aedb2a9-f316-4a0b-919e-af690bceed63",
+          "name": "18b Verify tenant cannot create sharing grant",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Repeats the sharing-grant call as tenant-admin-acme and expects a 403.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 403', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"grantee_tenant_id\": \"{{acme_tenant_id}}\"\n}",
+          "tests": "pm.test('Status code is 403', function () {\n  pm.response.to.have.status(403);\n});",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/versions/{{workflow_version_bundle_id}}/sharing-grants",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "08274903-aadf-4911-9f7b-05c4f2f6dd67",
+          "name": "19 Verify tenant discovers granted published asset",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "GET",
+          "description": "Lists published registry items for the tenant and verifies the granted platform version appears.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('Granted published asset appears in items', function () {",
+                  "  const versionId = pm.environment.get('workflow_version_bundle_id') || pm.collectionVariables.get('workflow_version_bundle_id');",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.items).to.be.an('array');",
+                  "  pm.expect(json.items.some((item) => item.workflow_version_bundle_id === versionId)).to.equal(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{tenant_admin_principal}}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\n\n\npm.test('Granted published asset appears in items', function () {\n  const versionId = pm.environment.get('workflow_version_bundle_id') || pm.collectionVariables.get('workflow_version_bundle_id');\n  const json = pm.response.json();\n  pm.expect(json.items).to.be.an('array');\n  pm.expect(json.items.some((item) => item.workflow_version_bundle_id === versionId)).to.equal(true);\n});",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows?status=published",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [
+            {
+              "key": "status",
+              "value": "published"
+            }
+          ],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "a363a83f-f0a4-455f-ac7d-49b9c9a0a288",
+          "name": "20 Verify published source draft is immutable",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "PUT",
+          "description": "Attempts to save the original published platform draft and expects a conflict.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"base_revision_number\": 2,\n  \"display_name\": \"Document Extraction Edited After Publish\",\n  \"change_summary\": \"Attempt to edit a published source draft\",\n  \"document\": {\n    \"workflow_key\": \"{{platform_workflow_slug}}\",\n    \"display_name\": \"Document Extraction Edited After Publish\",\n    \"description\": \"Extract a document and return structured data.\",\n    \"workflow_kind\": \"subworkflow\",\n    \"entry_node_key\": \"extract-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"extract-role\",\n        \"display_name\": \"Extract Role\",\n        \"purpose\": \"Extract structured information.\",\n        \"input_contract_key\": \"extract-request\",\n        \"output_contract_key\": \"extract-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"extract-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Extract structured information.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"extract-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"extract-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"extract-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Extract\",\n        \"role_key\": \"extract-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+          "tests": "pm.test('Status code is 409', function () {\n  pm.response.to.have.status(409);\n});",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{platform_workflow_draft_id}}",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "b613045d-7205-46ef-9ac4-f62f57da32ab",
+          "name": "21 Create successor draft from published version",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Seeds a new editable successor draft from the published version and stores the new draft id.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('successor_workflow_draft_id', json.workflow_draft_id);",
+                  "saveVariable('successor_current_revision_number', json.current_revision_number);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"scope_type\": \"platform\",\n  \"workflow_kind\": \"subworkflow\",\n  \"slug\": \"{{platform_workflow_slug}}\",\n  \"display_name\": \"{{platform_workflow_display_name}}\",\n  \"created_from_version_id\": \"{{workflow_version_bundle_id}}\",\n  \"document\": {\n    \"workflow_key\": \"{{platform_workflow_slug}}\",\n    \"display_name\": \"{{platform_workflow_display_name}}\",\n    \"description\": \"Extract a document and return structured data.\",\n    \"workflow_kind\": \"subworkflow\",\n    \"entry_node_key\": \"extract-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"extract-role\",\n        \"display_name\": \"Extract Role\",\n        \"purpose\": \"Extract structured information.\",\n        \"input_contract_key\": \"extract-request\",\n        \"output_contract_key\": \"extract-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"extract-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Extract structured information.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"extract-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"extract-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"extract-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Extract\",\n        \"role_key\": \"extract-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+          "tests": "pm.test('Status code is 201', function () {\n  pm.response.to.have.status(201);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('successor_workflow_draft_id', json.workflow_draft_id);\nsaveVariable('successor_current_revision_number', json.current_revision_number);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "553842a5-050d-42c2-8cf2-716ee12c53b0",
+          "name": "22 Verify duplicate active successor draft is rejected",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Repeats the successor create request while the first successor draft is active and expects a conflict.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"scope_type\": \"platform\",\n  \"workflow_kind\": \"subworkflow\",\n  \"slug\": \"{{platform_workflow_slug}}\",\n  \"display_name\": \"{{platform_workflow_display_name}}\",\n  \"created_from_version_id\": \"{{workflow_version_bundle_id}}\",\n  \"document\": {\n    \"workflow_key\": \"{{platform_workflow_slug}}\",\n    \"display_name\": \"{{platform_workflow_display_name}}\",\n    \"description\": \"Extract a document and return structured data.\",\n    \"workflow_kind\": \"subworkflow\",\n    \"entry_node_key\": \"extract-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"extract-role\",\n        \"display_name\": \"Extract Role\",\n        \"purpose\": \"Extract structured information.\",\n        \"input_contract_key\": \"extract-request\",\n        \"output_contract_key\": \"extract-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"extract-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Extract structured information.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"extract-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"extract-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"extract-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Extract\",\n        \"role_key\": \"extract-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+          "tests": "pm.test('Status code is 409', function () {\n  pm.response.to.have.status(409);\n});",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "3c98fca9-eae6-4f9d-ba3a-fbcd31892148",
+          "name": "23 Create invalid guardrail draft",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Creates a draft with invalid join, approval, and subworkflow settings.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('guardrail_workflow_draft_id', json.workflow_draft_id);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"scope_type\": \"platform\",\n  \"workflow_kind\": \"main_workflow\",\n  \"slug\": \"{{guardrail_workflow_slug}}\",\n  \"display_name\": \"{{guardrail_workflow_display_name}}\",\n  \"document\": {\n    \"workflow_key\": \"{{guardrail_workflow_slug}}\",\n    \"display_name\": \"{{guardrail_workflow_display_name}}\",\n    \"description\": \"Intentionally invalid design for manual validation QA.\",\n    \"workflow_kind\": \"main_workflow\",\n    \"entry_node_key\": \"extract-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"extract-role\",\n        \"display_name\": \"Extract Role\",\n        \"purpose\": \"Extract structured information.\",\n        \"input_contract_key\": \"extract-request\",\n        \"output_contract_key\": \"extract-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"extract-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Extract structured information.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"extract-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"extract-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"approval-decision\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"extract-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Extract\",\n        \"role_key\": \"extract-role\"\n      },\n      {\n        \"node_key\": \"missing-subworkflow-node\",\n        \"node_type\": \"subworkflow\",\n        \"display_name\": \"Missing Subworkflow\",\n        \"subworkflow_alias\": \"missing-platform-subworkflow\"\n      },\n      {\n        \"node_key\": \"approval-node\",\n        \"node_type\": \"approval\",\n        \"display_name\": \"Approval\",\n        \"approval_gate_key\": \"manager-review\"\n      },\n      {\n        \"node_key\": \"join-node\",\n        \"node_type\": \"join\",\n        \"display_name\": \"Join\",\n        \"join_policy_key\": \"review-quorum\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [\n      {\n        \"join_policy_key\": \"review-quorum\",\n        \"strategy\": \"quorum\",\n        \"required_branches\": [\n          \"extract-node\",\n          \"approval-node\"\n        ],\n        \"quorum_count\": 3\n      }\n    ],\n    \"approval_gates\": [\n      {\n        \"approval_gate_key\": \"manager-review\",\n        \"display_name\": \"Manager Review\",\n        \"approver_scope\": \"named_role\",\n        \"decision_contract_key\": \"approval-decision\"\n      }\n    ],\n    \"subworkflow_refs\": [\n      {\n        \"alias\": \"missing-platform-subworkflow\",\n        \"workflow_version_ref\": \"00000000-0000-0000-0000-000000000000\",\n        \"input_contract_key\": \"extract-request\",\n        \"output_contract_key\": \"extract-result\"\n      }\n    ]\n  }\n}",
+          "tests": "pm.test('Status code is 201', function () {\n  pm.response.to.have.status(201);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('guardrail_workflow_draft_id', json.workflow_draft_id);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "265253d1-527a-4cdd-b8ee-b72519adcce1",
+          "name": "23 Validate invalid guardrail draft",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Runs validation and checks field-targeted findings for quorum, approver role, and subworkflow reference.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('Guardrail validation fails', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('failed');",
+                  "});",
+                  "",
+                  "pm.test('Guardrail findings include expected field paths', function () {",
+                  "  const json = pm.response.json();",
+                  "  const paths = json.findings.map((finding) => String(finding.field_path || ''));",
+                  "  pm.expect(paths.some((path) => path.includes('join_policies') && path.includes('quorum_count'))).to.equal(true);",
+                  "  pm.expect(paths.some((path) => path.includes('approval_gates') && path.includes('approver_role_code'))).to.equal(true);",
+                  "  pm.expect(paths.some((path) => path.includes('subworkflow_refs') && path.includes('workflow_version_ref'))).to.equal(true);",
+                  "});",
+                  "",
+                  "function saveVariable(key, value) {",
+                  "  if (value === undefined || value === null || value === '') { return; }",
+                  "  const stringValue = String(value);",
+                  "  pm.environment.set(key, stringValue);",
+                  "  pm.collectionVariables.set(key, stringValue);",
+                  "}",
+                  "const json = pm.response.json();",
+                  "saveVariable('guardrail_validation_result_id', json.validation_result_id);"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{platform_admin_principal}}",
+          "tests": "pm.test('Status code is 200', function () {\n  pm.response.to.have.status(200);\n});\n\n\npm.test('Guardrail validation fails', function () {\n  const json = pm.response.json();\n  pm.expect(json.status).to.eql('failed');\n});\n\npm.test('Guardrail findings include expected field paths', function () {\n  const json = pm.response.json();\n  const paths = json.findings.map((finding) => String(finding.field_path || ''));\n  pm.expect(paths.some((path) => path.includes('join_policies') && path.includes('quorum_count'))).to.equal(true);\n  pm.expect(paths.some((path) => path.includes('approval_gates') && path.includes('approver_role_code'))).to.equal(true);\n  pm.expect(paths.some((path) => path.includes('subworkflow_refs') && path.includes('workflow_version_ref'))).to.equal(true);\n});\n\nfunction saveVariable(key, value) {\n  if (value === undefined || value === null || value === '') { return; }\n  const stringValue = String(value);\n  pm.environment.set(key, stringValue);\n  pm.collectionVariables.set(key, stringValue);\n}\nconst json = pm.response.json();\nsaveVariable('guardrail_validation_result_id', json.validation_result_id);",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows/drafts/{{guardrail_workflow_draft_id}}/validate",
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{platform_admin_principal}}",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        },
+        {
+          "id": "49f50f09-e715-48f9-9cc5-7b2652eb1d70",
+          "name": "24 Verify tenant user cannot author drafts",
+          "collectionId": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003",
+          "method": "POST",
+          "description": "Repeats the tenant draft creation as tenant-user-acme and expects a 403.",
+          "events": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 403', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "headers": "X-Local-Principal: {{tenant_user_principal}}\nContent-Type: application/json",
+          "dataMode": "raw",
+          "rawModeData": "{\n  \"scope_type\": \"tenant\",\n  \"workflow_kind\": \"main_workflow\",\n  \"slug\": \"{{tenant_workflow_slug}}\",\n  \"display_name\": \"{{tenant_workflow_display_name}}\",\n  \"document\": {\n    \"workflow_key\": \"{{tenant_workflow_slug}}\",\n    \"display_name\": \"{{tenant_workflow_display_name}}\",\n    \"description\": \"Collect incoming work and route it.\",\n    \"workflow_kind\": \"main_workflow\",\n    \"entry_node_key\": \"triage-node\",\n    \"roles\": [\n      {\n        \"role_key\": \"triage-role\",\n        \"display_name\": \"Triage Role\",\n        \"purpose\": \"Assess the incoming payload.\",\n        \"input_contract_key\": \"intake-request\",\n        \"output_contract_key\": \"triage-result\",\n        \"skill_bindings\": [\n          {\n            \"binding_key\": \"triage-binding\",\n            \"skill_slug\": \"triage-agent\",\n            \"skill_version\": \"2026.04.1\",\n            \"purpose\": \"Perform triage.\"\n          }\n        ]\n      }\n    ],\n    \"contracts\": [\n      {\n        \"contract_key\": \"intake-request\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      },\n      {\n        \"contract_key\": \"triage-result\",\n        \"json_schema\": {\n          \"type\": \"object\"\n        }\n      }\n    ],\n    \"nodes\": [\n      {\n        \"node_key\": \"triage-node\",\n        \"node_type\": \"role\",\n        \"display_name\": \"Triage\",\n        \"role_key\": \"triage-role\"\n      }\n    ],\n    \"edges\": [],\n    \"join_policies\": [],\n    \"approval_gates\": [],\n    \"subworkflow_refs\": []\n  }\n}",
+          "tests": "pm.test('Status code is 403', function () {\n  pm.response.to.have.status(403);\n});",
+          "preRequestScript": "",
+          "url": "{{base_url}}/admin/workflows",
+          "dataOptions": {
+            "raw": {
+              "language": "json"
+            }
+          },
+          "responses": [],
+          "responses_order": [],
+          "pathVariableData": [],
+          "queryParams": [],
+          "headerData": [
+            {
+              "key": "X-Local-Principal",
+              "value": "{{tenant_user_principal}}",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "timestamp": 1777036731005,
+          "version": 2,
+          "collection": "36f09ab5-6bda-4a12-8a8a-2c29bcf4d003"
+        }
+      ],
+      "timestamp": 1777036731005,
+      "auth": null,
+      "protocolProfileBehavior": {}
+    }
+  ],
+  "environments": [
+    {
+      "id": "c7f7b1c8-b657-4ad4-9a81-05f95a857003",
+      "name": "QA003 Local",
+      "values": [
+        {
+          "key": "base_url",
+          "value": "http://127.0.0.1:8000",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "tenant_admin_principal",
+          "value": "tenant-admin-acme",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "tenant_user_principal",
+          "value": "tenant-user-acme",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "platform_admin_principal",
+          "value": "platform-admin",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "acme_tenant_id",
+          "value": "11111111-1111-1111-1111-111111111111",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "tenant_workflow_slug",
+          "value": "customer-intake",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "tenant_workflow_display_name",
+          "value": "Customer Intake",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "platform_workflow_slug",
+          "value": "document-extraction",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "platform_workflow_display_name",
+          "value": "Document Extraction",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "guardrail_workflow_slug",
+          "value": "qa-guardrail-design",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "guardrail_workflow_display_name",
+          "value": "QA Guardrail Design",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "tenant_workflow_draft_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "tenant_workflow_lineage_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "tenant_current_revision_number",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "tenant_latest_revision_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "tenant_latest_revision_sha256",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "platform_workflow_draft_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "platform_workflow_lineage_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "platform_current_revision_number",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "platform_latest_revision_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "platform_latest_revision_sha256",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "failed_validation_result_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "passing_validation_result_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "workflow_version_bundle_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "workflow_display_version",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "compiled_bundle_digest",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "compiled_bundle_artifact_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "published_from_draft_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "published_from_revision_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "registry_sharing_grant_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "successor_workflow_draft_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "successor_current_revision_number",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "guardrail_workflow_draft_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "guardrail_validation_result_id",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "last_status_code",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "last_response_body",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        },
+        {
+          "key": "last_response_detail",
+          "value": "",
+          "type": "text",
+          "enabled": true
+        }
+      ],
+      "timestamp": 1777036731005
+    }
+  ],
+  "headerPresets": [],
+  "globals": []
+}
