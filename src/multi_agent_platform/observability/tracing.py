@@ -42,3 +42,28 @@ def memory_trace_attributes(
     }
     attributes.update({key: value for key, value in optional.items() if value})
     return attributes
+
+
+def channel_trace_attributes(
+    *,
+    action: str,
+    channel: str,
+    outcome: str,
+    tenant_id: str | None = None,
+    run_id: str | None = None,
+    prompt_id: str | None = None,
+    artifact_id: str | None = None,
+) -> dict[str, str]:
+    attributes = {
+        "action": action,
+        "channel": channel,
+        "outcome": outcome,
+    }
+    optional = {
+        "tenant_id": tenant_id,
+        "run_id": run_id,
+        "prompt_id": prompt_id,
+        "artifact_id": artifact_id,
+    }
+    attributes.update({key: value for key, value in optional.items() if value})
+    return attributes

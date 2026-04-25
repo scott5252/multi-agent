@@ -105,6 +105,15 @@ class Settings(BaseSettings):
     runtime_payload_ref_retention_days: int = 90
     runtime_checkpointer_database_url: str | None = None
 
+    telegram_webhook_secret: str | None = None
+    telegram_provider_token_ref: str | None = None
+    telegram_link_token_ttl_seconds: int = Field(default=600, ge=60, le=600)
+    channel_callback_signing_secret_ref: str | None = None
+    channel_artifact_url_ttl_seconds: int = Field(default=900, ge=60, le=3600)
+    channel_artifact_url_max_ttl_seconds: int = Field(default=3600, ge=60, le=3600)
+    channel_sse_heartbeat_seconds: int = Field(default=15, ge=5, le=120)
+    channel_rate_limit_per_minute: int = Field(default=120, ge=1, le=10_000)
+
     commit_sha: str = "dev"
     build_time: str = "1970-01-01T00:00:00+00:00"
 
@@ -127,6 +136,30 @@ class Settings(BaseSettings):
 
         if not self.local_principal_header.startswith("X-"):
             raise ValueError("local_principal_header must be an X- prefixed header")
+        if (
+            self.channel_artifact_url_ttl_seconds
+            > self.channel_artifact_url_max_ttl_seconds
+        ):
+            raise ValueError("artifact URL TTL cannot exceed the configured maximum")
+        if self.app_env is AppEnvironment.PRODUCTION:
+            if (
+                self.telegram_provider_token_ref
+                and not self.telegram_provider_token_ref.startswith(
+                    ("env:", "secret-manager/")
+                )
+            ):
+                raise ValueError(
+                    "production Telegram provider tokens must use a secret reference"
+                )
+            if (
+                self.channel_callback_signing_secret_ref
+                and not self.channel_callback_signing_secret_ref.startswith(
+                    ("env:", "secret-manager/")
+                )
+            ):
+                raise ValueError(
+                    "production callback signing secrets must use a secret reference"
+                )
         return self
 
     @cached_property

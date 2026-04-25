@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Workflow Runs</title>
+    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
+  </head>
+  <body class="workflow-page">
+    <main class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">User Interaction Channels</p>
+          <h1>Workflow Runs</h1>
+          <p class="subhead">Start and inspect workflow runs through the shared channel facade.</p>
+        </div>
+        <form class="card create-card" method="post" action="/runs">
+          <h2>Start Run</h2>
+          <label>
+            Workflow
+            <input type="text" name="workflow_id" value="published-demo-workflow">
+          </label>
+          <label>
+            Input
+            <input type="text" name="input" value="channel smoke test">
+          </label>
+          <button type="submit">Start</button>
+        </form>
+      </header>
+      <section class="registry-grid" aria-label="Run list">
+        {% if runs %}
+          {% for run in runs %}
+            <article class="card registry-card">
+              <div class="card-top">
+                <span class="badge">{{ run.state.value }}</span>
+                <span class="badge muted">{{ run.latest_timeline_cursor }}</span>
+              </div>
+              <h2>Run</h2>
+              <p class="mono">{{ run.run_id }}</p>
+              <p>{{ run.progress_summary }}</p>
+              <a class="button-link" href="/runs/{{ run.run_id }}">Open Details</a>
+            </article>
+          {% endfor %}
+        {% else %}
+          <article class="card empty-state">
+            <h2>No runs yet</h2>
+            <p>Start a workflow run with the form above or POST to the channel API.</p>
+          </article>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>
+

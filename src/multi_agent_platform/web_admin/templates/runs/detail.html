@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Run {{ page.status.run_id }}</title>
+    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
+  </head>
+  <body class="workflow-page" data-run-id="{{ page.status.run_id }}">
+    <main class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Run Details</p>
+          <h1>{{ page.status.state.value }}</h1>
+          <p class="subhead">{{ page.status.progress_summary }}</p>
+          <p class="mono">{{ page.status.run_id }}</p>
+        </div>
+        <article class="card create-card">
+          <h2>Support</h2>
+          <p class="mono">{{ page.support_trace_id }}</p>
+          <p>Subscribed: {{ page.status.subscribed }}</p>
+        </article>
+      </header>
+      {% if page.status.waiting_prompt %}
+        <section class="card">
+          <h2>Waiting Prompt</h2>
+          <p>{{ page.status.waiting_prompt.summary }}</p>
+          <p class="mono">{{ page.status.waiting_prompt.prompt_id }}</p>
+          <p>Actions: {{ page.status.waiting_prompt.allowed_actions | join(", ") }}</p>
+        </section>
+      {% endif %}
+      <section class="registry-grid" aria-label="Run detail panels">
+        <article class="card registry-card">
+          <h2>Timeline</h2>
+          <ol>
+            {% for event in page.timeline %}
+              <li><strong>{{ event.event_type.value }}</strong> {{ event.summary }}</li>
+            {% endfor %}
+          </ol>
+        </article>
+        <article class="card registry-card">
+          <h2>Result</h2>
+          <p>{{ page.result.availability.value }}</p>
+          {% if page.result.summary %}
+            <p>{{ page.result.summary }}</p>
+          {% endif %}
+        </article>
+        <article class="card registry-card">
+          <h2>Artifacts</h2>
+          {% if page.artifacts %}
+            <ul>
+              {% for artifact in page.artifacts %}
+                <li>{{ artifact.name }} - {{ artifact.status }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p>No artifacts are currently available.</p>
+          {% endif %}
+        </article>
+      </section>
+    </main>
+    <script src="/admin/static/run_details.js"></script>
+  </body>
+</html>
+
