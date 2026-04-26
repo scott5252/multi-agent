@@ -211,6 +211,29 @@ Manual channel QA:
 - [Spec 006 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/006-user-interaction-channels/qa006.md)
 - [User Interaction Channels](/Users/scottcornell/src/my-projects/multi-agent/docs/user-interaction-channels.md)
 
+Target model-skill routing explicitly:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/model_skill_config \
+  tests/unit/db/test_model_skill_config_models.py \
+  tests/contract/test_model_skill_config_contract.py \
+  tests/docs/test_model_skill_routing_docs.py
+```
+
+Manual model-skill QA:
+
+- Set a tenant default model, add workflow, agent, and step overrides, then
+  verify model precedence through `/admin/config/preview/model`.
+- Add prompt references and confirm prompt precedence is step, agent, workflow
+  with no tenant-global fallback.
+- Bind a skill, allow a tool, add outbound policy, then verify an unapproved
+  domain denies before side effects.
+- Configure credential requirements using secret-reference metadata only.
+- Review history, rollback, run provenance, resume stability, elapsed time,
+  assisted status, and aggregate pass/fail evidence.
+- [Model Skill Routing](/Users/scottcornell/src/my-projects/multi-agent/docs/model-skill-routing.md)
+
 ## Troubleshooting
 
 - `401 missing local principal header or cookie`: sign in through

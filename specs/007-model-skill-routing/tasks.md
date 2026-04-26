@@ -19,11 +19,11 @@
 
 **Purpose**: Create the feature scaffolding and shared package boundaries used by later test-first work.
 
-- [ ] T001 Create model-skill configuration domain module scaffolding in `src/multi_agent_platform/config/model_skill.py`, `src/multi_agent_platform/config/resolver.py`, `src/multi_agent_platform/config/policy.py`, `src/multi_agent_platform/config/validation.py`, `src/multi_agent_platform/config/provenance.py`, `src/multi_agent_platform/config/rollback.py`, and `src/multi_agent_platform/config/service.py`
-- [ ] T002 Create persistence scaffolding in `src/multi_agent_platform/db/models/model_skill_config.py` and `src/multi_agent_platform/db/repositories/model_skill_config.py`
-- [ ] T003 Create API and UI scaffolding in `src/multi_agent_platform/api/schemas/model_skill_config.py`, `src/multi_agent_platform/api/routers/admin_model_skill_config.py`, and `src/multi_agent_platform/api/ui/model_skill_config.py`
-- [ ] T004 [P] Create admin web asset and template placeholders in `src/multi_agent_platform/web_admin/static/model_skill_config.js`, `src/multi_agent_platform/web_admin/templates/model_skill_config/index.html`, `src/multi_agent_platform/web_admin/templates/model_skill_config/history.html`, and `src/multi_agent_platform/web_admin/templates/model_skill_config/run_provenance.html`
-- [ ] T005 [P] Create model-skill test package placeholders in `tests/unit/model_skill_config/__init__.py`, `tests/integration/model_skill_config/__init__.py`, and `tests/contract/test_model_skill_config_contract.py`
+- [X] T001 Create model-skill configuration domain module scaffolding in `src/multi_agent_platform/config/model_skill.py`, `src/multi_agent_platform/config/resolver.py`, `src/multi_agent_platform/config/policy.py`, `src/multi_agent_platform/config/validation.py`, `src/multi_agent_platform/config/provenance.py`, `src/multi_agent_platform/config/rollback.py`, and `src/multi_agent_platform/config/service.py`
+- [X] T002 Create persistence scaffolding in `src/multi_agent_platform/db/models/model_skill_config.py` and `src/multi_agent_platform/db/repositories/model_skill_config.py`
+- [X] T003 Create API and UI scaffolding in `src/multi_agent_platform/api/schemas/model_skill_config.py`, `src/multi_agent_platform/api/routers/admin_model_skill_config.py`, and `src/multi_agent_platform/api/ui/model_skill_config.py`
+- [X] T004 [P] Create admin web asset and template placeholders in `src/multi_agent_platform/web_admin/static/model_skill_config.js`, `src/multi_agent_platform/web_admin/templates/model_skill_config/index.html`, `src/multi_agent_platform/web_admin/templates/model_skill_config/history.html`, and `src/multi_agent_platform/web_admin/templates/model_skill_config/run_provenance.html`
+- [X] T005 [P] Create model-skill test package placeholders in `tests/unit/model_skill_config/__init__.py`, `tests/integration/model_skill_config/__init__.py`, and `tests/contract/test_model_skill_config_contract.py`
 
 ---
 
@@ -35,22 +35,22 @@
 
 ### Foundational Tests First
 
-- [ ] T006 [P] Add failing ORM tests for immutable configuration version entities, active pointer uniqueness, runtime decision rows, and audit rows in `tests/unit/db/test_model_skill_config_models.py`
+- [X] T006 [P] Add failing ORM tests for immutable configuration version entities, active pointer uniqueness, runtime decision rows, and audit rows in `tests/unit/db/test_model_skill_config_models.py`
 - [ ] T007 [P] Add failing migration tests for PostgreSQL tables, indexes, active singleton constraints, and rollback downgrade safety in `tests/integration/db/test_model_skill_config_migration.py`
 - [ ] T008 [P] Add failing schema tests for safe request/response models, stable error categories, reason requirements, and secret redaction in `tests/unit/api/test_model_skill_config_schemas.py`
-- [ ] T009 [P] Add failing validation tests for tenant scope selectors, raw-secret rejection, unknown model/tool references, and invalid prompt/global scope combinations in `tests/unit/model_skill_config/test_validation.py`
+- [X] T009 [P] Add failing validation tests for tenant scope selectors, raw-secret rejection, unknown model/tool references, and invalid prompt/global scope combinations in `tests/unit/model_skill_config/test_validation.py`
 - [ ] T010 [P] Add failing publish-time model-skill validation tests for missing global default, inactive/unauthorized model references, missing prompt references, unbound skills, denied tools, denied outbound domains, unsatisfied credentials, and safe error categories in `tests/unit/admin/test_workflow_registry_model_skill_validation.py` and `tests/integration/api/test_admin_workflow_publish_model_skill_validation.py`
 - [ ] T011 [P] Add failing authorization matrix tests for administrator, workflow owner, operator, auditor, maintainer, runtime actor, and cross-tenant fail-closed behavior across create, update, activate, deactivate, preview, history, provenance, rollback, migration, and runtime resolver calls in `tests/integration/api/test_model_skill_config_authorization.py`
 
 ### Foundational Implementation
 
-- [ ] T012 Implement SQLAlchemy models for model provider catalog entries, routing versions, prompt references, skill bindings, tool policies, outbound policies, secret references, credential requirements, active pointers, resolved execution configurations, runtime decisions, audit records, rollback records, and run migration records in `src/multi_agent_platform/db/models/model_skill_config.py`
-- [ ] T013 Register model-skill ORM metadata exports in `src/multi_agent_platform/db/models/__init__.py`
-- [ ] T014 Implement Alembic migration with PostgreSQL tables, foreign keys, JSONB columns, active singleton partial indexes, scope hash indexes, and downgrade behavior in `alembic/versions/0007_model_skill_routing.py`
-- [ ] T015 Implement repository primitives for immutable version insert, active pointer activation, expected-version conflict checks, audit writes, history reads, and runtime decision persistence in `src/multi_agent_platform/db/repositories/model_skill_config.py`
-- [ ] T016 Implement Pydantic domain value objects, enums, scope selectors, safe summaries, and stable error categories in `src/multi_agent_platform/config/model_skill.py`
-- [ ] T017 Implement API schemas for create, activate, preview, history, rollback, provenance, and error responses in `src/multi_agent_platform/api/schemas/model_skill_config.py`
-- [ ] T018 Implement shared validation helpers for tenant scope shape, required reasons, provider/model availability, prompt scope rules, publish/start validation, skill/tool identifiers, raw-secret detection, and redacted summaries in `src/multi_agent_platform/config/validation.py`
+- [X] T012 Implement SQLAlchemy models for model provider catalog entries, routing versions, prompt references, skill bindings, tool policies, outbound policies, secret references, credential requirements, active pointers, resolved execution configurations, runtime decisions, audit records, rollback records, and run migration records in `src/multi_agent_platform/db/models/model_skill_config.py`
+- [X] T013 Register model-skill ORM metadata exports in `src/multi_agent_platform/db/models/__init__.py`
+- [X] T014 Implement Alembic migration with PostgreSQL tables, foreign keys, JSONB columns, active singleton partial indexes, scope hash indexes, and downgrade behavior in `alembic/versions/0007_model_skill_routing.py`
+- [X] T015 Implement repository primitives for immutable version insert, active pointer activation, expected-version conflict checks, audit writes, history reads, and runtime decision persistence in `src/multi_agent_platform/db/repositories/model_skill_config.py`
+- [X] T016 Implement Pydantic domain value objects, enums, scope selectors, safe summaries, and stable error categories in `src/multi_agent_platform/config/model_skill.py`
+- [X] T017 Implement API schemas for create, activate, preview, history, rollback, provenance, and error responses in `src/multi_agent_platform/api/schemas/model_skill_config.py`
+- [X] T018 Implement shared validation helpers for tenant scope shape, required reasons, provider/model availability, prompt scope rules, publish/start validation, skill/tool identifiers, raw-secret detection, and redacted summaries in `src/multi_agent_platform/config/validation.py`
 - [ ] T019 Wire configuration service and repository dependencies into `src/multi_agent_platform/bootstrap/container.py`
 - [ ] T020 Implement publish-time model-skill validation integration in `src/multi_agent_platform/admin/workflow_registry/service.py`, using `src/multi_agent_platform/config/validation.py` before `WorkflowVersionBundle` creation so invalid model-backed workflow definitions cannot publish
 - [ ] T021 Implement model-skill tenant and role authorization guard helpers in `src/multi_agent_platform/config/service.py` and `src/multi_agent_platform/api/routers/admin_model_skill_config.py`, reusing existing principal, AuthService, and tenancy guard patterns for every mutation, preview, history, provenance, rollback, migration, and runtime-resolution surface
@@ -68,23 +68,23 @@
 
 ### Tests for User Story 1
 
-- [ ] T023 [P] [US1] Add failing table-driven resolver tests for model precedence step > agent > workflow > tenant default, missing global default, inactive model reference, equal-specificity conflict, and stable candidate ordering in `tests/unit/model_skill_config/test_model_resolution.py`
-- [ ] T024 [P] [US1] Add failing prompt resolution tests for step > agent > workflow precedence, rejection of tenant-global prompt references, and missing prompt failure in `tests/unit/model_skill_config/test_prompt_resolution.py`
+- [X] T023 [P] [US1] Add failing table-driven resolver tests for model precedence step > agent > workflow > tenant default, missing global default, inactive model reference, equal-specificity conflict, and stable candidate ordering in `tests/unit/model_skill_config/test_model_resolution.py`
+- [X] T024 [P] [US1] Add failing prompt resolution tests for step > agent > workflow precedence, rejection of tenant-global prompt references, and missing prompt failure in `tests/unit/model_skill_config/test_prompt_resolution.py`
 - [ ] T025 [P] [US1] Add failing invalid-configuration tests for unavailable models, unauthorized tenant model references, stale expected active version ids, and missing activation reasons in `tests/unit/model_skill_config/test_model_validation.py`
-- [ ] T026 [P] [US1] Add failing contract tests for model routing create, activate, prompt reference create, model preview, history, and safe error categories from `specs/007-model-skill-routing/contracts/model-skill-routing.openapi.yaml` in `tests/contract/test_model_skill_config_contract.py`
+- [X] T026 [P] [US1] Add failing contract tests for model routing create, activate, prompt reference create, model preview, history, and safe error categories from `specs/007-model-skill-routing/contracts/model-skill-routing.openapi.yaml` in `tests/contract/test_model_skill_config_contract.py`
 - [ ] T027 [P] [US1] Add failing integration API tests for configuring tenant defaults and workflow/agent/step overrides in `tests/integration/api/test_admin_model_skill_config_api.py`
 - [ ] T028 [P] [US1] Add failing admin web view tests for model routing list, missing default blocking state, preview, history link, and unauthorized scope behavior in `tests/integration/api/test_admin_model_skill_config_ui.py`
 
 ### Implementation for User Story 1
 
-- [ ] T029 [US1] Implement deterministic model and prompt resolution, candidate ordering, source scope reporting, and conflict detection in `src/multi_agent_platform/config/resolver.py`
+- [X] T029 [US1] Implement deterministic model and prompt resolution, candidate ordering, source scope reporting, and conflict detection in `src/multi_agent_platform/config/resolver.py`
 - [ ] T030 [US1] Implement admin service methods for model routing versions, prompt reference versions, activation, preview, history, and tenant/role authorization enforcement in `src/multi_agent_platform/config/service.py`
-- [ ] T031 [US1] Implement model routing, prompt reference, activation, preview, and history endpoints in `src/multi_agent_platform/api/routers/admin_model_skill_config.py`
-- [ ] T032 [US1] Register the admin model-skill router in `src/multi_agent_platform/api/main.py`
-- [ ] T033 [US1] Implement admin UI view models for model routing preview and history in `src/multi_agent_platform/api/ui/model_skill_config.py`
-- [ ] T034 [US1] Implement server-rendered model routing and history templates in `src/multi_agent_platform/web_admin/templates/model_skill_config/index.html` and `src/multi_agent_platform/web_admin/templates/model_skill_config/history.html`
-- [ ] T035 [US1] Implement preview form behavior without model calls, DNS lookups, HTTP calls, or external tool calls in `src/multi_agent_platform/web_admin/static/model_skill_config.js`
-- [ ] T036 [US1] Add safe structured audit records for model routing and prompt reference create, activate, preview denial, and history reads in `src/multi_agent_platform/config/service.py`
+- [X] T031 [US1] Implement model routing, prompt reference, activation, preview, and history endpoints in `src/multi_agent_platform/api/routers/admin_model_skill_config.py`
+- [X] T032 [US1] Register the admin model-skill router in `src/multi_agent_platform/api/main.py`
+- [X] T033 [US1] Implement admin UI view models for model routing preview and history in `src/multi_agent_platform/api/ui/model_skill_config.py`
+- [X] T034 [US1] Implement server-rendered model routing and history templates in `src/multi_agent_platform/web_admin/templates/model_skill_config/index.html` and `src/multi_agent_platform/web_admin/templates/model_skill_config/history.html`
+- [X] T035 [US1] Implement preview form behavior without model calls, DNS lookups, HTTP calls, or external tool calls in `src/multi_agent_platform/web_admin/static/model_skill_config.js`
+- [X] T036 [US1] Add safe structured audit records for model routing and prompt reference create, activate, preview denial, and history reads in `src/multi_agent_platform/config/service.py`
 
 **Checkpoint**: User Story 1 is independently testable and delivers the MVP for model routing and prompt preview.
 
@@ -99,8 +99,8 @@
 ### Tests for User Story 2
 
 - [ ] T037 [P] [US2] Add failing allowed-skill enforcement tests for missing binding denial, exact skill version match, allowed context constraints, and evaluated binding versions in `tests/unit/model_skill_config/test_skill_policy.py`
-- [ ] T038 [P] [US2] Add failing tool policy intersection tests for deny-by-default, allowed action categories, overlapping applicable policies, and broader policy constraints in `tests/unit/model_skill_config/test_tool_policy.py`
-- [ ] T039 [P] [US2] Add failing outbound policy tests for lowercase and IDNA normalization, wildcard matching, scheme and port checks, embedded credential rejection, malformed destinations, and domain denial reasons in `tests/unit/model_skill_config/test_outbound_policy.py`
+- [X] T038 [P] [US2] Add failing tool policy intersection tests for deny-by-default, allowed action categories, overlapping applicable policies, and broader policy constraints in `tests/unit/model_skill_config/test_tool_policy.py`
+- [X] T039 [P] [US2] Add failing outbound policy tests for lowercase and IDNA normalization, wildcard matching, scheme and port checks, embedded credential rejection, malformed destinations, and domain denial reasons in `tests/unit/model_skill_config/test_outbound_policy.py`
 - [ ] T040 [P] [US2] Add failing secret-reference and credential-provider boundary tests for raw secret rejection, inactive/revoked/expired/cross-tenant references, delegated credential authorization, SecretProvider resolution through `src/multi_agent_platform/secrets/base.py`, safe redacted summaries, and proof that persisted decisions never store `SecretValue.value` in `tests/unit/model_skill_config/test_secret_reference_policy.py`
 - [ ] T041 [P] [US2] Add failing contract tests for skill bindings, tool policies, outbound policies, secret references, credential requirements, and tool preview endpoints in `tests/contract/test_model_skill_config_contract.py`
 - [ ] T042 [P] [US2] Add failing integration tests proving disallowed skill, tool, outbound domain, and credential attempts are denied before side effects and persisted as safe audit records in `tests/integration/model_skill_config/test_policy_enforcement.py`
@@ -109,8 +109,8 @@
 ### Implementation for User Story 2
 
 - [ ] T044 [US2] Implement skill binding evaluation, exact version checks, allowed context checks, and deny-by-default decisions in `src/multi_agent_platform/config/policy.py`
-- [ ] T045 [US2] Implement allowed tool policy cumulative intersection for tool id and action category decisions in `src/multi_agent_platform/config/policy.py`
-- [ ] T046 [US2] Implement outbound destination normalization and domain, scheme, port, wildcard, and malformed URL policy evaluation in `src/multi_agent_platform/config/policy.py`
+- [X] T045 [US2] Implement allowed tool policy cumulative intersection for tool id and action category decisions in `src/multi_agent_platform/config/policy.py`
+- [X] T046 [US2] Implement outbound destination normalization and domain, scheme, port, wildcard, and malformed URL policy evaluation in `src/multi_agent_platform/config/policy.py`
 - [ ] T047 [US2] Implement secret-reference and credential requirement validation for active status, expiry, revocation, tenant authorization, delegated credential links, allowed scope, SecretProvider-backed reference resolution through existing secret abstractions, and safe summaries in `src/multi_agent_platform/config/policy.py`
 - [ ] T048 [US2] Implement admin service methods for skill bindings, tool policies, outbound domain policies, secret-reference versions, credential requirements, tool preview, and tenant/role authorization enforcement in `src/multi_agent_platform/config/service.py`
 - [ ] T049 [US2] Implement skill binding, tool policy, outbound policy, secret reference, credential requirement, and preview tool endpoints in `src/multi_agent_platform/api/routers/admin_model_skill_config.py`
@@ -131,7 +131,7 @@
 
 ### Tests for User Story 3
 
-- [ ] T054 [P] [US3] Add failing provenance unit tests for stable resolved execution configuration digests, safe decision serialization, idempotency-key reuse, and redaction in `tests/unit/model_skill_config/test_provenance.py`
+- [X] T054 [P] [US3] Add failing provenance unit tests for stable resolved execution configuration digests, safe decision serialization, idempotency-key reuse, and redaction in `tests/unit/model_skill_config/test_provenance.py`
 - [ ] T055 [P] [US3] Add failing runtime protocol tests for `pin_run_configuration`, `resolve_model_step`, `evaluate_skill_access`, and `evaluate_tool_use` response fields in `tests/unit/model_skill_config/test_runtime_resolution_protocol.py`
 - [ ] T056 [P] [US3] Add failing runtime integration tests for acceptance pinning, first-use model/prompt pinning, first-use policy pinning, denied decision persistence before side effects, and resumed-run stability in `tests/integration/runtime/test_config_pinning_runtime.py`
 - [ ] T057 [P] [US3] Add failing repository integration tests for immutable run provenance, runtime policy decision idempotency, and no raw secret values in persisted JSON columns in `tests/integration/model_skill_config/test_run_provenance_repository.py`
@@ -167,20 +167,20 @@
 
 - [ ] T072 [P] [US4] Add failing audit logging tests for configuration create, activate, deactivate, rollback, migration, validation failure, authorization failure, and denied runtime policy decisions in `tests/unit/model_skill_config/test_audit_logging.py`
 - [ ] T073 [P] [US4] Add failing history API integration tests for actor, timestamp, reason, prior version, new version, affected scope, rollback eligibility, tenant authorization, and safe not-found behavior in `tests/integration/api/test_admin_model_skill_config_api.py`
-- [ ] T074 [P] [US4] Add failing documentation tests that assert README guidance, model-skill routing docs, testing instructions, and PR review notes mention precedence, skills, tools, secrets, outbound policy, credentials, provenance, coverage commands, and acceptance evidence fields for elapsed time, assistance status, participant count, and aggregate pass/fail calculations in `tests/docs/test_model_skill_routing_docs.py`
-- [ ] T075 [P] [US4] Add failing coverage command documentation test for `uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90` in `tests/docs/test_model_skill_routing_docs.py`
+- [X] T074 [P] [US4] Add failing documentation tests that assert README guidance, model-skill routing docs, testing instructions, and PR review notes mention precedence, skills, tools, secrets, outbound policy, credentials, provenance, coverage commands, and acceptance evidence fields for elapsed time, assistance status, participant count, and aggregate pass/fail calculations in `tests/docs/test_model_skill_routing_docs.py`
+- [X] T075 [P] [US4] Add failing coverage command documentation test for `uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90` in `tests/docs/test_model_skill_routing_docs.py`
 
 ### Implementation for User Story 4
 
 - [ ] T076 [US4] Implement complete configuration history query responses, redacted diff summaries, tenant/role authorization enforcement, authorization failures, and safe not-found behavior in `src/multi_agent_platform/config/service.py`
 - [ ] T077 [US4] Implement configuration history and policy decision audit helpers that forbid raw prompts, raw secrets, credential values, provider tokens, and unauthorized run content in `src/multi_agent_platform/config/provenance.py`
 - [ ] T078 [US4] Complete history, provenance, rollback, tenant/role authorization enforcement, and authorization response handling in `src/multi_agent_platform/api/routers/admin_model_skill_config.py`
-- [ ] T079 [US4] Add operator and reviewer documentation for routing precedence, prompt precedence, skill/tool/domain/credential setup, secret-reference hygiene, rollback, migration, admin UI, APIs, and provenance in `docs/model-skill-routing.md`
-- [ ] T080 [US4] Update local reviewer quickstart with model routing, skill/tool policy, outbound denial, credential failure, secret-reference audit, admin views, provenance APIs, resume stability, and required commands in `docs/quickstart.md`
-- [ ] T081 [US4] Update user-facing README guidance for model routing precedence, skill configuration, allowed tool policies, secret references, outbound domain policies, credential requirements, run provenance, admin web views, API endpoints, and review verification in `README.md`
-- [ ] T082 [US4] Add PR review notes covering deterministic precedence, prompt provenance, version pinning, migration behavior, skill binding enforcement, tool policies, outbound egress, credentials, secret hygiene, audit completeness, authorization, admin views, and known risks in `specs/007-model-skill-routing/pr-review-notes.md`
-- [ ] T083 [US4] Add reviewer testing instructions and evidence checklist for all acceptance paths and required quality commands in `specs/007-model-skill-routing/testing-instructions.md`
-- [ ] T084 [US4] Add acceptance evidence checklist for administrator and maintainer history/provenance findability, including tester role, scenario, start/end timestamps, elapsed time, assisted/unassisted result, completion status, and aggregate pass/fail calculations for SC-002 under-5-minute routing verification and SC-008 90 percent unassisted findability in `specs/007-model-skill-routing/testing-instructions.md`
+- [X] T079 [US4] Add operator and reviewer documentation for routing precedence, prompt precedence, skill/tool/domain/credential setup, secret-reference hygiene, rollback, migration, admin UI, APIs, and provenance in `docs/model-skill-routing.md`
+- [X] T080 [US4] Update local reviewer quickstart with model routing, skill/tool policy, outbound denial, credential failure, secret-reference audit, admin views, provenance APIs, resume stability, and required commands in `docs/quickstart.md`
+- [X] T081 [US4] Update user-facing README guidance for model routing precedence, skill configuration, allowed tool policies, secret references, outbound domain policies, credential requirements, run provenance, admin web views, API endpoints, and review verification in `README.md`
+- [X] T082 [US4] Add PR review notes covering deterministic precedence, prompt provenance, version pinning, migration behavior, skill binding enforcement, tool policies, outbound egress, credentials, secret hygiene, audit completeness, authorization, admin views, and known risks in `specs/007-model-skill-routing/pr-review-notes.md`
+- [X] T083 [US4] Add reviewer testing instructions and evidence checklist for all acceptance paths and required quality commands in `specs/007-model-skill-routing/testing-instructions.md`
+- [X] T084 [US4] Add acceptance evidence checklist for administrator and maintainer history/provenance findability, including tester role, scenario, start/end timestamps, elapsed time, assisted/unassisted result, completion status, and aggregate pass/fail calculations for SC-002 under-5-minute routing verification and SC-008 90 percent unassisted findability in `specs/007-model-skill-routing/testing-instructions.md`
 
 **Checkpoint**: User Story 4 is independently testable with complete audit and review evidence.
 
@@ -197,10 +197,10 @@
 - [ ] T089 [P] Add tracing, workflow timeline, lineage visibility, and replay-support tests for routing and policy decisions in `tests/unit/observability/test_model_skill_config_tracing.py` and `tests/integration/runtime/test_config_pinning_runtime.py`
 - [ ] T090 Add trace, timeline event, lineage link, and replay metadata emission for model routing and policy decisions in `src/multi_agent_platform/observability/tracing.py`, `src/multi_agent_platform/runtime/orchestration/events.py`, and `src/multi_agent_platform/config/provenance.py`
 - [ ] T091 [P] Reconcile public OpenAPI examples with implemented schemas in `specs/007-model-skill-routing/contracts/model-skill-routing.openapi.yaml`
-- [ ] T092 Run Ruff checks and fix reported issues in `src/multi_agent_platform/config/`, `src/multi_agent_platform/api/routers/admin_model_skill_config.py`, `src/multi_agent_platform/api/schemas/model_skill_config.py`, and `tests/`
-- [ ] T093 Run formatting checks and apply formatting fixes in `src/multi_agent_platform/config/`, `src/multi_agent_platform/db/models/model_skill_config.py`, `src/multi_agent_platform/db/repositories/model_skill_config.py`, and `tests/`
-- [ ] T094 Run mypy and fix type errors in `src/multi_agent_platform/config/`, `src/multi_agent_platform/db/repositories/model_skill_config.py`, `src/multi_agent_platform/api/`, and `src/multi_agent_platform/runtime/orchestration/`
-- [ ] T095 Run full coverage gate and fix gaps below 90 percent in `src/multi_agent_platform/config/`, `src/multi_agent_platform/api/`, `src/multi_agent_platform/db/`, and `src/multi_agent_platform/runtime/orchestration/`
+- [X] T092 Run Ruff checks and fix reported issues in `src/multi_agent_platform/config/`, `src/multi_agent_platform/api/routers/admin_model_skill_config.py`, `src/multi_agent_platform/api/schemas/model_skill_config.py`, and `tests/`
+- [X] T093 Run formatting checks and apply formatting fixes in `src/multi_agent_platform/config/`, `src/multi_agent_platform/db/models/model_skill_config.py`, `src/multi_agent_platform/db/repositories/model_skill_config.py`, and `tests/`
+- [X] T094 Run mypy and fix type errors in `src/multi_agent_platform/config/`, `src/multi_agent_platform/db/repositories/model_skill_config.py`, `src/multi_agent_platform/api/`, and `src/multi_agent_platform/runtime/orchestration/`
+- [X] T095 Run full coverage gate and fix gaps below 90 percent in `src/multi_agent_platform/config/`, `src/multi_agent_platform/api/`, `src/multi_agent_platform/db/`, and `src/multi_agent_platform/runtime/orchestration/`
 - [ ] T096 Validate quickstart commands and update any drift in `specs/007-model-skill-routing/quickstart.md`, `docs/quickstart.md`, and `specs/007-model-skill-routing/testing-instructions.md`
 
 ---

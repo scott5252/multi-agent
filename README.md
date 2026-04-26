@@ -67,6 +67,17 @@ automatically subscribed to terminal notifications, additional authorized users
 can subscribe per run, and artifacts are exposed through short-lived
 platform-authenticated download URLs rather than direct bytes.
 
+## Model Routing And Skill Configuration
+
+Administrators can define one tenant default model plus workflow, agent, and
+step overrides. Resolution precedence is step, agent, workflow, then tenant
+default. Prompt references use step, agent, and workflow precedence only.
+
+Skills, allowed tool policies, outbound domain policies, secret references,
+and credential requirements deny by default and record safe provenance. Admin
+APIs under `/admin/config/*` and minimal admin web views expose preview,
+history, rollback, and run provenance for reviewer verification.
+
 ## Latest Validation Evidence
 
 Latest full validation run: `2026-04-24`
