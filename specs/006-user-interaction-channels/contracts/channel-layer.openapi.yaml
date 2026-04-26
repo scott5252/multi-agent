@@ -1,0 +1,619 @@
+openapi: 3.1.0
+info:
+  title: User Interaction Channel Layer API
+  version: 0.1.0
+  description: >
+    User-facing API for starting workflow runs, retrieving durable run status,
+    streaming or polling timeline progress, answering waiting prompts,
+    retrieving results, listing artifacts, creating short-lived artifact
+    download URLs, subscribing to terminal notifications, and registering
+    per-run API callbacks.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /runs:
+    post:
+      summary: Start a workflow run through the channel facade
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/TraceParent"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunInvocationRequest"
+      responses:
+        "202":
+          description: Run accepted through the shared invocation model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunInvocationResponse"
+        "400":
+          description: Missing or invalid inputs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelError"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelError"
+        "403":
+          description: Caller is not authorized for the workflow or tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelError"
+        "409":
+          description: Idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelError"
+        "429":
+          description: Shared platform or channel rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelError"
+  /runs/{run_id}/status:
+    get:
+      summary: Retrieve the latest persisted run status
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Current user-visible run status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunStatusResponse"
+        "404":
+          description: Run not found in caller scope or invalid identifier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelError"
+  /runs/{run_id}/timeline:
+    get:
+      summary: List user-facing timeline events for a run
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Timeline page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimelineResponse"
+  /runs/{run_id}/events:
+    get:
+      summary: Stream run status and timeline updates with Server-Sent Events
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - in: header
+          name: Last-Event-ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: SSE stream of timeline events and status snapshots
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /runs/{run_id}/result:
+    get:
+      summary: Retrieve the final result or terminal summary for a run
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Result availability and authorized content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResultResponse"
+  /runs/{run_id}/approvals/{prompt_id}/decision:
+    post:
+      summary: Approve, reject, resume, or cancel a waiting run prompt
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - $ref: "#/components/parameters/PromptId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptDecisionRequest"
+      responses:
+        "202":
+          description: Decision accepted or idempotently replayed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptDecisionResponse"
+        "403":
+          description: Caller is not authorized to answer this prompt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelError"
+        "409":
+          description: Prompt is stale or lifecycle action is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptDecisionResponse"
+  /runs/{run_id}/cancel:
+    post:
+      summary: Cancel an active or waiting run
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelRunRequest"
+      responses:
+        "202":
+          description: Cancellation accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunStatusResponse"
+  /runs/{run_id}/artifacts:
+    get:
+      summary: List artifact metadata for a run
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Artifact list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactListResponse"
+  /runs/{run_id}/artifacts/{artifact_id}/download-url:
+    post:
+      summary: Create a short-lived platform-authenticated artifact URL
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - $ref: "#/components/parameters/ArtifactId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "201":
+          description: Download URL grant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactDownloadUrlResponse"
+  /runs/{run_id}/subscriptions:
+    post:
+      summary: Subscribe the caller to terminal-state run notifications
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationSubscriptionRequest"
+      responses:
+        "201":
+          description: Subscription created or idempotently replayed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSubscriptionResponse"
+  /runs/{run_id}/callbacks:
+    post:
+      summary: Register an API callback for run events
+      tags: [channels]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CallbackRegistrationRequest"
+      responses:
+        "201":
+          description: Callback registration created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallbackRegistrationResponse"
+components:
+  parameters:
+    RunId:
+      in: path
+      name: run_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PromptId:
+      in: path
+      name: prompt_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ArtifactId:
+      in: path
+      name: artifact_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      in: header
+      name: X-Idempotency-Key
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    TraceParent:
+      in: header
+      name: traceparent
+      required: false
+      schema:
+        type: string
+  schemas:
+    UserVisibleRunState:
+      type: string
+      enum: [queued, running, waiting-for-input, completed, failed, canceled]
+    ChannelType:
+      type: string
+      enum: [web_ui, web_api, telegram]
+    ErrorCategory:
+      type: string
+      enum:
+        - unauthorized
+        - missing_input
+        - invalid_run_id
+        - unavailable_channel_delivery
+        - invalid_lifecycle_action
+        - idempotency_conflict
+        - rate_limited
+        - artifact_unavailable
+        - callback_delivery_failed
+        - platform_failure
+    ChannelError:
+      type: object
+      required: [error, trace_id]
+      properties:
+        error:
+          type: object
+          required: [category, message]
+          properties:
+            category:
+              $ref: "#/components/schemas/ErrorCategory"
+            message:
+              type: string
+            latest_status:
+              $ref: "#/components/schemas/RunStatusResponse"
+        trace_id:
+          type: string
+    RunInvocationRequest:
+      type: object
+      required: [workflow_id, inputs, channel]
+      properties:
+        workflow_id:
+          type: string
+        inputs:
+          type: object
+          additionalProperties: true
+        channel:
+          $ref: "#/components/schemas/ChannelType"
+        client_session_id:
+          type: string
+        callback_url:
+          type: string
+          format: uri
+    RunInvocationResponse:
+      type: object
+      required: [run_id, state, status_url, trace_id]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        state:
+          $ref: "#/components/schemas/UserVisibleRunState"
+        status_url:
+          type: string
+        timeline_url:
+          type: string
+        events_url:
+          type: string
+        trace_id:
+          type: string
+    RunStatusResponse:
+      type: object
+      required:
+        - run_id
+        - state
+        - progress_summary
+        - latest_timeline_cursor
+        - permitted_actions
+        - trace_id
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        state:
+          $ref: "#/components/schemas/UserVisibleRunState"
+        progress_summary:
+          type: string
+        latest_timeline_cursor:
+          type: string
+        waiting_prompt:
+          $ref: "#/components/schemas/WaitingPrompt"
+        terminal_outcome:
+          type: string
+          enum: [none, completed, failed, canceled]
+        result_availability:
+          $ref: "#/components/schemas/ResultAvailability"
+        artifact_availability:
+          type: string
+          enum: [none, available, unavailable, expired, unauthorized]
+        subscribed:
+          type: boolean
+        permitted_actions:
+          type: array
+          items:
+            type: string
+        trace_id:
+          type: string
+    WaitingPrompt:
+      type: object
+      required: [prompt_id, prompt_type, prompt_version, summary, allowed_actions]
+      properties:
+        prompt_id:
+          type: string
+          format: uuid
+        prompt_type:
+          type: string
+          enum: [approval, resume_input]
+        prompt_version:
+          type: integer
+          minimum: 1
+        summary:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+        allowed_actions:
+          type: array
+          items:
+            type: string
+            enum: [approve, reject, resume, cancel]
+        deadline_at:
+          type: string
+          format: date-time
+    TimelineEvent:
+      type: object
+      required: [event_id, sequence, event_type, state, summary, occurred_at, trace_id]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        sequence:
+          type: integer
+          minimum: 1
+        event_type:
+          type: string
+          enum:
+            - run_queued
+            - run_started
+            - progress
+            - waiting_prompt_created
+            - waiting_prompt_answered
+            - artifact_ready
+            - result_ready
+            - run_completed
+            - run_failed
+            - run_canceled
+            - notification_attempted
+            - callback_attempted
+        state:
+          $ref: "#/components/schemas/UserVisibleRunState"
+        summary:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, error]
+          default: info
+        occurred_at:
+          type: string
+          format: date-time
+        trace_id:
+          type: string
+    TimelineResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineEvent"
+        next_cursor:
+          type: string
+          nullable: true
+    ResultAvailability:
+      type: string
+      enum: [available, failed, canceled, unavailable, expired, unauthorized]
+    RunResultResponse:
+      type: object
+      required: [run_id, availability, state, trace_id]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        availability:
+          $ref: "#/components/schemas/ResultAvailability"
+        state:
+          $ref: "#/components/schemas/UserVisibleRunState"
+        summary:
+          type: string
+        structured_result:
+          type: object
+          additionalProperties: true
+        trace_id:
+          type: string
+    PromptDecisionRequest:
+      type: object
+      required: [action, prompt_version]
+      properties:
+        action:
+          type: string
+          enum: [approve, reject, resume, cancel]
+        prompt_version:
+          type: integer
+          minimum: 1
+        decision_payload:
+          type: object
+          additionalProperties: true
+    PromptDecisionResponse:
+      type: object
+      required: [accepted, run_status, trace_id]
+      properties:
+        accepted:
+          type: boolean
+        decision_id:
+          type: string
+          format: uuid
+        rejection_category:
+          $ref: "#/components/schemas/ErrorCategory"
+        run_status:
+          $ref: "#/components/schemas/RunStatusResponse"
+        trace_id:
+          type: string
+    CancelRunRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+    ArtifactListResponse:
+      type: object
+      required: [run_id, items]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArtifactMetadata"
+    ArtifactMetadata:
+      type: object
+      required: [artifact_id, name, user_facing_type, status, download_url_available]
+      properties:
+        artifact_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        user_facing_type:
+          type: string
+        size_bytes:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum: [available, pending, unavailable, expired]
+        download_url_available:
+          type: boolean
+    ArtifactDownloadUrlResponse:
+      type: object
+      required: [artifact_id, download_url, expires_at, trace_id]
+      properties:
+        artifact_id:
+          type: string
+          format: uuid
+        download_url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+        trace_id:
+          type: string
+    NotificationSubscriptionRequest:
+      type: object
+      required: [channel, event_types]
+      properties:
+        channel:
+          $ref: "#/components/schemas/ChannelType"
+        event_types:
+          type: array
+          items:
+            type: string
+            enum: [terminal]
+    NotificationSubscriptionResponse:
+      type: object
+      required: [subscription_id, status]
+      properties:
+        subscription_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, revoked, authorization_lost]
+    CallbackRegistrationRequest:
+      type: object
+      required: [callback_url, event_types]
+      properties:
+        callback_url:
+          type: string
+          format: uri
+        event_types:
+          type: array
+          items:
+            type: string
+            enum: [terminal, waiting_prompt, artifact_ready]
+    CallbackRegistrationResponse:
+      type: object
+      required: [callback_registration_id, status]
+      properties:
+        callback_registration_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, revoked, disabled]

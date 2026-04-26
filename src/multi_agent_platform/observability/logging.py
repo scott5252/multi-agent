@@ -91,3 +91,25 @@ def memory_log_context(
     if latency_ms is not None:
         payload["latency_ms"] = str(latency_ms)
     return {"extra": payload}
+
+
+def channel_log_context(
+    *,
+    action: str,
+    channel: str,
+    trace_id: str,
+    outcome: str,
+    tenant_id: str | None = None,
+    run_id: str | None = None,
+) -> dict[str, dict[str, str]]:
+    payload = {
+        "action": action,
+        "channel": channel,
+        "trace_id": trace_id,
+        "outcome": outcome,
+    }
+    if tenant_id is not None:
+        payload["tenant_id"] = tenant_id
+    if run_id is not None:
+        payload["run_id"] = run_id
+    return {"extra": payload}

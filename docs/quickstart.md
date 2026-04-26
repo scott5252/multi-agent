@@ -93,6 +93,29 @@ Use the worker command above to validate claim, resume, and lease behavior.
 Approval, handoff, side-effect, and lineage endpoints are documented in the
 feature quickstart and runbook.
 
+## User Interaction Channels Quickstart
+
+Start a run through the shared Web API channel:
+
+```bash
+curl -sS -X POST http://127.0.0.1:8000/runs \
+  -H "Content-Type: application/json" \
+  -H "X-Local-Principal: tenant-admin-acme" \
+  -H "X-Idempotency-Key: quickstart-channel-001" \
+  -d '{
+    "workflow_id": "published-demo-workflow",
+    "inputs": {"topic": "quickstart"},
+    "channel": "web_api"
+  }'
+```
+
+Use the returned `run_id` with `/runs/{run_id}/status`,
+`/runs/{run_id}/timeline`, `/runs/{run_id}/result`, approval/cancel endpoints,
+and artifact URL grant endpoints. Open `/runs` for the Web UI channel. For
+Telegram, create a link token with `POST /channels/telegram/link-token`, send
+`/link TOKEN` to `/channels/telegram/webhook/{secret}`, then use protected
+commands such as `/run`, `/status`, `/result`, and `/artifacts`.
+
 ## Workflow Studio Quickstart
 
 1. Open [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui).
@@ -167,6 +190,26 @@ Manual immutable-memory QA:
 - [Spec 005 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/005-immutable-memory/qa005.md)
 - [Spec 005 Postman Collection](/Users/scottcornell/src/my-projects/multi-agent/specs/005-immutable-memory/qa005_collection.json)
 - [Immutable Memory Operations](/Users/scottcornell/src/my-projects/multi-agent/docs/immutable-memory.md)
+
+Target user interaction channels explicitly:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/channels \
+  tests/unit/api/test_channel_run_schemas.py \
+  tests/unit/db/test_channel_models.py \
+  tests/contract/test_channel_layer_contract.py \
+  tests/integration/api/test_channel_run_api.py \
+  tests/integration/api/test_web_run_ui.py \
+  tests/integration/api/test_telegram_webhook.py \
+  tests/integration/channels \
+  tests/performance/channels/test_channel_latency.py
+```
+
+Manual channel QA:
+
+- [Spec 006 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/006-user-interaction-channels/qa006.md)
+- [User Interaction Channels](/Users/scottcornell/src/my-projects/multi-agent/docs/user-interaction-channels.md)
 
 ## Troubleshooting
 

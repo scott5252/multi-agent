@@ -2,11 +2,11 @@
 
 This repository now includes the platform foundation, the auth and access
 layer, the full Spec `003` workflow-studio registry flow, the Spec `004`
-durable orchestration runtime, and the Spec `005` immutable versioned memory
-subsystem. Admins can author workflow drafts, publish immutable version
-bundles, start pinned durable runs, inspect runtime timeline evidence, create
-append-only memory versions, and operate background workers that resume
-interrupted work.
+durable orchestration runtime, the Spec `005` immutable versioned memory
+subsystem, and Spec `006` user interaction channels. Admins and users can
+author workflow drafts, publish immutable version bundles, start pinned durable
+runs, inspect runtime timeline evidence, create append-only memory versions,
+and interact with workflow runs through Web UI, Telegram, and Web API channels.
 
 ## Current Scope
 
@@ -17,6 +17,9 @@ interrupted work.
 - embedded workflow registry UI under `/admin/workflows/ui`
 - durable runtime APIs under `/runtime/runs`
 - immutable memory APIs under `/memory`
+- user interaction channel APIs under `/runs`
+- Web UI run list/detail pages under `/runs`
+- Telegram webhook commands under `/channels/telegram/webhook/{secret}`
 - browser-friendly local QA login under `/auth/local-login`
 - durable lineage, draft, revision, validation-result, published-version, and
   sharing-grant persistence
@@ -38,7 +41,31 @@ interrupted work.
    when validating runtime execution.
 8. Open
    [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui).
-9. Validate the repo with `./scripts/check.sh`.
+9. Open [http://127.0.0.1:8000/runs](http://127.0.0.1:8000/runs) to start
+   and inspect runs through the Web UI channel.
+10. Validate the repo with `./scripts/check.sh`.
+
+## User Interaction Channels
+
+The channel layer supports Web UI, Telegram, and Web API access to the same run
+model. Accepted starts return one canonical `run_id`, and all channels use the
+same lifecycle states: `queued`, `running`, `waiting-for-input`, `completed`,
+`failed`, and `canceled`.
+
+- Web API: `POST /runs`, `/runs/{run_id}/status`,
+  `/runs/{run_id}/timeline`, `/runs/{run_id}/events`,
+  `/runs/{run_id}/result`, approvals, cancel, subscriptions, callbacks, and
+  artifact URL grants.
+- Web UI: `/runs` and `/runs/{run_id}` for run start, status, timeline, result,
+  artifact, notification, and support trace visibility.
+- Telegram: `/link`, `/run`, `/status`, `/approve`, `/reject`, `/resume`,
+  `/cancel`, `/result`, `/artifacts`, and `/subscribe` after one-time platform
+  identity linking.
+
+Duplicate-prone actions require idempotency keys. The initiating user is
+automatically subscribed to terminal notifications, additional authorized users
+can subscribe per run, and artifacts are exposed through short-lived
+platform-authenticated download URLs rather than direct bytes.
 
 ## Latest Validation Evidence
 
@@ -53,6 +80,7 @@ Latest full validation run: `2026-04-24`
 ## Operations And Review
 
 - [Quickstart](/Users/scottcornell/src/my-projects/multi-agent/docs/quickstart.md)
+- [User Interaction Channels](/Users/scottcornell/src/my-projects/multi-agent/docs/user-interaction-channels.md)
 - [Admin Workflow Studio](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-workflow-studio.md)
 - [Durable Orchestration Runtime](/Users/scottcornell/src/my-projects/multi-agent/docs/durable-orchestration-runtime.md)
 - [Immutable Memory](/Users/scottcornell/src/my-projects/multi-agent/docs/immutable-memory.md)
