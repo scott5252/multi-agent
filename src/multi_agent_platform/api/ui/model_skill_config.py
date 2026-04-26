@@ -13,7 +13,19 @@ class ModelRoutingPageModel:
     title: str
     missing_default: bool
     preview_action: str = "/admin/config/preview/model"
+    tool_preview_action: str = "/admin/config/preview/tool"
     history_href: str = "/admin/config/model-routing/history"
+    skills_tools_filters: tuple[str, ...] = (
+        "tenant",
+        "workflow",
+        "agent",
+        "step",
+        "skill",
+        "tool",
+        "action",
+        "status",
+    )
+    policy_create_actions: dict[str, str] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,6 +44,13 @@ def build_model_routing_page_model(*, missing_default: bool) -> ModelRoutingPage
     return ModelRoutingPageModel(
         title="Model Routing",
         missing_default=missing_default,
+        policy_create_actions={
+            "skill_binding": "/admin/config/skill-bindings",
+            "tool_policy": "/admin/config/tool-policies",
+            "outbound_policy": "/admin/config/outbound-domain-policies",
+            "secret_reference": "/admin/config/secret-references",
+            "credential_requirement": "/admin/config/credential-requirements",
+        },
     )
 
 

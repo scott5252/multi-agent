@@ -65,3 +65,25 @@ CHANNEL_TENANT_DELIVERY_BUDGET_GAUGE = Gauge(
     "Per-tenant delivery concurrency budget remaining.",
     labelnames=("tenant_id", "delivery_kind"),
 )
+
+MODEL_SKILL_POLICY_DECISION_COUNTER = Counter(
+    "multi_agent_platform_model_skill_policy_decisions_total",
+    "Model-skill policy allow and deny outcomes.",
+    labelnames=("decision_category", "outcome", "denial_category"),
+)
+
+MODEL_SKILL_CONFIG_ACTION_COUNTER = Counter(
+    "multi_agent_platform_model_skill_config_actions_total",
+    "Model-skill configuration actions.",
+    labelnames=("action", "config_kind", "outcome"),
+)
+
+
+def record_model_skill_policy_decision(
+    *, decision_category: str, outcome: str, denial_category: str | None = None
+) -> None:
+    MODEL_SKILL_POLICY_DECISION_COUNTER.labels(
+        decision_category=decision_category,
+        outcome=outcome,
+        denial_category=denial_category or "none",
+    ).inc()

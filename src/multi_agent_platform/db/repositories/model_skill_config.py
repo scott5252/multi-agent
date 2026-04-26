@@ -171,6 +171,51 @@ class ModelSkillConfigRepository:
         )
         return list((await self.session.execute(stmt)).scalars().all())
 
+    async def list_active_skill_bindings(
+        self, tenant_id: UUID
+    ) -> list[SkillBindingVersion]:
+        stmt = select(SkillBindingVersion).where(
+            SkillBindingVersion.tenant_id == tenant_id,
+            SkillBindingVersion.status == ModelSkillVersionStatus.ACTIVE,
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_active_tool_policies(
+        self, tenant_id: UUID
+    ) -> list[AllowedToolPolicyVersion]:
+        stmt = select(AllowedToolPolicyVersion).where(
+            AllowedToolPolicyVersion.tenant_id == tenant_id,
+            AllowedToolPolicyVersion.status == ModelSkillVersionStatus.ACTIVE,
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_active_outbound_policies(
+        self, tenant_id: UUID
+    ) -> list[OutboundDomainPolicyVersion]:
+        stmt = select(OutboundDomainPolicyVersion).where(
+            OutboundDomainPolicyVersion.tenant_id == tenant_id,
+            OutboundDomainPolicyVersion.status == ModelSkillVersionStatus.ACTIVE,
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_active_secret_references(
+        self, tenant_id: UUID
+    ) -> list[SecretReferenceVersion]:
+        stmt = select(SecretReferenceVersion).where(
+            SecretReferenceVersion.tenant_id == tenant_id,
+            SecretReferenceVersion.status == ModelSkillVersionStatus.ACTIVE,
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_active_credential_requirements(
+        self, tenant_id: UUID
+    ) -> list[ToolCredentialRequirementVersion]:
+        stmt = select(ToolCredentialRequirementVersion).where(
+            ToolCredentialRequirementVersion.tenant_id == tenant_id,
+            ToolCredentialRequirementVersion.status == ModelSkillVersionStatus.ACTIVE,
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
     async def list_history(
         self,
         *,
@@ -214,6 +259,15 @@ class ModelSkillConfigRepository:
             ResolvedExecutionConfiguration,
             resolved_execution_configuration_id,
         )
+
+    async def get_resolved_configuration_for_run(
+        self, *, tenant_id: UUID, workflow_run_id: UUID
+    ) -> ResolvedExecutionConfiguration | None:
+        stmt = select(ResolvedExecutionConfiguration).where(
+            ResolvedExecutionConfiguration.tenant_id == tenant_id,
+            ResolvedExecutionConfiguration.workflow_run_id == workflow_run_id,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
 
     async def add_runtime_decision(
         self, record: RuntimePolicyDecision

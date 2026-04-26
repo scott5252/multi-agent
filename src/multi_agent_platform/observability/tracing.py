@@ -67,3 +67,25 @@ def channel_trace_attributes(
     }
     attributes.update({key: value for key, value in optional.items() if value})
     return attributes
+
+
+def model_skill_trace_attributes(
+    *,
+    action: str,
+    outcome: str,
+    tenant_id: str | None = None,
+    workflow_run_id: str | None = None,
+    run_step_id: str | None = None,
+    decision_category: str | None = None,
+    resolution_digest: str | None = None,
+) -> dict[str, str]:
+    attributes = {"action": action, "outcome": outcome}
+    optional = {
+        "tenant_id": tenant_id,
+        "workflow_run_id": workflow_run_id,
+        "run_step_id": run_step_id,
+        "decision_category": decision_category,
+        "resolution_digest": resolution_digest,
+    }
+    attributes.update({key: value for key, value in optional.items() if value})
+    return attributes

@@ -189,6 +189,14 @@ class SecretReferenceCandidate(VersionedRecord):
     allowed_scopes: dict[str, Any] = Field(default_factory=dict)
     rotation_metadata: dict[str, Any] = Field(default_factory=dict)
 
+    @property
+    def is_usable(self) -> bool:
+        return (
+            self.status is VersionStatus.ACTIVE
+            and not bool(self.rotation_metadata.get("revoked"))
+            and not bool(self.rotation_metadata.get("expired"))
+        )
+
 
 class CredentialRequirementCandidate(VersionedRecord):
     tool_id: str

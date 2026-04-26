@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
+from multi_agent_platform.auth.principal import PrincipalContext
+from multi_agent_platform.config.service import (
+    ModelSkillConfigService,
+    PinRunConfigurationRequest,
+)
 from multi_agent_platform.memory.models import RuntimeMemoryContext
 from multi_agent_platform.memory.service import MemoryService
 from multi_agent_platform.observability.tracing import generate_trace_id
@@ -33,6 +38,8 @@ class RuntimeOrchestrationService:
         input_payload: dict[str, object],
         idempotency_key: str | None,
         trace_id: str | None = None,
+        model_skill_config_service: ModelSkillConfigService | None = None,
+        principal_context: PrincipalContext | None = None,
     ) -> WorkflowRun:
         workflow_run_id = uuid4()
         published_bundle = PublishedWorkflowBundle(
@@ -59,6 +66,24 @@ class RuntimeOrchestrationService:
             status=RunStatus.RUNNABLE,
         )
         await self.repository.create_run(run, bundle)
+        if (
+            tenant_id is not None
+            and model_skill_config_service is not None
+            and principal_context is not None
+        ):
+            await model_skill_config_service.pin_run_configuration(
+                principal=principal_context,
+                request=PinRunConfigurationRequest(
+                    tenant_id=tenant_id,
+                    workflow_run_id=workflow_run_id,
+                    run_bundle_id=bundle.run_bundle_id,
+                    bundle_digest=bundle.bundle_digest,
+                    workflow_lineage_id=None,
+                    workflow_version_bundle_id=published_workflow_version_id,
+                    initiating_principal_id=principal_context.principal_identity_id,
+                    trace_id=run.trace_id,
+                ),
+            )
         await self.repository.add_timeline_event(
             RuntimeTimelineEvent(
                 tenant_id=tenant_id,

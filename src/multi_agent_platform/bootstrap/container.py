@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -10,10 +11,14 @@ from starlette.templating import Jinja2Templates
 from multi_agent_platform.auth.config import auth_configuration_error
 from multi_agent_platform.auth.jwt_validator import Auth0JwtValidator
 from multi_agent_platform.auth.local_principals import LocalPrincipalCatalog
+from multi_agent_platform.config.service import ModelSkillConfigService
 from multi_agent_platform.config.settings import (
     SecretProviderKind,
     Settings,
     StorageProviderKind,
+)
+from multi_agent_platform.db.repositories.model_skill_config import (
+    ModelSkillConfigRepository,
 )
 from multi_agent_platform.db.session import create_engine
 from multi_agent_platform.observability.logging import configure_logging
@@ -55,6 +60,7 @@ class Container:
     jwt_validator: Auth0JwtValidator | None
     local_principal_catalog: LocalPrincipalCatalog
     logger: logging.Logger
+    model_skill_service_factory: Callable[[AsyncSession], ModelSkillConfigService]
     auth_failure_detail: str | None = None
     worker_dependencies_ready: bool = True
     state: dict[str, object] = field(default_factory=dict)
@@ -82,5 +88,8 @@ def build_container(settings: Settings | None = None) -> Container:
             resolved_settings.local_principal_catalog_json
         ),
         logger=configure_logging(resolved_settings.log_level),
+        model_skill_service_factory=lambda session: ModelSkillConfigService(
+            repository=ModelSkillConfigRepository(session),
+        ),
         auth_failure_detail=auth_configuration_error(resolved_settings),
     )

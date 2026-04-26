@@ -28,8 +28,29 @@
           <pre data-preview-output></pre>
         </form>
       </section>
+      <section>
+        <h2>Skills and tools</h2>
+        <form action="{{ page.tool_preview_action }}" method="post" data-model-skill-preview>
+          <label>Tenant <input name="tenant_id" /></label>
+          <label>Workflow <input name="workflow_lineage_id" /></label>
+          <label>Agent <input name="agent_key" /></label>
+          <label>Step <input name="step_key" /></label>
+          <label>Skill <input name="skill_slug" /></label>
+          <label>Tool <input name="tool_id" /></label>
+          <label>Action <input name="action_category" /></label>
+          <label>Destination <input name="destination_url" /></label>
+          <button type="submit">Preview</button>
+          <pre data-preview-output></pre>
+        </form>
+        <dl>
+          {% for key, href in page.policy_create_actions.items() %}
+          <dt>{{ key }}</dt>
+          <dd><code>{{ href }}</code></dd>
+          {% endfor %}
+        </dl>
+        <p>Secret values are redacted; only reference identifiers and safe policy summaries are shown.</p>
+      </section>
     </main>
     <script src="/admin/static/model_skill_config.js"></script>
   </body>
 </html>
-
