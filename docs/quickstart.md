@@ -234,6 +234,33 @@ Manual model-skill QA:
   assisted status, and aggregate pass/fail evidence.
 - [Model Skill Routing](/Users/scottcornell/src/my-projects/multi-agent/docs/model-skill-routing.md)
 
+Target production audit debugging explicitly:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/audit \
+  tests/unit/api/test_audit_debugging_schemas.py \
+  tests/contract/test_production_audit_debugging_contract.py \
+  tests/integration/api/test_admin_run_inspection_api.py
+```
+
+Manual production audit debugging QA:
+
+- Run `uv run alembic upgrade head`.
+- Create successful and failed workflow runs with trace ids.
+- Inspect timelines with
+  `/admin/runs/{workflow_run_id}/timeline?tenant_id={tenant_id}`.
+- Search failed runs with
+  `/admin/runs/debug-search?tenant_id={tenant_id}&status=failed`.
+- Review replay, lineage, and bundle responses for linked trace ids and safe
+  metadata.
+- Create a redacted debug-evidence export through
+  `POST /admin/runs/{workflow_run_id}/exports`.
+- Confirm denied inspection attempts are audit logged and no timelines, traces,
+  exports, logs, metrics, README guidance, or PR notes contain raw secrets,
+  credential values, unauthorized prompt text, or unauthorized memory content.
+- [Production Audit Debugging](/Users/scottcornell/src/my-projects/multi-agent/docs/production-audit-debugging.md)
+
 ## Troubleshooting
 
 - `401 missing local principal header or cookie`: sign in through

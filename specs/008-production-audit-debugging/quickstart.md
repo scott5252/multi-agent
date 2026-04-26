@@ -115,3 +115,13 @@ uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fai
 - Append-only correction, redaction, and supersession behavior.
 - Lookup/search latency evidence for p95 <= 2 seconds and p95 <= 5 seconds.
 - README and operator guidance for production debugging.
+
+## Implementation Verification Notes
+
+The implemented admin endpoints match the paths in this quickstart:
+`/admin/runs/debug-search`, `/admin/runs/{workflow_run_id}/timeline`,
+`/admin/runs/{workflow_run_id}/replay`, `/admin/runs/{workflow_run_id}/lineage`,
+`/admin/runs/{workflow_run_id}/bundle`, and
+`/admin/runs/{workflow_run_id}/exports`. Export creation returns safe metadata
+with status, included/excluded sections, artifact references when available,
+and safe failure reasons.

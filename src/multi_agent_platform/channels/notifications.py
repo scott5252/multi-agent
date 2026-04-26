@@ -22,3 +22,20 @@ def terminal_notification_payload(run: ChannelRun) -> dict[str, object]:
 
 def subscription_key(platform_identity_id: str, channel_session_id: UUID) -> str:
     return f"{platform_identity_id}:{channel_session_id}"
+
+
+def notification_audit_summary(
+    *,
+    destination_category: str,
+    delivery_status: str,
+    attempt_count: int,
+    provider_correlation_ref: str | None = None,
+    safe_failure_reason: str | None = None,
+) -> dict[str, object]:
+    return {
+        "destination_category": destination_category,
+        "delivery_status": delivery_status,
+        "attempt_count": attempt_count,
+        "provider_correlation_ref": provider_correlation_ref,
+        "safe_failure_reason": safe_failure_reason,
+    }

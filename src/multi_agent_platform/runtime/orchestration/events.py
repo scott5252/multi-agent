@@ -47,3 +47,27 @@ class RuntimeTimelineEvent:
 
 def runtime_audit_action(event_type: RuntimeEventType) -> str:
     return f"runtime.{event_type.value}"
+
+
+def lifecycle_audit_category(event_type: RuntimeEventType) -> str:
+    mapping = {
+        RuntimeEventType.START: "started",
+        RuntimeEventType.CLAIM: "queued",
+        RuntimeEventType.CHECKPOINT: "runtime_decision",
+        RuntimeEventType.HANDOFF: "agent_handoff",
+        RuntimeEventType.SIDE_EFFECT: "tool_usage",
+        RuntimeEventType.APPROVAL: "waiting",
+        RuntimeEventType.RETRY: "retried",
+        RuntimeEventType.CANCEL: "cancelled",
+        RuntimeEventType.TERMINAL: "completed",
+    }
+    return mapping.get(event_type, "runtime_decision")
+
+
+def audit_safe_details(event: RuntimeTimelineEvent) -> dict[str, object]:
+    return {
+        "event_type": event.event_type.value,
+        "severity": event.severity.value,
+        "payload_field_count": len(event.payload),
+        "runtime_timeline_event_id": str(event.runtime_timeline_event_id),
+    }

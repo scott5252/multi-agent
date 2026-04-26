@@ -89,3 +89,34 @@ def model_skill_trace_attributes(
     }
     attributes.update({key: value for key, value in optional.items() if value})
     return attributes
+
+
+def audit_trace_attributes(
+    *,
+    action: str,
+    workflow_run_id: str,
+    tenant_id: str | None,
+    trace_id: str,
+    correlation_id: str | None = None,
+    timeline_event_id: str | None = None,
+    trace_record_id: str | None = None,
+) -> dict[str, str]:
+    attributes = {
+        "action": action,
+        "workflow_run_id": workflow_run_id,
+        "trace_id": trace_id,
+    }
+    optional = {
+        "tenant_id": tenant_id,
+        "correlation_id": correlation_id,
+        "timeline_event_id": timeline_event_id,
+        "trace_record_id": trace_record_id,
+    }
+    attributes.update({key: value for key, value in optional.items() if value})
+    return attributes
+
+
+def propagate_correlation_id(
+    trace_id: str, correlation_id: str | None = None
+) -> dict[str, str]:
+    return {"trace_id": trace_id, "correlation_id": correlation_id or trace_id}

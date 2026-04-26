@@ -26,3 +26,7 @@ class StorageProvider(ABC):
 
 def build_artifact_key(*parts: str) -> str:
     return "/".join(part.strip("/") for part in parts if part)
+
+
+def build_debug_evidence_export_key(tenant_id: str, export_id: str) -> str:
+    return build_artifact_key("audit-debug", tenant_id, f"{export_id}.json")

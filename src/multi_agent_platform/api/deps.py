@@ -6,8 +6,12 @@ from typing import Annotated
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from multi_agent_platform.audit.service import AuditDebuggingService
 from multi_agent_platform.bootstrap.container import Container
 from multi_agent_platform.config.settings import Settings
+from multi_agent_platform.db.repositories.audit_debugging import (
+    AuditDebuggingRepository,
+)
 from multi_agent_platform.db.session import session_scope
 from multi_agent_platform.secrets.base import SecretProvider
 from multi_agent_platform.storage.base import StorageProvider
@@ -49,3 +53,9 @@ def get_storage_provider(
     container: ContainerDep,
 ) -> StorageProvider:
     return container.storage_provider
+
+
+async def get_audit_debugging_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> AuditDebuggingService:
+    return AuditDebuggingService(AuditDebuggingRepository(session))

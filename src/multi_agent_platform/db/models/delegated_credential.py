@@ -18,6 +18,7 @@ class DelegatedCredentialStatus(StrEnum):
 
 class DelegatedCredentialLink(Base):
     __tablename__ = "delegated_credential_links"
+    __audit_sensitive_fields__ = ("provider_subject",)
 
     delegated_credential_link_id: Mapped[UUID] = mapped_column(
         primary_key=True, default=uuid4

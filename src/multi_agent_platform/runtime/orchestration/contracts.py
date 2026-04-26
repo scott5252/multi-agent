@@ -83,3 +83,20 @@ def _validate_object_schema(
             elif expected_type == "boolean" and not isinstance(payload[key], bool):
                 errors.append(f"{key} must be a boolean")
     return errors
+
+
+def contract_validation_audit_summary(
+    *,
+    contract_id: str,
+    contract_version: str,
+    result: ContractValidationResult,
+) -> dict[str, object]:
+    return {
+        "contract_name": contract_id,
+        "contract_version": contract_version,
+        "validation_outcome": "pass" if result.valid else "fail",
+        "error_count": len(result.errors),
+        "prioritized_error_codes": tuple(
+            error.split(" ")[0] for error in result.errors
+        ),
+    }

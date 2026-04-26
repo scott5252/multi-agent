@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
+from multi_agent_platform.audit.capture import (
+    AuditCaptureService,
+    build_lifecycle_event,
+)
+from multi_agent_platform.audit.models import RunStatusAfter, TimelineEventCategory
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.config.service import (
     ModelSkillConfigService,
@@ -40,6 +45,7 @@ class RuntimeOrchestrationService:
         trace_id: str | None = None,
         model_skill_config_service: ModelSkillConfigService | None = None,
         principal_context: PrincipalContext | None = None,
+        audit_capture_service: AuditCaptureService | None = None,
     ) -> WorkflowRun:
         workflow_run_id = uuid4()
         published_bundle = PublishedWorkflowBundle(
@@ -93,6 +99,19 @@ class RuntimeOrchestrationService:
                 payload={"status": run.status.value},
             )
         )
+        if audit_capture_service is not None:
+            await audit_capture_service.record_event(
+                build_lifecycle_event(
+                    tenant_id=tenant_id,
+                    workflow_run_id=workflow_run_id,
+                    category=TimelineEventCategory.ACCEPTED,
+                    status_after=RunStatusAfter.QUEUED,
+                    trace_id=run.trace_id,
+                    source_event_id=f"runtime-start:{workflow_run_id}",
+                    actor_principal_id=principal_id,
+                    details={"bundle_digest": bundle.bundle_digest},
+                )
+            )
         return run
 
     async def inspect_run(
@@ -101,7 +120,12 @@ class RuntimeOrchestrationService:
         return await self.repository.get_run(workflow_run_id, tenant_id)
 
     async def cancel_run(
-        self, *, workflow_run_id: UUID, tenant_id: UUID | None, reason: str
+        self,
+        *,
+        workflow_run_id: UUID,
+        tenant_id: UUID | None,
+        reason: str,
+        audit_capture_service: AuditCaptureService | None = None,
     ) -> WorkflowRun:
         run = await self.repository.get_run(workflow_run_id, tenant_id)
         if run is None:
@@ -116,6 +140,18 @@ class RuntimeOrchestrationService:
                 payload={"reason": reason},
             )
         )
+        if audit_capture_service is not None:
+            await audit_capture_service.record_event(
+                build_lifecycle_event(
+                    tenant_id=tenant_id,
+                    workflow_run_id=workflow_run_id,
+                    category=TimelineEventCategory.CANCELLED,
+                    status_after=RunStatusAfter.CANCELLED,
+                    trace_id=run.trace_id,
+                    source_event_id=f"runtime-cancel:{workflow_run_id}",
+                    details={"safe_reason": reason},
+                )
+            )
         return run
 
     async def get_current_memory_head(

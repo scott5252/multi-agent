@@ -28,6 +28,9 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 - append-only memory scopes, versions, current heads, replay, diff, audit, and
   runtime source links
 - filesystem or provider-backed artifact storage for compiled workflow bundles
+- production audit debugging for admin run search, timelines, replay, lineage,
+  version bundles, notification state, secret-access metadata, and redacted
+  exports
 
 ## Quickstart
 
@@ -44,6 +47,29 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 9. Open [http://127.0.0.1:8000/runs](http://127.0.0.1:8000/runs) to start
    and inspect runs through the Web UI channel.
 10. Validate the repo with `./scripts/check.sh`.
+
+## Production Audit Debugging
+
+Administrators and auditors can inspect tenant-scoped run evidence without
+database access:
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://127.0.0.1:8000/admin/runs/{workflow_run_id}/timeline?tenant_id={tenant_id}"
+
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://127.0.0.1:8000/admin/runs/debug-search?tenant_id={tenant_id}&status=failed"
+
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  "http://127.0.0.1:8000/admin/runs/{workflow_run_id}/exports" \
+  -d '{"tenant_id":"{tenant_id}","recipient_scope":"tenant_auditor","reason":"incident review"}'
+```
+
+Evidence is append-only and redacted by default. Timelines, traces, replay
+views, lineage, version bundles, notifications, secret access, exports, logs,
+and metrics never expose raw secrets, credentials, unauthorized prompt text, or
+unauthorized memory content.
 
 ## User Interaction Channels
 
@@ -95,6 +121,7 @@ Latest full validation run: `2026-04-24`
 - [Admin Workflow Studio](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-workflow-studio.md)
 - [Durable Orchestration Runtime](/Users/scottcornell/src/my-projects/multi-agent/docs/durable-orchestration-runtime.md)
 - [Immutable Memory](/Users/scottcornell/src/my-projects/multi-agent/docs/immutable-memory.md)
+- [Production Audit Debugging](/Users/scottcornell/src/my-projects/multi-agent/docs/production-audit-debugging.md)
 - [Foundation Runbook](/Users/scottcornell/src/my-projects/multi-agent/docs/foundation-runbook.md)
 - [Architecture](/Users/scottcornell/src/my-projects/multi-agent/docs/architecture.md)
 - [Constitution](/Users/scottcornell/src/my-projects/multi-agent/.specify/memory/constitution.md)
