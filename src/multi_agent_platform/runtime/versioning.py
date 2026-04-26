@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import platform
+from uuid import UUID
 
 from pydantic import BaseModel
 
+from multi_agent_platform.audit.models import VersionBundleSnapshotCreate
 from multi_agent_platform.config.settings import Settings
 from multi_agent_platform.runtime.workflow_bundle import CompiledWorkflowBundle
 
@@ -71,5 +73,36 @@ def build_run_version_bundle(
             if isinstance(item, dict)
             and "alias" in item
             and "workflow_version_ref" in item
+        },
+    )
+
+
+def build_audit_version_bundle_snapshot(
+    *,
+    tenant_id: UUID | None,
+    workflow_run_id: UUID,
+    run_bundle: RunVersionBundle,
+) -> VersionBundleSnapshotCreate:
+    return VersionBundleSnapshotCreate(
+        tenant_id=tenant_id,
+        workflow_run_id=workflow_run_id,
+        workflow_lineage_id=None,
+        workflow_version_bundle_id=None,
+        execution_bundle_id=None,
+        bundle_digest=run_bundle.compiled_bundle_digest,
+        workflow_version={
+            "workflow_version_bundle_id": run_bundle.workflow_version_bundle_id,
+            "workflow_lineage_id": run_bundle.workflow_lineage_id,
+            "workflow_key": run_bundle.workflow_key,
+            "compiler_version": run_bundle.compiler_version,
+        },
+        contract_version_refs={},
+        prompt_version_refs={},
+        model_config_version_refs={},
+        tool_policy_version_refs=dict(run_bundle.pinned_skill_versions),
+        activation_state_at_acceptance="active",
+        safe_summary={
+            "subworkflow_count": len(run_bundle.subworkflow_version_refs),
+            "pinned_skill_count": len(run_bundle.pinned_skill_versions),
         },
     )

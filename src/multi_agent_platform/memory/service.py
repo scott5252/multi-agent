@@ -385,3 +385,13 @@ class MemoryService:
             source_type=MemorySourceType.RUNTIME,
             trace_id=context.trace_id,
         )
+
+
+def memory_write_audit_summary(result: MemoryWriteResult) -> dict[str, object]:
+    return {
+        "memory_scope_id": str(result.scope.memory_scope_id),
+        "effective_version_ref": str(result.version.memory_version_id),
+        "write_outcome": "accepted",
+        "content_sha256": result.version.content_sha256,
+        "content_size_bytes": result.version.content_size_bytes,
+    }

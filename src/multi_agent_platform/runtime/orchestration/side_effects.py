@@ -126,3 +126,15 @@ def mark_for_compensation(
     intent.status = SideEffectStatus.COMPENSATING
     intent.error_ref = error_ref
     intent.updated_at = now_utc()
+
+
+def tool_usage_audit_summary(intent: SideEffectIntent) -> dict[str, object]:
+    return {
+        "tool_id": intent.tool_policy_ref,
+        "action_category": intent.intent_kind.value,
+        "policy_outcome": "allow",
+        "execution_outcome": intent.status.value,
+        "has_delegated_credential": intent.delegated_credential_ref is not None,
+        "request_field_count": len(intent.request_ref or {}),
+        "result_field_count": len(intent.result_ref or {}),
+    }

@@ -156,3 +156,20 @@ def resolve_model_prompt(
         model=resolve_model(model_candidates, request_scope),
         prompt=resolve_prompt(prompt_candidates, request_scope),
     )
+
+
+def model_selection_audit_metadata(
+    resolution: ModelPromptResolution,
+) -> dict[str, object]:
+    return {
+        "model_provider_key": resolution.model.provider_key,
+        "model_id": resolution.model.model_id,
+        "selection_source": resolution.model.source_scope.value,
+        "model_routing_version_id": str(resolution.model.model_routing_version_id),
+        "prompt_reference_version_id": str(
+            resolution.prompt.prompt_reference_version_id
+        ),
+        "considered_model_versions": len(resolution.model.considered_version_ids),
+        "considered_prompt_versions": len(resolution.prompt.considered_version_ids),
+        "selection_outcome": "selected",
+    }

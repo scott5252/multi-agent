@@ -139,3 +139,34 @@ def model_skill_policy_log_context(
     if evaluated_version_count is not None:
         payload["evaluated_version_count"] = str(evaluated_version_count)
     return {"extra": payload}
+
+
+def audit_log_context(
+    *,
+    action: str,
+    tenant_id: str | None = None,
+    workflow_run_id: str | None = None,
+    trace_id: str | None = None,
+    timeline_event_id: str | None = None,
+    event_category: str | None = None,
+    actor_type: str | None = None,
+    policy_outcome: str | None = None,
+    status: str | None = None,
+    outcome: str | None = None,
+    duration_ms: float | None = None,
+) -> dict[str, dict[str, str]]:
+    payload = {"action": action}
+    optional = {
+        "tenant_id": tenant_id,
+        "workflow_run_id": workflow_run_id,
+        "trace_id": trace_id,
+        "timeline_event_id": timeline_event_id,
+        "event_category": event_category,
+        "actor_type": actor_type,
+        "policy_outcome": policy_outcome,
+        "status": status,
+        "outcome": outcome,
+        "duration_ms": str(duration_ms) if duration_ms is not None else None,
+    }
+    payload.update({key: value for key, value in optional.items() if value is not None})
+    return {"extra": payload}

@@ -8,6 +8,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from starlette.templating import Jinja2Templates
 
+from multi_agent_platform.audit.service import AuditDebuggingService
 from multi_agent_platform.auth.config import auth_configuration_error
 from multi_agent_platform.auth.jwt_validator import Auth0JwtValidator
 from multi_agent_platform.auth.local_principals import LocalPrincipalCatalog
@@ -16,6 +17,9 @@ from multi_agent_platform.config.settings import (
     SecretProviderKind,
     Settings,
     StorageProviderKind,
+)
+from multi_agent_platform.db.repositories.audit_debugging import (
+    AuditDebuggingRepository,
 )
 from multi_agent_platform.db.repositories.model_skill_config import (
     ModelSkillConfigRepository,
@@ -61,6 +65,7 @@ class Container:
     local_principal_catalog: LocalPrincipalCatalog
     logger: logging.Logger
     model_skill_service_factory: Callable[[AsyncSession], ModelSkillConfigService]
+    audit_debugging_service_factory: Callable[[AsyncSession], AuditDebuggingService]
     auth_failure_detail: str | None = None
     worker_dependencies_ready: bool = True
     state: dict[str, object] = field(default_factory=dict)
@@ -90,6 +95,9 @@ def build_container(settings: Settings | None = None) -> Container:
         logger=configure_logging(resolved_settings.log_level),
         model_skill_service_factory=lambda session: ModelSkillConfigService(
             repository=ModelSkillConfigRepository(session),
+        ),
+        audit_debugging_service_factory=lambda session: AuditDebuggingService(
+            repository=AuditDebuggingRepository(session),
         ),
         auth_failure_detail=auth_configuration_error(resolved_settings),
     )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from prometheus_client import Counter, Gauge
+from prometheus_client import Counter, Gauge, Histogram
 
 REQUEST_COUNTER = Counter(
     "multi_agent_platform_requests_total",
@@ -78,6 +78,36 @@ MODEL_SKILL_CONFIG_ACTION_COUNTER = Counter(
     labelnames=("action", "config_kind", "outcome"),
 )
 
+AUDIT_CAPTURE_COUNTER = Counter(
+    "multi_agent_platform_audit_capture_total",
+    "Audit capture events by category, criticality, and outcome.",
+    labelnames=("event_category", "criticality", "outcome"),
+)
+
+AUDIT_INSPECTION_DENIED_COUNTER = Counter(
+    "multi_agent_platform_audit_inspection_denied_total",
+    "Denied admin inspection attempts.",
+    labelnames=("tenant_id", "action"),
+)
+
+AUDIT_LOOKUP_LATENCY = Histogram(
+    "multi_agent_platform_audit_lookup_latency_seconds",
+    "Run audit lookup latency.",
+    labelnames=("lookup_type",),
+)
+
+AUDIT_EXPORT_COUNTER = Counter(
+    "multi_agent_platform_audit_exports_total",
+    "Debug evidence export lifecycle events.",
+    labelnames=("tenant_id", "status"),
+)
+
+AUDIT_REDACTION_COUNTER = Counter(
+    "multi_agent_platform_audit_redactions_total",
+    "Redaction decisions by sensitivity label and action.",
+    labelnames=("sensitivity_label", "action"),
+)
+
 
 def record_model_skill_policy_decision(
     *, decision_category: str, outcome: str, denial_category: str | None = None
@@ -86,4 +116,28 @@ def record_model_skill_policy_decision(
         decision_category=decision_category,
         outcome=outcome,
         denial_category=denial_category or "none",
+    ).inc()
+
+
+def record_audit_capture(
+    *, event_category: str, criticality: str, outcome: str
+) -> None:
+    AUDIT_CAPTURE_COUNTER.labels(
+        event_category=event_category, criticality=criticality, outcome=outcome
+    ).inc()
+
+
+def record_audit_denied_inspection(*, tenant_id: str | None, action: str) -> None:
+    AUDIT_INSPECTION_DENIED_COUNTER.labels(
+        tenant_id=tenant_id or "none", action=action
+    ).inc()
+
+
+def record_audit_export(*, tenant_id: str | None, status: str) -> None:
+    AUDIT_EXPORT_COUNTER.labels(tenant_id=tenant_id or "none", status=status).inc()
+
+
+def record_audit_redaction(*, sensitivity_label: str, action: str) -> None:
+    AUDIT_REDACTION_COUNTER.labels(
+        sensitivity_label=sensitivity_label, action=action
     ).inc()

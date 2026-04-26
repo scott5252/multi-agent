@@ -61,3 +61,14 @@ class HandoffEnvelope:
         if self.status is not HandoffStatus.INVALID:
             raise ValueError("failure routes apply to invalid envelopes")
         self.status = HandoffStatus.FAILED_ROUTE_APPLIED
+
+
+def handoff_audit_metadata(envelope: HandoffEnvelope) -> dict[str, object]:
+    return {
+        "source_agent_key": str(envelope.sender_step_id),
+        "destination_agent_key": envelope.receiver_step_key,
+        "handoff_contract_ref": f"{envelope.contract_id}:{envelope.contract_version}",
+        "handoff_outcome": envelope.status.value,
+        "payload_digest": envelope.payload_hash,
+        "validation_error_count": len(envelope.validation_errors),
+    }

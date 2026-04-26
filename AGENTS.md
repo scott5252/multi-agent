@@ -28,6 +28,16 @@ Auto-generated from all feature plans. Last updated: 2026-04-26
   secret-reference metadata, credential requirements, active pointers, runtime
   pins, policy decisions, migrations, and configuration audit records
   (007-model-skill-routing)
+- Python 3.12 + FastAPI, Pydantic v2, Pydantic Settings, SQLAlchemy 2.x,
+  Alembic, PostgreSQL 16+, psycopg 3, Auth0 JWT validation,
+  LangChain 1.2.15, LangGraph 1.1.9, langgraph-checkpoint-postgres 3.0.5,
+  pytest, pytest-asyncio, httpx, Ruff, mypy, uv
+  (008-production-audit-debugging)
+- PostgreSQL for append-only audit events, run timeline events, runtime trace
+  records, capture gaps, lineage projections, version-bundle references,
+  notification delivery projections, secret-access audit metadata, inspection
+  access audits, export metadata, redaction/classification records, and replay
+  snapshots (008-production-audit-debugging)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -57,6 +67,10 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 008-production-audit-debugging: Planned production observability and audit
+  debugging with structured logs, trace IDs, metrics, append-only audit tables,
+  admin timeline/search/replay APIs, lineage and version-bundle views,
+  redaction/classification, exports, and completeness testing.
 - 007-model-skill-routing: Planned versioned model routing and skill/tool
   configuration, deterministic precedence resolution, run and first-use
   pinning, rollback, outbound and credential policy enforcement, audit
@@ -73,5 +87,5 @@ async patterns for PostgreSQL access.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/007-model-skill-routing/plan.md`
+`specs/008-production-audit-debugging/plan.md`
 <!-- SPECKIT END -->
