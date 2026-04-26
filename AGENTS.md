@@ -1,6 +1,6 @@
 # multi-agent Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-24
+Auto-generated from all feature plans. Last updated: 2026-04-26
 
 ## Active Technologies
 - Python 3.12 + FastAPI security dependencies, Auth0 JWT validation, Pydantic
@@ -19,6 +19,15 @@ Auto-generated from all feature plans. Last updated: 2026-04-24
   requests, idempotency records, notification subscriptions and delivery
   attempts, API callbacks, timeline projections, and interaction audit records
   (006-user-interaction-channels)
+- Python 3.12 + FastAPI, Pydantic v2, Pydantic Settings, SQLAlchemy 2.x,
+  Alembic, PostgreSQL 16+, psycopg 3, Auth0 JWT validation,
+  LangChain 1.2.15, LangGraph 1.1.9, langgraph-checkpoint-postgres 3.0.5,
+  pytest, pytest-asyncio, httpx, Ruff, mypy, uv (007-model-skill-routing)
+- PostgreSQL for model provider catalog entries, versioned model routing,
+  prompt references, skill bindings, tool policies, outbound policies,
+  secret-reference metadata, credential requirements, active pointers, runtime
+  pins, policy decisions, migrations, and configuration audit records
+  (007-model-skill-routing)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -48,12 +57,15 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 007-model-skill-routing: Planned versioned model routing and skill/tool
+  configuration, deterministic precedence resolution, run and first-use
+  pinning, rollback, outbound and credential policy enforcement, audit
+  provenance, and admin preview/history views.
 - 006-user-interaction-channels: Planned FastAPI channel adapters for Web UI,
   Telegram webhooks, and REST APIs with normalized requests, shared run status,
   SSE/polling, callbacks, approval/resume flows, notifications, and artifact
   access.
 - 005-immutable-memory: Planned append-only PostgreSQL-backed memory scopes, immutable version lineage, head projections, runtime-safe reads/writes, retrieval APIs, audit redaction, archival markers, and concurrency tests.
-- 004-durable-orchestration-runtime: Planned the LangGraph durable orchestration runtime, PostgreSQL checkpointer, worker leases, handoff contracts, side-effect intents, approval wait states, and crash-resume test strategy.
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
@@ -61,5 +73,5 @@ async patterns for PostgreSQL access.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/006-user-interaction-channels/plan.md`
+`specs/007-model-skill-routing/plan.md`
 <!-- SPECKIT END -->

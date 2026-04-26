@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ page.title }}</title>
+    <link rel="stylesheet" href="/admin/static/workflow_studio.css" />
+  </head>
+  <body>
+    <main class="workflow-shell">
+      <header class="workflow-header">
+        <h1>{{ page.title }}</h1>
+      </header>
+      <table>
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Kind</th>
+            <th>Actor</th>
+            <th>Reason</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in page.history.items %}
+          <tr>
+            <td>{{ item.action }}</td>
+            <td>{{ item.config_kind }}</td>
+            <td>{{ item.actor_principal_id }}</td>
+            <td>{{ item.reason }}</td>
+            <td>{{ item.created_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>
+

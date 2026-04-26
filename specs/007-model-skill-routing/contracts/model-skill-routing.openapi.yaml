@@ -1,0 +1,807 @@
+openapi: 3.1.0
+info:
+  title: Model Routing And Skill Configuration API
+  version: 0.1.0
+  description: >
+    Admin and review API for versioned model routing, prompt references, skill
+    bindings, allowed tool policies, outbound domain policies, secret
+    references, credential requirements, deterministic resolution preview,
+    rollback, and run provenance.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /admin/config/model-routing:
+    post:
+      summary: Create a model routing configuration version
+      tags: [model-skill-config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModelRoutingVersionCreate"
+      responses:
+        "201":
+          description: Version created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigVersionResponse"
+        "400":
+          description: Invalid configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigError"
+        "403":
+          description: Caller is not authorized for the tenant or scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigError"
+  /admin/config/model-routing/{version_id}/activate:
+    post:
+      summary: Activate a model routing version for its scope
+      tags: [model-skill-config]
+      parameters:
+        - $ref: "#/components/parameters/VersionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivateConfigRequest"
+      responses:
+        "200":
+          description: Version activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigVersionResponse"
+        "409":
+          description: Active version changed since caller previewed it
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigError"
+  /admin/config/prompt-references:
+    post:
+      summary: Create a prompt reference version
+      tags: [model-skill-config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptReferenceVersionCreate"
+      responses:
+        "201":
+          description: Prompt reference version created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigVersionResponse"
+  /admin/config/skill-bindings:
+    post:
+      summary: Create a skill binding version
+      tags: [model-skill-config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillBindingVersionCreate"
+      responses:
+        "201":
+          description: Skill binding version created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigVersionResponse"
+  /admin/config/tool-policies:
+    post:
+      summary: Create an allowed tool policy version
+      tags: [model-skill-config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllowedToolPolicyVersionCreate"
+      responses:
+        "201":
+          description: Tool policy version created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigVersionResponse"
+  /admin/config/outbound-domain-policies:
+    post:
+      summary: Create an outbound domain policy version
+      tags: [model-skill-config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OutboundDomainPolicyVersionCreate"
+      responses:
+        "201":
+          description: Outbound domain policy version created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigVersionResponse"
+  /admin/config/secret-references:
+    post:
+      summary: Create a versioned secret reference metadata record
+      tags: [model-skill-config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SecretReferenceVersionCreate"
+      responses:
+        "201":
+          description: Secret reference version created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigVersionResponse"
+  /admin/config/credential-requirements:
+    post:
+      summary: Create a tool credential requirement version
+      tags: [model-skill-config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialRequirementVersionCreate"
+      responses:
+        "201":
+          description: Credential requirement version created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigVersionResponse"
+  /admin/config/preview/model:
+    post:
+      summary: Preview model and prompt resolution without starting a run
+      tags: [model-skill-config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModelResolutionPreviewRequest"
+      responses:
+        "200":
+          description: Resolved model and prompt preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelResolutionPreviewResponse"
+        "422":
+          description: Resolution failed with safe remediation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigError"
+  /admin/config/preview/tool:
+    post:
+      summary: Preview skill, tool, outbound domain, and credential policy outcome
+      tags: [model-skill-config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolPolicyPreviewRequest"
+      responses:
+        "200":
+          description: Tool policy preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolPolicyPreviewResponse"
+  /admin/config/history:
+    get:
+      summary: List configuration version history
+      tags: [model-skill-config]
+      parameters:
+        - in: query
+          name: tenant_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: config_kind
+          schema:
+            $ref: "#/components/schemas/ConfigKind"
+        - in: query
+          name: workflow_lineage_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: agent_key
+          schema:
+            type: string
+        - in: query
+          name: step_key
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Configuration history page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigHistoryResponse"
+  /admin/config/{config_kind}/{version_id}/rollback:
+    post:
+      summary: Reactivate a prior configuration version for future resolution
+      tags: [model-skill-config]
+      parameters:
+        - in: path
+          name: config_kind
+          required: true
+          schema:
+            $ref: "#/components/schemas/ConfigKind"
+        - $ref: "#/components/parameters/VersionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RollbackRequest"
+      responses:
+        "200":
+          description: Prior version reactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RollbackResponse"
+        "409":
+          description: Active version changed since caller previewed rollback
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigError"
+  /admin/config/runs/{workflow_run_id}/provenance:
+    get:
+      summary: Inspect pinned run configuration and runtime policy decisions
+      tags: [model-skill-config]
+      parameters:
+        - in: path
+          name: workflow_run_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Run provenance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunProvenanceResponse"
+        "404":
+          description: Run not found in caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigError"
+components:
+  parameters:
+    VersionId:
+      in: path
+      name: version_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    ConfigKind:
+      type: string
+      enum:
+        - model_routing
+        - prompt_reference
+        - skill_binding
+        - allowed_tool_policy
+        - outbound_domain_policy
+        - secret_reference
+        - credential_requirement
+    ConfigStatus:
+      type: string
+      enum: [draft, active, inactive, rolled_back_from, archived]
+    ScopeSelector:
+      type: object
+      required: [tenant_id]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        workflow_lineage_id:
+          type: string
+          format: uuid
+        workflow_version_bundle_id:
+          type: string
+          format: uuid
+        agent_key:
+          type: string
+        step_key:
+          type: string
+    ConfigVersionResponse:
+      type: object
+      required:
+        - config_kind
+        - version_id
+        - tenant_id
+        - status
+        - version_sequence
+        - created_at
+        - redacted_summary
+      properties:
+        config_kind:
+          $ref: "#/components/schemas/ConfigKind"
+        version_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        scope:
+          $ref: "#/components/schemas/ScopeSelector"
+        status:
+          $ref: "#/components/schemas/ConfigStatus"
+        version_sequence:
+          type: integer
+        previous_version_id:
+          type: string
+          format: uuid
+        created_by_principal_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        activation_reason:
+          type: string
+        redacted_summary:
+          type: object
+          additionalProperties: true
+    ActivateConfigRequest:
+      type: object
+      required: [reason]
+      properties:
+        expected_active_version_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+    ModelRoutingVersionCreate:
+      type: object
+      required: [scope, provider_key, model_id, reason]
+      properties:
+        scope:
+          $ref: "#/components/schemas/ScopeSelector"
+        provider_key:
+          type: string
+        model_id:
+          type: string
+        routing_parameters:
+          type: object
+          additionalProperties: true
+        activate:
+          type: boolean
+          default: false
+        expected_active_version_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+    PromptReferenceVersionCreate:
+      type: object
+      required: [scope, prompt_id, prompt_version_id, prompt_digest, reason]
+      properties:
+        scope:
+          $ref: "#/components/schemas/ScopeSelector"
+        prompt_id:
+          type: string
+        prompt_version_id:
+          type: string
+        prompt_digest:
+          type: string
+          minLength: 64
+          maxLength: 64
+        activate:
+          type: boolean
+          default: false
+        expected_active_version_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+    SkillBindingVersionCreate:
+      type: object
+      required: [scope, skill_slug, skill_version, allowed_contexts, reason]
+      properties:
+        scope:
+          $ref: "#/components/schemas/ScopeSelector"
+        skill_slug:
+          type: string
+        skill_version:
+          type: string
+        allowed_contexts:
+          type: array
+          items:
+            type: string
+        runtime_ref_constraints:
+          type: object
+          additionalProperties: true
+        activate:
+          type: boolean
+          default: false
+        expected_active_version_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+    AllowedToolPolicyVersionCreate:
+      type: object
+      required: [scope, tool_id, allowed_action_categories, reason]
+      properties:
+        scope:
+          $ref: "#/components/schemas/ScopeSelector"
+        skill_slug:
+          type: string
+        tool_id:
+          type: string
+        allowed_action_categories:
+          type: array
+          items:
+            type: string
+        constraints:
+          type: object
+          additionalProperties: true
+        activate:
+          type: boolean
+          default: false
+        expected_active_version_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+    OutboundDomainPolicyVersionCreate:
+      type: object
+      required: [scope, tool_id, allowed_domain_patterns, reason]
+      properties:
+        scope:
+          $ref: "#/components/schemas/ScopeSelector"
+        tool_id:
+          type: string
+        action_category:
+          type: string
+        allowed_domain_patterns:
+          type: array
+          items:
+            type: string
+        allowed_schemes:
+          type: array
+          items:
+            type: string
+        allowed_ports:
+          type: array
+          items:
+            type: integer
+        activate:
+          type: boolean
+          default: false
+        expected_active_version_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+    SecretReferenceVersionCreate:
+      type: object
+      required: [tenant_id, secret_reference_id, provider_key, external_reference, allowed_scopes, reason]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        secret_reference_id:
+          type: string
+          format: uuid
+        provider_key:
+          type: string
+        external_reference:
+          type: string
+        allowed_scopes:
+          type: array
+          items:
+            type: string
+        activate:
+          type: boolean
+          default: false
+        expected_active_version_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+    CredentialRequirementVersionCreate:
+      type: object
+      required: [scope, tool_id, action_category, credential_kind, reason]
+      properties:
+        scope:
+          $ref: "#/components/schemas/ScopeSelector"
+        tool_id:
+          type: string
+        action_category:
+          type: string
+        credential_kind:
+          type: string
+          enum: [secret_reference, delegated_credential]
+        secret_reference_version_id:
+          type: string
+          format: uuid
+        delegated_credential_link_id:
+          type: string
+          format: uuid
+        allowed_credential_scope:
+          type: object
+          additionalProperties: true
+        activate:
+          type: boolean
+          default: false
+        expected_active_version_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+    ModelResolutionPreviewRequest:
+      type: object
+      required: [tenant_id, workflow_lineage_id]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        workflow_lineage_id:
+          type: string
+          format: uuid
+        workflow_version_bundle_id:
+          type: string
+          format: uuid
+        agent_key:
+          type: string
+        step_key:
+          type: string
+    ModelResolutionPreviewResponse:
+      type: object
+      required: [outcome, evaluated_version_ids]
+      properties:
+        outcome:
+          type: string
+          enum: [allowed, denied]
+        model_provider_key:
+          type: string
+        model_id:
+          type: string
+        model_source_scope:
+          type: string
+          enum: [step, agent, workflow, tenant_default]
+        model_routing_version_id:
+          type: string
+          format: uuid
+        prompt_reference_version_id:
+          type: string
+          format: uuid
+        prompt_source_scope:
+          type: string
+          enum: [step, agent, workflow]
+        evaluated_version_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        denial_category:
+          type: string
+        safe_reason:
+          type: string
+    ToolPolicyPreviewRequest:
+      type: object
+      required: [tenant_id, workflow_lineage_id, agent_key, skill_slug, tool_id, action_category]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        workflow_lineage_id:
+          type: string
+          format: uuid
+        workflow_version_bundle_id:
+          type: string
+          format: uuid
+        agent_key:
+          type: string
+        step_key:
+          type: string
+        skill_slug:
+          type: string
+        tool_id:
+          type: string
+        action_category:
+          type: string
+        destination_url:
+          type: string
+        credential_context:
+          type: object
+          additionalProperties: true
+    ToolPolicyPreviewResponse:
+      type: object
+      required: [outcome, evaluated_version_ids]
+      properties:
+        outcome:
+          type: string
+          enum: [allowed, denied]
+        evaluated_version_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        matched_domain_patterns:
+          type: array
+          items:
+            type: string
+        authorized_secret_reference_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        authorized_delegated_credential_link_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        denial_category:
+          type: string
+        safe_reason:
+          type: string
+    ConfigHistoryResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigVersionResponse"
+    RollbackRequest:
+      type: object
+      required: [target_version_id, expected_active_version_id, reason]
+      properties:
+        target_version_id:
+          type: string
+          format: uuid
+        expected_active_version_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 3
+    RollbackResponse:
+      type: object
+      required: [rollback_record_id, active_version_id, audit_record_id]
+      properties:
+        rollback_record_id:
+          type: string
+          format: uuid
+        active_version_id:
+          type: string
+          format: uuid
+        audit_record_id:
+          type: string
+          format: uuid
+    RunProvenanceResponse:
+      type: object
+      required: [workflow_run_id, resolution_digest, pinned_versions, decisions]
+      properties:
+        workflow_run_id:
+          type: string
+          format: uuid
+        run_bundle_id:
+          type: string
+          format: uuid
+        resolution_digest:
+          type: string
+        pinned_versions:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+              format: uuid
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimePolicyDecisionSummary"
+        migrations:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    RuntimePolicyDecisionSummary:
+      type: object
+      required: [decision_id, decision_category, outcome, evaluated_version_ids, created_at]
+      properties:
+        decision_id:
+          type: string
+          format: uuid
+        decision_category:
+          type: string
+          enum: [model_prompt, skill, tool, outbound_domain, credential, secret_reference]
+        outcome:
+          type: string
+          enum: [allowed, denied]
+        agent_key:
+          type: string
+        step_key:
+          type: string
+        evaluated_version_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        winning_version_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        denial_category:
+          type: string
+        safe_reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ConfigError:
+      type: object
+      required: [detail, category]
+      properties:
+        detail:
+          type: string
+        category:
+          type: string
+          enum:
+            - missing_global_default
+            - invalid_model_reference
+            - missing_prompt_version
+            - skill_not_bound
+            - tool_denied
+            - domain_denied
+            - credential_unsatisfied
+            - secret_reference_invalid
+            - resolution_conflict
+            - authorization_failed
+            - stale_configuration
+            - validation_failed
+        trace_id:
+          type: string
+        remediation:
+          type: string

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ page.title }}</title>
+    <link rel="stylesheet" href="/admin/static/workflow_studio.css" />
+  </head>
+  <body>
+    <main class="workflow-shell">
+      <header class="workflow-header">
+        <h1>{{ page.title }}</h1>
+      </header>
+      <section>
+        <h2>{{ page.provenance.workflow_run_id }}</h2>
+        <p>{{ page.provenance.resolution_digest }}</p>
+      </section>
+      <section>
+        <h2>Decisions</h2>
+        <pre>{{ page.provenance.decisions }}</pre>
+      </section>
+    </main>
+  </body>
+</html>
+

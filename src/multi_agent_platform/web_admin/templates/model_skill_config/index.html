@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ page.title }}</title>
+    <link rel="stylesheet" href="/admin/static/workflow_studio.css" />
+  </head>
+  <body>
+    <main class="workflow-shell">
+      <header class="workflow-header">
+        <h1>{{ page.title }}</h1>
+        <a href="{{ page.history_href }}">History</a>
+      </header>
+      {% if page.missing_default %}
+      <section class="validation-panel validation-panel--blocking">
+        <h2>Missing tenant default</h2>
+        <p>Model-backed workflow execution is blocked until an active tenant default exists.</p>
+      </section>
+      {% endif %}
+      <section>
+        <h2>Preview</h2>
+        <form action="{{ page.preview_action }}" method="post" data-model-skill-preview>
+          <label>Tenant <input name="tenant_id" /></label>
+          <label>Workflow <input name="workflow_lineage_id" /></label>
+          <label>Agent <input name="agent_key" /></label>
+          <label>Step <input name="step_key" /></label>
+          <button type="submit">Preview</button>
+          <pre data-preview-output></pre>
+        </form>
+      </section>
+    </main>
+    <script src="/admin/static/model_skill_config.js"></script>
+  </body>
+</html>
+
