@@ -1,0 +1,412 @@
+openapi: 3.1.0
+info:
+  title: Production Audit And Debugging API
+  version: 0.1.0
+  description: >
+    Admin and auditor API for run-debug search, timelines, replay views,
+    lineage navigation, version-bundle visibility, notification delivery
+    state, secret-access metadata, and redacted debug-evidence exports.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /admin/runs/debug-search:
+    get:
+      summary: Search run-debug evidence within the caller tenant scope
+      tags: [production-audit-debugging]
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - in: query
+          name: workflow_run_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: workflow_id
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: failure_category
+          schema: { type: string }
+        - in: query
+          name: time_from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: time_to
+          schema: { type: string, format: date-time }
+        - in: query
+          name: agent
+          schema: { type: string }
+        - in: query
+          name: tool
+          schema: { type: string }
+        - in: query
+          name: model_selection_source
+          schema: { type: string }
+        - in: query
+          name: notification_status
+          schema: { type: string }
+        - in: query
+          name: lineage_relationship
+          schema: { type: string }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunDebugSearchResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/runs/{workflow_run_id}/timeline:
+    get:
+      summary: Inspect the chronological run timeline
+      tags: [production-audit-debugging]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Run timeline with linked trace evidence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunTimelineResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /admin/runs/{workflow_run_id}/replay:
+    get:
+      summary: Return an ordered redacted replay view for one run
+      tags: [production-audit-debugging]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+        - $ref: "#/components/parameters/TenantId"
+        - in: query
+          name: include_children
+          schema: { type: boolean, default: false }
+        - in: query
+          name: from_sequence
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: to_sequence
+          schema: { type: integer, minimum: 0 }
+      responses:
+        "200":
+          description: Replay event stream
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunReplayResponse"
+  /admin/runs/{workflow_run_id}/lineage:
+    get:
+      summary: Return authorized parent-child run lineage graph
+      tags: [production-audit-debugging]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Authorized lineage graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunLineageGraphResponse"
+  /admin/runs/{workflow_run_id}/bundle:
+    get:
+      summary: Return the pinned version bundle that governed a run
+      tags: [production-audit-debugging]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Version bundle summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionBundleSnapshot"
+  /admin/runs/{workflow_run_id}/exports:
+    post:
+      summary: Create a redacted debug-evidence export
+      tags: [production-audit-debugging]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowRunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDebugEvidenceExportRequest"
+      responses:
+        "202":
+          description: Export requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebugEvidenceExport"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+components:
+  parameters:
+    TenantId:
+      in: query
+      name: tenant_id
+      required: true
+      schema: { type: string, format: uuid }
+    WorkflowRunId:
+      in: path
+      name: workflow_run_id
+      required: true
+      schema: { type: string, format: uuid }
+    Cursor:
+      in: query
+      name: cursor
+      schema: { type: string }
+    Limit:
+      in: query
+      name: limit
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+  responses:
+    Forbidden:
+      description: Caller is not authorized; denied attempt is audited
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InspectionError"
+    NotFound:
+      description: Run not found within authorized scope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InspectionError"
+  schemas:
+    RunDebugSearchResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/RunDebugSearchItem" }
+        next_cursor:
+          type: [string, "null"]
+    RunDebugSearchItem:
+      type: object
+      required:
+        - workflow_run_id
+        - tenant_id
+        - workflow_id
+        - status
+        - started_at
+        - latest_event_at
+        - trace_id
+        - failure_category
+        - bundle
+      properties:
+        workflow_run_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        workflow_id: { type: string }
+        status: { type: string }
+        started_at: { type: string, format: date-time }
+        latest_event_at: { type: string, format: date-time }
+        trace_id: { type: string }
+        failure_category: { type: [string, "null"] }
+        bundle: { $ref: "#/components/schemas/VersionBundleSummary" }
+    RunTimelineResponse:
+      type: object
+      required: [run, events, lineage, bundle, notifications, capture_gaps]
+      properties:
+        run: { $ref: "#/components/schemas/RunInspectionSummary" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/TimelineEvent" }
+        lineage: { $ref: "#/components/schemas/LineageSummary" }
+        bundle: { $ref: "#/components/schemas/VersionBundleSnapshot" }
+        notifications:
+          type: array
+          items: { $ref: "#/components/schemas/NotificationDeliveryState" }
+        capture_gaps:
+          type: array
+          items: { $ref: "#/components/schemas/CaptureGap" }
+    RunReplayResponse:
+      type: object
+      required: [workflow_run_id, trace_id, replay_events, checkpoints]
+      properties:
+        workflow_run_id: { type: string, format: uuid }
+        trace_id: { type: string }
+        replay_events:
+          type: array
+          items: { $ref: "#/components/schemas/ReplayEvent" }
+        checkpoints:
+          type: array
+          items: { $ref: "#/components/schemas/ReplayCheckpoint" }
+    RunLineageGraphResponse:
+      type: object
+      required: [nodes, edges]
+      properties:
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/LineageNode" }
+        edges:
+          type: array
+          items: { $ref: "#/components/schemas/LineageEdge" }
+    RunInspectionSummary:
+      type: object
+      required: [workflow_run_id, tenant_id, status, trace_id]
+      properties:
+        workflow_run_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        status: { type: string }
+        trace_id: { type: string }
+        failure_stage: { type: [string, "null"] }
+        safe_failure_reason: { type: [string, "null"] }
+        recommended_investigation: { type: [string, "null"] }
+    TimelineEvent:
+      type: object
+      required:
+        - timeline_event_id
+        - sequence
+        - event_category
+        - run_status_after
+        - occurred_at
+        - trace_id
+        - safe_summary
+        - trace_records
+      properties:
+        timeline_event_id: { type: string, format: uuid }
+        sequence: { type: integer }
+        event_category: { type: string }
+        run_status_after: { type: string }
+        origin_type: { type: string }
+        actor: { type: [string, "null"] }
+        occurred_at: { type: string, format: date-time }
+        trace_id: { type: string }
+        correlation_id: { type: [string, "null"] }
+        safe_summary: { type: string }
+        safe_details: { type: object, additionalProperties: true }
+        trace_records:
+          type: array
+          items: { $ref: "#/components/schemas/TraceRecord" }
+    TraceRecord:
+      type: object
+      required: [trace_record_id, trace_type, outcome, safe_summary]
+      properties:
+        trace_record_id: { type: string, format: uuid }
+        trace_type: { type: string }
+        outcome: { type: string }
+        policy_outcome: { type: [string, "null"] }
+        duration_ms: { type: [integer, "null"] }
+        safe_summary: { type: string }
+        safe_metadata: { type: object, additionalProperties: true }
+    VersionBundleSummary:
+      type: object
+      required: [execution_bundle_id, bundle_digest, activation_state_at_acceptance]
+      properties:
+        execution_bundle_id: { type: string }
+        bundle_digest: { type: string }
+        activation_state_at_acceptance: { type: string }
+    VersionBundleSnapshot:
+      allOf:
+        - $ref: "#/components/schemas/VersionBundleSummary"
+        - type: object
+          properties:
+            workflow_version: { type: string }
+            contract_version_refs: { type: array, items: { type: string } }
+            prompt_version_refs: { type: array, items: { type: string } }
+            model_config_version_refs: { type: array, items: { type: string } }
+            tool_policy_version_refs: { type: array, items: { type: string } }
+            migration_record_refs: { type: array, items: { type: string } }
+    LineageSummary:
+      type: object
+      properties:
+        parent_run_id: { type: [string, "null"], format: uuid }
+        child_count: { type: integer }
+        retry_count: { type: integer }
+        redacted_related_count: { type: integer }
+    LineageNode:
+      type: object
+      required: [node_id, visibility, status]
+      properties:
+        node_id: { type: string }
+        workflow_run_id: { type: [string, "null"], format: uuid }
+        visibility: { type: string, enum: [visible, redacted] }
+        status: { type: string }
+        safe_label: { type: string }
+    LineageEdge:
+      type: object
+      required: [source_node_id, target_node_id, relationship_type]
+      properties:
+        source_node_id: { type: string }
+        target_node_id: { type: string }
+        relationship_type: { type: string }
+        source_timeline_event_id: { type: [string, "null"], format: uuid }
+        occurred_at: { type: [string, "null"], format: date-time }
+    NotificationDeliveryState:
+      type: object
+      required: [destination_category, delivery_status, attempt_count]
+      properties:
+        destination_category: { type: string }
+        delivery_status: { type: string }
+        attempt_count: { type: integer }
+        latest_attempt_at: { type: [string, "null"], format: date-time }
+        safe_failure_reason: { type: [string, "null"] }
+    CaptureGap:
+      type: object
+      required: [gap_type, affected_trace_type, safe_reason]
+      properties:
+        gap_type: { type: string }
+        affected_trace_type: { type: string }
+        safe_reason: { type: string }
+        recovery_status: { type: string }
+    ReplayEvent:
+      type: object
+      required: [sequence, occurred_at, event_category, safe_summary]
+      properties:
+        sequence: { type: integer }
+        occurred_at: { type: string, format: date-time }
+        event_category: { type: string }
+        run_status_after: { type: string }
+        trace_id: { type: string }
+        safe_summary: { type: string }
+        linked_trace_record_ids:
+          type: array
+          items: { type: string, format: uuid }
+        unavailable_markers:
+          type: array
+          items: { $ref: "#/components/schemas/CaptureGap" }
+    ReplayCheckpoint:
+      type: object
+      required: [sequence, checkpoint_ref, safe_summary]
+      properties:
+        sequence: { type: integer }
+        checkpoint_ref: { type: string }
+        safe_summary: { type: string }
+    CreateDebugEvidenceExportRequest:
+      type: object
+      required: [tenant_id, recipient_scope, included_sections]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        recipient_scope: { type: string }
+        lineage_scope: { type: string, enum: [run_only, authorized_children] }
+        included_sections:
+          type: array
+          items: { type: string }
+        reason: { type: string }
+    DebugEvidenceExport:
+      type: object
+      required: [debug_evidence_export_id, status]
+      properties:
+        debug_evidence_export_id: { type: string, format: uuid }
+        status: { type: string }
+        artifact_id: { type: [string, "null"] }
+        expires_at: { type: [string, "null"], format: date-time }
+        safe_failure_reason: { type: [string, "null"] }
+    InspectionError:
+      type: object
+      required: [error, trace_id]
+      properties:
+        error: { type: string }
+        safe_message: { type: string }
+        trace_id: { type: string }
