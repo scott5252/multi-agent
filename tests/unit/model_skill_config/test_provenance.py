@@ -47,6 +47,7 @@ def test_safe_runtime_decision_serializes_safe_payload() -> None:
         decision_category=DecisionCategory.TOOL,
         outcome=PolicyOutcome.DENY,
         requested_resource="http.fetch",
+        idempotency_key="run-step-tool-1",
         denial_category="tool_denied",
         safe_reason="denied",
         evaluated_version_ids=(uuid4(),),
@@ -55,6 +56,7 @@ def test_safe_runtime_decision_serializes_safe_payload() -> None:
     payload = decision.to_record_payload()
 
     assert payload["outcome"] == "deny"
+    assert payload["idempotency_key"] == "run-step-tool-1"
     assert "evaluated_version_ids" in payload
 
 

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from urllib.parse import urlparse
+from uuid import UUID
 
 from multi_agent_platform.config.model_skill import (
     CredentialRequirementCandidate,
@@ -16,6 +17,7 @@ from multi_agent_platform.config.model_skill import (
     VersionedRecord,
     VersionStatus,
 )
+from multi_agent_platform.secrets.base import SecretProvider, SecretValue
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +31,15 @@ class PolicyDecision:
     @property
     def allowed(self) -> bool:
         return self.outcome is PolicyOutcome.ALLOW
+
+
+@dataclass(frozen=True, slots=True)
+class SecretReferenceAuthorization:
+    secret_reference_version_id: UUID
+    secret_reference_id: str
+    provider_key: str
+    external_reference: str
+    safe_summary: dict[str, object]
 
 
 def _applicable[VersionedT: VersionedRecord](
@@ -224,6 +235,8 @@ def evaluate_credential_requirements(
     scope: ScopeSelector,
     tool_id: str,
     action_category: str,
+    credential_context: Mapping[str, object] | None = None,
+    authorized_delegated_credential_link_ids: set[UUID] | None = None,
 ) -> PolicyDecision:
     applicable = [
         candidate
@@ -241,26 +254,103 @@ def evaluate_credential_requirements(
             safe_reason="no credential requirement applies",
             evaluated_version_ids=(),
         )
-    active_secret_ids = {
-        secret.version_id
+    active_secrets = {
+        secret.version_id: secret
         for secret in secret_references
-        if secret.status is VersionStatus.ACTIVE and secret.scope.contains(scope)
+        if secret.is_usable and secret.scope.contains(scope)
     }
+    delegated_ids = authorized_delegated_credential_link_ids or set()
     for requirement in applicable:
-        if (
-            requirement.credential_kind == "secret_reference"
-            and requirement.secret_reference_version_id not in active_secret_ids
+        if requirement.credential_kind == "secret_reference":
+            secret = (
+                None
+                if requirement.secret_reference_version_id is None
+                else active_secrets.get(requirement.secret_reference_version_id)
+            )
+            if secret is None:
+                return PolicyDecision(
+                    outcome=PolicyOutcome.DENY,
+                    denial_category=ModelSkillErrorCategory.SECRET_REFERENCE_INVALID,
+                    safe_reason=(
+                        "required secret reference is missing, inactive, revoked, "
+                        "expired, or cross-tenant"
+                    ),
+                    evaluated_version_ids=tuple(item.version_id for item in applicable),
+                )
+            if not _scope_metadata_allows(
+                requirement.allowed_credential_scope, credential_context
+            ) or not _scope_metadata_allows(secret.allowed_scopes, credential_context):
+                return PolicyDecision(
+                    outcome=PolicyOutcome.DENY,
+                    denial_category=ModelSkillErrorCategory.CREDENTIAL_UNSATISFIED,
+                    safe_reason="credential context is outside the allowed scope",
+                    evaluated_version_ids=tuple(item.version_id for item in applicable),
+                )
+        elif (
+            requirement.credential_kind == "delegated_credential"
+            and requirement.delegated_credential_link_id not in delegated_ids
         ):
             return PolicyDecision(
                 outcome=PolicyOutcome.DENY,
                 denial_category=ModelSkillErrorCategory.CREDENTIAL_UNSATISFIED,
-                safe_reason="required secret reference is missing or inactive",
+                safe_reason="delegated credential is not authorized for this tool",
                 evaluated_version_ids=tuple(item.version_id for item in applicable),
             )
+        else:
+            if requirement.credential_kind not in {
+                "secret_reference",
+                "delegated_credential",
+            }:
+                return PolicyDecision(
+                    outcome=PolicyOutcome.DENY,
+                    denial_category=ModelSkillErrorCategory.CREDENTIAL_UNSATISFIED,
+                    safe_reason="unsupported credential requirement kind",
+                    evaluated_version_ids=tuple(item.version_id for item in applicable),
+                )
     return PolicyDecision(
         outcome=PolicyOutcome.ALLOW,
         denial_category=None,
         safe_reason="credential requirements satisfied",
         evaluated_version_ids=tuple(item.version_id for item in applicable),
         winning_version_ids=tuple(item.version_id for item in applicable),
+    )
+
+
+def _scope_metadata_allows(
+    allowed_scope: Mapping[str, object],
+    credential_context: Mapping[str, object] | None,
+) -> bool:
+    if not allowed_scope:
+        return True
+    context = credential_context or {}
+    for key, expected in allowed_scope.items():
+        if context.get(key) != expected:
+            return False
+    return True
+
+
+async def authorize_secret_reference_resolution(
+    *,
+    secret_provider: SecretProvider,
+    secret_reference: SecretReferenceCandidate,
+    scope: ScopeSelector,
+    credential_context: Mapping[str, object] | None = None,
+) -> SecretReferenceAuthorization:
+    if not secret_reference.scope.contains(scope) or not secret_reference.is_usable:
+        raise ValueError("secret reference is not active for this tenant scope")
+    if not _scope_metadata_allows(secret_reference.allowed_scopes, credential_context):
+        raise ValueError("secret reference is outside the allowed credential scope")
+    value = await secret_provider.resolve(secret_reference.external_reference)
+    if not isinstance(value, SecretValue):
+        raise TypeError("secret provider returned an invalid secret value")
+    return SecretReferenceAuthorization(
+        secret_reference_version_id=secret_reference.version_id,
+        secret_reference_id=secret_reference.secret_reference_id,
+        provider_key=secret_reference.provider_key,
+        external_reference=secret_reference.external_reference,
+        safe_summary={
+            "secret_reference_id": secret_reference.secret_reference_id,
+            "provider_key": secret_reference.provider_key,
+            "resolved": True,
+        },
     )

@@ -18,6 +18,8 @@ from multi_agent_platform.api.schemas.model_skill_config import (
     ModelRoutingCreateRequest,
     OutboundDomainPolicyCreateRequest,
     PromptReferenceCreateRequest,
+    RollbackRequest,
+    RollbackResponse,
     RunProvenanceResponse,
     SecretReferenceCreateRequest,
     SkillBindingCreateRequest,
@@ -303,6 +305,42 @@ async def run_provenance(
             principal=principal,
             tenant_id=tenant_id,
             workflow_run_id=workflow_run_id,
+        )
+    except Exception as exc:
+        raise _to_http_error(exc) from exc
+
+
+@router.post(
+    "/{config_kind}/{version_id}/rollback",
+    response_model=RollbackResponse,
+)
+async def rollback_configuration(
+    config_kind: ConfigKind,
+    version_id: UUID,
+    payload: RollbackRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: RequiredTenantQuery,
+    workflow_lineage_id: OptionalWorkflowQuery = None,
+    workflow_version_bundle_id: OptionalWorkflowQuery = None,
+    agent_key: OptionalTextQuery = None,
+    step_key: OptionalTextQuery = None,
+) -> RollbackResponse:
+    scope = ScopeSelector(
+        tenant_id=tenant_id,
+        workflow_lineage_id=workflow_lineage_id,
+        workflow_version_bundle_id=workflow_version_bundle_id,
+        agent_key=agent_key,
+        step_key=step_key,
+    )
+    if payload.expected_active_version_id is None:
+        payload = payload.model_copy(update={"expected_active_version_id": version_id})
+    try:
+        return await _service(session).rollback_version(
+            principal=principal,
+            kind=config_kind,
+            scope=scope,
+            payload=payload,
         )
     except Exception as exc:
         raise _to_http_error(exc) from exc

@@ -113,3 +113,29 @@ def channel_log_context(
     if run_id is not None:
         payload["run_id"] = run_id
     return {"extra": payload}
+
+
+def model_skill_policy_log_context(
+    *,
+    action: str,
+    decision_category: str,
+    outcome: str,
+    trace_id: str | None = None,
+    tenant_id: str | None = None,
+    denial_category: str | None = None,
+    evaluated_version_count: int | None = None,
+) -> dict[str, dict[str, str]]:
+    payload = {
+        "action": action,
+        "decision_category": decision_category,
+        "outcome": outcome,
+    }
+    if trace_id is not None:
+        payload["trace_id"] = trace_id
+    if tenant_id is not None:
+        payload["tenant_id"] = tenant_id
+    if denial_category is not None:
+        payload["denial_category"] = denial_category
+    if evaluated_version_count is not None:
+        payload["evaluated_version_count"] = str(evaluated_version_count)
+    return {"extra": payload}

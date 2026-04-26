@@ -85,3 +85,44 @@ class SideEffectIntent:
         if self.status is SideEffectStatus.APPLIED:
             return self.result_ref
         return None
+
+
+def build_authorized_tool_intent(
+    *,
+    tenant_id: UUID | None,
+    workflow_run_id: UUID,
+    run_step_id: UUID,
+    bundle_digest: str,
+    tool_policy_ref: str,
+    policy_outcome: str,
+    delegated_credential_ref: str | None = None,
+    request_ref: dict[str, object] | None = None,
+    attempt: int = 1,
+) -> SideEffectIntent:
+    if policy_outcome != "allow":
+        raise PermissionError("tool side effect cannot start before allow decision")
+    return SideEffectIntent(
+        tenant_id=tenant_id,
+        workflow_run_id=workflow_run_id,
+        run_step_id=run_step_id,
+        intent_kind=SideEffectKind.TOOL_CALL,
+        idempotency_key=make_idempotency_key(
+            tenant_id=tenant_id,
+            workflow_run_id=workflow_run_id,
+            run_step_id=run_step_id,
+            bundle_digest=bundle_digest,
+            operation_kind="tool_call",
+            attempt=attempt,
+        ),
+        tool_policy_ref=tool_policy_ref,
+        delegated_credential_ref=delegated_credential_ref,
+        request_ref=request_ref,
+    )
+
+
+def mark_for_compensation(
+    intent: SideEffectIntent, *, error_ref: dict[str, object]
+) -> None:
+    intent.status = SideEffectStatus.COMPENSATING
+    intent.error_ref = error_ref
+    intent.updated_at = now_utc()

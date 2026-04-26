@@ -68,6 +68,7 @@ class SafeRuntimeDecision:
     outcome: PolicyOutcome
     requested_resource: str
     requested_action: str | None = None
+    idempotency_key: str | None = None
     evaluated_version_ids: tuple[UUID, ...] = ()
     winning_version_ids: tuple[UUID, ...] = ()
     source_scopes: tuple[str, ...] = ()
@@ -83,6 +84,7 @@ class SafeRuntimeDecision:
             "outcome": self.outcome.value,
             "requested_resource": self.requested_resource,
             "requested_action": self.requested_action,
+            "idempotency_key": self.idempotency_key,
             "evaluated_version_ids": [
                 str(value) for value in self.evaluated_version_ids
             ],
