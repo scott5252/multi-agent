@@ -68,6 +68,10 @@ Run acceptance performance profiles:
 ```bash
 uv run pytest -m performance tests/performance/reliability/test_mixed_lifecycle_load.py
 uv run pytest -m performance tests/performance/reliability/test_tenant_burst_fairness.py
+uv run pytest -m performance tests/performance/reliability/test_retry_storm_breaker.py
+uv run pytest -m performance tests/performance/reliability/test_compensation_dead_letter_load.py
+uv run pytest -m performance tests/performance/reliability/test_artifact_export_throughput.py
+uv run pytest -m performance tests/performance/reliability/test_failure_inspection_lookup.py
 ```
 
 ## Resume-After-Failure Under Load
@@ -137,3 +141,11 @@ Feature delivery is review-ready only when the PR includes:
 - PR notes covering scale assumptions, recovery guarantees, retry/breaker
   behavior, compensation coverage, quotas, fairness, authorization, auditability,
   operational risks, and known limitations.
+
+Current local evidence command:
+
+```bash
+uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90
+```
+
+Latest recorded result: 430 passed, coverage 90.18 percent.

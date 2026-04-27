@@ -170,3 +170,31 @@ def audit_log_context(
     }
     payload.update({key: value for key, value in optional.items() if value is not None})
     return {"extra": payload}
+
+
+def reliability_log_context(
+    *,
+    action: str,
+    reason_code: str,
+    tenant_id: str | None = None,
+    workflow_run_id: str | None = None,
+    trace_id: str | None = None,
+    policy_version: int | None = None,
+    decision: str | None = None,
+    breaker_state: str | None = None,
+    retry_status: str | None = None,
+    artifact_operation: str | None = None,
+) -> dict[str, dict[str, str]]:
+    payload = {"action": action, "reason_code": reason_code}
+    optional = {
+        "tenant_id": tenant_id,
+        "workflow_run_id": workflow_run_id,
+        "trace_id": trace_id,
+        "policy_version": str(policy_version) if policy_version is not None else None,
+        "decision": decision,
+        "breaker_state": breaker_state,
+        "retry_status": retry_status,
+        "artifact_operation": artifact_operation,
+    }
+    payload.update({key: value for key, value in optional.items() if value is not None})
+    return {"extra": payload}

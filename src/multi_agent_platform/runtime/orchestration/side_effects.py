@@ -29,6 +29,13 @@ class SideEffectKind(StrEnum):
     COMPENSATION = "compensation"
 
 
+class SideEffectRepeatability(StrEnum):
+    REPEATABLE = "repeatable"
+    NON_REPEATABLE = "non_repeatable"
+    COMPENSATABLE = "compensatable"
+    UNKNOWN = "unknown"
+
+
 def make_idempotency_key(
     *,
     tenant_id: UUID | None,
@@ -63,6 +70,7 @@ class SideEffectIntent:
     result_ref: dict[str, object] | None = None
     error_ref: dict[str, object] | None = None
     compensation_hook_ref: str | None = None
+    repeatability: SideEffectRepeatability = SideEffectRepeatability.NON_REPEATABLE
     side_effect_intent_id: UUID = field(default_factory=uuid4)
     status: SideEffectStatus = SideEffectStatus.PLANNED
     created_at: datetime = field(default_factory=now_utc)
@@ -126,6 +134,19 @@ def mark_for_compensation(
     intent.status = SideEffectStatus.COMPENSATING
     intent.error_ref = error_ref
     intent.updated_at = now_utc()
+
+
+def recovery_safety_outcome(intent: SideEffectIntent) -> str:
+    if intent.status is SideEffectStatus.APPLIED:
+        return "duplicate_suppressed"
+    if intent.repeatability is SideEffectRepeatability.REPEATABLE:
+        return "repeatable"
+    if (
+        intent.repeatability is SideEffectRepeatability.COMPENSATABLE
+        and intent.compensation_hook_ref
+    ):
+        return "compensation_requested"
+    return "operator_intervention_required"
 
 
 def tool_usage_audit_summary(intent: SideEffectIntent) -> dict[str, object]:

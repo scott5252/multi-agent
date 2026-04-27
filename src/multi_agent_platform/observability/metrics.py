@@ -108,6 +108,42 @@ AUDIT_REDACTION_COUNTER = Counter(
     labelnames=("sensitivity_label", "action"),
 )
 
+RELIABILITY_DECISION_COUNTER = Counter(
+    "multi_agent_platform_reliability_decisions_total",
+    "Reliability admission and quota outcomes.",
+    labelnames=("decision", "reason_code"),
+)
+
+RELIABILITY_QUEUE_DEPTH_GAUGE = Gauge(
+    "multi_agent_platform_reliability_queue_depth",
+    "Reliability queue depth by state.",
+    labelnames=("state",),
+)
+
+RELIABILITY_LEASE_COUNTER = Counter(
+    "multi_agent_platform_reliability_leases_total",
+    "Reliability lease lifecycle events.",
+    labelnames=("outcome",),
+)
+
+RELIABILITY_RETRY_COUNTER = Counter(
+    "multi_agent_platform_reliability_retries_total",
+    "Reliability retry decisions.",
+    labelnames=("status", "reason"),
+)
+
+RELIABILITY_BREAKER_COUNTER = Counter(
+    "multi_agent_platform_reliability_breakers_total",
+    "Circuit breaker transitions and actions.",
+    labelnames=("state", "reason"),
+)
+
+RELIABILITY_ARTIFACT_THROUGHPUT_COUNTER = Counter(
+    "multi_agent_platform_reliability_artifact_throughput_total",
+    "Artifact throughput budget outcomes.",
+    labelnames=("operation_kind", "outcome"),
+)
+
 
 def record_model_skill_policy_decision(
     *, decision_category: str, outcome: str, denial_category: str | None = None
@@ -140,4 +176,30 @@ def record_audit_export(*, tenant_id: str | None, status: str) -> None:
 def record_audit_redaction(*, sensitivity_label: str, action: str) -> None:
     AUDIT_REDACTION_COUNTER.labels(
         sensitivity_label=sensitivity_label, action=action
+    ).inc()
+
+
+def record_reliability_decision(*, decision: str, reason_code: str) -> None:
+    RELIABILITY_DECISION_COUNTER.labels(
+        decision=decision, reason_code=reason_code
+    ).inc()
+
+
+def set_reliability_queue_depth(*, state: str, depth: int) -> None:
+    RELIABILITY_QUEUE_DEPTH_GAUGE.labels(state=state).set(depth)
+
+
+def record_reliability_retry(*, status: str, reason: str | None = None) -> None:
+    RELIABILITY_RETRY_COUNTER.labels(status=status, reason=reason or "none").inc()
+
+
+def record_reliability_breaker(*, state: str, reason: str) -> None:
+    RELIABILITY_BREAKER_COUNTER.labels(state=state, reason=reason).inc()
+
+
+def record_reliability_artifact_throughput(
+    *, operation_kind: str, outcome: str
+) -> None:
+    RELIABILITY_ARTIFACT_THROUGHPUT_COUNTER.labels(
+        operation_kind=operation_kind, outcome=outcome
     ).inc()

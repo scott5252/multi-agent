@@ -6,6 +6,7 @@ pytest_plugins = [
     "tests.fixtures.config",
     "tests.fixtures.db",
     "tests.fixtures.providers",
+    "tests.fixtures.reliability",
     "tests.fixtures.runtime_orchestration",
 ]
 

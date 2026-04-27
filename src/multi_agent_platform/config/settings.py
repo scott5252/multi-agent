@@ -104,6 +104,20 @@ class Settings(BaseSettings):
     runtime_checkpoint_retention_days: int = 90
     runtime_payload_ref_retention_days: int = 90
     runtime_checkpointer_database_url: str | None = None
+    reliability_max_submitted_work: int = Field(default=1_000, ge=1)
+    reliability_max_active_work: int = Field(default=250, ge=1)
+    reliability_retry_budget_per_window: int = Field(default=500, ge=0)
+    reliability_max_retry_attempts: int = Field(default=3, ge=0)
+    reliability_lease_expiry_seconds: int = Field(default=120, ge=30)
+    reliability_lease_renewal_seconds: int = Field(default=30, ge=1)
+    reliability_breaker_failure_threshold: int = Field(default=5, ge=1)
+    reliability_breaker_cooldown_seconds: int = Field(default=60, ge=1)
+    reliability_artifact_tenant_concurrency: int = Field(default=10, ge=1)
+    reliability_artifact_global_concurrency: int = Field(default=100, ge=1)
+    reliability_db_pool_wait_p95_ms_threshold: int = Field(default=250, ge=1)
+    reliability_admin_connection_reserve_fraction: float = Field(
+        default=0.2, ge=0.0, le=1.0
+    )
 
     telegram_webhook_secret: str | None = None
     telegram_provider_token_ref: str | None = None
@@ -141,6 +155,18 @@ class Settings(BaseSettings):
             > self.channel_artifact_url_max_ttl_seconds
         ):
             raise ValueError("artifact URL TTL cannot exceed the configured maximum")
+        if (
+            self.reliability_lease_renewal_seconds
+            >= self.reliability_lease_expiry_seconds
+        ):
+            raise ValueError("reliability lease renewal must be before expiry")
+        if (
+            self.reliability_artifact_tenant_concurrency
+            > self.reliability_artifact_global_concurrency
+        ):
+            raise ValueError(
+                "tenant artifact concurrency cannot exceed global concurrency"
+            )
         if self.app_env is AppEnvironment.PRODUCTION:
             if (
                 self.telegram_provider_token_ref
