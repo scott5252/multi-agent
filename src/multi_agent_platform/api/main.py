@@ -21,11 +21,17 @@ from multi_agent_platform.api.routers.auth import router as auth_router
 from multi_agent_platform.api.routers.channel_runs import router as channel_runs_router
 from multi_agent_platform.api.routers.memory import router as memory_router
 from multi_agent_platform.api.routers.ops import router as ops_router
+from multi_agent_platform.api.routers.reliability_controls import (
+    router as reliability_controls_router,
+)
 from multi_agent_platform.api.routers.runtime_runs import router as runtime_runs_router
 from multi_agent_platform.api.routers.telegram_webhook import (
     router as telegram_webhook_router,
 )
 from multi_agent_platform.api.routers.web_run_ui import router as web_run_ui_router
+from multi_agent_platform.api.ui.reliability_controls import (
+    router as reliability_controls_ui_router,
+)
 from multi_agent_platform.config.settings import Settings
 from multi_agent_platform.tenancy.middleware import TenancyMiddleware
 
@@ -45,6 +51,8 @@ def create_app() -> FastAPI:
     app.include_router(admin_workflows_router)
     app.include_router(admin_model_skill_config_router)
     app.include_router(admin_workflow_ui_router)
+    app.include_router(reliability_controls_router)
+    app.include_router(reliability_controls_ui_router)
     app.include_router(runtime_runs_router)
     app.include_router(memory_router)
     app.include_router(channel_runs_router)

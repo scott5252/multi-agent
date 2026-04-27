@@ -31,6 +31,9 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 - production audit debugging for admin run search, timelines, replay, lineage,
   version bundles, notification state, secret-access metadata, and redacted
   exports
+- reliability scale hardening for admission controls, tenant quotas, fair
+  scheduling, retries, circuit breakers, compensation, dead letters, artifact
+  throughput, and operator inspection APIs under `/admin/reliability`
 
 ## Quickstart
 
@@ -104,6 +107,28 @@ and credential requirements deny by default and record safe provenance. Admin
 APIs under `/admin/config/*` and minimal admin web views expose preview,
 history, rollback, and run provenance for reviewer verification.
 
+## Reliability Scale Hardening
+
+Operators can inspect and tune reliability state through
+`/admin/reliability/dashboard`, `/admin/reliability/policies`,
+`/admin/reliability/admission-decisions`, `/admin/reliability/breakers`,
+`/admin/reliability/retries`, `/admin/reliability/compensations`, and
+`/admin/reliability/dead-letters`.
+
+Admission decisions return explicit accepted, queued, delayed, throttled,
+rejected, or retry-eligible outcomes. Tenant quotas cover submitted work,
+active work, recovery work, retries, compensation, artifact I/O, and operational
+actions. Fair scheduling uses weighted shares and burst debt so compliant
+tenants retain capacity during another tenant's burst. Breaker events,
+recovery outcomes, compensation requests, dead-letter actions, denied attempts,
+and control changes are audit-visible.
+
+Safe tuning rules reject settings that disable quotas, fairness, recovery
+safety, or containment unless an authorized override is recorded. Unknown or
+non-repeatable side effects route to operator intervention, compensation is
+requested at most once automatically per affected intent and hook, and large
+failure evidence remains in object storage with PostgreSQL metadata only.
+
 ## Latest Validation Evidence
 
 Latest full validation run: `2026-04-24`
@@ -122,6 +147,7 @@ Latest full validation run: `2026-04-24`
 - [Durable Orchestration Runtime](/Users/scottcornell/src/my-projects/multi-agent/docs/durable-orchestration-runtime.md)
 - [Immutable Memory](/Users/scottcornell/src/my-projects/multi-agent/docs/immutable-memory.md)
 - [Production Audit Debugging](/Users/scottcornell/src/my-projects/multi-agent/docs/production-audit-debugging.md)
+- [Reliability Scale Hardening](/Users/scottcornell/src/my-projects/multi-agent/docs/reliability-scale-hardening.md)
 - [Foundation Runbook](/Users/scottcornell/src/my-projects/multi-agent/docs/foundation-runbook.md)
 - [Architecture](/Users/scottcornell/src/my-projects/multi-agent/docs/architecture.md)
 - [Constitution](/Users/scottcornell/src/my-projects/multi-agent/.specify/memory/constitution.md)

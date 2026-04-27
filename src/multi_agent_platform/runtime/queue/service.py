@@ -4,6 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.db.repositories.queue import QueueRepository
 from multi_agent_platform.db.repositories.tenant_limits import TenantLimitRepository
+from multi_agent_platform.reliability.admission import decide_admission
+from multi_agent_platform.reliability.models import (
+    CapacitySnapshot,
+    ReliabilityPolicy,
+    ReliabilityPolicySettings,
+    ReliabilityScopeType,
+)
 from multi_agent_platform.runtime.queue.models import (
     QueueEnqueueRequest,
     QueueLeaseResult,
@@ -26,6 +33,22 @@ class QueueService:
             policy = await self.limit_repository.get_active(scope.tenant_id)
             if policy is not None and request.priority < 0:
                 raise ValueError("priority must be non-negative")
+            if request.tenant_id is not None:
+                decision = decide_admission(
+                    tenant_id=request.tenant_id,
+                    policy=ReliabilityPolicy(
+                        tenant_id=request.tenant_id,
+                        scope_type=ReliabilityScopeType.TENANT,
+                        scope_key=None,
+                        settings=ReliabilityPolicySettings(),
+                    ),
+                    snapshot=CapacitySnapshot(),
+                    submitted_count=0,
+                    active_count=0,
+                    trace_id=request.trace_id,
+                )
+                if decision.decision.value == "rejected":
+                    raise ValueError(decision.reason_code)
         return await self.repository.enqueue(request)
 
     async def lease_next(

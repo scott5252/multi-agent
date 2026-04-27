@@ -38,6 +38,16 @@ Auto-generated from all feature plans. Last updated: 2026-04-26
   notification delivery projections, secret-access audit metadata, inspection
   access audits, export metadata, redaction/classification records, and replay
   snapshots (008-production-audit-debugging)
+- Python 3.12 + FastAPI, Starlette response handling, Pydantic v2,
+  Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+,
+  psycopg 3, Auth0 JWT validation, LangChain 1.2.15, LangGraph 1.1.9,
+  langgraph-checkpoint-postgres 3.0.5, prometheus-client, pytest,
+  pytest-asyncio, httpx, Ruff, mypy, uv (009-reliability-scale-hardening)
+- PostgreSQL for reliability policies, worker leases, queue state, quota
+  counters, fairness windows, retry schedules, circuit breaker state,
+  compensation requests, dead-letter records, operational snapshots, audit
+  events, artifact metadata, and object-storage artifact references
+  (009-reliability-scale-hardening)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -67,6 +77,12 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 009-reliability-scale-hardening: Planned reliability and scale hardening with
+  tenant-aware admission and backpressure, worker autoscaling signals, lease
+  tuning, DB pooling, partitioning, retry budgets, circuit breakers,
+  compensation orchestration, dead-letter handling, operational dashboards,
+  tenant fairness controls, artifact-throughput limits, failure-mode research,
+  and resume-after-failure validation under load.
 - 008-production-audit-debugging: Planned production observability and audit
   debugging with structured logs, trace IDs, metrics, append-only audit tables,
   admin timeline/search/replay APIs, lineage and version-bundle views,
@@ -79,7 +95,9 @@ async patterns for PostgreSQL access.
   Telegram webhooks, and REST APIs with normalized requests, shared run status,
   SSE/polling, callbacks, approval/resume flows, notifications, and artifact
   access.
-- 005-immutable-memory: Planned append-only PostgreSQL-backed memory scopes, immutable version lineage, head projections, runtime-safe reads/writes, retrieval APIs, audit redaction, archival markers, and concurrency tests.
+- 005-immutable-memory: Planned append-only PostgreSQL-backed memory scopes,
+  immutable version lineage, head projections, runtime-safe reads/writes,
+  retrieval APIs, audit redaction, archival markers, and concurrency tests.
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
@@ -87,5 +105,5 @@ async patterns for PostgreSQL access.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/008-production-audit-debugging/plan.md`
+`specs/009-reliability-scale-hardening/plan.md`
 <!-- SPECKIT END -->

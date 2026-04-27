@@ -24,9 +24,16 @@ class LeaseStatus(StrEnum):
 class LeasePolicy:
     expiry_seconds: int = 120
     duplicate_claim_backoff_seconds: float = 1.0
+    renewal_seconds: int = 30
+    renewal_deadline_fraction: float = 0.5
 
     def expires_at(self, claimed_at: datetime | None = None) -> datetime:
         return (claimed_at or now_utc()) + timedelta(seconds=self.expiry_seconds)
+
+    def renewal_deadline(self, claimed_at: datetime) -> datetime:
+        return claimed_at + timedelta(
+            seconds=self.expiry_seconds * self.renewal_deadline_fraction
+        )
 
 
 @dataclass(slots=True)
@@ -64,3 +71,13 @@ def can_claim_run(status: RunStatus, existing_lease: WorkerLease | None) -> bool
     if status in TERMINAL_RUN_STATUSES:
         return False
     return existing_lease is None or not existing_lease.is_active
+
+
+def is_stale_fencing_token(
+    lease: WorkerLease, *, worker_lease_id: UUID, claim_attempt: int
+) -> bool:
+    return (
+        lease.worker_lease_id != worker_lease_id
+        or lease.claim_attempt != claim_attempt
+        or lease.lease_status is not LeaseStatus.ACTIVE
+    )

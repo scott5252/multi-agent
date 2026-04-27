@@ -1,0 +1,620 @@
+openapi: 3.1.0
+info:
+  title: Reliability And Scale Hardening APIs
+  version: 0.1.0
+  description: >
+    Operator and tenant-scoped APIs for reliability controls, backpressure,
+    quotas, retries, circuit breakers, compensation, dead letters, dashboards,
+    and load-test evidence.
+servers:
+  - url: http://localhost:8000
+security:
+  - bearerAuth: []
+paths:
+  /admin/reliability/dashboard:
+    get:
+      tags: [reliability]
+      summary: Get global or tenant-scoped reliability dashboard state.
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [global, tenant, worker_pool, dependency, artifact_store]
+            default: global
+      responses:
+        "200":
+          description: Reliability dashboard snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReliabilityDashboard"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/reliability/policies:
+    get:
+      tags: [reliability]
+      summary: List reliability policies visible to the caller.
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: scope_type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Policy list.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReliabilityPolicy"
+    post:
+      tags: [reliability]
+      summary: Create or activate a reliability policy version.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyChangeRequest"
+      responses:
+        "202":
+          description: Policy accepted for prospective application.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationalControlChange"
+        "400":
+          description: Invalid or unsafe settings.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/reliability/admission-decisions:
+    get:
+      tags: [reliability]
+      summary: Search backpressure, quota, and fairness admission decisions.
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: workflow_run_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: decision
+          in: query
+          schema:
+            $ref: "#/components/schemas/AdmissionDecisionKind"
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Admission decisions.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdmissionDecision"
+  /admin/reliability/breakers:
+    get:
+      tags: [reliability]
+      summary: List circuit breaker states.
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: state
+          in: query
+          schema:
+            $ref: "#/components/schemas/BreakerState"
+      responses:
+        "200":
+          description: Breaker states.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CircuitBreaker"
+  /admin/reliability/breakers/{breaker_id}/reset:
+    post:
+      tags: [reliability]
+      summary: Authorized breaker reset or half-open probe enablement.
+      parameters:
+        - $ref: "#/components/parameters/BreakerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BreakerResetRequest"
+      responses:
+        "202":
+          description: Breaker reset accepted and audited.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircuitBreaker"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/reliability/retries:
+    get:
+      tags: [reliability]
+      summary: Search retry schedules and stop reasons.
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [scheduled, leased, stopped, completed]
+        - name: failure_category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Retry schedules.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RetrySchedule"
+  /admin/reliability/compensations:
+    get:
+      tags: [reliability]
+      summary: Search compensation requests and outcomes.
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/CompensationStatus"
+      responses:
+        "200":
+          description: Compensation requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CompensationRequest"
+  /admin/reliability/dead-letters:
+    get:
+      tags: [reliability]
+      summary: Search dead-letter records.
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: source_kind
+          in: query
+          schema:
+            type: string
+        - name: failure_category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, requeued, compensating, resolved, escalated]
+      responses:
+        "200":
+          description: Dead-letter records.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DeadLetterRecord"
+  /admin/reliability/dead-letters/{dead_letter_id}/actions:
+    post:
+      tags: [reliability]
+      summary: Take an authorized dead-letter action.
+      parameters:
+        - $ref: "#/components/parameters/DeadLetterId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeadLetterActionRequest"
+      responses:
+        "202":
+          description: Action accepted and audited.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeadLetterRecord"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/reliability/load-tests/{load_test_id}:
+    get:
+      tags: [reliability]
+      summary: Retrieve a load-test or failure-injection validation report.
+      parameters:
+        - name: load_test_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Load-test report metadata and artifact refs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoadTestReport"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    TenantId:
+      name: tenant_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+      description: Required for tenant operators; optional for global admins.
+    BreakerId:
+      name: breaker_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DeadLetterId:
+      name: dead_letter_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Forbidden:
+      description: Caller is not authorized for the requested reliability scope.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [category, message]
+      properties:
+        category:
+          type: string
+        message:
+          type: string
+        trace_id:
+          type: string
+          nullable: true
+    AdmissionDecisionKind:
+      type: string
+      enum: [accepted, queued, delayed, throttled, rejected, retry_eligible]
+    BreakerState:
+      type: string
+      enum: [closed, open, half_open]
+    CompensationStatus:
+      type: string
+      enum:
+        - requested
+        - queued
+        - running
+        - succeeded
+        - failed
+        - unavailable
+        - timed_out
+        - skipped_by_policy
+        - manual_follow_up_required
+    ReliabilityPolicy:
+      type: object
+      required: [policy_id, scope_type, policy_version, status, settings]
+      properties:
+        policy_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        scope_type:
+          type: string
+        scope_key:
+          type: string
+          nullable: true
+        policy_version:
+          type: integer
+        status:
+          type: string
+          enum: [draft, active, retired]
+        settings:
+          type: object
+          additionalProperties: true
+    PolicyChangeRequest:
+      type: object
+      required: [scope_type, settings, reason]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        scope_type:
+          type: string
+        scope_key:
+          type: string
+          nullable: true
+        settings:
+          type: object
+          additionalProperties: true
+        reason:
+          type: string
+        unsafe_override:
+          type: boolean
+          default: false
+    OperationalControlChange:
+      type: object
+      required: [control_change_id, validation_outcome, effective_at]
+      properties:
+        control_change_id:
+          type: string
+          format: uuid
+        validation_outcome:
+          type: string
+          enum: [accepted, rejected, override_required, override_accepted]
+        effective_at:
+          type: string
+          format: date-time
+    AdmissionDecision:
+      type: object
+      required: [admission_decision_id, tenant_id, decision, reason_code, created_at]
+      properties:
+        admission_decision_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        workflow_run_id:
+          type: string
+          format: uuid
+          nullable: true
+        decision:
+          $ref: "#/components/schemas/AdmissionDecisionKind"
+        reason_code:
+          type: string
+        available_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    ReliabilityDashboard:
+      type: object
+      required:
+        - generated_at
+        - admission
+        - worker_pools
+        - breakers
+        - retries
+        - compensations
+        - dead_letters
+        - database_pool
+        - artifact_storage
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        admission:
+          type: object
+          additionalProperties: true
+        worker_pools:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        breakers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CircuitBreaker"
+        retries:
+          type: object
+          additionalProperties: true
+        compensations:
+          type: object
+          additionalProperties: true
+        dead_letters:
+          type: object
+          additionalProperties: true
+        database_pool:
+          type: object
+          additionalProperties: true
+        artifact_storage:
+          type: object
+          additionalProperties: true
+    CircuitBreaker:
+      type: object
+      required: [circuit_breaker_id, scope_type, scope_key, state, reason_code]
+      properties:
+        circuit_breaker_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        scope_type:
+          type: string
+        scope_key:
+          type: string
+        state:
+          $ref: "#/components/schemas/BreakerState"
+        reason_code:
+          type: string
+        cooldown_until:
+          type: string
+          format: date-time
+          nullable: true
+        half_open_tokens:
+          type: integer
+    BreakerResetRequest:
+      type: object
+      required: [target_state, reason]
+      properties:
+        target_state:
+          $ref: "#/components/schemas/BreakerState"
+        reason:
+          type: string
+        unsafe_override:
+          type: boolean
+          default: false
+    RetrySchedule:
+      type: object
+      required: [retry_schedule_id, tenant_id, failure_category, attempt_count, status]
+      properties:
+        retry_schedule_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        workflow_run_id:
+          type: string
+          format: uuid
+          nullable: true
+        failure_category:
+          type: string
+        attempt_count:
+          type: integer
+        max_attempts:
+          type: integer
+        next_eligible_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [scheduled, leased, stopped, completed]
+        stop_reason:
+          type: string
+          nullable: true
+    CompensationRequest:
+      type: object
+      required: [compensation_request_id, tenant_id, side_effect_intent_id, status]
+      properties:
+        compensation_request_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        workflow_run_id:
+          type: string
+          format: uuid
+        side_effect_intent_id:
+          type: string
+          format: uuid
+        hook_ref:
+          type: string
+        status:
+          $ref: "#/components/schemas/CompensationStatus"
+    DeadLetterRecord:
+      type: object
+      required: [dead_letter_id, tenant_id, source_kind, source_id, failure_category, status]
+      properties:
+        dead_letter_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        source_kind:
+          type: string
+        source_id:
+          type: string
+          format: uuid
+        failure_category:
+          type: string
+        recommended_action:
+          type: string
+        status:
+          type: string
+          enum: [open, requeued, compensating, resolved, escalated]
+    DeadLetterActionRequest:
+      type: object
+      required: [action, reason]
+      properties:
+        action:
+          type: string
+          enum: [requeue, compensate, mark_resolved, escalate]
+        reason:
+          type: string
+        unsafe_override:
+          type: boolean
+          default: false
+    LoadTestReport:
+      type: object
+      required: [load_test_id, seed, active_users, tenant_count, result, artifact_refs]
+      properties:
+        load_test_id:
+          type: string
+          format: uuid
+        seed:
+          type: integer
+        active_users:
+          type: integer
+        tenant_count:
+          type: integer
+        result:
+          type: string
+          enum: [passed, failed, partial]
+        artifact_refs:
+          type: array
+          items:
+            type: object
+            additionalProperties: true

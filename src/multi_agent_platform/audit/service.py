@@ -108,6 +108,31 @@ class AuditService:
             )
         )
 
+    async def record_reliability_event(
+        self,
+        *,
+        tenant_id: UUID | None,
+        action: str,
+        entity_type: str,
+        entity_id: str,
+        trace_id: str,
+        payload_redacted: dict[str, str],
+        scope_type: str = "tenant",
+    ) -> AuditEvent:
+        return await self.record(
+            AuditEventCreate(
+                tenant_id=tenant_id,
+                scope_type=scope_type,
+                actor_type=AuditActorType.SYSTEM,
+                actor_id="reliability",
+                action=action,
+                entity_type=entity_type,
+                entity_id=entity_id,
+                trace_id=trace_id,
+                payload_redacted=payload_redacted,
+            )
+        )
+
 
 class AuditDebuggingAuthorizationError(PermissionError):
     pass

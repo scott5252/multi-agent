@@ -11,12 +11,14 @@ from multi_agent_platform.db.models.runtime_orchestration import (
 from multi_agent_platform.db.repositories.runtime_orchestration import (
     RuntimeOrchestrationRepository,
 )
+from multi_agent_platform.reliability.models import RecoveryOutcome
 
 
 @dataclass(slots=True, frozen=True)
 class OrchestrationWorkerResult:
     claimed: bool
     workflow_run_id: str | None = None
+    recovery_outcome: RecoveryOutcome | None = None
 
 
 class OrchestrationWorker:
@@ -49,5 +51,7 @@ class OrchestrationWorker:
             )
         )
         return OrchestrationWorkerResult(
-            claimed=True, workflow_run_id=str(lease.workflow_run_id)
+            claimed=True,
+            workflow_run_id=str(lease.workflow_run_id),
+            recovery_outcome=RecoveryOutcome.RESUMED,
         )
