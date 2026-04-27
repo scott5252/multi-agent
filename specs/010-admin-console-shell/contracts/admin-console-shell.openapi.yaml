@@ -1,0 +1,177 @@
+openapi: 3.1.0
+info:
+  title: Admin Console Shell Routes
+  version: 0.1.0
+  description: >
+    Server-rendered admin console shell routes and saved-filter actions. The
+    existing admin destination routes remain direct and authorized.
+servers:
+  - url: http://localhost:8000
+security:
+  - bearerAuth: []
+paths:
+  /admin:
+    get:
+      tags: [admin-shell]
+      summary: Render the shared admin console landing page.
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: HTML admin shell.
+          content:
+            text/html:
+              schema:
+                type: string
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /admin/scope:
+    get:
+      tags: [admin-shell]
+      summary: Validate the selected admin scope and redirect to a destination.
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: next
+          in: query
+          schema:
+            type: string
+            default: /admin
+      responses:
+        "303":
+          description: Redirect to safe destination with validated scope.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /admin/filters/{admin_area}:
+    get:
+      tags: [admin-shell]
+      summary: List saved filters for an admin area and active scope.
+      parameters:
+        - $ref: "#/components/parameters/AdminArea"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: HTML saved filter fragment or page.
+          content:
+            text/html:
+              schema:
+                type: string
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [admin-shell]
+      summary: Save or update a validated filter for an admin area.
+      parameters:
+        - $ref: "#/components/parameters/AdminArea"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SavedFilterForm"
+      responses:
+        "303":
+          description: Redirect back to the source admin page.
+        "400":
+          description: Invalid filter criteria.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /admin/filters/{admin_area}/{filter_id}/restore:
+    get:
+      tags: [admin-shell]
+      summary: Restore a saved filter after revalidating scope and criteria.
+      parameters:
+        - $ref: "#/components/parameters/AdminArea"
+        - $ref: "#/components/parameters/FilterId"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "303":
+          description: Redirect to the filtered admin page.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Filter not found in authorized scope.
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /admin/filters/{admin_area}/{filter_id}:
+    post:
+      tags: [admin-shell]
+      summary: Delete a saved filter using a server-rendered form fallback.
+      parameters:
+        - $ref: "#/components/parameters/AdminArea"
+        - $ref: "#/components/parameters/FilterId"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                _method:
+                  type: string
+                  enum: [DELETE]
+      responses:
+        "303":
+          description: Redirect back to the source admin page.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    TenantId:
+      name: tenant_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Validated active tenant scope. Omitted for platform scope.
+    AdminArea:
+      name: admin_area
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - workflows
+          - model_skill_history
+          - run_inspection
+          - reliability_breakers
+          - reliability_dead_letters
+    FilterId:
+      name: filter_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    SavedFilterForm:
+      type: object
+      required: [filter_key, display_name]
+      properties:
+        filter_key:
+          type: string
+          maxLength: 128
+        display_name:
+          type: string
+          maxLength: 120
+        criteria:
+          type: string
+          description: JSON object or form-encoded criteria validated server-side.
+  responses:
+    Forbidden:
+      description: Access denied without protected detail disclosure.
+    Unavailable:
+      description: Fail-closed unavailable state, usually audit persistence failure.
