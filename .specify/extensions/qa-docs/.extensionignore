@@ -1,0 +1,15 @@
+# Local-only and generated files
+qa-docs-config.local.yml
+*.tmp
+*.bak
+
+# Python and shell caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# VCS and editor files
+.git/
+.DS_Store
+.idea/
+.vscode/

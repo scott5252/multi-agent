@@ -25,6 +25,25 @@
       },
       "registered_skills": [],
       "installed_at": "2026-04-24T18:06:52.660885+00:00"
+    },
+    "qa-docs": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:20628cc46f7c0459ca70423147b60acbf896b47537749a527de5798276ec3e16",
+      "enabled": true,
+      "priority": 20,
+      "registered_commands": {
+        "agy": [
+          "speckit.qa-docs.generate-documents"
+        ],
+        "codex": [
+          "speckit.qa-docs.generate-documents"
+        ]
+      },
+      "registered_skills": [
+        "speckit-qa-docs-generate-documents"
+      ],
+      "installed_at": "2026-04-27T00:00:00.000000+00:00"
     }
   }
 }

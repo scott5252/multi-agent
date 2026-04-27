@@ -1,4 +1,6 @@
-installed: []
+installed:
+- git
+- qa-docs
 settings:
   auto_execute_hooks: true
 hooks:
@@ -115,6 +117,12 @@ hooks:
     description: Auto-commit after task generation
     condition: null
   after_implement:
+  - extension: qa-docs
+    command: speckit.qa-docs.generate-documents
+    enabled: true
+    optional: false
+    description: Generate and validate qaNNN.md and .env.qaNNN after implementation
+    condition: null
   - extension: git
     command: speckit.git.commit
     enabled: true

@@ -1,0 +1,57 @@
+schema_version: "1.0"
+
+extension:
+  id: qa-docs
+  name: "Post-Implementation QA Documents"
+  version: "1.0.0"
+  description: "Creates a spec-specific manual QA guide and self-contained QA environment file after implementation"
+  author: multi-agent-project
+  license: MIT
+
+requires:
+  speckit_version: ">=0.7.2"
+  commands:
+    - speckit.implement
+  tools:
+    - name: bash
+      required: true
+    - name: uv
+      required: false
+    - name: docker
+      required: false
+    - name: curl
+      required: false
+    - name: jq
+      required: false
+
+provides:
+  commands:
+    - name: speckit.qa-docs.generate-documents
+      file: commands/speckit.qa-docs.generate-documents.md
+      description: "Generate the required qaNNN.md guide and .env.qaNNN file for the active implemented spec"
+
+  config:
+    - name: "qa-docs-config.yml"
+      template: "config-template.yml"
+      description: "Post-implementation QA document thresholds and reference files"
+      required: false
+
+hooks:
+  after_implement:
+    command: speckit.qa-docs.generate-documents
+    optional: false
+    description: "Generate and validate post-implementation QA guide and QA environment documents"
+
+tags:
+  - "qa"
+  - "manual-testing"
+  - "documentation"
+  - "implementation-gate"
+
+defaults:
+  guide_prefix: qa
+  reference_spec_dir: specs/008-production-audit-debugging
+  min_guide_lines: 180
+  min_env_lines: 35
+  min_code_fences: 10
+  min_expected_markers: 12

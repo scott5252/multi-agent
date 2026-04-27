@@ -170,6 +170,22 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
+   - Create the spec-specific post-implementation QA guide and QA environment
+     file in the active feature directory:
+     - `qaNNN.md`
+     - `.env.qaNNN`
+   - The QA guide MUST match the detail level of
+     `specs/008-production-audit-debugging/qa008.md`, including copy/paste
+     setup, deterministic seed data, manual verification steps, expected
+     outputs, negative-path checks, security/redaction checks, automated
+     evidence, troubleshooting, and related files.
+   - The QA environment file MUST match the shape of
+     `specs/008-production-audit-debugging/.env.qa008`, using a dedicated
+     `multi_agent_platform_qaNNN` database, local-principal auth, fake
+     spec-specific secret references, and `.data/qaNNN-artifacts` storage.
+   - Run
+     `bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh "$FEATURE_DIR"`
+     and treat any validation failure as an incomplete implementation.
    - Report final status with summary of completed work
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
