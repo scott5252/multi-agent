@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
@@ -24,6 +25,7 @@ class ValidationFinding(BaseModel):
 
 
 class ValidationResult(BaseModel):
+    validation_result_id: UUID | None = None
     status: Literal["passed", "failed"]
     blocking_issue_count: int = 0
     advisory_issue_count: int = 0
@@ -108,6 +110,13 @@ class PromptDraftDetail(BaseModel):
     prompt_lineage_id: UUID
     prompt_draft_id: UUID
     current_revision_number: int
+    prompt_title: str | None = None
+    purpose: str | None = None
+    usage_notes: str = ""
+    template_content: str = ""
+    variables: list[PromptVariableDeclaration] = Field(default_factory=list)
+    fixture_sets: list[FixtureValueSet] = Field(default_factory=list)
+    latest_validation: ValidationResult | None = None
 
 
 class PromptLineageSummary(BaseModel):
@@ -120,6 +129,8 @@ class PromptLineageSummary(BaseModel):
     display_name: str
     purpose: str
     status: str
+    latest_published_prompt_version_id: UUID | None = None
+    validation_status: str | None = None
 
 
 class PromptVersionDetail(BaseModel):
@@ -130,3 +141,17 @@ class PromptVersionDetail(BaseModel):
     display_version: str
     status: str
     template_content_sha256: str
+    safe_summary: dict[str, object] = Field(default_factory=dict)
+
+
+class AuditEventSummary(BaseModel):
+    action: str
+    actor_principal_id: str
+    created_at: datetime
+    outcome: str = "recorded"
+    reason: str = ""
+    redacted_diff_summary: dict[str, object] = Field(default_factory=dict)
+
+
+class HistoryResponse(BaseModel):
+    items: list[AuditEventSummary] = Field(default_factory=list)

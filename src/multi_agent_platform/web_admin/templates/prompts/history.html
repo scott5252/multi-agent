@@ -4,7 +4,11 @@
 <section class="admin-section">
   <h2>{{ page.title }}</h2>
   <ol class="prompt-runtime-timeline">
-    <li>Draft saves, validations, previews, publications, retirements, grants, and denied attempts are shown with safe summaries.</li>
+    {% for event in history.items %}
+      <li>{{ event.created_at }}: {{ event.action }} by {{ event.actor_principal_id }} ({{ event.outcome }}){% if event.reason %} - {{ event.reason }}{% endif %}</li>
+    {% else %}
+      <li>No prompt history events are visible in the current scope.</li>
+    {% endfor %}
   </ol>
 </section>
 {% endblock %}

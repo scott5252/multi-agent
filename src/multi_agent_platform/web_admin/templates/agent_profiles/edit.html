@@ -1,19 +1,65 @@
 {% extends "admin_shell/base.html" %}
 
 {% block content %}
+{% set fields = page.submitted_fields %}
 <section class="admin-section prompt-runtime-form">
   <h2>{{ page.title }}</h2>
   <form method="post" action="/admin/prompt-runtime/profiles/form">
-    <label class="field-row"><span>Agent Key</span><input name="agent_key" value="{{ page.agent_key }}"></label>
-    <label class="field-row"><span>Agent Kind</span><select name="agent_kind"><option value="agent">Agent</option><option value="sub_agent">Sub-agent</option></select></label>
-    {% for section in page.sections %}
-      <section class="validation-panel">
-        <h3>{{ section.label }}</h3>
-        <p>{{ section.blocking_count }} blocking findings</p>
-      </section>
-    {% endfor %}
-    <button type="submit">Save Draft</button>
-    <button type="button" {% if not page.can_activate %}disabled{% endif %}>Activate</button>
+    {% if page.agent_runtime_profile_id %}<input type="hidden" name="agent_runtime_profile_id" value="{{ page.agent_runtime_profile_id }}">{% endif %}
+    <input type="hidden" name="expected_revision_number" value="{{ page.submitted_fields.get('current_revision_number', 0) if page.submitted_fields.get('current_revision_number') else 0 }}">
+    <label class="field-row"><span>Scope</span><select name="scope_type"><option value="tenant" {% if fields.get("scope_type") == "tenant" %}selected{% endif %}>Tenant</option><option value="platform" {% if fields.get("scope_type") == "platform" %}selected{% endif %}>Platform</option></select></label>
+    <label class="field-row"><span>Tenant ID</span><input name="tenant_id" value="{{ fields.get('tenant_id', '') }}"></label>
+    <label class="field-row"><span>Agent Key</span><input name="agent_key" value="{{ fields.get('agent_key', page.agent_key) }}" required></label>
+    <label class="field-row"><span>Agent Kind</span><select name="agent_kind"><option value="agent" {% if fields.get("agent_kind", page.agent_kind) == "agent" %}selected{% endif %}>Agent</option><option value="sub_agent" {% if fields.get("agent_kind", page.agent_kind) == "sub_agent" %}selected{% endif %}>Sub-agent</option></select></label>
+    <label class="field-row"><span>Display Name</span><input name="display_name" value="{{ fields.get('display_name', '') }}" required></label>
+    <label class="field-row"><span>Purpose</span><input name="purpose" value="{{ fields.get('purpose', '') }}" required></label>
+    <section class="validation-panel">
+      <h3>Prompt References</h3>
+      <textarea name="prompt_references_json" rows="8">{{ fields.get('prompt_references_json', '[]') }}</textarea>
+    </section>
+    <section class="validation-panel">
+      <h3>Model Routing</h3>
+      <textarea name="model_routing_hints_json" rows="6">{{ fields.get('model_routing_hints_json', '{}') }}</textarea>
+    </section>
+    <section class="validation-panel">
+      <h3>Memory Policy</h3>
+      <textarea name="memory_scope_policy_json" rows="6">{{ fields.get('memory_scope_policy_json', '{}') }}</textarea>
+    </section>
+    <section class="validation-panel">
+      <h3>Skills</h3>
+      <textarea name="skill_requirements_json" rows="6">{{ fields.get('skill_requirements_json', '[]') }}</textarea>
+    </section>
+    <section class="validation-panel">
+      <h3>Tools</h3>
+      <textarea name="tool_policy_expectations_json" rows="6">{{ fields.get('tool_policy_expectations_json', '[]') }}</textarea>
+    </section>
+    <section class="validation-panel">
+      <h3>Output Contract</h3>
+      <textarea name="output_contract_expectations_json" rows="6">{{ fields.get('output_contract_expectations_json', '{}') }}</textarea>
+    </section>
+    <section class="validation-panel">
+      <h3>Tests</h3>
+      <textarea name="test_suite_requirements_json" rows="6">{{ fields.get('test_suite_requirements_json', '[]') }}</textarea>
+    </section>
+    <section class="validation-panel">
+      <h3>Validation</h3>
+      {% if validation %}
+        <p>Status: {{ validation.status }}. Blocking: {{ validation.blocking_issue_count }}. Advisory: {{ validation.advisory_issue_count }}.</p>
+        <ul>
+          {% for finding in validation.findings %}
+            <li>{{ finding.severity }} {{ finding.code }} in {{ finding.section }}: {{ finding.message }}</li>
+          {% else %}
+            <li>No findings.</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>Validation has not run for this draft revision.</p>
+      {% endif %}
+    </section>
+    <label class="field-row"><span>Activation Reason</span><input name="reason" value="Ready for runtime use"></label>
+    <button type="submit" name="_action" value="save">Save Draft</button>
+    <button type="submit" name="_action" value="validate">Validate</button>
+    <button type="submit" name="_action" value="activate" {% if not page.can_activate %}disabled{% endif %}>Activate</button>
   </form>
 </section>
 {% endblock %}

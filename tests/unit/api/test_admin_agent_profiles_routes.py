@@ -19,6 +19,7 @@ class _FakeRepository:
     revision_id = uuid4()
     validation_id = uuid4()
     version_id = uuid4()
+    tenant_id = uuid4()
 
     def __init__(self, session: object) -> None:
         self.session = session
@@ -67,7 +68,11 @@ class _FakeRepository:
         )
 
     async def get_profile(self, agent_runtime_profile_id: object) -> SimpleNamespace:
-        return SimpleNamespace(agent_runtime_profile_id=agent_runtime_profile_id)
+        return SimpleNamespace(
+            agent_runtime_profile_id=agent_runtime_profile_id,
+            scope_type="tenant",
+            tenant_id=self.tenant_id,
+        )
 
 
 class _FakeService:
@@ -81,8 +86,10 @@ class _FakeService:
 
     async def validate_revision(self, **kwargs: object) -> SimpleNamespace:
         return SimpleNamespace(
+            agent_profile_validation_result_id=_FakeRepository.validation_id,
             status="passed",
             blocking_issue_count=0,
+            advisory_issue_count=0,
             findings_json=[],
         )
 
@@ -107,14 +114,20 @@ async def test_agent_profile_json_routes_use_repository_and_service(
         _FakeRepository,
     )
     monkeypatch.setattr(admin_agent_profiles, "AgentProfileService", _FakeService)
-    principal = SimpleNamespace(principal_id="tenant-admin")
+    tenant_id = uuid4()
+    _FakeRepository.tenant_id = tenant_id
+    principal = SimpleNamespace(
+        principal_id="tenant-admin",
+        tenant_id=tenant_id,
+        role_codes=("tenant_admin",),
+    )
     session = SimpleNamespace()
     profile_id = _FakeRepository.profile_id
 
     created = await admin_agent_profiles.create_agent_profile(
         payload=ProfileCreate(
             scope_type="tenant",
-            tenant_id=uuid4(),
+            tenant_id=tenant_id,
             agent_key="planner",
             agent_kind="agent",
             display_name="Planner",

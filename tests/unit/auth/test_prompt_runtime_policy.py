@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from multi_agent_platform.api.main import create_app
 from multi_agent_platform.auth.policy import SURFACE_POLICIES
 
 
@@ -20,3 +21,19 @@ def test_prompt_runtime_surfaces_are_registered_with_scoped_actions() -> None:
 
     for surface, action in expected.items():
         assert SURFACE_POLICIES[surface].requested_action == action
+
+
+def test_all_prompt_runtime_routes_have_explicit_auth_policy() -> None:
+    missing = []
+    for route in create_app().routes:
+        path = getattr(route, "path", "")
+        if not path.startswith("/admin/prompt-runtime"):
+            continue
+        for method in sorted(getattr(route, "methods", []) or []):
+            if method in {"HEAD", "OPTIONS"}:
+                continue
+            key = f"{method}:{path}"
+            if key not in SURFACE_POLICIES:
+                missing.append(key)
+
+    assert missing == []

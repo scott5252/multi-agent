@@ -4,7 +4,14 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from multi_agent_platform.agents.validation import validate_profile_contract
+from multi_agent_platform.agents.resolution import (
+    AgentProfileResolution,
+    resolve_agent_profile,
+)
+from multi_agent_platform.agents.validation import (
+    validate_profile_contract,
+    validate_profile_prompt_references,
+)
 from multi_agent_platform.db.models.agent_profiles import (
     ActiveAgentProfilePointer,
     AgentProfileDraft,
@@ -12,6 +19,7 @@ from multi_agent_platform.db.models.agent_profiles import (
     AgentProfileValidationResult,
     AgentProfileVersion,
     AgentRuntimeProfile,
+    TenantProfileVersionGrant,
 )
 from multi_agent_platform.db.repositories.agent_profiles import (
     AgentProfileDraftRecord,
@@ -20,6 +28,10 @@ from multi_agent_platform.db.repositories.agent_profiles import (
 
 
 class AgentProfileActivationError(RuntimeError):
+    pass
+
+
+class AgentProfileGrantError(RuntimeError):
     pass
 
 
@@ -99,10 +111,25 @@ class AgentProfileService:
             ),
             test_suite_requirements=draft_revision.test_suite_requirements_json,
         )
+        draft = await self.repository.session.get(
+            AgentProfileDraft,
+            draft_revision.agent_profile_draft_id,
+        )
+        prompt_reference_report = validate_profile_prompt_references(
+            prompt_references=draft_revision.prompt_references_json,
+            prompt_versions=await self.repository.prompt_versions_for_references(
+                draft_revision.prompt_references_json
+            ),
+            tenant_id=str(draft.tenant_id) if draft and draft.tenant_id else None,
+        )
+        findings = [
+            *report.to_json_findings(),
+            *prompt_reference_report.to_json_findings(),
+        ]
         return await self.repository.record_validation_result(
             draft_revision=draft_revision,
-            status=report.status,
-            findings=report.to_json_findings(),
+            status="failed" if findings else "passed",
+            findings=findings,
             principal_id=principal_id,
         )
 
@@ -151,15 +178,77 @@ class AgentProfileService:
         self.repository.session.add(version)
         await self.repository.session.flush()
         profile.active_profile_version_id = version.agent_profile_version_id
-        pointer = ActiveAgentProfilePointer(
+        pointer = await self.repository.resolve_active_pointer(
             scope_type=profile.scope_type,
             tenant_id=profile.tenant_id,
             agent_kind=profile.agent_kind,
             agent_key=profile.agent_key,
-            active_profile_version_id=version.agent_profile_version_id,
-            activated_by_principal_id=principal_id,
-            activation_reason=reason,
         )
-        self.repository.session.add(pointer)
+        if pointer is None:
+            pointer = ActiveAgentProfilePointer(
+                scope_type=profile.scope_type,
+                tenant_id=profile.tenant_id,
+                agent_kind=profile.agent_kind,
+                agent_key=profile.agent_key,
+                active_profile_version_id=version.agent_profile_version_id,
+                activated_by_principal_id=principal_id,
+                activation_reason=reason,
+            )
+            self.repository.session.add(pointer)
+        else:
+            pointer.expected_previous_version_id = pointer.active_profile_version_id
+            pointer.active_profile_version_id = version.agent_profile_version_id
+            pointer.activated_by_principal_id = principal_id
+            pointer.activation_reason = reason
         await self.repository.session.flush()
         return version
+
+    async def retire_version(
+        self,
+        *,
+        version: AgentProfileVersion,
+        principal_id: str,
+        reason: str,
+    ) -> AgentProfileVersion:
+        return await self.repository.retire_profile_version(
+            version=version,
+            principal_id=principal_id,
+            reason=reason,
+        )
+
+    async def grant_version_to_tenant(
+        self,
+        *,
+        version: AgentProfileVersion,
+        tenant_id: UUID,
+        principal_id: str,
+        reason: str,
+    ) -> TenantProfileVersionGrant:
+        if version.scope_type != "platform":
+            raise AgentProfileGrantError(
+                "only platform profile versions can be granted"
+            )
+        return await self.repository.grant_profile_version(
+            agent_profile_version_id=version.agent_profile_version_id,
+            grantee_tenant_id=tenant_id,
+            principal_id=principal_id,
+            reason=reason,
+        )
+
+    async def resolve_profile(
+        self,
+        *,
+        tenant_id: UUID,
+        agent_key: str,
+        agent_kind: str,
+    ) -> AgentProfileResolution:
+        return resolve_agent_profile(
+            tenant_id=tenant_id,
+            agent_key=agent_key,
+            agent_kind=agent_kind,
+            candidates=await self.repository.list_resolution_candidates(
+                tenant_id=tenant_id,
+                agent_key=agent_key,
+                agent_kind=agent_kind,
+            ),
+        )

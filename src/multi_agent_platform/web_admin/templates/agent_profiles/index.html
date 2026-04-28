@@ -9,10 +9,26 @@
   </div>
   <table class="prompt-runtime-table">
     <thead>
-      <tr><th>Agent Key</th><th>Kind</th><th>Scope</th><th>Validation</th></tr>
+      <tr><th>Agent Key</th><th>Kind</th><th>Scope</th><th>Validation</th><th>Actions</th></tr>
     </thead>
     <tbody>
-      <tr><td>Profiles</td><td>{{ page.agent_kind }}</td><td>{{ page.scope_type }}</td><td>Ready</td></tr>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.agent_key }}</td>
+          <td>{{ item.agent_kind }}</td>
+          <td>{{ item.scope_type }}{% if item.tenant_id %} / {{ item.tenant_id }}{% endif %}</td>
+          <td>{{ item.validation_status or "Not validated" }}</td>
+          <td>
+            <a href="/admin/prompt-runtime/profiles/{{ item.agent_runtime_profile_id }}/edit">Edit Draft</a>
+            <a href="/admin/prompt-runtime/profiles/{{ item.agent_runtime_profile_id }}/history">History</a>
+            {% if item.active_profile_version_id %}
+              <a href="/admin/prompt-runtime/profiles/versions/{{ item.active_profile_version_id }}">Active Version</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">No agent profiles are visible in the current scope.</td></tr>
+      {% endfor %}
     </tbody>
   </table>
 </section>

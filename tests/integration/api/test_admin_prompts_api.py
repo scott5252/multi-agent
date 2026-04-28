@@ -123,3 +123,46 @@ def test_admin_prompts_api_draft_validate_preview_publish(
     assert preview.json()["rendered_preview"] == "Hello Ada"
     assert published.status_code == 201
     assert published.json()["display_version"] == "v1"
+
+
+def test_admin_prompt_draft_rejects_byte_oversized_template_with_safe_error(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    tenant_id = uuid4()
+    configure_prompt_env(monkeypatch, tmp_path, tenant_id)
+    app = create_app()
+    headers = {"X-Local-Principal": "tenant-admin-acme"}
+    template_content = "\u0100" * 32769
+    assert len(template_content) <= 65536
+    assert len(template_content.encode("utf-8")) > 64 * 1024
+
+    with TestClient(app) as client:
+        created = client.post(
+            "/admin/prompt-runtime/api/prompts",
+            headers=headers,
+            json={
+                "scope_type": "tenant",
+                "tenant_id": str(tenant_id),
+                "slug": "large-prompt",
+                "display_name": "Large Prompt",
+                "purpose": "Exercise safe prompt size rejection",
+            },
+        )
+        lineage_id = created.json()["prompt_lineage_id"]
+        oversized = client.put(
+            f"/admin/prompt-runtime/api/prompts/{lineage_id}/draft",
+            headers=headers,
+            json={
+                "expected_revision_number": 0,
+                "prompt_title": "Too Large",
+                "purpose": "QA negative path",
+                "template_content": template_content,
+                "variables": [],
+                "fixture_sets": [],
+            },
+        )
+
+    assert created.status_code == 201
+    assert oversized.status_code == 413
+    assert oversized.json() == {"detail": {"code": "prompt_too_large"}}

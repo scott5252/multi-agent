@@ -32,12 +32,17 @@ retire, grants, and history without raw database access. Profile authoring
 should complete under ten minutes and expose prompt references, policy
 sections, validation, activation, resolution preview, retirement, and history.
 
-Automated browser-flow coverage passed through
-`tests/integration/api/test_prompt_runtime_browser_flows.py`,
-`tests/integration/api/test_agent_profile_browser_flows.py`, and
-`tests/integration/api/test_prompt_runtime_admin_navigation.py` as part of the
-full `uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90`
-run: 625 passed, total coverage 90.03%. The reviewer-facing QA script in
+Automated browser-flow coverage now submits the real server-rendered forms
+rather than checking template strings. On 2026-04-28,
+`uv run pytest --no-cov tests/integration/api/test_prompt_runtime_browser_flows.py tests/integration/api/test_agent_profile_browser_flows.py`
+passed with 2 tests covering prompt save, validation, safe preview, publish,
+retire, grant, profile policy-section save, validation, activation, grant,
+resolution, retire, and cross-tenant denial paths.
+
+The broader completion-pass command passed with 23 focused tests across
+contract coverage, auth policy coverage, form routes, services, and tenant
+isolation. The full `uv run pytest --no-cov` run passed with 628 tests and one
+existing SQLAlchemy table-cycle warning. The reviewer-facing QA script in
 `specs/012-prompt-runtime-profiles/qa012.md` includes timed local acceptance
 steps for recording the under-seven-minute prompt publish and under-ten-minute
 profile activation checks during release review.

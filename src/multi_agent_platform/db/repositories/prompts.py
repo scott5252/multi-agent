@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
+from datetime import datetime
+from typing import cast
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from multi_agent_platform.db.models.prompts import (
     PromptDraft,
@@ -70,6 +73,60 @@ class PromptRepository:
 
     async def get_lineage(self, prompt_lineage_id: UUID) -> PromptLineage | None:
         return await self.session.get(PromptLineage, prompt_lineage_id)
+
+    async def list_visible_lineages(
+        self,
+        *,
+        principal_tenant_id: UUID | None,
+        include_platform_admin: bool,
+        scope_type: str | None = None,
+        status: str | None = None,
+        q: str | None = None,
+    ) -> list[PromptLineage]:
+        stmt = select(PromptLineage)
+        if not include_platform_admin:
+            visible_conditions: list[ColumnElement[bool]] = []
+            if principal_tenant_id is not None:
+                visible_conditions.append(
+                    (PromptLineage.scope_type == "tenant")
+                    & (PromptLineage.tenant_id == principal_tenant_id)
+                )
+                granted_platform_lineages = (
+                    select(PromptVersion.prompt_lineage_id)
+                    .join(
+                        TenantPromptVersionGrant,
+                        TenantPromptVersionGrant.prompt_version_id
+                        == PromptVersion.prompt_version_id,
+                    )
+                    .where(
+                        PromptVersion.scope_type == "platform",
+                        PromptVersion.status == "active",
+                        TenantPromptVersionGrant.grantee_tenant_id
+                        == principal_tenant_id,
+                        TenantPromptVersionGrant.status == "active",
+                    )
+                )
+                visible_conditions.append(
+                    PromptLineage.prompt_lineage_id.in_(granted_platform_lineages)
+                )
+            if not visible_conditions:
+                return []
+            stmt = stmt.where(or_(*visible_conditions))
+        if scope_type is not None:
+            stmt = stmt.where(PromptLineage.scope_type == scope_type)
+        if status is not None:
+            stmt = stmt.where(PromptLineage.status == status)
+        if q:
+            search = f"%{q}%"
+            stmt = stmt.where(
+                or_(
+                    PromptLineage.display_name.ilike(search),
+                    PromptLineage.slug.ilike(search),
+                    PromptLineage.purpose.ilike(search),
+                )
+            )
+        stmt = stmt.order_by(desc(PromptLineage.updated_at))
+        return list((await self.session.execute(stmt)).scalars().all())
 
     async def get_active_draft(self, prompt_lineage_id: UUID) -> PromptDraft | None:
         stmt = select(PromptDraft).where(
@@ -176,6 +233,31 @@ class PromptRepository:
     ) -> PromptVersion | None:
         return await self.session.get(PromptVersion, prompt_version_id)
 
+    async def list_versions_for_lineage(
+        self,
+        prompt_lineage_id: UUID,
+    ) -> list[PromptVersion]:
+        stmt = (
+            select(PromptVersion)
+            .where(PromptVersion.prompt_lineage_id == prompt_lineage_id)
+            .order_by(desc(PromptVersion.version_sequence))
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_grants_for_version(
+        self,
+        prompt_version_id: UUID,
+    ) -> list[TenantPromptVersionGrant]:
+        stmt = (
+            select(TenantPromptVersionGrant)
+            .where(
+                TenantPromptVersionGrant.prompt_version_id == prompt_version_id,
+                TenantPromptVersionGrant.status == "active",
+            )
+            .order_by(desc(TenantPromptVersionGrant.created_at))
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
     async def list_new_use_versions(
         self,
         *,
@@ -247,3 +329,160 @@ class PromptRepository:
         self.session.add(grant)
         await self.session.flush()
         return grant
+
+    async def list_prompt_history(
+        self,
+        *,
+        prompt_lineage_id: UUID | None = None,
+        prompt_version_id: UUID | None = None,
+        tenant_id: UUID | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, object]]:
+        lineage_ids: set[UUID] = set()
+        if prompt_lineage_id is not None:
+            lineage_ids.add(prompt_lineage_id)
+        if prompt_version_id is not None:
+            version = await self.get_prompt_version(prompt_version_id)
+            if version is not None:
+                lineage_ids.add(version.prompt_lineage_id)
+        events: list[dict[str, object]] = []
+
+        draft_stmt = select(PromptDraft)
+        if lineage_ids:
+            draft_stmt = draft_stmt.where(
+                PromptDraft.prompt_lineage_id.in_(lineage_ids)
+            )
+        if tenant_id is not None:
+            draft_stmt = draft_stmt.where(
+                or_(PromptDraft.tenant_id == tenant_id, PromptDraft.tenant_id.is_(None))
+            )
+        drafts = list((await self.session.execute(draft_stmt)).scalars().all())
+        draft_ids = [draft.prompt_draft_id for draft in drafts]
+
+        if draft_ids:
+            revision_stmt = (
+                select(PromptDraftRevision)
+                .where(PromptDraftRevision.prompt_draft_id.in_(draft_ids))
+                .order_by(desc(PromptDraftRevision.created_at))
+            )
+            for revision in (await self.session.execute(revision_stmt)).scalars().all():
+                events.append(
+                    {
+                        "action": "save_draft",
+                        "actor_principal_id": revision.created_by_principal_id,
+                        "created_at": revision.created_at,
+                        "outcome": "recorded",
+                        "reason": "",
+                        "redacted_diff_summary": {
+                            "revision_number": revision.revision_number,
+                            "template_content_sha256": revision.template_content_sha256,
+                            "variable_count": len(
+                                revision.variable_declarations_json or []
+                            ),
+                        },
+                    }
+                )
+
+            validation_stmt = (
+                select(PromptValidationResult)
+                .join(
+                    PromptDraftRevision,
+                    PromptDraftRevision.prompt_draft_revision_id
+                    == PromptValidationResult.prompt_draft_revision_id,
+                )
+                .where(PromptDraftRevision.prompt_draft_id.in_(draft_ids))
+                .order_by(desc(PromptValidationResult.executed_at))
+            )
+            for validation in (
+                (await self.session.execute(validation_stmt)).scalars().all()
+            ):
+                events.append(
+                    {
+                        "action": "validate",
+                        "actor_principal_id": validation.executed_by_principal_id,
+                        "created_at": validation.executed_at,
+                        "outcome": validation.status,
+                        "reason": "",
+                        "redacted_diff_summary": {
+                            "blocking_issue_count": validation.blocking_issue_count,
+                            "advisory_issue_count": validation.advisory_issue_count,
+                            "finding_codes": [
+                                str(finding.get("code", "validation"))
+                                for finding in validation.findings_json or []
+                            ],
+                        },
+                    }
+                )
+
+        version_stmt = select(PromptVersion)
+        if lineage_ids:
+            version_stmt = version_stmt.where(
+                PromptVersion.prompt_lineage_id.in_(lineage_ids)
+            )
+        if prompt_version_id is not None:
+            version_stmt = version_stmt.where(
+                PromptVersion.prompt_version_id == prompt_version_id
+            )
+        if tenant_id is not None:
+            version_stmt = version_stmt.where(
+                or_(
+                    PromptVersion.tenant_id == tenant_id,
+                    PromptVersion.tenant_id.is_(None),
+                )
+            )
+        versions = list((await self.session.execute(version_stmt)).scalars().all())
+        version_ids = [version.prompt_version_id for version in versions]
+        for version in versions:
+            events.append(
+                {
+                    "action": "publish",
+                    "actor_principal_id": version.published_by_principal_id,
+                    "created_at": version.published_at,
+                    "outcome": version.status,
+                    "reason": version.publication_reason,
+                    "redacted_diff_summary": {
+                        "display_version": version.display_version,
+                        "template_content_sha256": version.template_content_sha256,
+                    },
+                }
+            )
+            if version.retired_at is not None:
+                events.append(
+                    {
+                        "action": "retire",
+                        "actor_principal_id": version.retired_by_principal_id
+                        or "system",
+                        "created_at": version.retired_at,
+                        "outcome": "retired",
+                        "reason": version.retirement_reason or "",
+                        "redacted_diff_summary": {
+                            "display_version": version.display_version
+                        },
+                    }
+                )
+
+        if version_ids:
+            grant_stmt = (
+                select(TenantPromptVersionGrant)
+                .where(TenantPromptVersionGrant.prompt_version_id.in_(version_ids))
+                .order_by(desc(TenantPromptVersionGrant.created_at))
+            )
+            for grant in (await self.session.execute(grant_stmt)).scalars().all():
+                events.append(
+                    {
+                        "action": "grant",
+                        "actor_principal_id": grant.granted_by_principal_id,
+                        "created_at": grant.created_at,
+                        "outcome": grant.status,
+                        "reason": grant.reason,
+                        "redacted_diff_summary": {
+                            "grantee_tenant_id": str(grant.grantee_tenant_id)
+                        },
+                    }
+                )
+
+        return sorted(
+            events,
+            key=lambda event: cast(datetime, event["created_at"]),
+            reverse=True,
+        )[:limit]

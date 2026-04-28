@@ -4,8 +4,30 @@
 <section class="admin-section">
   <h2>{{ page.title }}</h2>
   <dl class="prompt-runtime-detail">
-    <dt>Profile Version</dt><dd>{{ page.agent_profile_version_id }}</dd>
-    <dt>Status</dt><dd>{% if page.can_retire %}Active{% else %}Historical review{% endif %}</dd>
+    <dt>Profile Version</dt><dd>{{ version.agent_profile_version_id }}</dd>
+    <dt>Runtime Profile</dt><dd>{{ version.agent_runtime_profile_id }}</dd>
+    <dt>Agent</dt><dd>{{ version.agent_kind }} / {{ version.agent_key }}</dd>
+    <dt>Version</dt><dd>{{ version.display_version }}</dd>
+    <dt>Status</dt><dd>{{ version.status }}</dd>
   </dl>
+  <form method="post" action="/admin/prompt-runtime/profiles/form">
+    <input type="hidden" name="agent_profile_version_id" value="{{ version.agent_profile_version_id }}">
+    <label class="field-row"><span>Retirement Reason</span><input name="reason" value="No longer approved for new use"></label>
+    <button type="submit" name="_action" value="retire" {% if not page.can_retire %}disabled{% endif %}>Retire</button>
+  </form>
+  <form method="post" action="/admin/prompt-runtime/profiles/form">
+    <input type="hidden" name="agent_profile_version_id" value="{{ version.agent_profile_version_id }}">
+    <label class="field-row"><span>Tenant IDs to Grant</span><input name="grant_tenant_ids" placeholder="comma-separated UUIDs"></label>
+    <label class="field-row"><span>Grant Reason</span><input name="reason" value="Approved for tenant runtime use"></label>
+    <button type="submit" name="_action" value="grant">Grant</button>
+  </form>
+  <h3>Active Grants</h3>
+  <ul>
+    {% for grant in grants %}
+      <li>{{ grant.grantee_tenant_id }} ({{ grant.status }})</li>
+    {% else %}
+      <li>No active tenant grants recorded.</li>
+    {% endfor %}
+  </ul>
 </section>
 {% endblock %}

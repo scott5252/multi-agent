@@ -230,12 +230,75 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_prompt_library_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/admin/prompt-runtime/prompts/new": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/prompts/new",
+        requested_action="render_prompt_create_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/prompt-runtime/prompts/{prompt_lineage_id}/edit": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/prompts/{prompt_lineage_id}/edit",
+        requested_action="render_prompt_draft_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/prompt-runtime/prompts/form": ProtectedSurface(
+        surface_key="POST:/admin/prompt-runtime/prompts/form",
+        requested_action="submit_prompt_library_form",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/prompt-runtime/prompts/versions/{prompt_version_id}"
+    ): ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/prompts/versions/{prompt_version_id}",
+        requested_action="render_prompt_version_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/prompt-runtime/prompts/{prompt_lineage_id}/history": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/prompts/{prompt_lineage_id}/history",
+        requested_action="render_prompt_history_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/prompt-runtime/prompts/{prompt_lineage_id}/preview": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/prompts/{prompt_lineage_id}/preview",
+        requested_action="render_prompt_preview_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/prompt-runtime/api/prompts": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/api/prompts",
+        requested_action="list_prompt_lineages",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
     "POST:/admin/prompt-runtime/api/prompts": ProtectedSurface(
         surface_key="POST:/admin/prompt-runtime/api/prompts",
         requested_action="create_prompt_lineage",
-        classification=SurfaceClassification.TENANT_ADMIN,
-        required_roles=("tenant_admin",),
-        required_permissions=("tenant:admin",),
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/draft": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/draft",
+        requested_action="read_prompt_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "PUT:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/draft": ProtectedSurface(
+        surface_key="PUT:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/draft",
+        requested_action="save_prompt_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/validate"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/validate"
+        ),
+        requested_action="validate_prompt_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/preview"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/preview"
+        ),
+        requested_action="preview_prompt_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
     ),
     (
         "POST:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/publish"
@@ -244,21 +307,101 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
             "POST:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/publish"
         ),
         requested_action="publish_prompt_version",
-        classification=SurfaceClassification.TENANT_ADMIN,
-        required_roles=("tenant_admin",),
-        required_permissions=("tenant:admin",),
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/prompt-runtime/api/prompts/versions/{prompt_version_id}/retire"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/prompt-runtime/api/prompts/versions/{prompt_version_id}/retire"
+        ),
+        requested_action="retire_prompt_version",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/prompt-runtime/api/prompts/versions/{prompt_version_id}/grants"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/prompt-runtime/api/prompts/versions/{prompt_version_id}/grants"
+        ),
+        requested_action="grant_prompt_version",
+        classification=SurfaceClassification.AUTHENTICATED,
     ),
     "GET:/admin/prompt-runtime/profiles": ProtectedSurface(
         surface_key="GET:/admin/prompt-runtime/profiles",
         requested_action="render_agent_profiles_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/admin/prompt-runtime/profiles/new": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/profiles/new",
+        requested_action="render_agent_profile_create_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/prompt-runtime/profiles/{agent_runtime_profile_id}/edit"
+    ): ProtectedSurface(
+        surface_key=(
+            "GET:/admin/prompt-runtime/profiles/{agent_runtime_profile_id}/edit"
+        ),
+        requested_action="render_agent_profile_draft_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/prompt-runtime/profiles/versions/{agent_profile_version_id}"
+    ): ProtectedSurface(
+        surface_key=(
+            "GET:/admin/prompt-runtime/profiles/versions/{agent_profile_version_id}"
+        ),
+        requested_action="render_agent_profile_version_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/prompt-runtime/profiles/{agent_runtime_profile_id}/history"
+    ): ProtectedSurface(
+        surface_key=(
+            "GET:/admin/prompt-runtime/profiles/{agent_runtime_profile_id}/history"
+        ),
+        requested_action="render_agent_profile_history_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/prompt-runtime/profiles/resolve": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/profiles/resolve",
+        requested_action="render_agent_profile_resolution_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/prompt-runtime/profiles/form": ProtectedSurface(
+        surface_key="POST:/admin/prompt-runtime/profiles/form",
+        requested_action="submit_agent_profile_form",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/prompt-runtime/api/profiles": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/api/profiles",
+        requested_action="list_agent_profiles",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
     "POST:/admin/prompt-runtime/api/profiles": ProtectedSurface(
         surface_key="POST:/admin/prompt-runtime/api/profiles",
         requested_action="create_agent_profile",
-        classification=SurfaceClassification.TENANT_ADMIN,
-        required_roles=("tenant_admin",),
-        required_permissions=("tenant:admin",),
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "PUT:/admin/prompt-runtime/api/profiles/{agent_runtime_profile_id}/draft"
+    ): ProtectedSurface(
+        surface_key=(
+            "PUT:/admin/prompt-runtime/api/profiles/{agent_runtime_profile_id}/draft"
+        ),
+        requested_action="save_agent_profile_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/prompt-runtime/api/profiles/{agent_runtime_profile_id}/validate"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/prompt-runtime/api/profiles/"
+            "{agent_runtime_profile_id}/validate"
+        ),
+        requested_action="validate_agent_profile_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
     ),
     (
         "POST:/admin/prompt-runtime/api/profiles/{agent_runtime_profile_id}/activate"
@@ -268,9 +411,39 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
             "{agent_runtime_profile_id}/activate"
         ),
         requested_action="activate_agent_profile",
-        classification=SurfaceClassification.TENANT_ADMIN,
-        required_roles=("tenant_admin",),
-        required_permissions=("tenant:admin",),
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/prompt-runtime/api/profiles/versions/"
+        "{agent_profile_version_id}/retire"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/prompt-runtime/api/profiles/versions/"
+            "{agent_profile_version_id}/retire"
+        ),
+        requested_action="retire_agent_profile_version",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/prompt-runtime/api/profiles/versions/"
+        "{agent_profile_version_id}/grants"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/prompt-runtime/api/profiles/versions/"
+            "{agent_profile_version_id}/grants"
+        ),
+        requested_action="grant_agent_profile_version",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/prompt-runtime/api/resolve-profile": ProtectedSurface(
+        surface_key="POST:/admin/prompt-runtime/api/resolve-profile",
+        requested_action="resolve_agent_profile",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/prompt-runtime/api/history": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/api/history",
+        requested_action="list_prompt_runtime_history",
+        classification=SurfaceClassification.AUTHENTICATED,
     ),
     "POST:/admin/model-providers": ProtectedSurface(
         surface_key="POST:/admin/model-providers",

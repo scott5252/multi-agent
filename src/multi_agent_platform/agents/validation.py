@@ -147,6 +147,17 @@ def validate_profile_prompt_references(
                 section=f"prompt_references[{index}]",
                 message="Platform prompt version requires a tenant grant.",
             )
+        if (
+            version.get("scope_type") == "tenant"
+            and tenant_id
+            and str(version.get("tenant_id", "")) != tenant_id
+        ):
+            _missing(
+                findings,
+                code="tenant_prompt_scope_mismatch",
+                section=f"prompt_references[{index}]",
+                message="Tenant prompt version belongs to a different tenant.",
+            )
         if expected_purpose and purpose and expected_purpose != purpose:
             _missing(
                 findings,
