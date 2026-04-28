@@ -38,6 +38,10 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   display, authorization-aware navigation, common states, safe messages,
   breadcrumbs, saved filters, and route-preserving links to workflow,
   model-skill, run inspection, and reliability pages
+- model provider gateway management under `/admin/model-providers` for
+  platform-admin OpenAI/local OpenAI-compatible provider configuration, safe
+  probes, health review, catalog sync evidence, and gateway-governed runtime
+  invocation metadata
 
 ## Quickstart
 
@@ -68,7 +72,7 @@ Workflows, Model And Skill Config, Run Inspection, Reliability, and Access.
 The main destinations remain `/admin/workflows/ui`, `/admin/config/ui`,
 `/admin/config/ui/history`, `/admin/runs`, `/admin/reliability/ui/`,
 `/admin/reliability/ui/breakers`, and
-`/admin/reliability/ui/dead-letters`.
+`/admin/reliability/ui/dead-letters`, plus `/admin/model-providers`.
 
 Common states distinguish empty lists, filtered-empty lists, denied access,
 not-found resources, unavailable dependencies, validation failures, partial
@@ -136,6 +140,29 @@ Skills, allowed tool policies, outbound domain policies, secret references,
 and credential requirements deny by default and record safe provenance. Admin
 APIs under `/admin/config/*` and minimal admin web views expose preview,
 history, rollback, and run provenance for reviewer verification.
+
+## Model Provider Gateway
+
+Platform administrators configure model providers at `/admin/model-providers`.
+Supported providers are OpenAI and local OpenAI-compatible chat completions
+endpoints. Connections capture display name, provider type, safe base URL,
+model ids, timeout policy, tenant visibility, active state, health state, last
+test evidence, and credential secret reference ids.
+
+Tenant-scoped users can read only visible provider rows and catalog entries.
+They cannot create, edit, activate, deactivate, test, or sync provider
+connections unless they also have platform administrator authority.
+
+Safe provider tests use non-customer probes and persist only outcome, latency,
+tested model, normalized reason, and safe diagnostics. Local provider URLs must
+match the configured scheme, host, port, and CIDR allowlist. Raw API keys,
+provider tokens, Authorization headers, prompts, completions, URL userinfo,
+secret query parameters, and raw provider responses are not stored.
+
+Catalog sync makes only active, healthy, tenant-visible, gateway-governed model
+entries selectable. Runtime workers and test bench executions use
+`ModelGateway` so latency, normalized errors, usage availability, retry/breaker
+signals, and safe audit summaries are captured consistently.
 
 ## Reliability Scale Hardening
 

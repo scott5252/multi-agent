@@ -1,6 +1,6 @@
 # multi-agent Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-27
+Auto-generated from all feature plans. Last updated: 2026-04-28
 
 ## Active Technologies
 - Python 3.12 + FastAPI security dependencies, Auth0 JWT validation, Pydantic
@@ -55,6 +55,16 @@ Auto-generated from all feature plans. Last updated: 2026-04-27
 - PostgreSQL for persisted admin saved filters, plus existing access decision
   and audit records for shell navigation, direct destination access, scope
   selection, and saved-filter restoration (010-admin-console-shell)
+- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
+  SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+, psycopg 3, httpx,
+  Auth0 JWT validation, existing secret providers, existing
+  model_skill_config catalog/resolver, existing audit/debugging capture,
+  existing reliability breakers/retries, prometheus-client, pytest,
+  pytest-asyncio, Ruff, mypy, uv (011-model-provider-gateway)
+- PostgreSQL for provider connections, model definitions, tenant visibility,
+  connection test results, health snapshots, catalog synchronization records,
+  gateway invocation metadata, safe audit summaries, and migration state
+  (011-model-provider-gateway)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -84,6 +94,12 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 011-model-provider-gateway: Planned model provider connection management
+  and shared ModelGateway with OpenAI/local OpenAI-compatible adapters, safe
+  probes, health snapshots, catalog synchronization, secret-reference
+  resolution, gateway runtime contracts, timeout/retry/breaker behavior,
+  usage metadata extraction, tenant visibility, admin web views, tests, docs,
+  PR notes, and reviewer QA.
 - 010-admin-console-shell: Implemented shared server-rendered admin console
   shell with FastAPI/Jinja2 templates, Auth0/local-principal authorization,
   validated tenant-scope query handling, authorization-aware navigation,
@@ -118,5 +134,5 @@ async patterns for PostgreSQL access.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/010-admin-console-shell/plan.md`
+`specs/011-model-provider-gateway/plan.md`
 <!-- SPECKIT END -->

@@ -21,6 +21,7 @@ class SideEffectStatus(StrEnum):
 
 class SideEffectKind(StrEnum):
     TOOL_CALL = "tool_call"
+    MODEL_GATEWAY_CALL = "model_gateway_call"
     HTTP_REQUEST = "http_request"
     FILE_WRITE = "file_write"
     EMAIL = "email"
@@ -125,6 +126,34 @@ def build_authorized_tool_intent(
         tool_policy_ref=tool_policy_ref,
         delegated_credential_ref=delegated_credential_ref,
         request_ref=request_ref,
+    )
+
+
+def build_model_gateway_intent(
+    *,
+    tenant_id: UUID | None,
+    workflow_run_id: UUID,
+    run_step_id: UUID,
+    bundle_digest: str,
+    model_provider_entry_id: UUID,
+    attempt: int = 1,
+) -> SideEffectIntent:
+    return SideEffectIntent(
+        tenant_id=tenant_id,
+        workflow_run_id=workflow_run_id,
+        run_step_id=run_step_id,
+        intent_kind=SideEffectKind.MODEL_GATEWAY_CALL,
+        idempotency_key=make_idempotency_key(
+            tenant_id=tenant_id,
+            workflow_run_id=workflow_run_id,
+            run_step_id=run_step_id,
+            bundle_digest=bundle_digest,
+            operation_kind="model_gateway_call",
+            attempt=attempt,
+        ),
+        tool_policy_ref=f"model-provider:{model_provider_entry_id}",
+        repeatability=SideEffectRepeatability.UNKNOWN,
+        request_ref={"model_provider_entry_id": str(model_provider_entry_id)},
     )
 
 

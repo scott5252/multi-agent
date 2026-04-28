@@ -200,6 +200,76 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_model_skill_run_provenance_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/admin/model-providers": ProtectedSurface(
+        surface_key="GET:/admin/model-providers",
+        requested_action="render_model_provider_connections_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/model-providers/new": ProtectedSurface(
+        surface_key="GET:/admin/model-providers/new",
+        requested_action="render_model_provider_create_ui",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
+    "GET:/admin/model-providers/{connection_id}": ProtectedSurface(
+        surface_key="GET:/admin/model-providers/{connection_id}",
+        requested_action="render_model_provider_detail_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/model-providers/{connection_id}/edit": ProtectedSurface(
+        surface_key="GET:/admin/model-providers/{connection_id}/edit",
+        requested_action="render_model_provider_edit_ui",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
+    "GET:/admin/model-providers/catalog": ProtectedSurface(
+        surface_key="GET:/admin/model-providers/catalog",
+        requested_action="render_model_provider_catalog_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/model-providers": ProtectedSurface(
+        surface_key="POST:/admin/model-providers",
+        requested_action="create_model_provider_connection",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
+    "GET:/admin/model-providers/api/connections": ProtectedSurface(
+        surface_key="GET:/admin/model-providers/api/connections",
+        requested_action="list_model_provider_connections",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/model-providers/api/connections": ProtectedSurface(
+        surface_key="POST:/admin/model-providers/api/connections",
+        requested_action="create_model_provider_connection_api",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
+    "PUT:/admin/model-providers/api/connections/{connection_id}": ProtectedSurface(
+        surface_key="PUT:/admin/model-providers/api/connections/{connection_id}",
+        requested_action="update_model_provider_connection_api",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
+    "POST:/admin/model-providers/{connection_id}": ProtectedSurface(
+        surface_key="POST:/admin/model-providers/{connection_id}",
+        requested_action="update_model_provider_connection",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
+    "POST:/admin/model-providers/{connection_id}/activate": ProtectedSurface(
+        surface_key="POST:/admin/model-providers/{connection_id}/activate",
+        requested_action="activate_model_provider_connection",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
+    "POST:/admin/model-providers/{connection_id}/deactivate": ProtectedSurface(
+        surface_key="POST:/admin/model-providers/{connection_id}/deactivate",
+        requested_action="deactivate_model_provider_connection",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
+    "POST:/admin/model-providers/{connection_id}/test": ProtectedSurface(
+        surface_key="POST:/admin/model-providers/{connection_id}/test",
+        requested_action="test_model_provider_connection",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
+    "POST:/admin/model-providers/{connection_id}/sync-catalog": ProtectedSurface(
+        surface_key="POST:/admin/model-providers/{connection_id}/sync-catalog",
+        requested_action="sync_model_provider_catalog",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+    ),
     "GET:/admin/runs": ProtectedSurface(
         surface_key="GET:/admin/runs",
         requested_action="render_run_inspection_ui",

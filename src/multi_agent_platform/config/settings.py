@@ -118,6 +118,24 @@ class Settings(BaseSettings):
     reliability_admin_connection_reserve_fraction: float = Field(
         default=0.2, ge=0.0, le=1.0
     )
+    model_provider_local_allowed_schemes: tuple[str, ...] = ("http", "https")
+    model_provider_local_allowed_hosts: tuple[str, ...] = (
+        "127.0.0.1",
+        "localhost",
+    )
+    model_provider_local_allowed_ports: tuple[int, ...] = (8000, 8080, 11434)
+    model_provider_local_allowed_cidrs: tuple[str, ...] = ("127.0.0.0/8",)
+    model_provider_probe_timeout_seconds: float = Field(default=30.0, ge=0.1, le=300)
+    model_provider_gateway_min_timeout_seconds: float = Field(
+        default=0.1,
+        ge=0.1,
+        le=60,
+    )
+    model_provider_gateway_max_timeout_seconds: float = Field(
+        default=300.0,
+        ge=1,
+        le=600,
+    )
 
     telegram_webhook_secret: str | None = None
     telegram_provider_token_ref: str | None = None

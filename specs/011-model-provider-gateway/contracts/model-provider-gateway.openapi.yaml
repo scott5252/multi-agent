@@ -1,0 +1,314 @@
+openapi: 3.1.0
+info:
+  title: Model Provider Gateway Admin API
+  version: 0.1.0
+paths:
+  /admin/model-providers/api/connections:
+    get:
+      summary: List visible provider connections
+      parameters:
+        - name: tenant_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: provider_type
+          in: query
+          schema: { $ref: '#/components/schemas/ProviderType' }
+        - name: health_state
+          in: query
+          schema: { $ref: '#/components/schemas/HealthState' }
+      responses:
+        '200':
+          description: Visible provider connections
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProviderConnectionSummary' }
+    post:
+      summary: Create provider connection
+      security: [{ platformAdmin: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProviderConnectionCreate' }
+      responses:
+        '201':
+          description: Created connection
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProviderConnectionDetail' }
+        '403': { $ref: '#/components/responses/SafeForbidden' }
+        '422': { $ref: '#/components/responses/SafeValidationError' }
+  /admin/model-providers/api/connections/{connection_id}:
+    get:
+      summary: Get visible provider connection
+      parameters:
+        - $ref: '#/components/parameters/ConnectionId'
+      responses:
+        '200':
+          description: Provider connection detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProviderConnectionDetail' }
+        '404': { $ref: '#/components/responses/SafeNotFound' }
+    put:
+      summary: Update provider connection
+      security: [{ platformAdmin: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConnectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProviderConnectionUpdate' }
+      responses:
+        '200':
+          description: Updated connection
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProviderConnectionDetail' }
+        '403': { $ref: '#/components/responses/SafeForbidden' }
+        '422': { $ref: '#/components/responses/SafeValidationError' }
+  /admin/model-providers/api/connections/{connection_id}/activate:
+    post:
+      summary: Activate provider connection
+      security: [{ platformAdmin: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConnectionId'
+      responses:
+        '200':
+          description: Activation result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProviderConnectionDetail' }
+  /admin/model-providers/api/connections/{connection_id}/deactivate:
+    post:
+      summary: Deactivate provider connection
+      security: [{ platformAdmin: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConnectionId'
+      responses:
+        '200':
+          description: Deactivation result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProviderConnectionDetail' }
+  /admin/model-providers/api/connections/{connection_id}/test:
+    post:
+      summary: Run safe provider connection probe
+      security: [{ platformAdmin: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConnectionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConnectionTestRequest' }
+      responses:
+        '202':
+          description: Recorded test result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConnectionTestResult' }
+        '403': { $ref: '#/components/responses/SafeForbidden' }
+  /admin/model-providers/api/connections/{connection_id}/sync-catalog:
+    post:
+      summary: Synchronize healthy connection models into catalog
+      security: [{ platformAdmin: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConnectionId'
+      responses:
+        '200':
+          description: Catalog synchronization result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CatalogSyncResponse' }
+  /admin/model-providers/api/catalog:
+    get:
+      summary: List tenant-visible model provider catalog entries
+      parameters:
+        - name: tenant_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: model_id
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Visible catalog entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/CatalogEntry' }
+components:
+  securitySchemes:
+    platformAdmin:
+      type: http
+      scheme: bearer
+      description: Auth0/local-principal token with platform administrator authority.
+  parameters:
+    ConnectionId:
+      name: connection_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    SafeForbidden:
+      description: Safe authorization denial
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SafeError' }
+    SafeNotFound:
+      description: Safe not found or not visible
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SafeError' }
+    SafeValidationError:
+      description: Safe validation error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SafeError' }
+  schemas:
+    ProviderType:
+      type: string
+      enum: [openai, local_openai_compatible]
+    HealthState:
+      type: string
+      enum: [disabled, untested, healthy, degraded, failing, unavailable]
+    VisibilityMode:
+      type: string
+      enum: [platform_default, tenant_allowlist]
+    TimeoutPolicy:
+      type: object
+      required: [connect_timeout_ms, read_timeout_ms, total_timeout_ms]
+      properties:
+        connect_timeout_ms: { type: integer, minimum: 100, maximum: 30000 }
+        read_timeout_ms: { type: integer, minimum: 100, maximum: 120000 }
+        total_timeout_ms: { type: integer, minimum: 100, maximum: 180000 }
+    ProviderModelDefinition:
+      type: object
+      required: [model_id, display_name, capability_metadata, cost_metadata]
+      properties:
+        model_id: { type: string, minLength: 1, maxLength: 128 }
+        display_name: { type: string, minLength: 1, maxLength: 255 }
+        capability_metadata: { type: object, additionalProperties: true }
+        cost_metadata: { type: object, additionalProperties: true }
+        default_parameters: { type: object, additionalProperties: true }
+        available: { type: boolean, default: true }
+    SecretReference:
+      type: object
+      required: [secret_reference_id, purpose]
+      properties:
+        secret_reference_id: { type: string, format: uuid }
+        purpose:
+          type: string
+          enum: [api_key, bearer_token, extra_header]
+    ProviderConnectionCreate:
+      type: object
+      required:
+        - provider_type
+        - display_name
+        - timeout_policy
+        - visibility_mode
+        - models
+        - secret_references
+      properties:
+        provider_type: { $ref: '#/components/schemas/ProviderType' }
+        display_name: { type: string, minLength: 1, maxLength: 255 }
+        base_url: { type: string, format: uri }
+        timeout_policy: { $ref: '#/components/schemas/TimeoutPolicy' }
+        visibility_mode: { $ref: '#/components/schemas/VisibilityMode' }
+        tenant_allowlist:
+          type: array
+          items: { type: string, format: uuid }
+        models:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/ProviderModelDefinition' }
+        secret_references:
+          type: array
+          items: { $ref: '#/components/schemas/SecretReference' }
+        active: { type: boolean, default: false }
+    ProviderConnectionUpdate:
+      allOf:
+        - $ref: '#/components/schemas/ProviderConnectionCreate'
+    ProviderConnectionSummary:
+      type: object
+      required: [provider_connection_id, provider_type, display_name, active, health_state]
+      properties:
+        provider_connection_id: { type: string, format: uuid }
+        provider_type: { $ref: '#/components/schemas/ProviderType' }
+        display_name: { type: string }
+        active: { type: boolean }
+        health_state: { $ref: '#/components/schemas/HealthState' }
+        model_count: { type: integer }
+        last_test_outcome: { type: string, nullable: true }
+        visibility_summary: { type: string }
+        catalog_sync_status: { type: string }
+    ProviderConnectionDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProviderConnectionSummary'
+        - type: object
+          properties:
+            base_url_safe: { type: string, nullable: true }
+            timeout_policy: { $ref: '#/components/schemas/TimeoutPolicy' }
+            visibility_mode: { $ref: '#/components/schemas/VisibilityMode' }
+            tenant_allowlist:
+              type: array
+              items: { type: string, format: uuid }
+            models:
+              type: array
+              items: { $ref: '#/components/schemas/ProviderModelDefinition' }
+            secret_reference_summaries:
+              type: array
+              items: { $ref: '#/components/schemas/SecretReference' }
+    ConnectionTestRequest:
+      type: object
+      properties:
+        model_id: { type: string }
+    ConnectionTestResult:
+      type: object
+      required: [connection_test_result_id, outcome, normalized_reason, latency_ms]
+      properties:
+        connection_test_result_id: { type: string, format: uuid }
+        outcome: { type: string, enum: [success, failure] }
+        normalized_reason: { type: string }
+        latency_ms: { type: integer }
+        tested_model_id: { type: string, nullable: true }
+        safe_diagnostic_summary: { type: string }
+        created_at: { type: string, format: date-time }
+    CatalogEntry:
+      type: object
+      properties:
+        model_provider_entry_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid, nullable: true }
+        provider_connection_id: { type: string, format: uuid }
+        provider_type: { $ref: '#/components/schemas/ProviderType' }
+        model_id: { type: string }
+        display_name: { type: string }
+        health_state: { $ref: '#/components/schemas/HealthState' }
+        availability_status: { type: string }
+        selectable: { type: boolean }
+    CatalogSyncResponse:
+      type: object
+      properties:
+        created: { type: integer }
+        updated: { type: integer }
+        marked_unavailable: { type: integer }
+        blocked: { type: integer }
+        safe_summary: { type: string }
+    SafeError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        correlation_id: { type: string }

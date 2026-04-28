@@ -28,6 +28,7 @@ class ModelResolution:
     source_scope: ScopeType
     routing_parameters: dict[str, object]
     considered_version_ids: tuple[UUID, ...]
+    gateway_governed: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +97,7 @@ def resolve_model(
         source_scope=winner.scope.scope_type,
         routing_parameters=dict(winner.routing_parameters),
         considered_version_ids=tuple(candidate.version_id for candidate in ordered),
+        gateway_governed=True,
     )
 
 
@@ -172,4 +174,5 @@ def model_selection_audit_metadata(
         "considered_model_versions": len(resolution.model.considered_version_ids),
         "considered_prompt_versions": len(resolution.prompt.considered_version_ids),
         "selection_outcome": "selected",
+        "gateway_governed": resolution.model.gateway_governed,
     }

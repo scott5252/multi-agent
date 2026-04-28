@@ -1,0 +1,66 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+      <header class="workflow-header">
+        <h1>{{ page.title }}</h1>
+        <nav class="provider-actions">
+          <a href="{{ page.catalog_href }}">Catalog</a>
+          {% if page.can_mutate %}<a href="{{ page.new_href }}">New provider</a>{% endif %}
+        </nav>
+      </header>
+      <form class="filter-strip" method="get">
+        <label>Provider <select name="provider_type">
+          <option value="">Any</option>
+          <option value="openai">OpenAI</option>
+          <option value="local_openai_compatible">Local compatible</option>
+        </select></label>
+        <label>Health <select name="health_state">
+          <option value="">Any</option>
+          <option value="healthy">Healthy</option>
+          <option value="untested">Untested</option>
+          <option value="failing">Failing</option>
+          <option value="disabled">Disabled</option>
+        </select></label>
+        <label>Model <input name="model_id" /></label>
+        <button type="submit">Filter</button>
+      </form>
+      <section class="table-section">
+        <table>
+          <thead>
+            <tr>
+              <th>Display name</th>
+              <th>Provider</th>
+              <th>Active</th>
+              <th>Health</th>
+              <th>Last test</th>
+              <th>Models</th>
+              <th>Visibility</th>
+              <th>Catalog</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in page.connections %}
+            <tr>
+              <td><a href="/admin/model-providers/{{ item.provider_connection_id }}">{{ item.display_name }}</a></td>
+              <td>{{ item.provider_type.value }}</td>
+              <td>{{ "Active" if item.active else "Inactive" }}</td>
+              <td><span class="status-pill status-pill--{{ item.health_state.value }}">{{ item.health_state.value }}</span></td>
+              <td>{{ item.last_test_outcome.value if item.last_test_outcome else "Not tested" }}</td>
+              <td>{{ item.model_count }}</td>
+              <td>
+                {{ item.visibility.mode.value }}
+                {% if item.visibility.tenant_ids %}({{ item.visibility.tenant_ids|length }} tenants){% endif %}
+              </td>
+              <td>{{ item.catalog_sync_status }}</td>
+              <td>{{ item.updated_at or "" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+{% endblock %}
+
+{% block page_scripts %}
+  <script src="/admin/static/model_providers.js"></script>
+{% endblock %}
