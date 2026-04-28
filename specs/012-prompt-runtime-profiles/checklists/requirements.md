@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Prompt Library And Agent Runtime Profiles
+# Specification Quality Checklist: Prompt Library And Agent Runtime Profiles - V2 Runtime Gateway Completion
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning  
 **Created**: 2026-04-28  
@@ -31,4 +31,5 @@
 
 ## Notes
 
-- Validation passed after initial review. The spec intentionally includes browser-accessible admin UI requirements because the feature request explicitly requires users to accomplish the feature through a browser.
+- Validation passed after V2 revision review. The spec preserves all existing Spec 012 prompt library, runtime profile, browser UI, workflow validation, model-skill prompt reference, tenant grant, immutable versioning, retirement, audit, docs, and coverage requirements.
+- Product-specific terms such as ModelGateway and Spec 011 provider gateway metadata are retained because the V2 request explicitly requires those integration contracts as acceptance scope; the requirements remain framed around observable behavior, safety, provenance, and reviewer outcomes.
