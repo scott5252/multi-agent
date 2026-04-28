@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import cast
 from uuid import UUID
 
@@ -10,6 +10,7 @@ from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
+from multi_agent_platform.db.base import utcnow
 from multi_agent_platform.db.models.prompts import (
     PromptDraft,
     PromptDraftRevision,
@@ -32,6 +33,13 @@ class PromptDraftRecord:
 
 def prompt_digest(template_content: str) -> str:
     return hashlib.sha256(template_content.encode("utf-8")).hexdigest()
+
+
+def _history_sort_key(event: dict[str, object]) -> datetime:
+    created_at = cast(datetime, event["created_at"])
+    if created_at.tzinfo is None:
+        return created_at.replace(tzinfo=UTC)
+    return created_at
 
 
 class PromptRepository:
@@ -308,6 +316,7 @@ class PromptRepository:
     ) -> PromptVersion:
         version.status = "retired"
         version.retired_by_principal_id = principal_id
+        version.retired_at = utcnow()
         version.retirement_reason = reason
         await self.session.flush()
         return version
@@ -343,8 +352,9 @@ class PromptRepository:
             lineage_ids.add(prompt_lineage_id)
         if prompt_version_id is not None:
             version = await self.get_prompt_version(prompt_version_id)
-            if version is not None:
-                lineage_ids.add(version.prompt_lineage_id)
+            if version is None:
+                return []
+            lineage_ids.add(version.prompt_lineage_id)
         events: list[dict[str, object]] = []
 
         draft_stmt = select(PromptDraft)
@@ -483,6 +493,6 @@ class PromptRepository:
 
         return sorted(
             events,
-            key=lambda event: cast(datetime, event["created_at"]),
+            key=_history_sort_key,
             reverse=True,
         )[:limit]

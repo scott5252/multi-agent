@@ -9,10 +9,22 @@ document.addEventListener("input", (event) => {
   }
 });
 
+document.addEventListener("submit", (event) => {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement)) {
+    return;
+  }
+  delete form.dataset.dirty;
+  form.dataset.submitting = "true";
+});
+
 window.addEventListener("beforeunload", (event) => {
-  const dirty = document.querySelector("form[data-dirty='true']");
+  const dirty = document.querySelector(
+    "form[data-dirty='true']:not([data-submitting='true'])",
+  );
   if (!dirty) {
     return;
   }
   event.preventDefault();
+  event.returnValue = "";
 });

@@ -227,6 +227,25 @@ button {
   border-bottom: 1px solid var(--line);
   background: var(--panel);
   padding: 0.85rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-topbar-main {
+  min-width: 260px;
+  flex: 1 1 auto;
+}
+
+.admin-logout-form {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.admin-logout-button {
+  white-space: nowrap;
 }
 
 .admin-scope {

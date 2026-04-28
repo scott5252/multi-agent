@@ -95,6 +95,9 @@ def test_admin_landing_renders_scope_navigation_and_tenant_links(
     assert_shell_landmarks(response.text)
     assert_scope_label(response.text, "Tenant")
     assert_nav_item(response.text, "Workflow Registry")
+    assert 'action="/auth/local-logout"' in response.text
+    assert 'name="redirect_to" value="/auth/local-login"' in response.text
+    assert ">Log out</button>" in response.text
     assert "tenant_id=" in response.text
 
 

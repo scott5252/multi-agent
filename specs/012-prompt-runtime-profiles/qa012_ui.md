@@ -107,9 +107,13 @@ agent key `planner`.
 
    Expected: the server listens on `http://127.0.0.1:8000`.
 
-## Test Data
+## Test Data Placement
 
-Keep these values nearby while testing.
+The synthetic tenant ids, principals, prompt JSON, and profile JSON are repeated
+inside each section where you use them. This is intentional: reviewers should
+not need to scroll back to a shared test-data block while filling forms.
+
+Reference values used throughout the guide:
 
 ```text
 Acme tenant id: 11111111-1111-1111-1111-111111111111
@@ -117,100 +121,6 @@ Globex tenant id: 22222222-2222-2222-2222-222222222222
 Acme tenant admin: tenant-admin-acme
 Globex tenant admin: tenant-admin-globex
 Platform admin: platform-admin
-```
-
-Prompt variable JSON:
-
-```json
-[
-  {
-    "name": "name",
-    "purpose": "Recipient used in a synthetic QA preview",
-    "required": true,
-    "allowed_value_category": "synthetic",
-    "safety_classification": "safe_fixture",
-    "sample_guidance": "Use a made-up name only.",
-    "display_order": 0
-  }
-]
-```
-
-Prompt fixture JSON:
-
-```json
-{
-  "name": "Ada"
-}
-```
-
-Profile prompt reference JSON. Replace `<PROMPT_VERSION_ID>` with the prompt
-version id shown on the prompt version detail page.
-
-```json
-[
-  {
-    "purpose": "planner",
-    "required_purpose": "planner",
-    "prompt_version_id": "<PROMPT_VERSION_ID>",
-    "required": true
-  }
-]
-```
-
-Profile model routing JSON:
-
-```json
-{
-  "provider": "openai",
-  "model": "gpt-4.1-mini"
-}
-```
-
-Profile memory policy JSON:
-
-```json
-{
-  "scope_mode": "read_only",
-  "retention_mode": "run"
-}
-```
-
-Profile skills JSON:
-
-```json
-[
-  {
-    "skill": "planning"
-  }
-]
-```
-
-Profile tools JSON:
-
-```json
-[
-  {
-    "category": "read"
-  }
-]
-```
-
-Profile output contract JSON:
-
-```json
-{
-  "type": "object"
-}
-```
-
-Profile test requirements JSON:
-
-```json
-[
-  {
-    "suite": "planner-smoke"
-  }
-]
 ```
 
 ## Browser Sign-In
@@ -318,9 +228,29 @@ Prompt Content: Plan safe next steps for {{name}}.
 Publish Reason: QA012 browser publish evidence
 ```
 
-Paste the prompt variable JSON from **Test Data** into **Variables**.
+Paste this JSON into **Variables**:
 
-Paste the prompt fixture JSON from **Test Data** into **Fixture Values**.
+```json
+[
+  {
+    "name": "name",
+    "purpose": "Recipient used in a synthetic QA preview",
+    "required": true,
+    "allowed_value_category": "synthetic",
+    "safety_classification": "safe_fixture",
+    "sample_guidance": "Use a made-up name only.",
+    "display_order": 0
+  }
+]
+```
+
+Paste this JSON into **Fixture Values**:
+
+```json
+{
+  "name": "Ada"
+}
+```
 
 Expected:
 
@@ -498,9 +428,29 @@ Prompt Content: Build a platform plan for {{name}}.
 Publish Reason: QA012 platform prompt publish evidence
 ```
 
-Paste the prompt variable JSON from **Test Data** into **Variables**.
+Paste this JSON into **Variables**:
 
-Paste the prompt fixture JSON from **Test Data** into **Fixture Values**.
+```json
+[
+  {
+    "name": "name",
+    "purpose": "Recipient used in a synthetic QA preview",
+    "required": true,
+    "allowed_value_category": "synthetic",
+    "safety_classification": "safe_fixture",
+    "sample_guidance": "Use a made-up name only.",
+    "display_order": 0
+  }
+]
+```
+
+Paste this JSON into **Fixture Values**:
+
+```json
+{
+  "name": "Ada"
+}
+```
 
 Click **Save Draft**.
 
@@ -568,8 +518,8 @@ platform admin grants that exact immutable version to the tenant.
 
 ## Build 3: Platform Agent Profile Activation And Tenant Grant
 
-Use `platform-admin` for this section. Keep the platform prompt version id from
-Build 2 nearby.
+Use `platform-admin` for this section. You will need the platform prompt
+version id copied from Build 2 when filling **Prompt References** below.
 
 ### Step 1. Open Agent Profiles
 
@@ -610,20 +560,75 @@ Purpose: Plan work with a granted platform prompt.
 Activation Reason: QA012 platform profile activation evidence
 ```
 
-In **Prompt References**, paste the profile prompt reference JSON from
-**Test Data** and replace `<PROMPT_VERSION_ID>` with the
-`<PLATFORM_PROMPT_VERSION_ID>` from Build 2.
+In **Prompt References**, paste this JSON. Replace
+`<PLATFORM_PROMPT_VERSION_ID>` with the platform prompt version id copied from
+Build 2:
 
-Paste the remaining profile JSON snippets from **Test Data** into these
-sections:
+```json
+[
+  {
+    "purpose": "planner",
+    "required_purpose": "planner",
+    "prompt_version_id": "<PLATFORM_PROMPT_VERSION_ID>",
+    "required": true
+  }
+]
+```
 
-```text
-Model Routing
-Memory Policy
-Skills
-Tools
-Output Contract
-Tests
+Paste this JSON into **Model Routing**:
+
+```json
+{
+  "provider": "openai",
+  "model": "gpt-4.1-mini"
+}
+```
+
+Paste this JSON into **Memory Policy**:
+
+```json
+{
+  "scope_mode": "read_only",
+  "retention_mode": "run"
+}
+```
+
+Paste this JSON into **Skills**:
+
+```json
+[
+  {
+    "skill": "planning"
+  }
+]
+```
+
+Paste this JSON into **Tools**:
+
+```json
+[
+  {
+    "category": "read"
+  }
+]
+```
+
+Paste this JSON into **Output Contract**:
+
+```json
+{
+  "type": "object"
+}
+```
+
+Paste this JSON into **Tests**:
+
+```json
+[
+  {
+    "suite": "planner-smoke"
+  }
+]
 ```
 
 Click **Save Draft**.
@@ -762,8 +767,8 @@ when no tenant-specific active profile exists for the same agent key.
 
 ## Build 5: Tenant Profile Override And Resolution Priority
 
-Use `tenant-admin-acme` for this section. Keep the tenant prompt version id from
-Build 1 nearby.
+Use `tenant-admin-acme` for this section. You will need the tenant prompt
+version id copied from Build 1 when filling **Prompt References** below.
 
 ### Step 1. Create A Tenant Profile Draft
 
@@ -785,12 +790,76 @@ Purpose: Tenant override for planner.
 Activation Reason: QA012 tenant profile override evidence
 ```
 
-In **Prompt References**, paste the profile prompt reference JSON from
-**Test Data** and replace `<PROMPT_VERSION_ID>` with the tenant prompt version
-id from Build 1.
+In **Prompt References**, paste this JSON. Replace
+`<TENANT_PROMPT_VERSION_ID>` with the tenant prompt version id copied from
+Build 1:
 
-Paste the remaining profile JSON snippets from **Test Data** into the policy
-sections.
+```json
+[
+  {
+    "purpose": "planner",
+    "required_purpose": "planner",
+    "prompt_version_id": "<TENANT_PROMPT_VERSION_ID>",
+    "required": true
+  }
+]
+```
+
+Paste this JSON into **Model Routing**:
+
+```json
+{
+  "provider": "openai",
+  "model": "gpt-4.1-mini"
+}
+```
+
+Paste this JSON into **Memory Policy**:
+
+```json
+{
+  "scope_mode": "read_only",
+  "retention_mode": "run"
+}
+```
+
+Paste this JSON into **Skills**:
+
+```json
+[
+  {
+    "skill": "planning"
+  }
+]
+```
+
+Paste this JSON into **Tools**:
+
+```json
+[
+  {
+    "category": "read"
+  }
+]
+```
+
+Paste this JSON into **Output Contract**:
+
+```json
+{
+  "type": "object"
+}
+```
+
+Paste this JSON into **Tests**:
+
+```json
+[
+  {
+    "suite": "planner-smoke"
+  }
+]
+```
 
 Click **Save Draft**.
 
@@ -961,7 +1030,13 @@ Usage Notes: Negative validation check only.
 Prompt Content: Negative check for {{name}}.
 ```
 
-Paste the valid fixture JSON from **Test Data** into **Fixture Values**.
+Paste this valid JSON into **Fixture Values**:
+
+```json
+{
+  "name": "Ada"
+}
+```
 
 Change **Variables** to:
 
@@ -993,8 +1068,21 @@ unsafe or ambiguous.
 
 ### Missing Fixture Value
 
-On the same throwaway prompt draft, restore the valid prompt variable JSON from
-**Test Data**.
+On the same throwaway prompt draft, restore **Variables** to this valid JSON:
+
+```json
+[
+  {
+    "name": "name",
+    "purpose": "Recipient used in a synthetic QA preview",
+    "required": true,
+    "allowed_value_category": "synthetic",
+    "safety_classification": "safe_fixture",
+    "sample_guidance": "Use a made-up name only.",
+    "display_order": 0
+  }
+]
+```
 
 Change **Fixture Values** to:
 
@@ -1014,12 +1102,85 @@ values before publication.
 
 ### Missing Profile Policy Section
 
-Open any profile draft edit page.
+Open any profile draft edit page. If you want a disposable draft, create a new
+tenant profile with these top fields:
+
+```text
+Scope: Tenant
+Tenant ID: 11111111-1111-1111-1111-111111111111
+Agent Key: planner-negative-policy
+Agent Kind: Agent
+Display Name: QA012 Negative Policy Profile
+Purpose: Negative policy-section validation check.
+Activation Reason: QA012 negative profile evidence
+```
+
+In **Prompt References**, paste this JSON. Replace
+`<PLATFORM_PROMPT_VERSION_ID>` with the active platform prompt version id from
+Build 2:
+
+```json
+[
+  {
+    "purpose": "planner",
+    "required_purpose": "planner",
+    "prompt_version_id": "<PLATFORM_PROMPT_VERSION_ID>",
+    "required": true
+  }
+]
+```
 
 Change **Model Routing** to:
 
 ```json
 {}
+```
+
+Paste this JSON into **Memory Policy**:
+
+```json
+{
+  "scope_mode": "read_only",
+  "retention_mode": "run"
+}
+```
+
+Paste this JSON into **Skills**:
+
+```json
+[
+  {
+    "skill": "planning"
+  }
+]
+```
+
+Paste this JSON into **Tools**:
+
+```json
+[
+  {
+    "category": "read"
+  }
+]
+```
+
+Paste this JSON into **Output Contract**:
+
+```json
+{
+  "type": "object"
+}
+```
+
+Paste this JSON into **Tests**:
+
+```json
+[
+  {
+    "suite": "planner-smoke"
+  }
+]
 ```
 
 Click **Validate**.
@@ -1036,7 +1197,88 @@ just a prompt reference.
 ### Retired Prompt In A New Profile
 
 Create a new tenant profile draft and reference the retired tenant prompt
-version from Build 6.
+version from Build 6. Use these top fields:
+
+```text
+Scope: Tenant
+Tenant ID: 11111111-1111-1111-1111-111111111111
+Agent Key: retired-prompt-check
+Agent Kind: Agent
+Display Name: QA012 Retired Prompt Profile
+Purpose: Confirm retired prompts cannot back new profiles.
+Activation Reason: QA012 retired prompt negative evidence
+```
+
+In **Prompt References**, paste this JSON. Replace
+`<TENANT_PROMPT_VERSION_ID>` with the retired tenant prompt version id from
+Build 6:
+
+```json
+[
+  {
+    "purpose": "planner",
+    "required_purpose": "planner",
+    "prompt_version_id": "<TENANT_PROMPT_VERSION_ID>",
+    "required": true
+  }
+]
+```
+
+Paste this JSON into **Model Routing**:
+
+```json
+{
+  "provider": "openai",
+  "model": "gpt-4.1-mini"
+}
+```
+
+Paste this JSON into **Memory Policy**:
+
+```json
+{
+  "scope_mode": "read_only",
+  "retention_mode": "run"
+}
+```
+
+Paste this JSON into **Skills**:
+
+```json
+[
+  {
+    "skill": "planning"
+  }
+]
+```
+
+Paste this JSON into **Tools**:
+
+```json
+[
+  {
+    "category": "read"
+  }
+]
+```
+
+Paste this JSON into **Output Contract**:
+
+```json
+{
+  "type": "object"
+}
+```
+
+Paste this JSON into **Tests**:
+
+```json
+[
+  {
+    "suite": "planner-smoke"
+  }
+]
+```
 
 Click **Validate**.
 

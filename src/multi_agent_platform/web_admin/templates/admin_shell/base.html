@@ -19,7 +19,15 @@
         </aside>
         <div class="admin-content">
           <header class="admin-topbar">
-            {% include "admin_shell/scope_selector.html" %}
+            <div class="admin-topbar-main">
+              {% include "admin_shell/scope_selector.html" %}
+            </div>
+            {% if principal is defined and principal and principal.auth_mode.value == "local_principal" %}
+              <form method="get" action="/auth/local-logout" class="admin-logout-form">
+                <input type="hidden" name="redirect_to" value="/auth/local-login">
+                <button type="submit" class="admin-logout-button">Log out</button>
+              </form>
+            {% endif %}
           </header>
           {% include "admin_shell/breadcrumbs.html" %}
           {% include "admin_shell/flash_messages.html" %}

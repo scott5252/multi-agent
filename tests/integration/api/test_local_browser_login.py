@@ -129,6 +129,11 @@ def test_local_browser_login_sets_cookie_and_unlocks_ui(tmp_path, monkeypatch) -
             },
         )
         ui = client.get("/admin/workflows/ui")
+        logout = client.get(
+            "/auth/local-logout?redirect_to=/auth/local-login",
+            follow_redirects=False,
+        )
+        login_after_logout = client.get(logout.headers["location"])
 
     assert login_page.status_code == 200
     assert "Choose a local principal" in login_page.text
@@ -139,3 +144,9 @@ def test_local_browser_login_sets_cookie_and_unlocks_ui(tmp_path, monkeypatch) -
     assert created.status_code == 201
     assert ui.status_code == 200
     assert "Workflow Registry" in ui.text
+    assert 'action="/auth/local-logout"' in ui.text
+    assert logout.status_code == 303
+    assert logout.headers["location"] == "/auth/local-login"
+    assert "map_local_principal" in logout.headers["set-cookie"]
+    assert login_after_logout.status_code == 200
+    assert "Choose a local principal" in login_after_logout.text

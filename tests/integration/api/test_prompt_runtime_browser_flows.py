@@ -145,6 +145,14 @@ def _publish_prompt_from_form(
         follow_redirects=False,
     )
     assert revalidated.status_code == 303, revalidated.text
+    revalidated_edit_page = client.get(revalidated.headers["location"], headers=headers)
+    assert revalidated_edit_page.status_code == 200
+    publish_button = re.search(
+        r'<button[^>]+name="_action"[^>]+value="publish"[^>]*>',
+        revalidated_edit_page.text,
+    )
+    assert publish_button is not None
+    assert "disabled" not in publish_button.group(0)
 
     published = client.post(
         "/admin/prompt-runtime/prompts/form",
