@@ -24,6 +24,7 @@ def validate_authoring_document(
     *,
     available_subworkflow_version_ids: set[str] | None = None,
     previous_contract_schemas: Mapping[str, object] | None = None,
+    prompt_profile_findings: list[dict[str, str]] | None = None,
 ) -> list[dict[str, str]]:
     document = WorkflowDraftDocument.model_validate(document.model_dump(mode="json"))
     findings: list[dict[str, str]] = []
@@ -260,6 +261,8 @@ def validate_authoring_document(
             previous_contract_schemas=previous_contract_schemas or {},
         )
     )
+    if prompt_profile_findings:
+        findings.extend(prompt_profile_findings)
     return findings
 
 

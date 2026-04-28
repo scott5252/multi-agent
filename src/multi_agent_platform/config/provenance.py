@@ -20,6 +20,8 @@ class ResolvedConfigurationSnapshot:
     workflow_version_bundle_id: UUID
     model_routing_version_ids: tuple[UUID, ...] = ()
     prompt_reference_version_ids: tuple[UUID, ...] = ()
+    prompt_library_version_ids: tuple[UUID, ...] = ()
+    prompt_library_digests: tuple[str, ...] = ()
     skill_binding_version_ids: tuple[UUID, ...] = ()
     allowed_tool_policy_version_ids: tuple[UUID, ...] = ()
     outbound_domain_policy_version_ids: tuple[UUID, ...] = ()
@@ -41,6 +43,10 @@ class ResolvedConfigurationSnapshot:
                 "prompt_reference_version_ids": sorted(
                     map(str, self.prompt_reference_version_ids)
                 ),
+                "prompt_library_version_ids": sorted(
+                    map(str, self.prompt_library_version_ids)
+                ),
+                "prompt_library_digests": sorted(self.prompt_library_digests),
                 "skill_binding_version_ids": sorted(
                     map(str, self.skill_binding_version_ids)
                 ),

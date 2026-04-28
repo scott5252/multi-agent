@@ -173,6 +173,31 @@ def build_lifecycle_event(
     )
 
 
+def build_prompt_runtime_event(
+    *,
+    tenant_id: UUID | None,
+    workflow_run_id: UUID,
+    trace_id: str,
+    source_event_id: str,
+    action: str,
+    actor_principal_id: str | None = None,
+    details: Mapping[str, object] | None = None,
+    criticality: CaptureCriticality = CaptureCriticality.SECURITY_GOVERNANCE,
+) -> TimelineEventCreate:
+    return TimelineEventCreate(
+        tenant_id=tenant_id,
+        workflow_run_id=workflow_run_id,
+        event_category=TimelineEventCategory.RUNTIME_DECISION,
+        run_status_after=RunStatusAfter.UNKNOWN,
+        actor_principal_id=actor_principal_id,
+        trace_id=trace_id,
+        source_event_id=source_event_id,
+        criticality=criticality,
+        safe_summary=f"Prompt runtime {action}",
+        safe_details=build_safe_summary({"action": action, **dict(details or {})}),
+    )
+
+
 def build_failed_stage_event(
     *,
     tenant_id: UUID | None,

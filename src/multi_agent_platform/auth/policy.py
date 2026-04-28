@@ -261,8 +261,7 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         required_permissions=("tenant:admin",),
     ),
     (
-        "POST:/admin/prompt-runtime/api/profiles/"
-        "{agent_runtime_profile_id}/activate"
+        "POST:/admin/prompt-runtime/api/profiles/{agent_runtime_profile_id}/activate"
     ): ProtectedSurface(
         surface_key=(
             "POST:/admin/prompt-runtime/api/profiles/"

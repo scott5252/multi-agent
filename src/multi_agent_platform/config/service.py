@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 from uuid import UUID, uuid4
 
 from multi_agent_platform.api.schemas.model_skill_config import (
@@ -87,6 +87,16 @@ class ModelSkillServiceError(RuntimeError):
         self.category = category
 
 
+class PromptLibraryReferenceValidator(Protocol):
+    async def validate_prompt_reference_for_new_use(
+        self,
+        *,
+        tenant_id: UUID,
+        prompt_version_id: UUID,
+        prompt_digest: str,
+    ) -> None: ...
+
+
 @dataclass(frozen=True, slots=True)
 class PinRunConfigurationRequest:
     tenant_id: UUID
@@ -105,6 +115,8 @@ class PinRunConfigurationResponse:
     resolution_digest: str
     model_routing_version_ids: list[UUID]
     prompt_reference_version_ids: list[UUID]
+    prompt_library_version_ids: list[UUID]
+    prompt_library_digests: list[str]
     skill_binding_version_ids: list[UUID]
     allowed_tool_policy_version_ids: list[UUID]
     outbound_domain_policy_version_ids: list[UUID]
@@ -189,8 +201,14 @@ class ToolUseRequest:
 
 
 class ModelSkillConfigService:
-    def __init__(self, *, repository: ModelSkillConfigRepository) -> None:
+    def __init__(
+        self,
+        *,
+        repository: ModelSkillConfigRepository,
+        prompt_library_validator: PromptLibraryReferenceValidator | None = None,
+    ) -> None:
         self.repository = repository
+        self.prompt_library_validator = prompt_library_validator
 
     async def create_model_routing(
         self,
@@ -283,6 +301,21 @@ class ModelSkillConfigService:
         self._authorize_tenant(principal, payload.scope.tenant_id, write=True)
         reason = require_reason(payload.reason)
         validate_scope_for_kind(ConfigKind.PROMPT_REFERENCE, payload.scope)
+        if payload.scope.tenant_id is not None and self.prompt_library_validator:
+            try:
+                validate_prompt_reference = (
+                    self.prompt_library_validator.validate_prompt_reference_for_new_use
+                )
+                await validate_prompt_reference(
+                    tenant_id=payload.scope.tenant_id,
+                    prompt_version_id=payload.prompt_version_id,
+                    prompt_digest=payload.prompt_digest,
+                )
+            except Exception as exc:
+                raise ModelSkillServiceError(
+                    ModelSkillErrorCategory.MISSING_PROMPT_VERSION,
+                    "prompt library version is unavailable for new use",
+                ) from exc
         version = PromptReferenceVersion(
             tenant_id=payload.scope.tenant_id,
             scope_type=payload.scope.scope_type.value,
@@ -302,7 +335,10 @@ class ModelSkillConfigService:
             ),
             created_by_principal_id=self._principal_identity_id(principal),
             activation_reason=reason,
-            redacted_summary={"prompt_digest": payload.prompt_digest},
+            redacted_summary={
+                "prompt_library_version_id": str(payload.prompt_version_id),
+                "prompt_library_digest": payload.prompt_digest,
+            },
         )
         await self.repository.add_version(version)
         active = False
@@ -861,6 +897,10 @@ class ModelSkillConfigService:
             prompt_reference_version_ids=tuple(
                 row.prompt_reference_version_id for row in prompt_rows
             ),
+            prompt_library_version_ids=tuple(
+                row.prompt_version_id for row in prompt_rows
+            ),
+            prompt_library_digests=tuple(row.prompt_digest for row in prompt_rows),
             skill_binding_version_ids=tuple(
                 item.version_id for item in policy_data["skill_bindings"]
             ),
@@ -908,11 +948,17 @@ class ModelSkillConfigService:
                 ],
                 resolution_digest=snapshot.digest(),
                 trace_id=request.trace_id,
-                redacted_summary=(
-                    {"workflow_lineage_id": str(request.workflow_lineage_id)}
-                    if request.workflow_lineage_id
-                    else {}
-                ),
+                redacted_summary={
+                    **(
+                        {"workflow_lineage_id": str(request.workflow_lineage_id)}
+                        if request.workflow_lineage_id
+                        else {}
+                    ),
+                    "prompt_library_version_ids": [
+                        str(value) for value in snapshot.prompt_library_version_ids
+                    ],
+                    "prompt_library_digests": list(snapshot.prompt_library_digests),
+                },
             )
         )
         return _pin_response_from_row(row)
@@ -1506,6 +1552,20 @@ def _uuid_tuple(values: tuple[object, ...]) -> tuple[UUID, ...]:
 def _pin_response_from_row(
     row: ResolvedExecutionConfiguration,
 ) -> PinRunConfigurationResponse:
+    raw_prompt_library_version_ids = row.redacted_summary.get(
+        "prompt_library_version_ids", []
+    )
+    prompt_library_version_ids = (
+        raw_prompt_library_version_ids
+        if isinstance(raw_prompt_library_version_ids, list)
+        else []
+    )
+    raw_prompt_library_digests = row.redacted_summary.get("prompt_library_digests", [])
+    prompt_library_digests = (
+        raw_prompt_library_digests
+        if isinstance(raw_prompt_library_digests, list)
+        else []
+    )
     return PinRunConfigurationResponse(
         resolved_execution_configuration_id=row.resolved_execution_configuration_id,
         resolution_digest=row.resolution_digest,
@@ -1515,6 +1575,10 @@ def _pin_response_from_row(
         prompt_reference_version_ids=[
             UUID(value) for value in row.prompt_reference_version_ids
         ],
+        prompt_library_version_ids=[
+            UUID(str(value)) for value in prompt_library_version_ids
+        ],
+        prompt_library_digests=[str(value) for value in prompt_library_digests],
         skill_binding_version_ids=[
             UUID(value) for value in row.skill_binding_version_ids
         ],

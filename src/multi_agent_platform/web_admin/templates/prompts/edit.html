@@ -1,0 +1,21 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<section class="admin-section prompt-runtime-form">
+  <h2>{{ page.title }}</h2>
+  <form method="post" action="/admin/prompt-runtime/prompts/form">
+    <label class="field-row"><span>Display Name</span><input name="display_name" value=""></label>
+    <label class="field-row"><span>Slug</span><input name="slug" value=""></label>
+    <label class="field-row"><span>Purpose</span><input name="purpose" value=""></label>
+    <label class="field-row"><span>Prompt Content</span><textarea name="template_content" rows="12"></textarea></label>
+    <section class="validation-panel"><h3>Validation</h3><p>Blocking and advisory findings appear here after validation.</p></section>
+    <section class="preview-panel"><h3>Preview</h3><p>Safe fixture previews are rendered from sanitized fixture values only.</p></section>
+    <button type="submit">Save Draft</button>
+    <button type="button" {% if not page.can_publish %}disabled{% endif %}>Publish</button>
+  </form>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="/admin/static/prompt_runtime.js"></script>
+{% endblock %}

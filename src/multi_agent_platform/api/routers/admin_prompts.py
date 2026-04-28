@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import ContainerDep, get_session
@@ -23,6 +23,7 @@ from multi_agent_platform.api.schemas.prompts import (
     ValidationFinding,
     ValidationResult,
 )
+from multi_agent_platform.api.ui.prompts import build_prompt_ui_model
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.db.repositories.prompts import (
@@ -36,6 +37,36 @@ from multi_agent_platform.prompts.service import PromptPublishError, PromptServi
 router = APIRouter(tags=["prompt-library"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+MAX_PROMPT_TEMPLATE_BYTES = 64 * 1024
+MAX_FIXTURE_SET_COUNT = 20
+
+
+def _prompt_template_context(
+    *,
+    shell: object,
+    principal: PrincipalContext,
+    page: object,
+) -> dict[str, object]:
+    return {"shell": shell, "principal": principal, "page": page}
+
+
+def _prompt_ui_page(
+    *,
+    title: str,
+    shell: object,
+    prompt_lineage_id: UUID | None = None,
+    prompt_version_id: UUID | None = None,
+    status_value: str = "draft",
+) -> object:
+    active_scope = shell.active_scope  # type: ignore[attr-defined]
+    return build_prompt_ui_model(
+        title=title,
+        scope_type=active_scope.scope_type,
+        tenant_id=active_scope.tenant_id,
+        prompt_lineage_id=prompt_lineage_id,
+        prompt_version_id=prompt_version_id,
+        status=status_value,
+    )
 
 
 @router.get("/admin/prompt-runtime/prompts", response_class=HTMLResponse)
@@ -54,8 +85,182 @@ async def prompt_library_index(
     return container.workflow_ui_templates.TemplateResponse(
         request,
         "prompts/index.html",
-        {"shell": shell, "principal": principal},
+        _prompt_template_context(
+            shell=shell,
+            principal=principal,
+            page=_prompt_ui_page(title="Prompt Library", shell=shell),
+        ),
     )
+
+
+@router.get("/admin/prompt-runtime/prompts/new", response_class=HTMLResponse)
+async def prompt_library_new(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="New Prompt",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "prompts/edit.html",
+        _prompt_template_context(
+            shell=shell,
+            principal=principal,
+            page=_prompt_ui_page(title="New Prompt", shell=shell),
+        ),
+    )
+
+
+@router.get(
+    "/admin/prompt-runtime/prompts/{prompt_lineage_id}/edit",
+    response_class=HTMLResponse,
+)
+async def prompt_library_edit(
+    prompt_lineage_id: UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Edit Prompt",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "prompts/edit.html",
+        _prompt_template_context(
+            shell=shell,
+            principal=principal,
+            page=_prompt_ui_page(
+                title="Edit Prompt",
+                shell=shell,
+                prompt_lineage_id=prompt_lineage_id,
+            ),
+        ),
+    )
+
+
+@router.post("/admin/prompt-runtime/prompts/form", response_class=HTMLResponse)
+async def prompt_library_form(
+    display_name: Annotated[str, Form()],
+) -> RedirectResponse:
+    return RedirectResponse(
+        f"/admin/prompt-runtime/prompts?flash=prompt-saved&name={display_name}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@router.get(
+    "/admin/prompt-runtime/prompts/versions/{prompt_version_id}",
+    response_class=HTMLResponse,
+)
+async def prompt_library_detail(
+    prompt_version_id: UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Prompt Version",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "prompts/detail.html",
+        _prompt_template_context(
+            shell=shell,
+            principal=principal,
+            page=_prompt_ui_page(
+                title="Prompt Version",
+                shell=shell,
+                prompt_version_id=prompt_version_id,
+                status_value="active",
+            ),
+        ),
+    )
+
+
+@router.get(
+    "/admin/prompt-runtime/prompts/{prompt_lineage_id}/history",
+    response_class=HTMLResponse,
+)
+async def prompt_library_history(
+    prompt_lineage_id: UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Prompt History",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "prompts/history.html",
+        _prompt_template_context(
+            shell=shell,
+            principal=principal,
+            page=_prompt_ui_page(
+                title="Prompt History",
+                shell=shell,
+                prompt_lineage_id=prompt_lineage_id,
+            ),
+        ),
+    )
+
+
+@router.get(
+    "/admin/prompt-runtime/prompts/{prompt_lineage_id}/preview",
+    response_class=HTMLResponse,
+)
+async def prompt_library_preview_page(
+    prompt_lineage_id: UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Prompt Preview",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "prompts/preview.html",
+        _prompt_template_context(
+            shell=shell,
+            principal=principal,
+            page=_prompt_ui_page(
+                title="Prompt Preview",
+                shell=shell,
+                prompt_lineage_id=prompt_lineage_id,
+            ),
+        ),
+    )
+
+
+def _assert_prompt_payload_bounds(payload: PromptDraftSave) -> None:
+    if len(payload.template_content.encode("utf-8")) > MAX_PROMPT_TEMPLATE_BYTES:
+        raise HTTPException(status_code=413, detail={"code": "prompt_too_large"})
+    if len(payload.fixture_sets) > MAX_FIXTURE_SET_COUNT:
+        raise HTTPException(status_code=413, detail={"code": "too_many_fixture_sets"})
 
 
 @router.post(
@@ -93,6 +298,7 @@ async def save_prompt_draft(
     principal: PrincipalDep,
     session: SessionDep,
 ) -> PromptDraftDetail:
+    _assert_prompt_payload_bounds(payload)
     repository = PromptRepository(session)
     draft = await repository.get_active_draft(prompt_lineage_id)
     if draft is None:

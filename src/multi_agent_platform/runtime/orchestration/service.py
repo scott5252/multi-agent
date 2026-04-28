@@ -114,6 +114,33 @@ class RuntimeOrchestrationService:
             )
         return run
 
+    async def pin_dynamic_agent_first_use(
+        self,
+        *,
+        tenant_id: UUID,
+        workflow_run_id: UUID,
+        agent_key: str,
+        agent_kind: str,
+        agent_profile_version_id: UUID,
+        prompt_version_ids: list[UUID],
+        trace_id: str,
+    ) -> None:
+        await self.repository.add_timeline_event(
+            RuntimeTimelineEvent(
+                tenant_id=tenant_id,
+                workflow_run_id=workflow_run_id,
+                event_type=RuntimeEventType.CHECKPOINT,
+                trace_id=trace_id,
+                payload={
+                    "runtime_pin_type": "dynamic_first_use",
+                    "agent_key": agent_key,
+                    "agent_kind": agent_kind,
+                    "agent_profile_version_id": str(agent_profile_version_id),
+                    "prompt_version_ids": [str(value) for value in prompt_version_ids],
+                },
+            )
+        )
+
     async def inspect_run(
         self, *, workflow_run_id: UUID, tenant_id: UUID | None
     ) -> WorkflowRun | None:

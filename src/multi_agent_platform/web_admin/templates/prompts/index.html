@@ -3,7 +3,22 @@
 {% block content %}
 <section class="admin-section">
   <h2>Prompt Library</h2>
-  <p>Prompt lineages, draft validation, safe previews, publication, and retirement will appear here.</p>
+  <div class="prompt-runtime-toolbar">
+    <a class="button" href="/admin/prompt-runtime/prompts/new">Create Prompt</a>
+    <input aria-label="Search prompts" placeholder="Search prompts">
+  </div>
+  <table class="prompt-runtime-table">
+    <thead>
+      <tr><th>Display Name</th><th>Scope</th><th>Status</th><th>Validation</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Prompt drafts and versions</td>
+        <td>{{ page.scope_type }}</td>
+        <td>Ready</td>
+        <td>Safe previews enabled</td>
+      </tr>
+    </tbody>
+  </table>
 </section>
 {% endblock %}
-

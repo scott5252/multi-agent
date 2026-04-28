@@ -8,8 +8,7 @@ def test_prompt_runtime_surfaces_are_registered_with_scoped_actions() -> None:
         "GET:/admin/prompt-runtime/prompts": "render_prompt_library_ui",
         "POST:/admin/prompt-runtime/api/prompts": "create_prompt_lineage",
         (
-            "POST:/admin/prompt-runtime/api/prompts/"
-            "{prompt_lineage_id}/publish"
+            "POST:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/publish"
         ): "publish_prompt_version",
         "GET:/admin/prompt-runtime/profiles": "render_agent_profiles_ui",
         "POST:/admin/prompt-runtime/api/profiles": "create_agent_profile",

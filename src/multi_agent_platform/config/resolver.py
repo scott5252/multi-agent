@@ -171,6 +171,8 @@ def model_selection_audit_metadata(
         "prompt_reference_version_id": str(
             resolution.prompt.prompt_reference_version_id
         ),
+        "prompt_library_version_id": str(resolution.prompt.prompt_version_id),
+        "prompt_library_digest": resolution.prompt.prompt_digest,
         "considered_model_versions": len(resolution.model.considered_version_ids),
         "considered_prompt_versions": len(resolution.prompt.considered_version_ids),
         "selection_outcome": "selected",

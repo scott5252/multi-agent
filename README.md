@@ -42,6 +42,11 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   platform-admin OpenAI/local OpenAI-compatible provider configuration, safe
   probes, health review, catalog sync evidence, and gateway-governed runtime
   invocation metadata
+- prompt library and agent runtime profile management under
+  `/admin/prompt-runtime/prompts` and `/admin/prompt-runtime/profiles` with
+  immutable prompt/profile versions, safe fixture previews, tenant grants,
+  workflow validation hooks, model-skill prompt reference digests, runtime
+  provenance pins, audit-safe summaries, and reviewer QA evidence
 
 ## Quickstart
 
@@ -206,6 +211,8 @@ Latest full validation run: `2026-04-24`
 - [Production Audit Debugging](/Users/scottcornell/src/my-projects/multi-agent/docs/production-audit-debugging.md)
 - [Reliability Scale Hardening](/Users/scottcornell/src/my-projects/multi-agent/docs/reliability-scale-hardening.md)
 - [Admin Console Shell](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-console-shell.md)
+- [Prompt Runtime Profiles](/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles.md)
+- [Prompt Runtime Profiles Testing](/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles-testing.md)
 - [Foundation Runbook](/Users/scottcornell/src/my-projects/multi-agent/docs/foundation-runbook.md)
 - [Architecture](/Users/scottcornell/src/my-projects/multi-agent/docs/architecture.md)
 - [Constitution](/Users/scottcornell/src/my-projects/multi-agent/.specify/memory/constitution.md)

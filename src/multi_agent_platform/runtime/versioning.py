@@ -29,6 +29,7 @@ class RunVersionBundle(BaseModel):
     compiler_version: str
     pinned_skill_versions: dict[str, str]
     subworkflow_version_refs: dict[str, str]
+    prompt_profile_pins: list[dict[str, object]] = []
 
 
 def get_version_bundle(settings: Settings) -> VersionBundle:
@@ -52,8 +53,14 @@ def build_run_version_bundle(
 ) -> RunVersionBundle:
     raw_skills = compiled_bundle.dependencies.get("skills", [])
     raw_subworkflows = compiled_bundle.dependencies.get("subworkflows", [])
+    raw_prompt_profile_pins = compiled_bundle.dependencies.get(
+        "prompt_profile_pins", []
+    )
     skills = raw_skills if isinstance(raw_skills, list) else []
     subworkflows = raw_subworkflows if isinstance(raw_subworkflows, list) else []
+    prompt_profile_pins = (
+        raw_prompt_profile_pins if isinstance(raw_prompt_profile_pins, list) else []
+    )
     return RunVersionBundle(
         workflow_version_bundle_id=workflow_version_bundle_id,
         workflow_lineage_id=compiled_bundle.workflow_lineage_id,
@@ -74,6 +81,9 @@ def build_run_version_bundle(
             and "alias" in item
             and "workflow_version_ref" in item
         },
+        prompt_profile_pins=[
+            dict(item) for item in prompt_profile_pins if isinstance(item, dict)
+        ],
     )
 
 
@@ -104,5 +114,6 @@ def build_audit_version_bundle_snapshot(
         safe_summary={
             "subworkflow_count": len(run_bundle.subworkflow_version_refs),
             "pinned_skill_count": len(run_bundle.pinned_skill_versions),
+            "prompt_profile_pin_count": len(run_bundle.prompt_profile_pins),
         },
     )

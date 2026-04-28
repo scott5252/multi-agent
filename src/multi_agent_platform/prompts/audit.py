@@ -23,3 +23,19 @@ def prompt_audit_summary(
     if prompt_version_id is not None:
         summary["prompt_version_id"] = str(prompt_version_id)
     return summary
+
+
+def aggregate_prompt_history(
+    events: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    history: list[dict[str, object]] = []
+    for event in events:
+        history.append(
+            {
+                "action": str(event.get("action", "unknown")),
+                "actor": str(event.get("actor", "system")),
+                "outcome": str(event.get("outcome", "recorded")),
+                "safe_summary": event.get("safe_summary", {}),
+            }
+        )
+    return history

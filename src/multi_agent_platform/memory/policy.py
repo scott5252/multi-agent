@@ -60,3 +60,63 @@ def validate_runtime_context(context: RuntimeMemoryContext) -> None:
         raise MemoryAccessDeniedError("unsupported runtime memory protocol")
     if len(context.bundle_digest) != 64:
         raise MemoryAccessDeniedError("runtime bundle digest is invalid")
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryPolicyCompatibilityFinding:
+    code: str
+    severity: str
+    message: str
+    field_path: str
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "code": self.code,
+            "severity": self.severity,
+            "message": self.message,
+            "field_path": self.field_path,
+        }
+
+
+ALLOWED_MEMORY_SCOPE_MODES = {"none", "read_only", "read_write"}
+ALLOWED_MEMORY_RETENTION_MODES = {"run", "workflow", "tenant"}
+
+
+def validate_profile_memory_policy(
+    policy: dict[str, object],
+) -> tuple[MemoryPolicyCompatibilityFinding, ...]:
+    findings: list[MemoryPolicyCompatibilityFinding] = []
+    if "scope_mode" not in policy and "retention_mode" not in policy:
+        return ()
+    scope_mode = str(policy.get("scope_mode", "")).strip()
+    retention_mode = str(policy.get("retention_mode", "")).strip()
+    allow_writes = bool(policy.get("allow_writes", False))
+
+    if scope_mode not in ALLOWED_MEMORY_SCOPE_MODES:
+        findings.append(
+            MemoryPolicyCompatibilityFinding(
+                code="invalid_memory_scope_mode",
+                severity="blocking",
+                message="Memory scope mode must be none, read_only, or read_write.",
+                field_path="memory_scope_policy.scope_mode",
+            )
+        )
+    if retention_mode not in ALLOWED_MEMORY_RETENTION_MODES:
+        findings.append(
+            MemoryPolicyCompatibilityFinding(
+                code="invalid_memory_retention_mode",
+                severity="blocking",
+                message="Memory retention mode must be run, workflow, or tenant.",
+                field_path="memory_scope_policy.retention_mode",
+            )
+        )
+    if allow_writes and scope_mode != "read_write":
+        findings.append(
+            MemoryPolicyCompatibilityFinding(
+                code="memory_write_requires_read_write_scope",
+                severity="blocking",
+                message="Memory writes require read_write scope mode.",
+                field_path="memory_scope_policy.allow_writes",
+            )
+        )
+    return tuple(findings)

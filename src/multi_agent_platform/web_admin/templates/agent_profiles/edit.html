@@ -1,0 +1,23 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<section class="admin-section prompt-runtime-form">
+  <h2>{{ page.title }}</h2>
+  <form method="post" action="/admin/prompt-runtime/profiles/form">
+    <label class="field-row"><span>Agent Key</span><input name="agent_key" value="{{ page.agent_key }}"></label>
+    <label class="field-row"><span>Agent Kind</span><select name="agent_kind"><option value="agent">Agent</option><option value="sub_agent">Sub-agent</option></select></label>
+    {% for section in page.sections %}
+      <section class="validation-panel">
+        <h3>{{ section.label }}</h3>
+        <p>{{ section.blocking_count }} blocking findings</p>
+      </section>
+    {% endfor %}
+    <button type="submit">Save Draft</button>
+    <button type="button" {% if not page.can_activate %}disabled{% endif %}>Activate</button>
+  </form>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="/admin/static/prompt_runtime.js"></script>
+{% endblock %}

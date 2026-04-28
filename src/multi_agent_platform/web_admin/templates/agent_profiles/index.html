@@ -3,7 +3,17 @@
 {% block content %}
 <section class="admin-section">
   <h2>Agent Profiles</h2>
-  <p>Runtime profile drafts, validation, activation, grants, and resolution previews will appear here.</p>
+  <div class="prompt-runtime-toolbar">
+    <a class="button" href="/admin/prompt-runtime/profiles/new">Create Profile</a>
+    <a class="button secondary" href="/admin/prompt-runtime/profiles/resolve">Resolve</a>
+  </div>
+  <table class="prompt-runtime-table">
+    <thead>
+      <tr><th>Agent Key</th><th>Kind</th><th>Scope</th><th>Validation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Profiles</td><td>{{ page.agent_kind }}</td><td>{{ page.scope_type }}</td><td>Ready</td></tr>
+    </tbody>
+  </table>
 </section>
 {% endblock %}
-

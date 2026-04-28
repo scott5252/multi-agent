@@ -4,7 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.agents.service import (
@@ -18,10 +18,12 @@ from multi_agent_platform.api.schemas.agent_profiles import (
     ProfileCreate,
     ProfileDraftDetail,
     ProfileDraftSave,
+    ProfileSummary,
     ProfileVersionDetail,
     ValidationFinding,
     ValidationResult,
 )
+from multi_agent_platform.api.ui.agent_profiles import build_agent_profile_ui_model
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.db.repositories.agent_profiles import (
@@ -32,6 +34,34 @@ from multi_agent_platform.db.repositories.agent_profiles import (
 router = APIRouter(tags=["agent-runtime-profiles"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
+
+def _profile_template_context(
+    *,
+    shell: object,
+    principal: PrincipalContext,
+    page: object,
+) -> dict[str, object]:
+    return {"shell": shell, "principal": principal, "page": page}
+
+
+def _profile_ui_page(
+    *,
+    title: str,
+    shell: object,
+    agent_runtime_profile_id: UUID | None = None,
+    agent_profile_version_id: UUID | None = None,
+    status_value: str = "draft",
+) -> object:
+    active_scope = shell.active_scope  # type: ignore[attr-defined]
+    return build_agent_profile_ui_model(
+        title=title,
+        scope_type=active_scope.scope_type,
+        tenant_id=active_scope.tenant_id,
+        agent_runtime_profile_id=agent_runtime_profile_id,
+        agent_profile_version_id=agent_profile_version_id,
+        status=status_value,
+    )
 
 
 @router.get("/admin/prompt-runtime/profiles", response_class=HTMLResponse)
@@ -50,8 +80,173 @@ async def agent_profiles_index(
     return container.workflow_ui_templates.TemplateResponse(
         request,
         "agent_profiles/index.html",
-        {"shell": shell, "principal": principal},
+        _profile_template_context(
+            shell=shell,
+            principal=principal,
+            page=_profile_ui_page(title="Agent Profiles", shell=shell),
+        ),
     )
+
+
+@router.get("/admin/prompt-runtime/profiles/new", response_class=HTMLResponse)
+async def agent_profiles_new(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="New Agent Profile",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "agent_profiles/edit.html",
+        _profile_template_context(
+            shell=shell,
+            principal=principal,
+            page=_profile_ui_page(title="New Agent Profile", shell=shell),
+        ),
+    )
+
+
+@router.get(
+    "/admin/prompt-runtime/profiles/{agent_runtime_profile_id}/edit",
+    response_class=HTMLResponse,
+)
+async def agent_profiles_edit(
+    agent_runtime_profile_id: UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Edit Agent Profile",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "agent_profiles/edit.html",
+        _profile_template_context(
+            shell=shell,
+            principal=principal,
+            page=_profile_ui_page(
+                title="Edit Agent Profile",
+                shell=shell,
+                agent_runtime_profile_id=agent_runtime_profile_id,
+            ),
+        ),
+    )
+
+
+@router.get(
+    "/admin/prompt-runtime/profiles/versions/{agent_profile_version_id}",
+    response_class=HTMLResponse,
+)
+async def agent_profiles_detail(
+    agent_profile_version_id: UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Agent Profile Version",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "agent_profiles/detail.html",
+        _profile_template_context(
+            shell=shell,
+            principal=principal,
+            page=_profile_ui_page(
+                title="Agent Profile Version",
+                shell=shell,
+                agent_profile_version_id=agent_profile_version_id,
+                status_value="active",
+            ),
+        ),
+    )
+
+
+@router.get(
+    "/admin/prompt-runtime/profiles/{agent_runtime_profile_id}/history",
+    response_class=HTMLResponse,
+)
+async def agent_profiles_history(
+    agent_runtime_profile_id: UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Agent Profile History",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "agent_profiles/history.html",
+        _profile_template_context(
+            shell=shell,
+            principal=principal,
+            page=_profile_ui_page(
+                title="Agent Profile History",
+                shell=shell,
+                agent_runtime_profile_id=agent_runtime_profile_id,
+            ),
+        ),
+    )
+
+
+@router.get("/admin/prompt-runtime/profiles/resolve", response_class=HTMLResponse)
+async def agent_profiles_resolve(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Profile Resolution",
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "agent_profiles/resolve.html",
+        _profile_template_context(
+            shell=shell,
+            principal=principal,
+            page=_profile_ui_page(title="Profile Resolution", shell=shell),
+        ),
+    )
+
+
+@router.post("/admin/prompt-runtime/profiles/form", response_class=HTMLResponse)
+async def agent_profile_form() -> RedirectResponse:
+    return RedirectResponse(
+        "/admin/prompt-runtime/profiles?flash=profile-saved",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@router.get(
+    "/admin/prompt-runtime/api/profiles",
+    response_model=dict[str, list[ProfileSummary]],
+)
+async def list_agent_profiles() -> dict[str, list[ProfileSummary]]:
+    return {"items": []}
 
 
 @router.post(

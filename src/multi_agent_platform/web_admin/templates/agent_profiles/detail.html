@@ -1,0 +1,11 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<section class="admin-section">
+  <h2>{{ page.title }}</h2>
+  <dl class="prompt-runtime-detail">
+    <dt>Profile Version</dt><dd>{{ page.agent_profile_version_id }}</dd>
+    <dt>Status</dt><dd>{% if page.can_retire %}Active{% else %}Historical review{% endif %}</dd>
+  </dl>
+</section>
+{% endblock %}

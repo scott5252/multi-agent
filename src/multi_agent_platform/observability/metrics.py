@@ -168,6 +168,12 @@ MODEL_PROVIDER_LATENCY = Histogram(
     labelnames=("action", "provider_type", "outcome"),
 )
 
+PROMPT_RUNTIME_ACTION_COUNTER = Counter(
+    "multi_agent_platform_prompt_runtime_actions_total",
+    "Prompt/profile lifecycle and validation actions.",
+    labelnames=("action", "outcome", "reason"),
+)
+
 
 def record_model_skill_policy_decision(
     *, decision_category: str, outcome: str, denial_category: str | None = None
@@ -240,6 +246,19 @@ def record_model_provider_action(
     reason: str | None = None,
 ) -> None:
     MODEL_PROVIDER_ACTION_COUNTER.labels(
+        action=action,
+        outcome=outcome,
+        reason=reason or "none",
+    ).inc()
+
+
+def record_prompt_runtime_action(
+    *,
+    action: str,
+    outcome: str,
+    reason: str | None = None,
+) -> None:
+    PROMPT_RUNTIME_ACTION_COUNTER.labels(
         action=action,
         outcome=outcome,
         reason=reason or "none",

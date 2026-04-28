@@ -1,0 +1,12 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<section class="admin-section">
+  <h2>{{ page.title }}</h2>
+  <dl class="prompt-runtime-detail">
+    <dt>Prompt Version</dt><dd>{{ page.prompt_version_id }}</dd>
+    <dt>Status</dt><dd>{% if page.can_retire %}Active{% else %}Historical review{% endif %}</dd>
+  </dl>
+  <a href="/admin/prompt-runtime/prompts">Back to Prompt Library</a>
+</section>
+{% endblock %}
