@@ -109,3 +109,117 @@ http://127.0.0.1:8000/admin/prompt-runtime/profiles
 - Testing instructions cover unit, integration, contract, migration, browser,
   authorization, audit/redaction, workflow validation, Spec 007 integration,
   runtime pinning, docs, and coverage evidence.
+
+## Version 2 Reviewer Flow: Gateway-Governed Runtime Execution
+
+1. Apply migrations and seed one healthy provider connection, model definition,
+   active prompt version, active runtime profile version, and valid
+   model_skill_config route.
+2. Start the API and worker with container-built dependencies:
+
+   ```bash
+   uv run uvicorn multi_agent_platform.api.main:app --reload
+   uv run python -m multi_agent_platform.workers.main
+   ```
+
+3. Start a workflow run that uses a declared agent key.
+4. Confirm run acceptance already pinned prompt/profile versions before the
+   worker performs model-backed work.
+5. Confirm the worker invokes `ModelGateway` and records tenant id, workflow
+   run id, step id when available, trace id, idempotency identity, selected
+   profile version id, prompt version ids, model routing provenance, provider
+   connection id, model id, latency, usage availability, retry/breaker
+   summaries, normalized outcome, and safe summary.
+6. Confirm no tool, memory, handoff, artifact, approval, or other
+   side-effectful runtime action occurs before the gateway operation identity
+   and prompt/profile provenance are persisted.
+
+## Version 2 Reviewer Flow: Test Bench And Validation Parity
+
+1. Run a profile test bench execution that intentionally calls a model
+   provider.
+2. Run a workflow validation path that performs model-backed validation.
+3. Confirm both paths use `ModelGateway` and produce comparable safe attempt
+   metadata.
+4. Confirm non-model-backed validation does not create gateway operation rows.
+5. Confirm runtime profile model routing hints are present as context but do
+   not bypass model_skill_config authorization or tenant-over-platform profile
+   precedence.
+
+## Version 2 Reviewer Flow: Idempotency And Recovery
+
+1. Trigger a gateway invocation with a stable logical operation identity.
+2. Retry or restart the worker with the same identity.
+3. Confirm the platform reuses or recovers the prior authoritative result and
+   records each physical attempt under the same logical operation.
+4. Repeat the pattern for an admin provider test probe and a provider catalog
+   sync action.
+5. Confirm duplicate completed operations return the previous safe result
+   without launching unnecessary provider work.
+6. Confirm ambiguous outcomes either recover from persisted safe state or fail
+   closed according to retry/breaker policy.
+
+## Version 2 Reviewer Flow: Admin Probe Controls
+
+1. Launch a provider test probe as an authorized admin.
+2. Exceed the actor/provider-connection rate limit or bounded-operation limit.
+3. Confirm the denied or throttled attempt persists safe audit evidence with
+   actor, scope, provider identity, recovery identity, decision category, and
+   safe summary.
+4. Confirm denied and throttled attempts do not call the provider.
+5. Confirm tenant-level and global backstop limits apply for shared provider
+   capacity.
+
+## Version 2 Reviewer Flow: Reliability And Observability
+
+1. Simulate timeout, rate limit, provider unavailable, malformed response,
+   authorization failure, invalid model, inactive catalog, and unknown provider
+   failure outcomes.
+2. Confirm normalized provider categories map into existing retry categories,
+   retry budgets, breaker scopes, breaker decisions, and persisted gateway
+   attempt summaries.
+3. Confirm breaker scope is provider connection plus model/catalog identity,
+   with tenant/run/step context recorded as evidence.
+4. Confirm successful attempts record latency and usage availability even when
+   usage token counts are unavailable.
+5. Confirm run provenance shows prompt/profile pins and gateway metadata
+   together for newly accepted runs and dynamic first-use selections.
+
+## Version 2 Guardrail Checks
+
+Run the full static, contract, integration, docs, and coverage suite:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src
+uv run pytest tests/unit/model_providers tests/unit/bootstrap tests/unit/runtime tests/unit/reliability
+uv run pytest tests/contract
+uv run pytest tests/integration/workers tests/integration/runtime tests/integration/api
+uv run pytest tests/docs
+uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90
+```
+
+Additional V2 guardrails:
+
+- Static tests must fail if runtime, worker, test bench, workflow validation,
+  prompt/profile, or agent code imports provider SDKs or performs direct
+  provider HTTP calls outside allowed `ModelGateway` adapter modules.
+- Behavioral tests must fail if representative model-backed runtime, test
+  bench, or workflow validation paths do not create gateway operation metadata.
+- Regression tests must prove completed Spec 012 prompt authoring, safe
+  preview, publication, retirement, tenant grants, runtime profile activation,
+  browser UI, workflow validation, model-skill prompt reference integration,
+  docs, migrations, and coverage still pass.
+
+## Version 2 Safety Checks
+
+- Search gateway attempts, probe results, catalog sync records, audit rows,
+  logs, traces, browser pages, and run provenance for raw prompts,
+  completions, credentials, provider tokens, API keys, local endpoint secrets,
+  unsafe preview content, and unauthorized run content; none should be present.
+- Break provider catalog visibility, connection health, credential references,
+  retry/breaker state, tenant authorization, and prompt/profile pins
+  independently; each failure must fail closed with safe audit evidence.
+- Review historical runs and pre-V2 gateway rows; they must remain unchanged
+  and display missing V2 metadata as unavailable rather than being rewritten.

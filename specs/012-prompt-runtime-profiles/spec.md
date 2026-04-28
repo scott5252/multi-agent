@@ -1,9 +1,9 @@
-# Feature Specification: Prompt Library And Agent Runtime Profiles
+# Feature Specification: Prompt Library And Agent Runtime Profiles - Version 2 Runtime Gateway Completion And Profile-Governed Execution Hardening
 
 **Feature Branch**: `012-prompt-runtime-profiles`  
 **Created**: 2026-04-28  
 **Status**: Draft  
-**Input**: User description: "Add a prompt library and agent runtime profile management for the multi-agent platform. Platform and tenant admins must be able to create prompt lineages, draft prompt versions, validate template variables, publish immutable prompt versions, preview safe prompt rendering with fixture values, and retire prompt versions from new use without breaking historical runs. Admins must also be able to create agent runtime profiles that bind an agent key or sub-agent key to purpose, prompt version references, model routing scope hints, memory scope policy, skill installation requirements, tool policy expectations, output contract expectations, and test-suite requirements. The feature must integrate with existing workflow registry validation and model-skill routing prompt references. Raw secret values, credential values, and unauthorized run content must never be embedded in prompt previews or audit records. Require platform and tenant scope rules, immutable versions, at least 90 percent coverage, docs, PR notes, testing instructions, and README updates. Ensure the UI is updated to allow users to use a browser to accomplish this feature."
+**Input**: User description: "Revise the existing Spec 012 feature as Version 2: Runtime Gateway Completion And Profile-Governed Execution Hardening. Preserve all completed prompt library, runtime profile, browser UI, workflow validation, model-skill prompt reference, tenant grant, immutable versioning, retirement, audit, docs, and coverage requirements. Add V2 scope to close runtime/provider execution gaps after Spec 011: all model-backed runtime, test bench, workflow validation, and profile-governed execution must use ModelGateway; runtime orchestration must pass prompt/profile pins and provider provenance into gateway invocation context before model, tool, memory, or other side-effectful runtime action; worker bootstrap must wire gateway dependencies through the application container; runtime profiles must govern gateway invocation without bypassing existing routing authorization; gateway attempts, provider probes, and catalog sync actions need idempotency and recovery; admin probes need operational limits; gateway attempts need retry, breaker, latency, usage, normalized error, and safe audit evidence; direct provider SDK/HTTP calls outside adapters must be blocked or detected by tests."
 
 ## Clarifications
 
@@ -14,6 +14,17 @@
 - Q: How should platform-scoped prompt versions and runtime profile versions become available for tenant use? → A: Platform admins grant specific published prompt versions and active runtime profile versions to an explicit tenant allowlist.
 - Q: Should prompt fixture values used for preview be persisted with drafts, or treated as one-time preview input? → A: Persist sanitized, non-sensitive fixture value sets with drafts; reject unsafe values before storage or preview.
 - Q: When should prompt version references and runtime profile versions be pinned for a new workflow run? → A: Pin all workflow-declared agent/profile/prompt references at run acceptance; use first-use pinning only for dynamically selected agents or sub-agents not declared upfront.
+- Q: What idempotency identity should gateway attempts, provider probes, and catalog sync actions use for retries and recovery? → A: One logical operation identity per gateway/probe/sync; retries and restarts reuse it, while each physical attempt is recorded separately under it.
+- Q: What scope should admin provider test probe rate limits use? → A: Rate-limit by actor and provider connection, with tenant/global backstop limits for shared capacity.
+- Q: What scope should provider circuit breakers use for gateway invocation attempts? → A: Scope breakers by provider connection and model/catalog identity; evidence also records tenant/run context where applicable.
+- Q: What guardrails should block or detect direct provider SDK/HTTP calls outside ModelGateway adapters? → A: Use both static import/usage checks and runtime/integration detection for covered execution paths; allow only explicit ModelGateway adapter modules.
+- Q: What retry policy and decision categories should gateway invocation attempts use? → A: Use existing ModelGateway retry policy; record normalized retry decision categories: retryable, non-retryable, exhausted, skipped, recovered.
+
+## Version 2 Scope And Preservation Rules
+
+Version 2 extends Spec 012 without replacing or weakening any completed behavior from the original prompt library and runtime profile specification. All existing prompt authoring, immutable publication, safe fixture preview, browser administration, workflow registry validation, model-skill prompt references, tenant allowlist grants, immutable profile versioning, retirement semantics, safe audit records, documentation, and coverage requirements remain required acceptance scope.
+
+The V2 scope closes the runtime/provider execution gaps discovered after Spec 011 by requiring profile-governed model execution to flow through the shared provider gateway, by ensuring prompt/profile pins travel with provider invocation provenance, and by hardening provider operations for durable recovery, throttling, retry, circuit breaker, and safe audit review.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -97,6 +108,71 @@ As an auditor, maintainer, or reviewer, I need safe history, audit evidence, doc
 2. **Given** a preview, validation, publication, retirement, or activation attempt is denied, **When** the audit record is reviewed, **Then** it explains the safe denial category without revealing raw secrets, credential values, or unauthorized run content.
 3. **Given** the feature is submitted for review, **When** a maintainer evaluates it, **Then** coverage evidence, docs, PR notes, testing instructions, README updates, and browser-flow verification are present and complete.
 
+---
+
+### User Story 6 - Profile-Governed Runtime Execution Through ModelGateway (Priority: P1)
+
+As a platform operator or tenant admin, I need every model-backed runtime action governed by the selected runtime profile and executed through the shared provider gateway so that prompt/profile pins, model routing authorization, provider provenance, and side-effect safety are consistent across live runs, test bench execution, and workflow validation paths.
+
+**Why this priority**: Spec 012 prompt/profile governance only protects production behavior if runtime workers and validation/test execution paths use the same authorized provider path and carry the same immutable provenance before side effects occur.
+
+**Independent Test**: A representative workflow run, a profile test bench execution, and a workflow validation path that performs model-backed behavior can be executed while proving every model-backed call uses the shared gateway path and includes the selected tenant, run, step, trace, profile, prompt, routing, and idempotency context.
+
+**Acceptance Scenarios**:
+
+1. **Given** a workflow run has accepted prompt and profile pins, **When** a worker performs a model-backed step, **Then** the invocation goes through ModelGateway and includes tenant id, workflow run id, step id when available, trace id, selected profile version id, selected prompt version ids, model routing provenance, and an idempotency key before any model, tool, memory, or other side-effectful runtime action begins.
+2. **Given** an agent runtime profile contributes model routing scope hints, prompt/profile provenance, tool policy expectations, memory policy context, and output contract metadata, **When** the runtime resolves a gateway invocation, **Then** those profile contributions are present in the invocation context without bypassing existing model-skill routing authorization.
+3. **Given** the test bench or workflow validation executes behavior that is model-backed, **When** that behavior calls a model provider, **Then** it uses the same ModelGateway path and records comparable profile, prompt, tenant, routing, and safe audit provenance.
+4. **Given** direct provider SDK or direct provider HTTP usage is attempted from runtime workers, test bench execution, or profile-governed orchestration outside an allowed gateway adapter, **When** static guardrails or runtime/integration policy checks run, **Then** the usage is blocked or detected as a failure.
+
+---
+
+### User Story 7 - Durable Gateway, Probe, And Catalog Recovery (Priority: P2)
+
+As an operator, I need gateway invocation attempts, provider probes, and provider catalog synchronization actions to be idempotent and recoverable so that retries, worker restarts, admin resubmits, or partial failures do not create duplicate authoritative provider effects or conflicting platform records.
+
+**Why this priority**: Provider operations can be retried by workers and administrators. Without persisted idempotency and recovery evidence, a transient failure can duplicate actions or obscure the authoritative state.
+
+**Independent Test**: Gateway invocation, provider test probe, and catalog synchronization acceptance tests can be interrupted and retried with the same idempotency identity, then prove that only one authoritative outcome is recorded while safe retry and recovery history remains visible.
+
+**Acceptance Scenarios**:
+
+1. **Given** a gateway invocation attempt has a persisted idempotency identity, **When** a worker retry or restart repeats the same attempt, **Then** the platform recovers or reuses the prior authoritative outcome instead of creating a duplicate authoritative side effect.
+2. **Given** an admin provider test probe is resubmitted with the same recovery identity, **When** the original operation already reached an authoritative result, **Then** the platform returns the prior safe result and records the resubmit without launching an unnecessary duplicate provider operation.
+3. **Given** a provider catalog synchronization action fails after a partial durable checkpoint, **When** the action is retried, **Then** the platform resumes from the known safe state and preserves a single authoritative catalog result for each synchronized provider/model identity.
+
+---
+
+### User Story 8 - Provider Operation Limits, Retry, Breaker, And Safe Audit Hardening (Priority: P3)
+
+As a security reviewer or operations maintainer, I need provider operations to enforce bounded execution, operational rate limits, retry decisions, circuit breaker decisions, normalized error categories, and safe audit summaries so that provider reliability evidence is useful without leaking prompts, completions, credentials, provider tokens, API keys, or local endpoint details.
+
+**Why this priority**: Provider operations touch external and local model systems. They must be observable enough for support and review while remaining bounded, tenant-safe, and free of sensitive content.
+
+**Independent Test**: Acceptance tests can trigger successful, throttled, denied, retried, circuit-open, and provider-error paths and verify each outcome records safe, normalized evidence without storing unsafe provider payloads or secrets.
+
+**Acceptance Scenarios**:
+
+1. **Given** an admin launches a provider test probe, **When** the request exceeds operational rate limits or bounded-operation controls, **Then** the attempt is denied or throttled and a safe audit record persists the decision category, actor, scope, provider identity, and recovery identity without exposing secrets or endpoint-sensitive values.
+2. **Given** a gateway invocation encounters a provider error, **When** retry or circuit breaker policy is evaluated, **Then** the attempt records normalized provider error category, retry decision summary, circuit breaker scope and decision summary, latency, usage availability, and safe audit summary without storing prompts, completions, credentials, provider tokens, API keys, local endpoint secrets, or unsafe rendered prompt content.
+3. **Given** provider catalog synchronization encounters unavailable or unauthorized provider state, **When** the action completes or fails, **Then** operators can review the safe decision summary and recovery state without cross-tenant visibility, secret leakage, or local endpoint exposure.
+
+---
+
+### User Story 9 - Combined Prompt/Profile And Provider Provenance Evidence (Priority: P4)
+
+As a reviewer, auditor, or incident responder, I need run provenance to show Spec 012 prompt/profile pins together with Spec 011 provider gateway metadata so that I can verify exactly which immutable prompt/profile versions governed execution and which provider route, retry, breaker, latency, usage, and safe audit evidence applied.
+
+**Why this priority**: Separate prompt/profile and provider records make it difficult to prove profile-governed execution. Review evidence must connect immutable governance inputs to provider operation outcomes without rewriting historical runs.
+
+**Independent Test**: A reviewer can inspect a newly accepted run, a dynamic first-use selection, and a historical run after prompt/profile retirement or provider configuration changes, then confirm immutable prompt/profile pins and provider gateway metadata are visible together and historical records remain unchanged.
+
+**Acceptance Scenarios**:
+
+1. **Given** a newly accepted run uses workflow-declared prompt and profile references, **When** review evidence is generated, **Then** it shows the immutable prompt version ids, selected runtime profile version id, tenant id, model routing provenance, gateway attempt identity, provider provenance, retry/breaker summaries, latency, usage availability, normalized errors when present, and safe audit summaries together.
+2. **Given** a dynamically selected agent or sub-agent is pinned at first use, **When** the gateway invocation is recorded, **Then** the first-use prompt/profile pins and provider gateway metadata are linked in run provenance before any side-effectful runtime action proceeds.
+3. **Given** prompt/profile versions are later retired or provider catalog entries change, **When** a reviewer inspects a historical run, **Then** the original prompt/profile pins and gateway/provider metadata remain unchanged and reviewable according to authorization rules.
+
 ### Edge Cases
 
 - A prompt draft uses a template variable that is not declared, declares a variable that is never used, duplicates a variable name, or uses an invalid variable name.
@@ -114,6 +190,15 @@ As an auditor, maintainer, or reviewer, I need safe history, audit evidence, doc
 - Workflow registry validation runs while prompt or profile drafts are unpublished.
 - A user attempts to inspect prompt content, preview output, profile details, run content, or audit history outside their authorized scope.
 - Delivery materials omit browser UI verification, coverage evidence, docs, PR notes, testing instructions, or README updates.
+- A runtime worker starts after a deployment and the application container is missing gateway, provider adapter registry, provider repository, secret resolver, metrics, tracing, retry decision, circuit breaker decision, or safe audit capture dependencies.
+- A runtime profile supplies model routing scope hints that conflict with existing routing authorization or would expand access beyond the tenant or profile scope.
+- A model-backed profile test, workflow validation execution, or test bench run attempts to call a provider through a path that does not produce gateway attempt provenance.
+- A gateway invocation retries after a worker crash, network timeout, provider timeout, or process restart with the same idempotency key.
+- An admin resubmits a provider test probe or catalog sync while a prior attempt is still pending, completed, denied, or partially recovered.
+- A provider operation is throttled, circuit-open, denied by bounded-operation controls, or categorized as a normalized provider error.
+- Usage metadata is unavailable from a provider even though the gateway attempt completed successfully.
+- A local provider endpoint is configured for platform use but must not expose endpoint secrets, internal URLs, or unsafe request/response content in audit, logs, browser views, or run provenance.
+- Historical run evidence is reviewed after prompt/profile retirement, provider catalog synchronization, route changes, retry policy changes, or circuit breaker state changes.
 
 ## Requirements *(mandatory)*
 
@@ -157,6 +242,27 @@ As an auditor, maintainer, or reviewer, I need safe history, audit evidence, doc
 - **FR-036**: Administrative, validation, preview, routing, registry, and runtime audit records MUST use safe summaries and MUST NOT include raw secret values, credential values, unauthorized run content, or protected prompt rendering outside the viewer's authorization.
 - **FR-037**: The delivered feature MUST include test evidence demonstrating at least 90 percent coverage for submitted prompt library, prompt validation, safe preview, lifecycle, runtime profile, workflow validation integration, model-skill prompt reference integration, authorization, audit, and browser UI behavior.
 - **FR-038**: The delivered feature MUST include documentation, PR review notes, testing instructions, and README updates covering prompt lifecycle, variable validation, fixture previews, immutable versions, retirement semantics, runtime profile contracts, scope rules, workflow validation integration, model-skill routing prompt references, safe audit behavior, and browser UI usage.
+- **FR-039**: Version 2 MUST preserve all completed Spec 012 prompt library, runtime profile, browser UI, workflow validation, model-skill prompt reference, tenant grant, immutable versioning, retirement, audit, documentation, and coverage behavior without weakening existing acceptance criteria.
+- **FR-040**: Runtime workers MUST invoke all model-backed execution through ModelGateway and MUST NOT call model providers directly except through authorized gateway adapters.
+- **FR-041**: Test bench execution and workflow validation or test execution paths MUST invoke model-backed behavior through the same ModelGateway path whenever they execute behavior that calls a model provider.
+- **FR-042**: Runtime orchestration MUST create and pass a gateway invocation context that includes prompt/profile pins, tenant id, workflow run id, step id where available, trace id, selected profile version id, selected prompt version ids, model routing provenance, and idempotency key before any model, tool, memory, or other side-effectful runtime action begins.
+- **FR-043**: Worker bootstrap MUST wire ModelGateway, provider adapter registry, model provider repository, secret resolver, metrics, tracing, retry decisions, circuit breaker decisions, and safe audit capture through the application container before workers accept model-backed runtime work.
+- **FR-044**: Agent runtime profiles MUST govern gateway invocation by contributing model routing scope hints, prompt/profile provenance, tool policy expectations, memory policy context, and output contract metadata while preserving existing model-skill routing authorization and precedence.
+- **FR-045**: Runtime profile governance MUST NOT allow profile metadata, prompt references, or model routing hints to bypass tenant authorization, provider visibility rules, tool policy checks, memory policy checks, or model-skill routing decisions.
+- **FR-046**: Gateway invocation attempts MUST persist one logical operation idempotency identity per model-backed gateway operation; retries, worker restarts, and repeated dispatches MUST reuse that identity, record each physical provider attempt as a child attempt, and avoid duplicate authoritative model-backed side effects.
+- **FR-047**: Provider test probes MUST persist one logical operation idempotency identity per probe request; admin resubmits, retries, and partial failures MUST reuse that identity, record each physical provider attempt as a child attempt, and produce one authoritative probe result per recovery identity.
+- **FR-048**: Provider catalog synchronization actions MUST persist one logical operation idempotency identity per catalog sync action plus checkpoints and recovery state; retries or restarts MUST reuse that identity, record each physical provider/catalog attempt as a child attempt, and avoid duplicate authoritative provider catalog records or conflicting visibility state.
+- **FR-049**: Admin provider test probes MUST enforce existing operational rate limits and bounded-operation controls before launching provider activity; probe rate limits MUST apply at actor and provider-connection scope, with tenant-level and global backstop limits to protect shared provider capacity.
+- **FR-050**: Denied, throttled, skipped, retried, recovered, failed, and completed provider operations MUST persist safe audit evidence with actor, scope, tenant where applicable, provider identity, decision category, recovery identity, and safe summary details.
+- **FR-051**: Gateway invocation attempts MUST use the existing ModelGateway retry policy resolver and record normalized retry decision categories of retryable, non-retryable, exhausted, skipped, or recovered for each applicable attempt; circuit breaker decisions MUST be scoped by provider connection and model/catalog identity, with tenant and run context recorded in evidence where applicable.
+- **FR-052**: Gateway invocation attempts MUST normalize provider errors into reviewable categories and MUST record latency, usage availability, provider provenance, model routing provenance, prompt/profile provenance, idempotency identity, and safe audit summary.
+- **FR-053**: Gateway attempts, provider probes, provider catalog sync records, logs, browser views, and audit records MUST NOT store prompts, completions, raw credentials, provider tokens, API keys, local endpoint secrets, unsafe rendered prompt content, or unauthorized run content.
+- **FR-054**: Runtime provenance MUST show Spec 012 prompt/profile pins and Spec 011 provider gateway metadata together for newly accepted runs and dynamic first-use selections, without rewriting historical runs.
+- **FR-055**: Historical run provenance MUST remain immutable when prompt versions, profile versions, model routes, provider catalog entries, retry policy, circuit breaker state, or provider configuration changes after the run.
+- **FR-056**: The platform MUST use static import/usage guardrails plus runtime or integration detection to block or detect direct provider SDK calls and direct provider HTTP calls from runtime workers, test bench execution, or profile-governed orchestration paths unless the calls are explicitly inside ModelGateway adapter modules.
+- **FR-057**: Acceptance evidence MUST prove that 100 percent of model-backed runtime and model-backed test bench calls covered by acceptance tests use ModelGateway.
+- **FR-058**: Existing Spec 012 browser and API workflows MUST continue to pass unchanged after V2 gateway hardening is added.
+- **FR-059**: V2 safe audit and provenance review MUST demonstrate no new cross-tenant visibility, secret leakage, prompt or completion persistence, or local endpoint exposure.
 
 ### Key Entities
 
@@ -178,6 +284,14 @@ As an auditor, maintainer, or reviewer, I need safe history, audit evidence, doc
 - **Output Contract Expectation**: A profile declaration describing the expected output shape, quality gates, or handoff obligations for the agent or sub-agent.
 - **Test-Suite Requirement**: A profile declaration describing the tests that must pass before the profile is considered activation-ready or workflow-ready.
 - **Safe Audit Record**: A durable, scope-aware summary of prompt or profile actions that preserves actor, time, reason, state changes, and validation outcomes without exposing protected values.
+- **Gateway Invocation Context**: A runtime execution envelope that carries tenant, run, step, trace, prompt/profile pins, selected profile and prompt versions, model routing provenance, idempotency identity, and safe policy metadata into a provider gateway attempt.
+- **Gateway Invocation Attempt**: A persisted child record of a physical model-backed provider attempt through the provider gateway, linked to one logical operation identity and including provider provenance, retry and circuit breaker decisions, normalized errors, latency, usage availability, recovery state, and safe audit summary.
+- **Provider Operation Recovery Identity**: A stable logical operation identity used to resume, deduplicate, or safely report a gateway invocation, provider test probe, or catalog synchronization action; retries and restarts reuse the identity while preserving separate child records for each physical attempt.
+- **Provider Test Probe**: A bounded administrative provider verification action that is rate-limited by actor and provider connection with tenant/global backstops, and records safe result, denial, throttle, retry, recovery, and audit evidence without exposing credentials, provider tokens, prompts, completions, or local endpoint secrets.
+- **Provider Catalog Synchronization Action**: A durable provider metadata refresh action that records checkpoints, authoritative results, visibility decisions, recovery state, and safe audit summaries.
+- **Retry Decision Summary**: A safe, normalized description from the existing ModelGateway retry policy resolver that records whether a provider operation decision was retryable, non-retryable, exhausted, skipped, or recovered and why.
+- **Circuit Breaker Decision Summary**: A safe, normalized description of the provider-connection plus model/catalog breaker scope and decision that allowed, denied, short-circuited, or recovered a provider operation, including tenant and run context where applicable.
+- **Model Provider Provenance**: Safe metadata identifying the selected provider connection, model route, adapter family, catalog identity, and usage availability without storing credentials, endpoint secrets, prompts, or completions.
 
 ## Success Criteria *(mandatory)*
 
@@ -193,12 +307,18 @@ As an auditor, maintainer, or reviewer, I need safe history, audit evidence, doc
 - **SC-008**: 100 percent of model-backed run provenance for newly accepted runs identifies the prompt version references and runtime profile versions that governed the run or first-use decision.
 - **SC-009**: At least 90 percent of administrators and maintainers in acceptance testing can locate prompt history, profile history, validation results, and safe audit summaries in the browser UI without assistance.
 - **SC-010**: Submitted feature behavior demonstrates at least 90 percent coverage, and reviewer materials include docs, PR notes, testing instructions, README updates, and browser UI verification.
+- **SC-011**: 100 percent of existing Spec 012 browser and API acceptance workflows continue to pass unchanged after V2 runtime gateway hardening is introduced.
+- **SC-012**: 100 percent of model-backed runtime and test bench calls covered by V2 acceptance tests use ModelGateway, with static guardrails and runtime/integration detection proving direct provider calls outside gateway adapters are blocked or detected.
+- **SC-013**: 100 percent of accepted gateway invocation attempts in V2 acceptance tests include prompt/profile provenance, model provider provenance, retry and circuit breaker summaries when applicable, latency, usage availability, normalized error state, and safe audit summary.
+- **SC-014**: 100 percent of gateway invocations, provider probes, and catalog sync retry or restart acceptance tests recover without duplicate authoritative side effects.
+- **SC-015**: 100 percent of historical run review tests confirm prompt/profile pins remain immutable and are not rewritten after prompt/profile retirement or provider configuration changes.
+- **SC-016**: 100 percent of V2 safety tests confirm no cross-tenant visibility, secret leakage, prompt persistence, completion persistence, provider token exposure, API key exposure, or local endpoint secret exposure is introduced.
 
 ## Testing, Review, And Documentation Impact
 
-- **Testing Instructions**: Reviewer instructions must cover platform-scope and tenant-scope prompt creation, draft save, stale draft rejection, variable validation, safe fixture preview, publication immutability, retirement from new use, model-skill prompt reference resolution, workflow registry validation, runtime profile creation, profile activation, profile retirement, authorization failures, safe audit records, browser UI flows, and historical run preservation.
-- **PR Review Guidance**: PR notes must call out immutable prompt and profile versions, scope rules, preview safety, redaction behavior, model-skill routing prompt reference integration, workflow registry validation integration, runtime provenance, browser UI coverage, known risks, and rollback or retirement behavior.
-- **Documentation Impact**: The feature requires README and user-facing documentation updates explaining prompt lineages, draft and published versions, template variable validation, safe fixture previews, retirement semantics, runtime profile contracts, scope rules, workflow validation, model-skill prompt references, audit behavior, and browser UI usage.
+- **Testing Instructions**: Reviewer instructions must cover platform-scope and tenant-scope prompt creation, draft save, stale draft rejection, variable validation, safe fixture preview, publication immutability, retirement from new use, model-skill prompt reference resolution, workflow registry validation, runtime profile creation, profile activation, profile retirement, authorization failures, safe audit records, browser UI flows, historical run preservation, ModelGateway-only runtime execution, ModelGateway-only model-backed test bench execution, gateway invocation context completeness, worker bootstrap wiring, idempotency recovery, provider probe throttling, catalog sync recovery, retry and circuit breaker summaries, normalized provider errors, static direct-provider-call guardrails, and runtime/integration direct-provider-call detection.
+- **PR Review Guidance**: PR notes must call out immutable prompt and profile versions, scope rules, preview safety, redaction behavior, model-skill routing prompt reference integration, workflow registry validation integration, runtime provenance, browser UI coverage, ModelGateway runtime enforcement, profile-governed gateway invocation, provider operation idempotency, retry/breaker/rate-limit behavior, provider-safe audit evidence, known risks, and rollback or retirement behavior.
+- **Documentation Impact**: The feature requires README and user-facing documentation updates explaining prompt lineages, draft and published versions, template variable validation, safe fixture previews, retirement semantics, runtime profile contracts, scope rules, workflow validation, model-skill prompt references, ModelGateway-governed runtime execution, provider operation recovery, retry/breaker/rate-limit evidence, audit behavior, provenance review, and browser UI usage.
 
 ## Constitution Impact
 
@@ -208,6 +328,8 @@ As an auditor, maintainer, or reviewer, I need safe history, audit evidence, doc
 - **Secrets And Tool Access**: Prompt previews, validation results, profile records, logs, and audit summaries must never include raw secrets, credential values, or unauthorized run content.
 - **Observability**: Prompt and profile lifecycle events must produce safe history and audit evidence sufficient for support, governance, and incident review.
 - **Security**: Existing role and tenant authorization must govern all prompt library, runtime profile, browser UI, validation, preview, lifecycle, and audit actions.
+- **Runtime Gateway Completion**: Model-backed runtime, test bench, and validation execution paths must produce gateway provenance tied to prompt/profile pins before side-effectful runtime action begins.
+- **Provider Operation Hardening**: Gateway attempts, probes, and catalog sync actions must be idempotent, bounded, recoverable, safely audited, and free of raw prompts, completions, credentials, provider tokens, API keys, and endpoint secrets.
 
 ## Assumptions
 
@@ -219,3 +341,6 @@ As an auditor, maintainer, or reviewer, I need safe history, audit evidence, doc
 - Runtime profile retirement is the lifecycle action that removes an active profile version from new use while preserving historical references; "deactivate" may appear only as compatibility wording in existing APIs or UI copy and is not a separate lifecycle state.
 - Test-suite requirements describe what must be satisfied for a profile to be activation-ready; detailed test execution mechanics are deferred to planning.
 - Browser UI delivery is required for the primary admin workflows; alternate programmatic access may exist but is not sufficient by itself for acceptance.
+- Spec 011 provider gateway capabilities are available as the shared provider execution path, and V2 makes Spec 012 runtime/profile behavior consume that path rather than introducing a separate provider execution mechanism.
+- Model-backed validation and test bench executions are in scope only when they actually execute model-backed behavior; purely static validation remains side-effect-free.
+- Runtime profiles provide governance metadata for provider invocation but do not own provider credentials, raw provider tokens, endpoint secrets, or authorization decisions.

@@ -157,3 +157,174 @@ Alternatives considered: Feature-local audit logs were rejected because they
 would fragment governance evidence. Storing full rendered previews in audit
 records was rejected because rendered prompt text may include sensitive or
 unauthorized fixture content.
+
+## Version 2 Runtime Gateway Completion
+
+The following decisions extend the completed prompt/profile implementation
+without changing V1 authoring, lifecycle, UI, workflow validation, model-skill
+prompt reference, tenant grant, immutable versioning, retirement, docs, or
+migration behavior.
+
+## Container-Managed Gateway Dependencies
+
+Decision: Build `ModelProviderService`, `ModelGateway`,
+`ProviderAdapterRegistry`, provider repository factories, provider secret
+resolution, metrics/tracing/audit hooks, retry decision helpers, and breaker
+decision helpers from the application `Container`.
+
+Rationale: Runtime workers and admin probes need a single dependency graph that
+owns repository construction, provider adapter lifecycle, secret resolution,
+and observability. Container-managed factories prevent unmanaged HTTP clients
+from being created per request and make worker startup fail closed when gateway
+dependencies are incomplete.
+
+Alternatives considered: Constructing gateway dependencies inside each worker
+poll or API handler was rejected because it leaks lifecycle ownership and makes
+client cleanup unreliable. A separate provider gateway process was rejected
+because the existing Spec 011 gateway already lives inside this service.
+
+## Worker Bootstrap Gateway Readiness
+
+Decision: Extend worker bootstrap to expose gateway-ready dependencies before
+workers accept model-backed runtime work.
+
+Rationale: Workers are the boundary between durable run leases and provider
+side effects. They must know at startup whether provider repositories,
+adapter registry, secret resolver, retry/breaker helpers, and safe audit hooks
+are available, rather than discovering missing pieces after a run is claimed.
+
+Alternatives considered: Lazy creation after claiming a run was rejected
+because a missing dependency could strand a leased run after acceptance.
+Creating direct provider clients in orchestration workers was rejected because
+adapters must be the only provider SDK/HTTP boundary.
+
+## Runtime Gateway Invocation Ordering
+
+Decision: Invoke `ModelGateway` only after prompt/profile pins are resolved at
+run acceptance or dynamic first use, and before any model, tool, memory,
+approval, handoff, artifact, or other side-effectful runtime work.
+
+Rationale: Prompt/profile governance is useful only if the exact immutable
+versions govern the provider call. Persisting operation identity and gateway
+context first gives retry, replay, and audit a durable anchor before external
+effects begin.
+
+Alternatives considered: Invoking providers before pin persistence was rejected
+because recovery could not prove which prompt/profile version governed the
+call. Treating gateway invocation as an after-the-fact audit enrichment was
+rejected because it would not prevent bypasses.
+
+## Runtime Profile Contributions To Gateway Context
+
+Decision: Runtime profiles contribute model routing hints, prompt/profile
+provenance, memory policy context, tool policy expectations, and output
+contract metadata to gateway invocation context, while model_skill_config
+remains the authorization and routing decision owner.
+
+Rationale: Profiles explain the intended execution contract, but existing
+model_skill_config, provider catalog visibility, tenant authorization, and
+credential policy determine whether a provider route is allowed. Separating
+profile hints from authorization prevents profile metadata from expanding
+tenant or provider access.
+
+Alternatives considered: Letting runtime profiles directly choose provider
+connections was rejected because it bypasses Spec 007/011 authorization.
+Ignoring profile hints at gateway time was rejected because provenance would
+not show why a route was selected for the agent.
+
+## Test Bench And Model-Backed Validation Parity
+
+Decision: Profile test bench execution and model-backed workflow validation
+must use the same `ModelGateway` path and safe attempt metadata as production
+runtime calls whenever they call a model provider.
+
+Rationale: Admins and reviewers use test bench results to trust production
+behavior. Divergent provider paths would hide authorization, retry, breaker,
+usage, latency, and audit differences until live runs.
+
+Alternatives considered: Test-only direct providers were rejected because they
+would create ungoverned prompts and credentials. Mock-only validation was
+rejected for model-backed validation paths that intentionally execute provider
+behavior.
+
+## Reliability Mapping
+
+Decision: Map normalized provider errors into existing retry and breaker
+decisions: timeouts to timeout, rate limits to rate limited, provider
+unavailable and malformed response to dependency unavailable, authorization or
+visibility failures to non-retryable authorization/policy denial, and inactive
+catalog or invalid model to non-retryable configuration/catalog failure.
+
+Rationale: Spec 009 already provides retry budgets and circuit breaker
+concepts. Reusing those helpers keeps provider reliability behavior consistent
+with worker reliability and avoids duplicating policy engines.
+
+Alternatives considered: Gateway-local retry logic was rejected because it
+would fragment tenant retry budgets and breaker state. Treating all provider
+errors as retryable was rejected because authorization, catalog, and credential
+failures should fail closed.
+
+## Idempotency And Recovery
+
+Decision: Use one logical operation identity per gateway invocation, provider
+probe, and catalog sync. Retries and restarts reuse that identity; each
+physical attempt is recorded as a child attempt. Completed authoritative
+outcomes are returned on duplicate submit, while ambiguous outcomes are
+recovered or fail closed according to retry/breaker policy.
+
+Rationale: Provider operations can be triggered by worker retries, process
+restarts, admin resubmits, and catalog recovery. A logical operation record
+separates the authoritative outcome from the physical attempts used to reach
+or recover it.
+
+Alternatives considered: Using only physical attempt rows was rejected because
+duplicates cannot be suppressed reliably. Using provider request ids alone was
+rejected because not all providers expose stable ids and local providers may
+not support them.
+
+## Admin Probe Controls
+
+Decision: Reuse existing bounded-operation and rate-limit controls before
+provider test probes launch provider activity. Probe limits apply by actor and
+provider connection, with tenant and global backstops.
+
+Rationale: Provider probes consume shared external or local capacity and may
+touch credentials. Existing admin reliability controls already provide the
+right safety model and audit expectations.
+
+Alternatives considered: A probe-specific limiter was rejected because it
+would duplicate operator policy. Allowing unbounded admin probes was rejected
+because probes can become a shared-capacity denial vector.
+
+## Direct Provider Call Guardrails
+
+Decision: Add both static import/usage checks and runtime/integration detection
+that fail when runtime, worker, test bench, workflow validation, agent, prompt,
+or profile code calls provider SDKs or provider HTTP endpoints outside explicit
+`ModelGateway` adapter modules.
+
+Rationale: Static checks catch most regressions during review, while behavioral
+tests prove representative model-backed execution paths actually pass through
+the gateway and emit expected metadata.
+
+Alternatives considered: Relying only on code review was rejected because
+provider calls are easy to reintroduce in tests or validation paths. Relying
+only on runtime detection was rejected because bypassing code should fail
+before deployment.
+
+## Gateway Observability And Safe Audit
+
+Decision: Correlate prompt/profile pins, selected provider connection, model
+id, tenant, workflow run, step, trace, idempotency identity, retry decision,
+breaker decision, latency, usage availability, normalized outcome, and safe
+summary fields in gateway attempt evidence.
+
+Rationale: Incident review needs prompt/profile governance and provider route
+evidence together. Safe summaries preserve debugging value while excluding
+raw prompts, completions, credentials, provider tokens, API keys, local
+endpoint secrets, unsafe preview content, and unauthorized run content.
+
+Alternatives considered: Storing raw provider request/response payloads was
+rejected for security and tenant isolation. Keeping prompt/profile and provider
+evidence separate was rejected because auditors need to verify which immutable
+governance inputs controlled each provider operation.

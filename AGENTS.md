@@ -75,6 +75,10 @@ Auto-generated from all feature plans. Last updated: 2026-04-28
   render tests, prompt audit records, agent runtime profiles, immutable profile
   versions, tenant grants, workflow validation references, bundle pins, and run
   provenance metadata (012-prompt-runtime-profiles)
+- PostgreSQL for additive gateway operation identities, provider probe and
+  catalog sync recovery records, physical attempt summaries, retry/breaker
+  summaries, prompt/profile/provider provenance links, and safe audit records
+  (012-prompt-runtime-profiles V2)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -104,6 +108,12 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 012-prompt-runtime-profiles V2: Planned additive runtime gateway completion
+  with container-managed ModelGateway wiring, gateway-ready worker bootstrap,
+  profile-governed model execution, test bench parity, durable provider
+  operation idempotency, retry and circuit breaker summaries, admin probe
+  limits, direct provider call guardrails, and safe combined prompt/profile plus
+  provider provenance.
 - 012-prompt-runtime-profiles: Planned prompt library and agent runtime profile
   management with prompt lineages, draft revisions, template variable
   validation, safe fixture previews, immutable prompt publication, retirement,
