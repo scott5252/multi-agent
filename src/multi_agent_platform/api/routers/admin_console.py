@@ -7,21 +7,25 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import ContainerDep, get_session
 from multi_agent_platform.api.ui.admin_console import (
     AdminConsoleAccessError,
     AdminScope,
+    AdminScopeOption,
     AdminShellContext,
     BreadcrumbItem,
     CommonState,
     CommonStateType,
     SavedFilterSummary,
+    available_scope_options,
     build_admin_shell_context,
     build_common_state,
     build_saved_filter_summary,
     filter_profiles,
+    is_platform_admin,
     normalize_filter_criteria,
     resolve_admin_scope,
     safe_redirect_target,
@@ -69,6 +73,56 @@ async def resolve_scope_for_request(
     return active_scope
 
 
+async def available_scope_options_for_request(
+    *,
+    principal: PrincipalContext,
+    active_scope: AdminScope,
+    current_path: str,
+    session: AsyncSession,
+) -> tuple[AdminScopeOption, ...]:
+    if not is_platform_admin(principal):
+        return available_scope_options(
+            principal=principal,
+            active_scope=active_scope,
+            current_path=current_path,
+        )
+
+    options = [
+        AdminScopeOption(
+            scope=AdminScope.platform(),
+            label="Platform scope",
+            href=f"/admin/scope?next={current_path}",
+            selected=active_scope.scope_type == "platform",
+        )
+    ]
+    result = await session.execute(
+        select(Tenant)
+        .where(Tenant.status == TenantStatus.ACTIVE)
+        .order_by(Tenant.display_name, Tenant.slug)
+    )
+    for tenant in result.scalars():
+        tenant_scope = AdminScope.tenant(
+            tenant.tenant_id,
+            label=sanitize_text(
+                tenant.display_name,
+                fallback="Tenant",
+                max_length=80,
+            ),
+        )
+        options.append(
+            AdminScopeOption(
+                scope=tenant_scope,
+                label=f"Tenant scope {tenant_scope.label}",
+                href=(
+                    f"/admin/scope?next={current_path}"
+                    f"&tenant_id={tenant.tenant_id}"
+                ),
+                selected=active_scope.tenant_id == tenant.tenant_id,
+            )
+        )
+    return tuple(options)
+
+
 async def build_shell_for_request(
     *,
     request: Request,
@@ -92,6 +146,12 @@ async def build_shell_for_request(
         breadcrumbs=breadcrumbs,
         common_state=common_state,
         saved_filters=saved_filters,
+        available_scopes=await available_scope_options_for_request(
+            principal=principal,
+            active_scope=active_scope,
+            current_path=request.url.path,
+            session=session,
+        ),
     )
     try:
         await AuditService(AuditRepository(session)).record_admin_navigation_visibility(

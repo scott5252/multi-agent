@@ -98,6 +98,27 @@ def test_admin_landing_renders_scope_navigation_and_tenant_links(
     assert "tenant_id=" in response.text
 
 
+def test_platform_admin_landing_offers_active_tenant_scope_dropdown(
+    tmp_path, monkeypatch
+) -> None:
+    tenant_id = uuid4()
+    _configure_env(monkeypatch, tmp_path, tenant_id)
+    app = create_app()
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/admin",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+
+    assert response.status_code == 200
+    assert_scope_label(response.text, "Platform")
+    assert 'id="admin-scope-select"' in response.text
+    assert "Switch scope" in response.text
+    assert "Tenant scope Acme" in response.text
+    assert f'value="{tenant_id}"' in response.text
+
+
 def test_scope_selector_audits_and_sanitizes_redirects(tmp_path, monkeypatch) -> None:
     tenant_id = uuid4()
     _configure_env(monkeypatch, tmp_path, tenant_id)

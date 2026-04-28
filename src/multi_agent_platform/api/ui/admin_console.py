@@ -647,6 +647,7 @@ def build_admin_shell_context(
     common_state: CommonState | None = None,
     saved_filters: Sequence[SavedFilterSummary] = (),
     filter_restore_outcome: str | None = None,
+    available_scopes: Sequence[AdminScopeOption] | None = None,
 ) -> AdminShellContext:
     if not principal_can_use_scope(principal, active_scope):
         raise AdminConsoleAccessError(
@@ -664,7 +665,9 @@ def build_admin_shell_context(
     return AdminShellContext(
         title=sanitize_text(title, fallback="Admin Console", max_length=90),
         active_scope=active_scope,
-        available_scopes=available_scope_options(
+        available_scopes=tuple(available_scopes)
+        if available_scopes is not None
+        else available_scope_options(
             principal=principal,
             active_scope=active_scope,
             current_path=current_path,
