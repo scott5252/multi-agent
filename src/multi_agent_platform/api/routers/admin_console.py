@@ -113,10 +113,7 @@ async def available_scope_options_for_request(
             AdminScopeOption(
                 scope=tenant_scope,
                 label=f"Tenant scope {tenant_scope.label}",
-                href=(
-                    f"/admin/scope?next={current_path}"
-                    f"&tenant_id={tenant.tenant_id}"
-                ),
+                href=(f"/admin/scope?next={current_path}&tenant_id={tenant.tenant_id}"),
                 selected=active_scope.tenant_id == tenant.tenant_id,
             )
         )
