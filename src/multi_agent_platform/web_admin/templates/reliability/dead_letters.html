@@ -1,12 +1,6 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>{{ title }}</title>
-    <script src="/admin/static/reliability_controls.js" defer></script>
-  </head>
-  <body>
-    <main>
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
       <h1>Dead Letters</h1>
       <section data-reliability-panel="dead-letters">
         <table>
@@ -18,7 +12,8 @@
           </tbody>
         </table>
       </section>
-    </main>
-  </body>
-</html>
+{% endblock %}
 
+{% block page_scripts %}
+  <script src="/admin/static/reliability_controls.js" defer></script>
+{% endblock %}

@@ -34,6 +34,10 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 - reliability scale hardening for admission controls, tenant quotas, fair
   scheduling, retries, circuit breakers, compensation, dead letters, artifact
   throughput, and operator inspection APIs under `/admin/reliability`
+- shared admin console shell under `/admin` with platform and tenant scope
+  display, authorization-aware navigation, common states, safe messages,
+  breadcrumbs, saved filters, and route-preserving links to workflow,
+  model-skill, run inspection, and reliability pages
 
 ## Quickstart
 
@@ -50,6 +54,32 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 9. Open [http://127.0.0.1:8000/runs](http://127.0.0.1:8000/runs) to start
    and inspect runs through the Web UI channel.
 10. Validate the repo with `./scripts/check.sh`.
+
+## Admin Console Shell
+
+Open `/admin` to use the shared server-rendered admin console. Platform scope
+omits `tenant_id`; tenant scope uses a validated `tenant_id=<uuid>` query
+parameter on shell links and forms. The shell shows the active scope on every
+wrapped page so administrators can identify whether they are acting at the
+platform level or inside a tenant.
+
+Navigation groups organize existing pages without replacing their routes:
+Workflows, Model And Skill Config, Run Inspection, Reliability, and Access.
+The main destinations remain `/admin/workflows/ui`, `/admin/config/ui`,
+`/admin/config/ui/history`, `/admin/runs`, `/admin/reliability/ui/`,
+`/admin/reliability/ui/breakers`, and
+`/admin/reliability/ui/dead-letters`.
+
+Common states distinguish empty lists, filtered-empty lists, denied access,
+not-found resources, unavailable dependencies, validation failures, partial
+data, and unexpected errors. Safe messages, breadcrumbs, and saved-filter
+summaries are sanitized so raw secrets, credentials, prompt text, memory
+content, run payloads, stack traces, and cross-tenant labels are not rendered.
+
+Saved filters are available only on useful filterable pages and are persisted
+server-side by principal, admin area, filter key, and platform or tenant scope.
+Restoration revalidates criteria and scope before redirecting to the target
+page.
 
 ## Production Audit Debugging
 
@@ -148,6 +178,7 @@ Latest full validation run: `2026-04-24`
 - [Immutable Memory](/Users/scottcornell/src/my-projects/multi-agent/docs/immutable-memory.md)
 - [Production Audit Debugging](/Users/scottcornell/src/my-projects/multi-agent/docs/production-audit-debugging.md)
 - [Reliability Scale Hardening](/Users/scottcornell/src/my-projects/multi-agent/docs/reliability-scale-hardening.md)
+- [Admin Console Shell](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-console-shell.md)
 - [Foundation Runbook](/Users/scottcornell/src/my-projects/multi-agent/docs/foundation-runbook.md)
 - [Architecture](/Users/scottcornell/src/my-projects/multi-agent/docs/architecture.md)
 - [Constitution](/Users/scottcornell/src/my-projects/multi-agent/.specify/memory/constitution.md)

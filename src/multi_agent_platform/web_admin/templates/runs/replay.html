@@ -1,12 +1,8 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Run Replay</title>
-    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
-  </head>
-  <body class="workflow-page" data-run-id="{{ workflow_run_id }}">
-    <main class="page-shell">
+{% extends "admin_shell/base.html" %}
+
+{% block body_attrs %} data-run-id="{{ workflow_run_id }}"{% endblock %}
+
+{% block content %}
       <header class="hero">
         <div>
           <p class="eyebrow">Production Audit</p>
@@ -21,7 +17,8 @@
           <ol data-audit-replay></ol>
         </article>
       </section>
-    </main>
-    <script src="/admin/static/run_inspection.js"></script>
-  </body>
-</html>
+{% endblock %}
+
+{% block page_scripts %}
+  <script src="/admin/static/run_inspection.js"></script>
+{% endblock %}

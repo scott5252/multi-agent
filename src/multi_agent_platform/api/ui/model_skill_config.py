@@ -6,6 +6,7 @@ from multi_agent_platform.api.schemas.model_skill_config import (
     HistoryResponse,
     RunProvenanceResponse,
 )
+from multi_agent_platform.api.ui.admin_console import FilterProfile, filter_profiles
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,7 +15,7 @@ class ModelRoutingPageModel:
     missing_default: bool
     preview_action: str = "/admin/config/preview/model"
     tool_preview_action: str = "/admin/config/preview/tool"
-    history_href: str = "/admin/config/model-routing/history"
+    history_href: str = "/admin/config/ui/history"
     skills_tools_filters: tuple[str, ...] = (
         "tenant",
         "workflow",
@@ -62,3 +63,7 @@ def build_run_provenance_page_model(
     provenance: RunProvenanceResponse,
 ) -> RunProvenancePageModel:
     return RunProvenancePageModel(title="Run Provenance", provenance=provenance)
+
+
+def model_skill_history_filter_profile() -> FilterProfile:
+    return filter_profiles()["model_skill_history"]

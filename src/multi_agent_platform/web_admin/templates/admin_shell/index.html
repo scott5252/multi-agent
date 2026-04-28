@@ -1,0 +1,16 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+  <section class="admin-overview-grid" aria-label="Admin destinations">
+    {% for group in shell.navigation_groups %}
+      <article class="admin-overview-section">
+        <h2>{{ group.label }}</h2>
+        <ul>
+          {% for item in group.items %}
+            <li><a href="{{ item.href }}">{{ item.label }}</a></li>
+          {% endfor %}
+        </ul>
+      </article>
+    {% endfor %}
+  </section>
+{% endblock %}

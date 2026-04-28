@@ -52,6 +52,12 @@ omit `tenant_id`.
    verify safe wording.
 10. Simulate audit persistence failure and confirm protected rendering/actions
     are blocked with safe unavailable state plus log/metric evidence.
+11. Verify optional enhancement/no-JS fallback by disabling JavaScript and
+    confirming `/admin`, direct shell-wrapped pages, scope links, breadcrumbs,
+    common states, and saved-filter forms remain usable.
+12. Confirm an authorized reviewer can reach workflow, model-skill,
+    run-inspection, and reliability destinations in three navigation actions or
+    fewer and can identify active scope within 5 seconds.
 
 ## Automated Checks
 
@@ -67,6 +73,27 @@ uv run pytest tests/integration/api/test_admin_console_shell_authorization.py
 uv run pytest tests/integration/api/test_admin_console_shell_saved_filters.py
 uv run pytest tests/docs/test_admin_console_shell_docs.py
 uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90
+```
+
+Final focused admin shell check:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_console_ui_models.py \
+  tests/unit/api/test_admin_console_access.py \
+  tests/unit/api/test_admin_console_filters.py \
+  tests/unit/auth/test_admin_console_policy.py \
+  tests/unit/audit/test_admin_console_audit.py \
+  tests/unit/db/test_admin_console_models.py \
+  tests/unit/db/test_admin_console_repository.py \
+  tests/integration/api/test_admin_console_shell_routes.py \
+  tests/integration/api/test_admin_console_shell_authorization.py \
+  tests/integration/api/test_admin_console_templates.py \
+  tests/integration/api/test_admin_console_shell_states.py \
+  tests/integration/api/test_admin_console_shell_saved_filters.py \
+  tests/integration/db/test_admin_console_migration.py \
+  tests/contract/test_admin_console_shell_contract.py \
+  tests/docs/test_admin_console_shell_docs.py
 ```
 
 ## Review Evidence

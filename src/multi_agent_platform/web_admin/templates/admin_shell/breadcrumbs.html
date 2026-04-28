@@ -1,0 +1,15 @@
+{% if shell.breadcrumbs %}
+  <nav class="admin-breadcrumbs" aria-label="Breadcrumb">
+    <ol>
+      {% for crumb in shell.breadcrumbs %}
+        <li>
+          {% if crumb.href and not crumb.active %}
+            <a href="{{ crumb.href }}">{{ crumb.label }}</a>
+          {% else %}
+            <span {% if crumb.active %}aria-current="page"{% endif %}>{{ crumb.label }}</span>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  </nav>
+{% endif %}

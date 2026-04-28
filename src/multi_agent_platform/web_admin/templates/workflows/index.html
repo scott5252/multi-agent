@@ -1,12 +1,6 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Workflow Registry</title>
-    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
-  </head>
-  <body class="workflow-page">
-    <main class="page-shell">
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
       <header class="hero">
         <div>
           <p class="eyebrow">Admin Workflow Studio</p>
@@ -59,7 +53,8 @@
           </article>
         {% endif %}
       </section>
-    </main>
-    <script src="/admin/static/workflow_studio.js"></script>
-  </body>
-</html>
+{% endblock %}
+
+{% block page_scripts %}
+  <script src="/admin/static/workflow_studio.js"></script>
+{% endblock %}

@@ -1,12 +1,6 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>{{ page.title }}</title>
-    <link rel="stylesheet" href="/admin/static/workflow_studio.css" />
-  </head>
-  <body>
-    <main class="workflow-shell">
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
       <header class="workflow-header">
         <h1>{{ page.title }}</h1>
         <a href="{{ page.history_href }}">History</a>
@@ -50,7 +44,8 @@
         </dl>
         <p>Secret values are redacted; only reference identifiers and safe policy summaries are shown.</p>
       </section>
-    </main>
-    <script src="/admin/static/model_skill_config.js"></script>
-  </body>
-</html>
+{% endblock %}
+
+{% block page_scripts %}
+  <script src="/admin/static/model_skill_config.js"></script>
+{% endblock %}

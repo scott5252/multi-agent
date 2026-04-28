@@ -84,8 +84,8 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
-- 010-admin-console-shell: Planned shared server-rendered admin console shell
-  with FastAPI/Jinja2 templates, Auth0/local-principal authorization,
+- 010-admin-console-shell: Implemented shared server-rendered admin console
+  shell with FastAPI/Jinja2 templates, Auth0/local-principal authorization,
   validated tenant-scope query handling, authorization-aware navigation,
   item-level navigation audit evidence, fail-closed audit persistence behavior,
   common empty/error/flash states, breadcrumbs, saved filters, accessibility,

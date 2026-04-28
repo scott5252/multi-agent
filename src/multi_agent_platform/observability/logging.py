@@ -172,6 +172,31 @@ def audit_log_context(
     return {"extra": payload}
 
 
+def admin_shell_log_context(
+    *,
+    action: str,
+    outcome: str,
+    reason: str,
+    trace_id: str | None = None,
+    tenant_id: str | None = None,
+    principal_id: str | None = None,
+    request_path: str | None = None,
+) -> dict[str, dict[str, str]]:
+    payload = {
+        "action": action,
+        "outcome": outcome,
+        "reason": reason,
+    }
+    optional = {
+        "trace_id": trace_id,
+        "tenant_id": tenant_id,
+        "principal_id": principal_id,
+        "request_path": request_path,
+    }
+    payload.update({key: value for key, value in optional.items() if value is not None})
+    return {"extra": redact_mapping(payload)}
+
+
 def reliability_log_context(
     *,
     action: str,

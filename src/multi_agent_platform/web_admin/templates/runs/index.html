@@ -1,12 +1,6 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Workflow Runs</title>
-    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
-  </head>
-  <body class="workflow-page">
-    <main class="page-shell">
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
       <header class="hero">
         <div>
           <p class="eyebrow">{{ "Production Audit" if audit_mode else "User Interaction Channels" }}</p>
@@ -74,6 +68,4 @@
           </article>
         {% endif %}
       </section>
-    </main>
-  </body>
-</html>
+{% endblock %}
