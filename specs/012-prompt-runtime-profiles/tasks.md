@@ -236,6 +236,7 @@
 - [ ] T116 [P] Write unit tests proving `Container` exposes `ModelProviderRepository`, `ModelProviderService`, `ProviderAdapterRegistry`, `ModelGateway`, provider secret resolver, metrics, tracing, retry, breaker, and audit factories without unmanaged per-request HTTP client lifecycle in `/Users/scottcornell/src/my-projects/multi-agent/tests/unit/bootstrap/test_container_model_gateway_factories.py`
 - [ ] T117 [P] Write unit tests proving adapter registry lifecycle ownership, container disposal cleanup, and provider secret resolver wiring for gateway adapters in `/Users/scottcornell/src/my-projects/multi-agent/tests/unit/model_providers/test_gateway_dependency_lifecycle.py`
 - [ ] T118 [P] Write unit tests proving `WorkerBootstrap` exposes gateway-ready dependencies and fails readiness when gateway, repository, adapter, secret, retry, breaker, metrics, tracing, or audit dependencies are unavailable in `/Users/scottcornell/src/my-projects/multi-agent/tests/unit/bootstrap/test_worker_gateway_bootstrap.py`
+- [ ] T182 [P] Write integration tests proving worker startup and leasing fail closed before accepting model-backed work when gateway, repository, adapter registry, secret resolver, retry helper, breaker helper, metrics, tracing, or audit dependencies are unavailable, while preserving allowed non-model-backed maintenance behavior in `/Users/scottcornell/src/my-projects/multi-agent/tests/integration/workers/test_worker_gateway_readiness.py`
 - [ ] T119 [P] Write migration tests for additive V2 gateway operation, provider probe operation, catalog sync operation, physical attempt, uniqueness, lookup index, upgrade, and downgrade behavior in `/Users/scottcornell/src/my-projects/multi-agent/tests/integration/db/test_prompt_runtime_profiles_v2_gateway_migration.py`
 - [ ] T120 [P] Write repository tests for gateway/probe/catalog logical operation identity creation, duplicate lookup, authoritative outcome reuse, physical attempt numbering, and recovery queries in `/Users/scottcornell/src/my-projects/multi-agent/tests/unit/db/test_model_provider_operation_repository.py`
 - [ ] T121 Implement additive Alembic migration for V2 gateway operation identities, provider probe operation identities, catalog sync operation identities, child attempt records, uniqueness, and lookup indexes without destructive rewrites in `/Users/scottcornell/src/my-projects/multi-agent/alembic/versions/0013_prompt_runtime_profiles_v2_gateway_operations.py`
@@ -264,6 +265,7 @@
 - [ ] T131 [P] [US6] Write integration tests proving profile test bench execution and model-backed profile validation use the same gateway path and record equivalent safe metadata in `/Users/scottcornell/src/my-projects/multi-agent/tests/integration/runtime/test_profile_test_bench_gateway.py`
 - [ ] T132 [P] [US6] Write unit tests proving runtime profile model routing hints do not bypass `model_skill_config` authorization or tenant-over-platform profile precedence in `/Users/scottcornell/src/my-projects/multi-agent/tests/unit/agents/test_profile_gateway_routing_context.py`
 - [ ] T133 [P] [US6] Write contract tests for the runtime gateway execution contract, including invocation ordering, side-effect boundary, test bench identity, workflow validation identity, and safe context shape in `/Users/scottcornell/src/my-projects/multi-agent/tests/contract/test_runtime_gateway_execution_contract.py`
+- [ ] T181 [P] [US6] Write integration tests proving model-backed workflow validation uses `ModelGateway` with workflow validation identity, prompt/profile pins, tenant id, trace id, model routing provenance, idempotency key, safe audit metadata, and no provider activity before context persistence in `/Users/scottcornell/src/my-projects/multi-agent/tests/integration/workflows/test_workflow_validation_model_gateway.py`
 
 ### Implementation for User Story 6 V2
 
@@ -292,7 +294,7 @@
 - [ ] T143 [P] [US7] Write unit tests for circuit breaker scope keys and breaker decision summaries scoped by provider connection and model/catalog identity with tenant/run context stored as evidence only in `/Users/scottcornell/src/my-projects/multi-agent/tests/unit/reliability/test_gateway_breaker_decisions.py`
 - [ ] T144 [P] [US7] Write integration tests for persisted gateway invocation idempotency, duplicate suppression, authoritative outcome reuse, ambiguous recovery, and worker restart recovery in `/Users/scottcornell/src/my-projects/multi-agent/tests/integration/runtime/test_gateway_operation_recovery.py`
 - [ ] T145 [P] [US7] Write integration tests for provider probe idempotency, admin resubmit recovery, duplicate suppression, and safe prior-result return in `/Users/scottcornell/src/my-projects/multi-agent/tests/integration/api/test_admin_provider_probe_recovery.py`
-- [ ] T146 [P] [US7] Write integration tests for provider catalog sync checkpoints, restart recovery, duplicate authoritative catalog suppression, and safe partial failure handling in `/Users/scottcornell/src/my-projects/multi-agent/tests/integration/model_providers/test_catalog_sync_recovery.py`
+- [ ] T146 [P] [US7] Write integration tests for provider catalog sync checkpoints, restart recovery, duplicate authoritative catalog suppression, safe partial failure handling, and safe audit evidence for unavailable, unauthorized, skipped, retried, recovered, failed, and completed sync outcomes in `/Users/scottcornell/src/my-projects/multi-agent/tests/integration/model_providers/test_catalog_sync_recovery.py`
 
 ### Implementation for User Story 7 V2
 
@@ -301,7 +303,7 @@
 - [ ] T149 [US7] Integrate retry decision and circuit breaker decision evaluation into the gateway invocation flow before provider adapter calls and after physical attempts in `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/model_providers/gateway.py`
 - [ ] T150 [US7] Implement logical gateway operation recovery, duplicate suppression, physical attempt child recording, and authoritative outcome reuse in `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/db/repositories/model_providers.py`
 - [ ] T151 [US7] Implement provider probe operation identity, recovery, duplicate suppression, and authoritative safe result reuse in `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/model_providers/service.py` and `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/model_providers/probes.py`
-- [ ] T152 [US7] Implement catalog sync operation identity, safe checkpoints, recovery, duplicate authoritative catalog suppression, and partial failure handling in `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/model_providers/catalog_sync.py`
+- [ ] T152 [US7] Implement catalog sync operation identity, safe checkpoints, recovery, duplicate authoritative catalog suppression, partial failure handling, and safe decision/audit summaries with provider identity, tenant/scope, recovery identity, decision category, and no secret or endpoint leakage in `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/model_providers/catalog_sync.py`
 
 **Checkpoint**: Provider operations can retry, recover, and suppress duplicates using logical operation identities without creating duplicate authoritative provider effects or rewriting historical records.
 
@@ -330,6 +332,7 @@
 - [ ] T162 [US8] Refactor any remaining model-backed runtime, test bench, and workflow validation provider calls to `ModelGateway` in `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/runtime/orchestration/service.py`, `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/agents/test_bench.py`, and `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/admin/workflow_registry/validation.py`
 - [ ] T163 [US8] Implement provider operation safe audit classifications, capture builders, metrics correlation, and tracing correlation without sensitive payloads in `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/audit/classification.py`, `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/audit/capture.py`, `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/observability/metrics.py`, and `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/observability/tracing.py`
 - [ ] T164 [US8] Add gateway/probe/catalog operation metrics and trace hooks for latency, usage availability, normalized outcome, retry category, breaker decision, duplicate suppression, and recovery outcome in `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/model_providers/gateway.py` and `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/model_providers/service.py`
+- [ ] T183 [US8] Update the runtime gateway execution contract with the explicit allowed `ModelGateway` adapter module allowlist and verify the static/runtime guardrail tests use the same allowlist source in `/Users/scottcornell/src/my-projects/multi-agent/specs/012-prompt-runtime-profiles/contracts/runtime-gateway-execution.md` and `/Users/scottcornell/src/my-projects/multi-agent/src/multi_agent_platform/model_providers/guardrails.py`
 
 **Checkpoint**: Provider operation limits, retry/breaker evidence, guardrails, and safe observability protect all covered model-backed execution paths.
 
@@ -370,7 +373,7 @@
 - [ ] T177 Run Alembic upgrade and downgrade validation for Spec 012 V1 and additive V2 gateway migrations, confirming no destructive rewrites or historical provenance backfills, and record evidence in `/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles-testing.md`
 - [ ] T178 Run full pytest with coverage >=90 percent, including V1 Spec 012 regression tests and V2 gateway acceptance tests, and record evidence in `/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles-testing.md`
 - [ ] T179 Run browser/admin regression flows for existing Spec 012 prompt library, runtime profile, workflow validation, model-skill prompt reference, tenant grant, immutable versioning, retirement, audit, and docs workflows, then record evidence in `/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles-pr-notes.md`
-- [ ] T180 Run V2 acceptance proving profile-governed runtime execution and profile test bench model calls use `ModelGateway` end to end with prompt/profile pins, provider provenance, retry/breaker summaries, idempotency, and safe audit evidence in `/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles-pr-notes.md`
+- [ ] T180 Run V2 acceptance proving runtime execution, profile test bench calls, and model-backed workflow validation use `ModelGateway` end to end; provider probes throttle before provider activity; gateway/probe/catalog retries recover without duplicate authoritative effects; direct provider calls are blocked or detected; safe audit/provenance joins prompt/profile pins with provider metadata; and no prompts, completions, secrets, provider tokens, API keys, endpoint secrets, or cross-tenant content leak, then record evidence in `/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles-pr-notes.md`
 
 ---
 
@@ -428,10 +431,10 @@
 - US3 tests T053-T061 can run in parallel; models, validation, and resolution T062-T064 can run in parallel before service and integration tasks.
 - US4 tests T074-T079 can run in parallel; prompt and profile template tasks T084-T085 can run in parallel with JavaScript/CSS tasks T087-T088 after view model contracts are known.
 - US5 tests T090-T096 can run in parallel; docs and review-note tasks T104-T108 can run in parallel after implementation behavior is stable.
-- V2 foundational tests T116-T120 can run in parallel; migration/model/repository tasks T121-T123 should complete before gateway invocation recovery work.
-- US6 V2 tests T129-T133 can run in parallel after V2 foundational wiring; implementation tasks T134-T141 should proceed in dependency order from pin accessors to gateway invocation to test bench and validation parity.
+- V2 foundational tests T116-T120 and T182 can run in parallel; migration/model/repository tasks T121-T123 should complete before gateway invocation recovery work, while T182 should run before workers accept model-backed work in acceptance.
+- US6 V2 tests T129-T133 and T181 can run in parallel after V2 foundational wiring; implementation tasks T134-T141 should proceed in dependency order from pin accessors to gateway invocation to test bench and validation parity.
 - US7 V2 tests T142-T146 can run in parallel; provider probe and catalog sync implementation T151-T152 can proceed after operation persistence while gateway retry/recovery tasks T147-T150 follow US6 context propagation.
-- US8 V2 tests T153-T158 can run in parallel; admin probe limit work T159-T160 can proceed independently from direct-call guardrail work T161-T162 after V2 foundational wiring.
+- US8 V2 tests T153-T158 can run in parallel; admin probe limit work T159-T160 can proceed independently from direct-call guardrail work T161-T162 and contract allowlist task T183 after V2 foundational wiring.
 - US9 V2 docs tests T166 can start while provenance tests T165 and browser regression tests T167 wait for US6-US8 evidence; documentation tasks T170-T173 can draft early and finalize after acceptance.
 - V2 validation tasks T174-T176 can run in parallel after implementation settles; T177-T180 should run in sequence because migration, full coverage, browser regression, and V2 acceptance evidence build on each other.
 
@@ -524,7 +527,7 @@ uv run ruff format --check .
 uv run mypy src
 uv run pytest tests/unit/model_providers tests/unit/bootstrap tests/unit/runtime tests/unit/reliability
 uv run pytest tests/contract
-uv run pytest tests/integration/workers tests/integration/runtime tests/integration/api
+uv run pytest tests/integration/workers tests/integration/runtime tests/integration/api tests/integration/workflows tests/integration/model_providers
 uv run pytest tests/docs
 uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90
 uv run uvicorn multi_agent_platform.api.main:app --reload
