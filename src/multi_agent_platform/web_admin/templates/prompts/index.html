@@ -1,0 +1,38 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<section class="admin-section">
+  <h2>Prompt Library</h2>
+  <div class="prompt-runtime-toolbar">
+    <a class="button" href="/admin/prompt-runtime/prompts/new">Create Prompt</a>
+    <form method="get" action="/admin/prompt-runtime/prompts">
+      <input name="q" aria-label="Search prompts" placeholder="Search prompts">
+      <button type="submit">Search</button>
+    </form>
+  </div>
+  <table class="prompt-runtime-table">
+    <thead>
+      <tr><th>Display Name</th><th>Scope</th><th>Status</th><th>Validation</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.display_name }}</td>
+          <td>{{ item.scope_type }}{% if item.tenant_id %} / {{ item.tenant_id }}{% endif %}</td>
+          <td>{{ item.status }}</td>
+          <td>{{ item.validation_status or "Not validated" }}</td>
+          <td>
+            <a href="/admin/prompt-runtime/prompts/{{ item.prompt_lineage_id }}/edit">Edit Draft</a>
+            <a href="/admin/prompt-runtime/prompts/{{ item.prompt_lineage_id }}/history">History</a>
+            {% if item.latest_published_prompt_version_id %}
+              <a href="/admin/prompt-runtime/prompts/versions/{{ item.latest_published_prompt_version_id }}">Version</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">No prompt lineages are visible in the current scope.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

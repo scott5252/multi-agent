@@ -1,0 +1,30 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<section class="admin-section prompt-runtime-form">
+  <h2>{{ page.title }}</h2>
+  <form method="get" action="/admin/prompt-runtime/profiles/resolve">
+    <label class="field-row"><span>Tenant ID</span><input name="tenant_id" value="{{ resolve_tenant_id or '' }}"></label>
+    <label class="field-row"><span>Agent Key</span><input name="agent_key" value="{{ page.agent_key }}"></label>
+    <label class="field-row"><span>Agent Kind</span><select name="agent_kind"><option value="agent" {% if page.agent_kind == "agent" %}selected{% endif %}>Agent</option><option value="sub_agent" {% if page.agent_kind == "sub_agent" %}selected{% endif %}>Sub-agent</option></select></label>
+    <button type="submit">Resolve</button>
+  </form>
+  <section class="validation-panel">
+    <h3>Resolution</h3>
+    {% if resolution %}
+      {% if resolution.resolved %}
+        <p>Resolved to {{ resolution.selected_profile_version_id }} from {{ resolution.source_scope }} scope.</p>
+        <p>Considered versions: {{ resolution.considered_profile_version_ids | join(", ") }}</p>
+      {% else %}
+        <ul>
+          {% for finding in resolution.blocking_issues %}
+            <li>{{ finding.code }}: {{ finding.message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% else %}
+      <p>Tenant profiles win before granted platform fallback profiles.</p>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

@@ -5,6 +5,9 @@ from fastapi.staticfiles import StaticFiles
 
 from multi_agent_platform.api.lifespan import app_lifespan
 from multi_agent_platform.api.routers.admin_access import router as admin_access_router
+from multi_agent_platform.api.routers.admin_agent_profiles import (
+    router as admin_agent_profiles_router,
+)
 from multi_agent_platform.api.routers.admin_console import (
     router as admin_console_router,
 )
@@ -13,6 +16,9 @@ from multi_agent_platform.api.routers.admin_model_providers import (
 )
 from multi_agent_platform.api.routers.admin_model_skill_config import (
     router as admin_model_skill_config_router,
+)
+from multi_agent_platform.api.routers.admin_prompts import (
+    router as admin_prompts_router,
 )
 from multi_agent_platform.api.routers.admin_run_inspection import (
     router as admin_run_inspection_router,
@@ -58,6 +64,8 @@ def create_app() -> FastAPI:
     app.include_router(admin_workflows_router)
     app.include_router(admin_model_skill_config_router)
     app.include_router(admin_model_providers_router)
+    app.include_router(admin_prompts_router)
+    app.include_router(admin_agent_profiles_router)
     app.include_router(admin_workflow_ui_router)
     app.include_router(reliability_controls_router)
     app.include_router(reliability_controls_ui_router)

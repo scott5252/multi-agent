@@ -62,6 +62,27 @@ class SyncAction(StrEnum):
     BLOCKED = "blocked"
 
 
+class OperationStatus(StrEnum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+    AMBIGUOUS = "ambiguous"
+    RECOVERED = "recovered"
+    DENIED = "denied"
+    THROTTLED = "throttled"
+    PARTIAL = "partial"
+
+
+class RetryDecisionCategory(StrEnum):
+    RETRYABLE = "retryable"
+    NON_RETRYABLE = "non-retryable"
+    EXHAUSTED = "exhausted"
+    SKIPPED = "skipped"
+    RECOVERED = "recovered"
+
+
 class TimeoutPolicy(BaseModel):
     connect_seconds: float = Field(default=5.0, ge=0.1, le=60.0)
     read_seconds: float = Field(default=30.0, ge=0.1, le=300.0)
@@ -151,6 +172,64 @@ class GatewayResult(BaseModel):
     latency_ms: int = 0
     usage: GatewayUsage = Field(default_factory=GatewayUsage)
     safe_audit_summary: dict[str, object] = Field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class GatewayInvocationContext:
+    tenant_id: UUID | None
+    trace_id: str | None = None
+    workflow_run_id: UUID | None = None
+    workflow_run_step_id: UUID | None = None
+    test_bench_run_id: UUID | None = None
+    workflow_validation_id: UUID | None = None
+    idempotency_key: str | None = None
+    operation_identity: str | None = None
+    agent_key: str | None = None
+    agent_kind: str | None = None
+    agent_profile_version_id: UUID | None = None
+    prompt_version_ids: tuple[UUID, ...] = ()
+    prompt_reference_version_ids: tuple[UUID, ...] = ()
+    model_routing_provenance: dict[str, object] = field(default_factory=dict)
+    profile_provenance: dict[str, object] = field(default_factory=dict)
+    memory_policy_context: dict[str, object] = field(default_factory=dict)
+    tool_policy_expectations: dict[str, object] = field(default_factory=dict)
+    output_contract_metadata: dict[str, object] = field(default_factory=dict)
+    side_effect_boundary: str = "before_provider_invocation"
+
+    def safe_summary(self) -> dict[str, object]:
+        return {
+            "tenant_id": str(self.tenant_id) if self.tenant_id else None,
+            "workflow_run_id": str(self.workflow_run_id)
+            if self.workflow_run_id
+            else None,
+            "workflow_run_step_id": str(self.workflow_run_step_id)
+            if self.workflow_run_step_id
+            else None,
+            "test_bench_run_id": str(self.test_bench_run_id)
+            if self.test_bench_run_id
+            else None,
+            "workflow_validation_id": str(self.workflow_validation_id)
+            if self.workflow_validation_id
+            else None,
+            "trace_id": self.trace_id,
+            "idempotency_key": self.idempotency_key,
+            "operation_identity": self.operation_identity,
+            "agent_key": self.agent_key,
+            "agent_kind": self.agent_kind,
+            "agent_profile_version_id": str(self.agent_profile_version_id)
+            if self.agent_profile_version_id
+            else None,
+            "prompt_version_ids": [str(value) for value in self.prompt_version_ids],
+            "prompt_reference_version_ids": [
+                str(value) for value in self.prompt_reference_version_ids
+            ],
+            "model_routing_provenance": dict(self.model_routing_provenance),
+            "profile_provenance": dict(self.profile_provenance),
+            "memory_policy_context_keys": sorted(self.memory_policy_context),
+            "tool_policy_expectation_keys": sorted(self.tool_policy_expectations),
+            "output_contract_metadata_keys": sorted(self.output_contract_metadata),
+            "side_effect_boundary": self.side_effect_boundary,
+        }
 
 
 @dataclass(frozen=True, slots=True)

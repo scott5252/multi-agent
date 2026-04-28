@@ -71,6 +71,9 @@ class SideEffectIntent:
     result_ref: dict[str, object] | None = None
     error_ref: dict[str, object] | None = None
     compensation_hook_ref: str | None = None
+    trace_id: str | None = None
+    operation_identity: str | None = None
+    side_effect_boundary: str | None = None
     repeatability: SideEffectRepeatability = SideEffectRepeatability.NON_REPEATABLE
     side_effect_intent_id: UUID = field(default_factory=uuid4)
     status: SideEffectStatus = SideEffectStatus.PLANNED
@@ -136,6 +139,9 @@ def build_model_gateway_intent(
     run_step_id: UUID,
     bundle_digest: str,
     model_provider_entry_id: UUID,
+    trace_id: str | None = None,
+    operation_identity: str | None = None,
+    side_effect_boundary: str = "before_provider_invocation",
     attempt: int = 1,
 ) -> SideEffectIntent:
     return SideEffectIntent(
@@ -154,6 +160,9 @@ def build_model_gateway_intent(
         tool_policy_ref=f"model-provider:{model_provider_entry_id}",
         repeatability=SideEffectRepeatability.UNKNOWN,
         request_ref={"model_provider_entry_id": str(model_provider_entry_id)},
+        trace_id=trace_id,
+        operation_identity=operation_identity,
+        side_effect_boundary=side_effect_boundary,
     )
 
 

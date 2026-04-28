@@ -57,6 +57,18 @@ def _service(session: AsyncSession) -> AuditDebuggingService:
     return AuditDebuggingService(AuditDebuggingRepository(session))
 
 
+def build_combined_gateway_provenance_view(
+    provenance: dict[str, object] | None,
+) -> dict[str, object]:
+    if provenance is None:
+        return {
+            "metadata_available": False,
+            "metadata_status": "pre_v2_metadata_unavailable",
+            "gateway_operation_id": None,
+        }
+    return provenance
+
+
 def _error(exc: Exception, trace_id: str | None = None) -> HTTPException:
     if isinstance(exc, AuditDebuggingAuthorizationError):
         return HTTPException(

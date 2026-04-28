@@ -27,6 +27,7 @@ class LocalOpenAICompatibleAdapter:
     ) -> None:
         self._allowlist = allowlist
         self._client = client or httpx.AsyncClient()
+        self._owns_client = client is None
 
     async def chat_completion(self, request: AdapterRequest) -> AdapterResponse:
         if request.base_url is None:
@@ -52,3 +53,7 @@ class LocalOpenAICompatibleAdapter:
             url=f"{base_url}/v1/chat/completions",
             headers=headers,
         )
+
+    async def aclose(self) -> None:
+        if self._owns_client:
+            await self._client.aclose()

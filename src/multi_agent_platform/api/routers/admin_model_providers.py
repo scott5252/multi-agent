@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-import httpx
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,11 +34,6 @@ from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.db.models.model_providers import ModelProviderConnection
 from multi_agent_platform.db.repositories.model_providers import ModelProviderRepository
-from multi_agent_platform.model_providers.adapters import ProviderAdapterRegistry
-from multi_agent_platform.model_providers.allowlist import LocalEndpointAllowlist
-from multi_agent_platform.model_providers.local_adapter import (
-    LocalOpenAICompatibleAdapter,
-)
 from multi_agent_platform.model_providers.models import (
     ProviderModel,
     ProviderType,
@@ -47,8 +41,6 @@ from multi_agent_platform.model_providers.models import (
     TimeoutPolicy,
     VisibilityMode,
 )
-from multi_agent_platform.model_providers.openai_adapter import OpenAIAdapter
-from multi_agent_platform.model_providers.probes import ProviderProbeRunner
 from multi_agent_platform.model_providers.service import (
     ModelProviderPermissionError,
     ModelProviderService,
@@ -60,34 +52,10 @@ PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-def _allowlist(container: ContainerDep) -> LocalEndpointAllowlist:
-    settings = container.settings
-    return LocalEndpointAllowlist(
-        schemes=settings.model_provider_local_allowed_schemes,
-        hosts=settings.model_provider_local_allowed_hosts,
-        ports=settings.model_provider_local_allowed_ports,
-        cidrs=settings.model_provider_local_allowed_cidrs,
-    )
-
-
 def _service(session: AsyncSession, container: ContainerDep) -> ModelProviderService:
-    allowlist = _allowlist(container)
-    client = httpx.AsyncClient()
-    registry = ProviderAdapterRegistry(
-        {
-            ProviderType.OPENAI: OpenAIAdapter(client),
-            ProviderType.LOCAL_OPENAI_COMPATIBLE: LocalOpenAICompatibleAdapter(
-                allowlist=allowlist,
-                client=client,
-            ),
-        }
-    )
-    repository = ModelProviderRepository(session)
-    return ModelProviderService(
-        repository=repository,
-        allowlist=allowlist,
-        probe_runner=ProviderProbeRunner(registry),
-    )
+    if container.model_provider_service_factory is None:
+        raise RuntimeError("model provider service factory is not configured")
+    return container.model_provider_service_factory(session)
 
 
 @router.get("", response_class=HTMLResponse, include_in_schema=False)

@@ -115,6 +115,31 @@ def model_provider_trace_attributes(
     return attributes
 
 
+def gateway_operation_trace_attributes(
+    *,
+    operation_identity: str,
+    outcome: str,
+    tenant_id: str | None = None,
+    workflow_run_id: str | None = None,
+    workflow_run_step_id: str | None = None,
+    retry_category: str | None = None,
+    breaker_scope: str | None = None,
+) -> dict[str, str]:
+    attributes = {
+        "operation_identity": operation_identity,
+        "outcome": outcome,
+    }
+    optional = {
+        "tenant_id": tenant_id,
+        "workflow_run_id": workflow_run_id,
+        "workflow_run_step_id": workflow_run_step_id,
+        "retry_category": retry_category,
+        "breaker_scope": breaker_scope,
+    }
+    attributes.update({key: value for key, value in optional.items() if value})
+    return attributes
+
+
 def audit_trace_attributes(
     *,
     action: str,

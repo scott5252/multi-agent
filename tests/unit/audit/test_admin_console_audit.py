@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from tests.fixtures.admin_console import platform_principal
-
 from multi_agent_platform.api.ui.admin_console import (
     AdminScope,
     NavigationOutcome,
 )
 from multi_agent_platform.audit.service import AuditService
+from tests.fixtures.admin_console import platform_principal
 
 
 class _Repo:

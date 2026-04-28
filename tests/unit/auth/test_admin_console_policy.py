@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from tests.fixtures.admin_console import ADMIN_CONSOLE_ROUTE_SURFACES
-
 from multi_agent_platform.auth.policy import SURFACE_POLICIES, SurfaceClassification
+from tests.fixtures.admin_console import ADMIN_CONSOLE_ROUTE_SURFACES
 
 
 def test_admin_console_surfaces_are_registered_and_protected() -> None:

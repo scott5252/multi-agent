@@ -4,7 +4,7 @@ description: "Generate required post-implementation QA guide and QA environment 
 
 # Generate Post-Implementation QA Documents
 
-Create the mandatory manual QA guide and self-contained QA environment file for
+Create the mandatory manual QA guide, self-contained QA environment file, and a manual QA UI guide for
 the active implemented spec.
 
 ## User Input
@@ -19,10 +19,11 @@ feature directory.
 
 ## Required Outputs
 
-Create both files in the active spec directory:
+Create all three files in the active spec directory:
 
 - `qaNNN.md`
 - `.env.qaNNN`
+- `qaNNN_ui.md`
 
 `NNN` is the three-digit spec number from the spec directory name. For example,
 `specs/009-reliability-scale-hardening` must produce `qa009.md` and
@@ -35,10 +36,13 @@ specificity, reviewer tone, and copy/paste usability:
 
 - `specs/008-production-audit-debugging/qa008.md`
 - `specs/008-production-audit-debugging/.env.qa008`
+- `specs/010-admin-console-shell/QA010_ui.md`
 
-Do not copy QA008 blindly. Use it as the detail bar, then tailor every command,
+Do not copy QA008 or QA010_ui blindly. Use then as the detail bar, then tailor every command,
 endpoint, seed record, principal, expected response, and known gap to the active
-spec.
+spec. For the UI document ensure the screen navigation and screen details are described
+accurately and detail enough for non-developers to understand what is happening and how to 
+test the solution.
 
 ## Extension Configuration
 
@@ -79,6 +83,7 @@ Default values:
 
    ```text
    specs/009-reliability-scale-hardening -> qa009.md and .env.qa009
+   specs/010-admin-console-shell -> QA010_ui.md
    ```
 
 3. Load implementation context.
@@ -178,17 +183,54 @@ Default values:
    Add focused test commands for the implemented spec before the full coverage
    gate.
 
-6. Validate the files.
+6. Generate `qaNNN_ui.md`.
 
-   After writing both files, run:
+   Write the guide for a non-developer reviewer. It must be executable from a
+   fresh checkout and include copy/paste commands with expected results. Use the
+   QA010_ui guide as the detail model.
 
-   ```bash
-   bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh "$FEATURE_DIR"
-   ```
+   Required sections:
 
-   If validation fails, revise the QA guide and environment file until it
-   passes. Do not report implementation completion while this command is
-   failing.
+   - `# QANNN_UI: <Feature Name>`
+   - `## Goal`
+   - `## What This Guide Covers`
+   - `## How To Use This Guide`
+   - `## Environment`
+   - `## Environment File Checklist`
+   - `## Shared QA Variables`
+   - One or more feature-specific manual verification sections
+   - Authorization, tenant isolation, failure, or negative-path checks whenever
+     the implementation has protected behavior
+   - UI screens that are needed to navigate and test each feature of the spec
+   - Security/redaction or data-safety checks whenever secrets, prompts,
+     memory, artifacts, callbacks, audits, or model/tool routing are involved
+   - `## Required Automated Evidence`
+   - `## Acceptance Evidence Template`
+   - `## Troubleshooting`
+   - `## Related Files`
+
+   The guide must include:
+
+   - Exact setup commands: copy `.env.qaNNN` to `.env`, run `uv sync`, start
+     PostgreSQL when needed, create the QA database, run migrations, and seed
+     deterministic data.
+   - Exact commands for starting the API and any worker processes needed by the
+     spec.
+   - Deterministic seed data or data-creation steps. Prefer SQL seed blocks for
+     database-backed behavior when no public endpoint creates all evidence.
+   - `curl`, `jq`, browser, worker, SQL, or CLI checks that map to each
+     implemented user story.
+   - "What this proves:" notes for important manual checks.
+   - Detailed login and navigation flow to each screen page
+   - Detailed description of what the user should see in the page
+   - Detailed explanation of what each field represents and how it should be used..
+
+     ```bash
+     uv run ruff check .
+     uv run ruff format --check .
+     uv run mypy src
+     uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90
+     ```
 
 ## Output
 

@@ -171,8 +171,38 @@ def model_selection_audit_metadata(
         "prompt_reference_version_id": str(
             resolution.prompt.prompt_reference_version_id
         ),
+        "prompt_library_version_id": str(resolution.prompt.prompt_version_id),
+        "prompt_library_digest": resolution.prompt.prompt_digest,
         "considered_model_versions": len(resolution.model.considered_version_ids),
         "considered_prompt_versions": len(resolution.prompt.considered_version_ids),
         "selection_outcome": "selected",
         "gateway_governed": resolution.model.gateway_governed,
+    }
+
+
+def enforce_gateway_route_authorization(
+    *,
+    selected_provider_key: str,
+    selected_model_id: str,
+    profile_model_routing_hints: dict[str, object],
+    authorized_provider_keys: set[str],
+) -> dict[str, object]:
+    if selected_provider_key not in authorized_provider_keys:
+        raise PermissionError(
+            "model_skill_config authorization is required before applying "
+            "runtime profile routing hints"
+        )
+    hinted_provider = profile_model_routing_hints.get("provider_key")
+    hinted_model = profile_model_routing_hints.get("model_id")
+    if hinted_provider and hinted_provider != selected_provider_key:
+        raise PermissionError(
+            "model_skill_config authorization is required before applying "
+            "runtime profile routing hints"
+        )
+    return {
+        "resolver": "model_skill_config",
+        "selected_provider_key": selected_provider_key,
+        "selected_model_id": selected_model_id,
+        "profile_hint_matched": hinted_model in {None, selected_model_id},
+        "gateway_governed": True,
     }

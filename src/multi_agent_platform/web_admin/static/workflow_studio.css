@@ -227,6 +227,25 @@ button {
   border-bottom: 1px solid var(--line);
   background: var(--panel);
   padding: 0.85rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-topbar-main {
+  min-width: 260px;
+  flex: 1 1 auto;
+}
+
+.admin-logout-form {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.admin-logout-button {
+  white-space: nowrap;
 }
 
 .admin-scope {
@@ -443,4 +462,44 @@ button {
   .provider-summary-grid {
     grid-template-columns: 1fr;
   }
+}
+.prompt-runtime-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0 0 1rem;
+}
+
+.prompt-runtime-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.prompt-runtime-table th,
+.prompt-runtime-table td {
+  border-bottom: 1px solid var(--border-color, #d8dde6);
+  padding: 0.625rem;
+  text-align: left;
+}
+
+.prompt-runtime-form {
+  max-width: 960px;
+}
+
+.prompt-runtime-detail {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+}
+
+.prompt-runtime-timeline {
+  padding-left: 1.25rem;
+}
+
+.prompt-preview {
+  white-space: pre-wrap;
+  border: 1px solid var(--border-color, #d8dde6);
+  padding: 1rem;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }

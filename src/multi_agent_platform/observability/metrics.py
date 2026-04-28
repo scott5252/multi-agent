@@ -168,6 +168,12 @@ MODEL_PROVIDER_LATENCY = Histogram(
     labelnames=("action", "provider_type", "outcome"),
 )
 
+PROMPT_RUNTIME_ACTION_COUNTER = Counter(
+    "multi_agent_platform_prompt_runtime_actions_total",
+    "Prompt/profile lifecycle and validation actions.",
+    labelnames=("action", "outcome", "reason"),
+)
+
 
 def record_model_skill_policy_decision(
     *, decision_category: str, outcome: str, denial_category: str | None = None
@@ -246,6 +252,19 @@ def record_model_provider_action(
     ).inc()
 
 
+def record_prompt_runtime_action(
+    *,
+    action: str,
+    outcome: str,
+    reason: str | None = None,
+) -> None:
+    PROMPT_RUNTIME_ACTION_COUNTER.labels(
+        action=action,
+        outcome=outcome,
+        reason=reason or "none",
+    ).inc()
+
+
 def observe_model_provider_latency(
     *,
     action: str,
@@ -258,6 +277,22 @@ def observe_model_provider_latency(
         provider_type=provider_type,
         outcome=outcome,
     ).observe(latency_ms / 1000)
+
+
+def record_gateway_operation(
+    *,
+    operation_kind: str,
+    outcome: str,
+    retry_category: str | None = None,
+    breaker_decision: str | None = None,
+    recovered: bool = False,
+) -> None:
+    reason = retry_category or breaker_decision or ("recovered" if recovered else None)
+    record_model_provider_action(
+        action=operation_kind,
+        outcome=outcome,
+        reason=reason,
+    )
 
 
 def record_admin_shell_fail_closed(*, surface: str, reason: str) -> None:

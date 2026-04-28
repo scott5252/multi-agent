@@ -64,9 +64,27 @@ async def run_channel_delivery_once(
     return True
 
 
+def should_accept_work(
+    bootstrap: WorkerBootstrap,
+    *,
+    requires_model_gateway: bool,
+) -> bool:
+    if not requires_model_gateway:
+        return True
+    return bootstrap.gateway_dependencies_ready
+
+
 async def poll_once(
-    bootstrap: WorkerBootstrap, handler: JobHandler | None = None
+    bootstrap: WorkerBootstrap,
+    handler: JobHandler | None = None,
+    *,
+    requires_model_gateway: bool = False,
 ) -> object | None:
+    if not should_accept_work(
+        bootstrap,
+        requires_model_gateway=requires_model_gateway,
+    ):
+        return None
     async with session_scope(bootstrap.container.session_factory) as session:
         service = QueueService(session)
         lease = await service.lease_next(

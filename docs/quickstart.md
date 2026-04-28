@@ -234,6 +234,29 @@ Manual model-skill QA:
   assisted status, and aggregate pass/fail evidence.
 - [Model Skill Routing](/Users/scottcornell/src/my-projects/multi-agent/docs/model-skill-routing.md)
 
+## Prompt Runtime Profiles Quickstart
+
+Open the shared admin shell:
+
+- [Prompt Library](http://127.0.0.1:8000/admin/prompt-runtime/prompts)
+- [Agent Profiles](http://127.0.0.1:8000/admin/prompt-runtime/profiles)
+- [Profile Resolution](http://127.0.0.1:8000/admin/prompt-runtime/profiles/resolve)
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/prompts \
+  tests/unit/agents \
+  tests/contract/test_prompt_runtime_profiles_contract.py \
+  tests/integration/api/test_prompt_runtime_admin_navigation.py
+```
+
+Manual QA:
+
+- [Prompt Runtime Profiles](/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles.md)
+- [Spec 012 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/012-prompt-runtime-profiles/qa012.md)
+
 Target production audit debugging explicitly:
 
 ```bash

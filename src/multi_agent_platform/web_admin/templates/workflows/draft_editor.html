@@ -70,6 +70,10 @@
           <textarea id="document-json" rows="22" readonly>{{ page.document_json }}</textarea>
         </article>
         {% include "workflows/components/validation_panel.html" %}
+        <article class="card section-card full-width">
+          <h2>Prompt Runtime</h2>
+          <p>Workflow validation includes prompt library versions, agent profile resolution, and authorized detail links when available.</p>
+        </article>
       </section>
     {% include "workflows/components/field_help_modal.html" %}
 {% endblock %}

@@ -13,6 +13,28 @@ from multi_agent_platform.observability.logging import REDACTED
 SECRET_MARKERS = ("secret", "token", "password", "credential", "api_key")
 PROMPT_MARKERS = ("prompt", "message", "completion")
 MEMORY_MARKERS = ("memory", "content", "embedding")
+PROMPT_RUNTIME_SAFE_FIELDS = {
+    "prompt_lineage_id",
+    "prompt_version_id",
+    "agent_profile_version_id",
+    "agent_runtime_profile_id",
+    "prompt_library_version_id",
+    "prompt_library_digest",
+    "validation_status",
+    "finding_codes",
+    "redaction_categories",
+    "gateway_operation_id",
+    "operation_identity",
+    "provider_connection_id",
+    "provider_model_definition_id",
+    "model_id",
+    "retry_category",
+    "breaker_scope",
+    "usage_available",
+    "normalized_error_category",
+    "provider_probe_operation_id",
+    "catalog_sync_operation_id",
+}
 SAFE_FIELD_ALLOWLIST = {
     "id",
     "tenant_id",
@@ -46,6 +68,10 @@ def classify_field(field_name: str) -> SensitivityLabel:
     normalized = field_name.lower()
     if any(marker in normalized for marker in SECRET_MARKERS):
         return SensitivityLabel.SECRET
+    if normalized in PROMPT_RUNTIME_SAFE_FIELDS:
+        return SensitivityLabel.SAFE_METADATA
+    if "rendered_preview" in normalized or "template_content" in normalized:
+        return SensitivityLabel.PROMPT_CONTENT
     if any(marker in normalized for marker in PROMPT_MARKERS):
         return SensitivityLabel.PROMPT_CONTENT
     if any(marker in normalized for marker in MEMORY_MARKERS):
