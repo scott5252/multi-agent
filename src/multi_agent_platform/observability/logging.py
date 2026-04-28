@@ -223,3 +223,27 @@ def reliability_log_context(
     }
     payload.update({key: value for key, value in optional.items() if value is not None})
     return {"extra": payload}
+
+
+def model_provider_log_context(
+    *,
+    action: str,
+    outcome: str,
+    provider_type: str | None = None,
+    connection_id: str | None = None,
+    model_id: str | None = None,
+    tenant_id: str | None = None,
+    reason: str | None = None,
+    latency_ms: int | None = None,
+) -> dict[str, dict[str, str]]:
+    payload = {"action": action, "outcome": outcome}
+    optional = {
+        "provider_type": provider_type,
+        "connection_id": connection_id,
+        "model_id": model_id,
+        "tenant_id": tenant_id,
+        "reason": reason,
+        "latency_ms": str(latency_ms) if latency_ms is not None else None,
+    }
+    payload.update({key: value for key, value in optional.items() if value is not None})
+    return {"extra": redact_mapping(payload)}

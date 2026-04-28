@@ -91,6 +91,30 @@ def model_skill_trace_attributes(
     return attributes
 
 
+def model_provider_trace_attributes(
+    *,
+    action: str,
+    outcome: str,
+    provider_type: str | None = None,
+    connection_id: str | None = None,
+    model_id: str | None = None,
+    tenant_id: str | None = None,
+    normalized_error: str | None = None,
+    usage_available: str | None = None,
+) -> dict[str, str]:
+    attributes = {"action": action, "outcome": outcome}
+    optional = {
+        "provider_type": provider_type,
+        "connection_id": connection_id,
+        "model_id": model_id,
+        "tenant_id": tenant_id,
+        "normalized_error": normalized_error,
+        "usage_available": usage_available,
+    }
+    attributes.update({key: value for key, value in optional.items() if value})
+    return attributes
+
+
 def audit_trace_attributes(
     *,
     action: str,

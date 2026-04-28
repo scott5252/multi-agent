@@ -1,0 +1,14 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+      <header class="workflow-header">
+        <h1>Provider Test Results</h1>
+        <a href="/admin/model-providers">Model providers</a>
+      </header>
+      <section class="table-section">
+        <table>
+          <thead><tr><th>Timestamp</th><th>Actor/source</th><th>Latency</th><th>Model</th><th>Outcome</th><th>Reason</th><th>Diagnostics</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+{% endblock %}

@@ -66,6 +66,20 @@ class ModelProviderCatalogEntry(Base, TimestampMixin):
         Enum(ModelSkillProviderStatus, native_enum=False),
         default=ModelSkillProviderStatus.ACTIVE,
     )
+    provider_connection_id: Mapped[UUID | None] = mapped_column(nullable=True)
+    provider_model_definition_id: Mapped[UUID | None] = mapped_column(nullable=True)
+    health_state: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    availability_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    visibility_mode: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    tenant_visibility_hash: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )
+    last_synced_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    gateway_governed: Mapped[bool] = mapped_column(default=False)
     retired_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

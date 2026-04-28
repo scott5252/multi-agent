@@ -255,3 +255,8 @@ def build_tool_usage_trace(**kwargs: object) -> TraceRecordCreate:
 def build_model_selection_trace(**kwargs: object) -> TraceRecordCreate:
     kwargs["trace_type"] = TraceType.MODEL_SELECTION
     return build_trace_record(**kwargs)  # type: ignore[arg-type]
+
+
+def build_model_gateway_trace(**kwargs: object) -> TraceRecordCreate:
+    kwargs["trace_type"] = TraceType.MODEL_SELECTION
+    return build_trace_record(**kwargs)  # type: ignore[arg-type]

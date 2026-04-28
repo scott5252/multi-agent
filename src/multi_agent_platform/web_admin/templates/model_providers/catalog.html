@@ -1,0 +1,38 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+      <header class="workflow-header">
+        <h1>{{ page.title }}</h1>
+        <a href="/admin/model-providers">Model providers</a>
+      </header>
+      <section class="table-section">
+        <table>
+          <thead>
+            <tr>
+              <th>Tenant scope</th>
+              <th>Provider</th>
+              <th>Model</th>
+              <th>Health</th>
+              <th>Availability</th>
+              <th>Selectable</th>
+              <th>Governing connection</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in page.entries %}
+            <tr>
+              <td>{{ entry.tenant_id or "Platform default" }}</td>
+              <td>{{ entry.provider_type.value }}</td>
+              <td>{{ entry.model_id }}</td>
+              <td>{{ entry.health_state.value }}</td>
+              <td>{{ entry.availability_status }}</td>
+              <td>{{ entry.selectable }}</td>
+              <td>{{ entry.provider_connection_id }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7">No catalog entries are visible in this scope.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+{% endblock %}

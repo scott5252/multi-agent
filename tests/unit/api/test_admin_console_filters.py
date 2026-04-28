@@ -16,6 +16,7 @@ def test_filter_profiles_cover_useful_admin_areas() -> None:
 
     assert set(profiles) == {
         "workflows",
+        "model_providers",
         "model_skill_history",
         "run_inspection",
         "reliability_breakers",

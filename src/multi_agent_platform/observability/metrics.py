@@ -156,6 +156,18 @@ ADMIN_SHELL_FAIL_CLOSED_COUNTER = Counter(
     labelnames=("surface", "reason"),
 )
 
+MODEL_PROVIDER_ACTION_COUNTER = Counter(
+    "multi_agent_platform_model_provider_actions_total",
+    "Model provider gateway actions by action and outcome.",
+    labelnames=("action", "outcome", "reason"),
+)
+
+MODEL_PROVIDER_LATENCY = Histogram(
+    "multi_agent_platform_model_provider_latency_seconds",
+    "Model provider probe and gateway latency.",
+    labelnames=("action", "provider_type", "outcome"),
+)
+
 
 def record_model_skill_policy_decision(
     *, decision_category: str, outcome: str, denial_category: str | None = None
@@ -219,6 +231,33 @@ def record_reliability_artifact_throughput(
 
 def record_admin_shell_audit_failure(*, action: str, reason: str) -> None:
     ADMIN_SHELL_AUDIT_FAILURE_COUNTER.labels(action=action, reason=reason).inc()
+
+
+def record_model_provider_action(
+    *,
+    action: str,
+    outcome: str,
+    reason: str | None = None,
+) -> None:
+    MODEL_PROVIDER_ACTION_COUNTER.labels(
+        action=action,
+        outcome=outcome,
+        reason=reason or "none",
+    ).inc()
+
+
+def observe_model_provider_latency(
+    *,
+    action: str,
+    provider_type: str,
+    outcome: str,
+    latency_ms: int,
+) -> None:
+    MODEL_PROVIDER_LATENCY.labels(
+        action=action,
+        provider_type=provider_type,
+        outcome=outcome,
+    ).observe(latency_ms / 1000)
 
 
 def record_admin_shell_fail_closed(*, surface: str, reason: str) -> None:
