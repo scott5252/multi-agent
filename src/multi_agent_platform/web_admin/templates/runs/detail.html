@@ -1,12 +1,8 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Run Detail</title>
-    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
-  </head>
-  <body class="workflow-page" data-run-id="{{ page.status.run_id if page else workflow_run_id }}">
-    <main class="page-shell">
+{% extends "admin_shell/base.html" %}
+
+{% block body_attrs %} data-run-id="{{ page.status.run_id if page else workflow_run_id }}"{% endblock %}
+
+{% block content %}
       {% if page %}
       <header class="hero">
         <div>
@@ -89,8 +85,9 @@
         </article>
       </section>
       {% endif %}
-    </main>
-    <script src="/admin/static/run_details.js"></script>
-    <script src="/admin/static/run_inspection.js"></script>
-  </body>
-</html>
+{% endblock %}
+
+{% block page_scripts %}
+  <script src="/admin/static/run_details.js"></script>
+  <script src="/admin/static/run_inspection.js"></script>
+{% endblock %}

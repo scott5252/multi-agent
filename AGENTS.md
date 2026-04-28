@@ -1,6 +1,6 @@
 # multi-agent Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-26
+Auto-generated from all feature plans. Last updated: 2026-04-27
 
 ## Active Technologies
 - Python 3.12 + FastAPI security dependencies, Auth0 JWT validation, Pydantic
@@ -48,6 +48,13 @@ Auto-generated from all feature plans. Last updated: 2026-04-26
   compensation requests, dead-letter records, operational snapshots, audit
   events, artifact metadata, and object-storage artifact references
   (009-reliability-scale-hardening)
+- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
+  SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+, psycopg 3,
+  Auth0 JWT validation, local-principal test mode, prometheus-client,
+  pytest, pytest-asyncio, httpx, Ruff, mypy, uv (010-admin-console-shell)
+- PostgreSQL for persisted admin saved filters, plus existing access decision
+  and audit records for shell navigation, direct destination access, scope
+  selection, and saved-filter restoration (010-admin-console-shell)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -77,6 +84,12 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 010-admin-console-shell: Implemented shared server-rendered admin console
+  shell with FastAPI/Jinja2 templates, Auth0/local-principal authorization,
+  validated tenant-scope query handling, authorization-aware navigation,
+  item-level navigation audit evidence, fail-closed audit persistence behavior,
+  common empty/error/flash states, breadcrumbs, saved filters, accessibility,
+  docs, and tests while preserving existing admin routes.
 - 009-reliability-scale-hardening: Planned reliability and scale hardening with
   tenant-aware admission and backpressure, worker autoscaling signals, lease
   tuning, DB pooling, partitioning, retry budgets, circuit breakers,
@@ -105,5 +118,5 @@ async patterns for PostgreSQL access.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/009-reliability-scale-hardening/plan.md`
+`specs/010-admin-console-shell/plan.md`
 <!-- SPECKIT END -->

@@ -9,6 +9,10 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import ContainerDep, get_session
+from multi_agent_platform.api.routers.admin_console import (
+    build_shell_for_request,
+    resolve_scope_for_request,
+)
 from multi_agent_platform.api.schemas.audit_debugging import (
     CreateDebugEvidenceExportRequest,
     DebugEvidenceExport,
@@ -22,6 +26,12 @@ from multi_agent_platform.api.schemas.audit_debugging import (
     VersionBundleSnapshot,
     VersionBundleSummary,
 )
+from multi_agent_platform.api.ui.admin_console import (
+    BreadcrumbItem,
+    CommonStateType,
+    build_common_state,
+    build_saved_filter_summary,
+)
 from multi_agent_platform.audit.inspection import bundle_to_dict
 from multi_agent_platform.audit.service import (
     AuditDebuggingAuthorizationError,
@@ -30,6 +40,9 @@ from multi_agent_platform.audit.service import (
 )
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
+from multi_agent_platform.db.repositories.admin_console import (
+    AdminSavedFilterRepository,
+)
 from multi_agent_platform.db.repositories.audit_debugging import (
     AuditDebuggingRepository,
 )
@@ -153,13 +166,36 @@ async def timeline(
 @router.get("/{workflow_run_id}/replay", response_model=RunReplayResponse)
 async def replay(
     workflow_run_id: UUID,
+    request: Request,
+    container: ContainerDep,
     principal: PrincipalDep,
     session: SessionDep,
     tenant_id: TenantQuery = None,
     include_children: bool = False,
     from_sequence: int | None = Query(default=None, ge=0),
     to_sequence: int | None = Query(default=None, ge=0),
-) -> RunReplayResponse:
+) -> RunReplayResponse | HTMLResponse:
+    if "text/html" in request.headers.get("accept", ""):
+        shell = await build_shell_for_request(
+            request=request,
+            principal=principal,
+            session=session,
+            title="Run Replay",
+            breadcrumbs=(
+                BreadcrumbItem(label="Admin", href="/admin"),
+                BreadcrumbItem(label="Run Search", href="/admin/runs"),
+                BreadcrumbItem(label="Replay", href=request.url.path),
+            ),
+        )
+        return container.workflow_ui_templates.TemplateResponse(
+            request,
+            "runs/replay.html",
+            {
+                "workflow_run_id": workflow_run_id,
+                "principal": principal,
+                "shell": shell,
+            },
+        )
     _ = include_children
     try:
         events = await _service(session).get_replay(
@@ -244,10 +280,43 @@ async def create_export(
 async def admin_run_search_page(
     request: Request,
     container: ContainerDep,
-    _principal: PrincipalDep,
+    principal: PrincipalDep,
+    session: SessionDep,
 ) -> HTMLResponse:
+    active_scope = await resolve_scope_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+    )
+    saved_filter_records = await AdminSavedFilterRepository(session).list_filters(
+        principal=principal,
+        admin_area="run_inspection",
+        scope=active_scope,
+    )
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Workflow Runs",
+        breadcrumbs=(
+            BreadcrumbItem(label="Admin", href="/admin"),
+            BreadcrumbItem(label="Run Search", href="/admin/runs"),
+        ),
+        common_state=build_common_state(
+            CommonStateType.EMPTY,
+            title="No run evidence",
+            summary="No run-debug evidence is available for the current filters.",
+            trace_id=principal.trace_id,
+        ),
+        saved_filters=tuple(
+            build_saved_filter_summary(record, active_scope=active_scope)
+            for record in saved_filter_records
+        ),
+    )
     return container.workflow_ui_templates.TemplateResponse(
-        request, "runs/index.html", {"runs": [], "audit_mode": True}
+        request,
+        "runs/index.html",
+        {"runs": [], "audit_mode": True, "principal": principal, "shell": shell},
     )
 
 
@@ -256,10 +325,22 @@ async def admin_run_detail_page(
     workflow_run_id: UUID,
     request: Request,
     container: ContainerDep,
-    _principal: PrincipalDep,
+    principal: PrincipalDep,
+    session: SessionDep,
 ) -> HTMLResponse:
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Run Detail",
+        breadcrumbs=(
+            BreadcrumbItem(label="Admin", href="/admin"),
+            BreadcrumbItem(label="Run Search", href="/admin/runs"),
+            BreadcrumbItem(label="Run Detail", href=request.url.path),
+        ),
+    )
     return container.workflow_ui_templates.TemplateResponse(
         request,
         "runs/detail.html",
-        {"workflow_run_id": workflow_run_id, "page": None},
+        {"workflow_run_id": workflow_run_id, "page": None, "shell": shell},
     )

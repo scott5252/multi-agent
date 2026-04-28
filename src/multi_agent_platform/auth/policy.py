@@ -150,6 +150,86 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_workflow_version_detail_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/admin": ProtectedSurface(
+        surface_key="GET:/admin",
+        requested_action="render_admin_console_shell",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/scope": ProtectedSurface(
+        surface_key="GET:/admin/scope",
+        requested_action="select_admin_console_scope",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/filters/{admin_area}": ProtectedSurface(
+        surface_key="GET:/admin/filters/{admin_area}",
+        requested_action="list_admin_saved_filters",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/filters/{admin_area}": ProtectedSurface(
+        surface_key="POST:/admin/filters/{admin_area}",
+        requested_action="save_admin_saved_filter",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/filters/{admin_area}/{filter_id}/restore": ProtectedSurface(
+        surface_key="GET:/admin/filters/{admin_area}/{filter_id}/restore",
+        requested_action="restore_admin_saved_filter",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/filters/{admin_area}/{filter_id}": ProtectedSurface(
+        surface_key="POST:/admin/filters/{admin_area}/{filter_id}",
+        requested_action="delete_admin_saved_filter",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "DELETE:/admin/filters/{admin_area}/{filter_id}": ProtectedSurface(
+        surface_key="DELETE:/admin/filters/{admin_area}/{filter_id}",
+        requested_action="delete_admin_saved_filter",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/config/ui": ProtectedSurface(
+        surface_key="GET:/admin/config/ui",
+        requested_action="render_model_skill_config_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/config/ui/history": ProtectedSurface(
+        surface_key="GET:/admin/config/ui/history",
+        requested_action="render_model_skill_config_history_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/config/ui/runs/{workflow_run_id}/provenance": ProtectedSurface(
+        surface_key="GET:/admin/config/ui/runs/{workflow_run_id}/provenance",
+        requested_action="render_model_skill_run_provenance_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/runs": ProtectedSurface(
+        surface_key="GET:/admin/runs",
+        requested_action="render_run_inspection_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/runs/{workflow_run_id}": ProtectedSurface(
+        surface_key="GET:/admin/runs/{workflow_run_id}",
+        requested_action="render_run_detail_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/runs/{workflow_run_id}/replay": ProtectedSurface(
+        surface_key="GET:/admin/runs/{workflow_run_id}/replay",
+        requested_action="render_run_replay_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/reliability/ui/": ProtectedSurface(
+        surface_key="GET:/admin/reliability/ui/",
+        requested_action="render_reliability_dashboard_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/reliability/ui/breakers": ProtectedSurface(
+        surface_key="GET:/admin/reliability/ui/breakers",
+        requested_action="render_reliability_breakers_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/reliability/ui/dead-letters": ProtectedSurface(
+        surface_key="GET:/admin/reliability/ui/dead-letters",
+        requested_action="render_reliability_dead_letters_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
     "POST:/admin/config/model-routing": ProtectedSurface(
         surface_key="POST:/admin/config/model-routing",
         requested_action="create_model_routing_config",

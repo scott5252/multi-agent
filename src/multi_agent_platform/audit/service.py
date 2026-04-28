@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from multi_agent_platform.api.ui.admin_console import AdminScope, NavigationOutcome
 from multi_agent_platform.audit.capture import AuditCaptureService
 from multi_agent_platform.audit.inspection import (
     TimelineView,
@@ -130,6 +132,98 @@ class AuditService:
                 entity_id=entity_id,
                 trace_id=trace_id,
                 payload_redacted=payload_redacted,
+            )
+        )
+
+    async def record_admin_navigation_visibility(
+        self,
+        *,
+        principal: PrincipalContext,
+        active_scope: AdminScope,
+        request_path: str,
+        outcomes: list[NavigationOutcome] | tuple[NavigationOutcome, ...],
+    ) -> AuditEvent:
+        return await self.record(
+            AuditEventCreate(
+                tenant_id=active_scope.tenant_id,
+                scope_type=active_scope.scope_type,
+                actor_type=AuditActorType.USER,
+                actor_id=principal.principal_id,
+                action="admin_shell.navigation_visibility",
+                entity_type="admin_shell",
+                entity_id=request_path,
+                trace_id=principal.trace_id,
+                request_id=principal.request_id,
+                payload_redacted={
+                    "active_scope": active_scope.scope_type,
+                    "tenant_id": str(active_scope.tenant_id)
+                    if active_scope.tenant_id is not None
+                    else "none",
+                    "request_path": request_path,
+                    "role_context": ",".join(principal.role_codes),
+                    "item_outcomes": json.dumps(
+                        [outcome.model_dump(mode="json") for outcome in outcomes],
+                        sort_keys=True,
+                    ),
+                },
+            )
+        )
+
+    async def record_admin_scope_selection(
+        self,
+        *,
+        principal: PrincipalContext,
+        active_scope: AdminScope,
+        selected_scope: AdminScope,
+        outcome: str,
+        reason_category: str,
+    ) -> AuditEvent:
+        return await self.record(
+            AuditEventCreate(
+                tenant_id=selected_scope.tenant_id,
+                scope_type=selected_scope.scope_type,
+                actor_type=AuditActorType.USER,
+                actor_id=principal.principal_id,
+                action="admin_shell.scope_selection",
+                entity_type="admin_scope",
+                entity_id=str(selected_scope.tenant_id or "platform"),
+                trace_id=principal.trace_id,
+                request_id=principal.request_id,
+                payload_redacted={
+                    "previous_scope": active_scope.scope_type,
+                    "selected_scope": selected_scope.scope_type,
+                    "outcome": outcome,
+                    "reason_category": reason_category,
+                },
+            )
+        )
+
+    async def record_admin_filter_restore(
+        self,
+        *,
+        principal: PrincipalContext,
+        active_scope: AdminScope,
+        admin_area: str,
+        filter_id: str,
+        outcome: str,
+        reason_category: str,
+    ) -> AuditEvent:
+        return await self.record(
+            AuditEventCreate(
+                tenant_id=active_scope.tenant_id,
+                scope_type=active_scope.scope_type,
+                actor_type=AuditActorType.USER,
+                actor_id=principal.principal_id,
+                action="admin_shell.saved_filter_restore",
+                entity_type="admin_saved_filter",
+                entity_id=filter_id,
+                trace_id=principal.trace_id,
+                request_id=principal.request_id,
+                payload_redacted={
+                    "admin_area": admin_area,
+                    "outcome": outcome,
+                    "reason_category": reason_category,
+                },
             )
         )
 

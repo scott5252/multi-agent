@@ -11,6 +11,7 @@ from multi_agent_platform.api.schemas.workflow_registry import (
     WorkflowRegistryItem,
     WorkflowVersionResponse,
 )
+from multi_agent_platform.api.ui.admin_console import FilterProfile, filter_profiles
 
 
 class WorkflowRegistryPageModel(BaseModel):
@@ -67,3 +68,7 @@ def build_workflow_version_detail_model(
     version: WorkflowVersionResponse,
 ) -> WorkflowVersionDetailPageModel:
     return WorkflowVersionDetailPageModel(version=version)
+
+
+def workflow_filter_profile() -> FilterProfile:
+    return filter_profiles()["workflows"]

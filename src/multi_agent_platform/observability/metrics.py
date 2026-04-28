@@ -144,6 +144,18 @@ RELIABILITY_ARTIFACT_THROUGHPUT_COUNTER = Counter(
     labelnames=("operation_kind", "outcome"),
 )
 
+ADMIN_SHELL_AUDIT_FAILURE_COUNTER = Counter(
+    "multi_agent_platform_admin_shell_audit_failures_total",
+    "Admin shell fail-closed audit persistence failures.",
+    labelnames=("action", "reason"),
+)
+
+ADMIN_SHELL_FAIL_CLOSED_COUNTER = Counter(
+    "multi_agent_platform_admin_shell_fail_closed_total",
+    "Admin shell fail-closed decisions.",
+    labelnames=("surface", "reason"),
+)
+
 
 def record_model_skill_policy_decision(
     *, decision_category: str, outcome: str, denial_category: str | None = None
@@ -203,3 +215,11 @@ def record_reliability_artifact_throughput(
     RELIABILITY_ARTIFACT_THROUGHPUT_COUNTER.labels(
         operation_kind=operation_kind, outcome=outcome
     ).inc()
+
+
+def record_admin_shell_audit_failure(*, action: str, reason: str) -> None:
+    ADMIN_SHELL_AUDIT_FAILURE_COUNTER.labels(action=action, reason=reason).inc()
+
+
+def record_admin_shell_fail_closed(*, surface: str, reason: str) -> None:
+    ADMIN_SHELL_FAIL_CLOSED_COUNTER.labels(surface=surface, reason=reason).inc()

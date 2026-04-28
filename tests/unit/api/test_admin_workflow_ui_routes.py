@@ -24,6 +24,10 @@ from multi_agent_platform.api.schemas.workflow_registry import (
     WorkflowScopeType,
     WorkflowVersionResponse,
 )
+from multi_agent_platform.api.ui.admin_console import (
+    AdminScope,
+    build_admin_shell_context,
+)
 from multi_agent_platform.auth.principal import PrincipalContext
 
 
@@ -82,6 +86,33 @@ class FakeUIService:
         )
 
 
+class FakeSavedFilterRepository:
+    def __init__(self, session) -> None:
+        self.session = session
+
+    async def list_filters(self, **kwargs) -> list[object]:
+        return []
+
+
+async def fake_resolve_scope_for_request(**kwargs) -> AdminScope:
+    return AdminScope.platform()
+
+
+async def fake_build_shell_for_request(**kwargs):
+    principal = PrincipalContext(
+        principal_id="platform-admin",
+        role_codes=("platform_admin",),
+    )
+    request = kwargs["request"]
+    title = kwargs["title"]
+    return build_admin_shell_context(
+        principal=principal,
+        active_scope=AdminScope.platform(),
+        current_path=request.url.path,
+        title=title,
+    )
+
+
 @pytest.mark.asyncio
 async def test_admin_workflow_ui_routes_render_templates(
     monkeypatch, sample_workflow_document
@@ -126,6 +157,21 @@ async def test_admin_workflow_ui_routes_render_templates(
         admin_workflow_ui,
         "_build_admin_service",
         lambda session, container: FakeUIService(items=[]),
+    )
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "AdminSavedFilterRepository",
+        FakeSavedFilterRepository,
+    )
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "resolve_scope_for_request",
+        fake_resolve_scope_for_request,
+    )
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "build_shell_for_request",
+        fake_build_shell_for_request,
     )
     registry = await admin_workflow_ui.workflow_registry_page(
         request=build_request("/admin/workflows/ui"),

@@ -1,12 +1,6 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>{{ page.title }}</title>
-    <link rel="stylesheet" href="/admin/static/workflow_studio.css" />
-  </head>
-  <body>
-    <main class="workflow-shell">
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
       <header class="workflow-header">
         <h1>{{ page.title }}</h1>
       </header>
@@ -32,7 +26,4 @@
           {% endfor %}
         </tbody>
       </table>
-    </main>
-  </body>
-</html>
-
+{% endblock %}

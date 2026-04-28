@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if shell is defined and shell %}{{ shell.title }}{% elif page is defined and page.title is defined %}{{ page.title }}{% else %}{{ title|default("Admin") }}{% endif %}</title>
+    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body class="{% if shell is defined and shell %}admin-shell-body{% else %}workflow-page{% endif %}"{% block body_attrs %}{% endblock %}>
+    {% if shell is defined and shell %}
+      <a class="skip-link" href="#admin-main-content">Skip to content</a>
+      <div class="admin-shell">
+        <aside class="admin-sidebar">
+          <header class="admin-brand">
+            <a href="{{ '/admin' | safe }}">Admin</a>
+          </header>
+          {% include "admin_shell/navigation.html" %}
+        </aside>
+        <div class="admin-content">
+          <header class="admin-topbar">
+            {% include "admin_shell/scope_selector.html" %}
+          </header>
+          {% include "admin_shell/breadcrumbs.html" %}
+          {% include "admin_shell/flash_messages.html" %}
+          <main id="admin-main-content" class="admin-main" tabindex="-1">
+            <header class="admin-page-header">
+              <h1>{{ shell.title }}</h1>
+              {% if shell.page_actions %}
+                <div class="admin-page-actions">
+                  {% for action in shell.page_actions %}
+                    <a class="button-link" href="{{ action.href }}">{{ action.label }}</a>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </header>
+            {% if shell.common_state %}
+              {% include "admin_shell/state.html" %}
+            {% endif %}
+            {% if shell.saved_filters %}
+              {% include "admin_shell/saved_filters.html" %}
+            {% endif %}
+            {% block content %}{% endblock %}
+          </main>
+        </div>
+      </div>
+      <script src="/admin/static/admin_shell.js" defer></script>
+    {% else %}
+      <main id="admin-main-content" class="page-shell" tabindex="-1">
+        {{ self.content() }}
+      </main>
+    {% endif %}
+    {% block page_scripts %}{% endblock %}
+  </body>
+</html>

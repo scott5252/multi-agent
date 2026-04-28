@@ -1,12 +1,6 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>{{ page.draft.display_name }}</title>
-    <link rel="stylesheet" href="/admin/static/workflow_studio.css">
-  </head>
-  <body class="workflow-page">
-    <main class="page-shell editor-shell">
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
       <header class="hero compact">
         <div>
           <p class="eyebrow">Draft Editor</p>
@@ -77,9 +71,10 @@
         </article>
         {% include "workflows/components/validation_panel.html" %}
       </section>
-    </main>
     {% include "workflows/components/field_help_modal.html" %}
-    <script id="field-help-data" type="application/json">{{ page.metadata.model_dump_json() }}</script>
-    <script src="/admin/static/workflow_studio.js"></script>
-  </body>
-</html>
+{% endblock %}
+
+{% block page_scripts %}
+  <script id="field-help-data" type="application/json">{{ page.metadata.model_dump_json() }}</script>
+  <script src="/admin/static/workflow_studio.js"></script>
+{% endblock %}

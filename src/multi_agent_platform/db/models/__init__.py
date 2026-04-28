@@ -15,6 +15,11 @@ from multi_agent_platform.db.models.access_control import (
     SupportOverrideRequest,
     SupportOverrideStatus,
 )
+from multi_agent_platform.db.models.admin_console import (
+    AdminSavedFilter,
+    AdminSavedFilterArea,
+    AdminSavedFilterScope,
+)
 from multi_agent_platform.db.models.artifact import ArtifactRecord
 from multi_agent_platform.db.models.audit import AuditActorType, AuditEvent
 from multi_agent_platform.db.models.audit_debugging import (
@@ -166,6 +171,9 @@ def import_models() -> None:
         AccessDecision,
         AccessDecisionRecord,
         AccessReasonCode,
+        AdminSavedFilter,
+        AdminSavedFilterArea,
+        AdminSavedFilterScope,
         AgentHandoffTraceRecord,
         AuditRuntimeTraceRecord,
         AuditTimelineEventRecord,
@@ -301,6 +309,9 @@ __all__ = [
     "AccessDecision",
     "AccessDecisionRecord",
     "AccessReasonCode",
+    "AdminSavedFilter",
+    "AdminSavedFilterArea",
+    "AdminSavedFilterScope",
     "AuditActorType",
     "AuditEvent",
     "AuthProviderType",

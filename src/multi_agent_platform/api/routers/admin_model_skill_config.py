@@ -3,10 +3,15 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from multi_agent_platform.api.deps import get_session
+from multi_agent_platform.api.deps import ContainerDep, get_session
+from multi_agent_platform.api.routers.admin_console import (
+    build_shell_for_request,
+    resolve_scope_for_request,
+)
 from multi_agent_platform.api.schemas.model_skill_config import (
     ActivationRequest,
     ActivationResponse,
@@ -27,6 +32,17 @@ from multi_agent_platform.api.schemas.model_skill_config import (
     ToolPreviewRequest,
     ToolPreviewResponse,
 )
+from multi_agent_platform.api.ui.admin_console import (
+    BreadcrumbItem,
+    CommonStateType,
+    build_common_state,
+    build_saved_filter_summary,
+)
+from multi_agent_platform.api.ui.model_skill_config import (
+    build_history_page_model,
+    build_model_routing_page_model,
+    build_run_provenance_page_model,
+)
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.config.model_skill import ConfigKind, ScopeSelector
@@ -36,6 +52,9 @@ from multi_agent_platform.config.service import (
     ModelSkillServiceError,
 )
 from multi_agent_platform.config.validation import ModelSkillValidationError
+from multi_agent_platform.db.repositories.admin_console import (
+    AdminSavedFilterRepository,
+)
 from multi_agent_platform.db.repositories.model_skill_config import (
     ModelSkillConfigRepository,
 )
@@ -75,6 +94,145 @@ def _to_http_error(exc: Exception) -> HTTPException:
             detail={"category": exc.category.value, "message": str(exc)},
         )
     return HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/ui", response_class=HTMLResponse, include_in_schema=False)
+async def model_skill_config_page(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    active_scope = await resolve_scope_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+    )
+    if active_scope.scope_type != "tenant" or active_scope.tenant_id is None:
+        raise HTTPException(status_code=403, detail="tenant scope required")
+    page = build_model_routing_page_model(missing_default=True)
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title=page.title,
+        breadcrumbs=(
+            BreadcrumbItem(label="Admin", href="/admin"),
+            BreadcrumbItem(label="Configuration", href="/admin/config/ui"),
+        ),
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "model_skill_config/index.html",
+        {"page": page, "principal": principal, "shell": shell},
+    )
+
+
+@router.get("/ui/history", response_class=HTMLResponse, include_in_schema=False)
+async def model_skill_history_page(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    active_scope = await resolve_scope_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+    )
+    if active_scope.scope_type != "tenant" or active_scope.tenant_id is None:
+        raise HTTPException(status_code=403, detail="tenant scope required")
+    try:
+        history = await _service(session).list_history(
+            principal=principal,
+            tenant_id=active_scope.tenant_id,
+            kind=None,
+            limit=100,
+        )
+    except Exception:
+        history = HistoryResponse(items=[])
+    page = build_history_page_model(history)
+    records = await AdminSavedFilterRepository(session).list_filters(
+        principal=principal,
+        admin_area="model_skill_history",
+        scope=active_scope,
+    )
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title=page.title,
+        breadcrumbs=(
+            BreadcrumbItem(label="Admin", href="/admin"),
+            BreadcrumbItem(label="Configuration", href="/admin/config/ui"),
+            BreadcrumbItem(label="History", href="/admin/config/ui/history"),
+        ),
+        common_state=build_common_state(
+            CommonStateType.EMPTY,
+            title="No configuration history",
+            summary=(
+                "No model or skill configuration changes are visible in this scope."
+            ),
+            trace_id=principal.trace_id,
+        )
+        if not history.items
+        else None,
+        saved_filters=tuple(
+            build_saved_filter_summary(record, active_scope=active_scope)
+            for record in records
+        ),
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "model_skill_config/history.html",
+        {"page": page, "principal": principal, "shell": shell},
+    )
+
+
+@router.get(
+    "/ui/runs/{workflow_run_id}/provenance",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def model_skill_run_provenance_page(
+    workflow_run_id: UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    active_scope = await resolve_scope_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+    )
+    if active_scope.scope_type != "tenant" or active_scope.tenant_id is None:
+        raise HTTPException(status_code=403, detail="tenant scope required")
+    try:
+        provenance = await _service(session).run_provenance(
+            principal=principal,
+            tenant_id=active_scope.tenant_id,
+            workflow_run_id=workflow_run_id,
+        )
+    except Exception:
+        provenance = RunProvenanceResponse(workflow_run_id=workflow_run_id)
+    page = build_run_provenance_page_model(provenance)
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title=page.title,
+        breadcrumbs=(
+            BreadcrumbItem(label="Admin", href="/admin"),
+            BreadcrumbItem(label="Configuration", href="/admin/config/ui"),
+            BreadcrumbItem(label="Run Provenance", href=request.url.path),
+        ),
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "model_skill_config/run_provenance.html",
+        {"page": page, "principal": principal, "shell": shell},
+    )
 
 
 @router.post(

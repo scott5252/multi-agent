@@ -30,7 +30,11 @@ class Tenant(Base, TimestampMixin):
     slug: Mapped[str] = mapped_column(String(128), unique=True)
     display_name: Mapped[str] = mapped_column(String(255))
     status: Mapped[TenantStatus] = mapped_column(
-        Enum(TenantStatus, native_enum=False),
+        Enum(
+            TenantStatus,
+            native_enum=False,
+            values_callable=lambda enum_class: [member.value for member in enum_class],
+        ),
         default=TenantStatus.ACTIVE,
     )
 

@@ -1,0 +1,12 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+  {% if shell.saved_filters %}
+    {% include "admin_shell/saved_filters.html" %}
+  {% else %}
+    <section class="admin-state admin-state--empty" data-state-type="empty" role="status">
+      <h2>No saved filters</h2>
+      <p>No saved filters are available for this area and scope.</p>
+    </section>
+  {% endif %}
+{% endblock %}
