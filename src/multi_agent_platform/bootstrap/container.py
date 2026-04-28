@@ -8,6 +8,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from starlette.templating import Jinja2Templates
 
+from multi_agent_platform.agents.service import AgentProfileService
 from multi_agent_platform.audit.service import AuditDebuggingService
 from multi_agent_platform.auth.config import auth_configuration_error
 from multi_agent_platform.auth.jwt_validator import Auth0JwtValidator
@@ -18,14 +19,17 @@ from multi_agent_platform.config.settings import (
     Settings,
     StorageProviderKind,
 )
+from multi_agent_platform.db.repositories.agent_profiles import AgentProfileRepository
 from multi_agent_platform.db.repositories.audit_debugging import (
     AuditDebuggingRepository,
 )
 from multi_agent_platform.db.repositories.model_skill_config import (
     ModelSkillConfigRepository,
 )
+from multi_agent_platform.db.repositories.prompts import PromptRepository
 from multi_agent_platform.db.session import create_engine
 from multi_agent_platform.observability.logging import configure_logging
+from multi_agent_platform.prompts.service import PromptService
 from multi_agent_platform.secrets.base import SecretProvider
 from multi_agent_platform.secrets.providers.env import EnvSecretProvider
 from multi_agent_platform.secrets.providers.secret_manager import SecretManagerProvider
@@ -65,6 +69,8 @@ class Container:
     local_principal_catalog: LocalPrincipalCatalog
     logger: logging.Logger
     model_skill_service_factory: Callable[[AsyncSession], ModelSkillConfigService]
+    prompt_service_factory: Callable[[AsyncSession], PromptService]
+    agent_profile_service_factory: Callable[[AsyncSession], AgentProfileService]
     audit_debugging_service_factory: Callable[[AsyncSession], AuditDebuggingService]
     auth_failure_detail: str | None = None
     worker_dependencies_ready: bool = True
@@ -95,6 +101,12 @@ def build_container(settings: Settings | None = None) -> Container:
         logger=configure_logging(resolved_settings.log_level),
         model_skill_service_factory=lambda session: ModelSkillConfigService(
             repository=ModelSkillConfigRepository(session),
+        ),
+        prompt_service_factory=lambda session: PromptService(
+            repository=PromptRepository(session),
+        ),
+        agent_profile_service_factory=lambda session: AgentProfileService(
+            repository=AgentProfileRepository(session),
         ),
         audit_debugging_service_factory=lambda session: AuditDebuggingService(
             repository=AuditDebuggingRepository(session),

@@ -225,6 +225,54 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_model_provider_catalog_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/admin/prompt-runtime/prompts": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/prompts",
+        requested_action="render_prompt_library_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/prompt-runtime/api/prompts": ProtectedSurface(
+        surface_key="POST:/admin/prompt-runtime/api/prompts",
+        requested_action="create_prompt_lineage",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin",),
+    ),
+    (
+        "POST:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/publish"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/prompt-runtime/api/prompts/{prompt_lineage_id}/publish"
+        ),
+        requested_action="publish_prompt_version",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin",),
+    ),
+    "GET:/admin/prompt-runtime/profiles": ProtectedSurface(
+        surface_key="GET:/admin/prompt-runtime/profiles",
+        requested_action="render_agent_profiles_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/prompt-runtime/api/profiles": ProtectedSurface(
+        surface_key="POST:/admin/prompt-runtime/api/profiles",
+        requested_action="create_agent_profile",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin",),
+    ),
+    (
+        "POST:/admin/prompt-runtime/api/profiles/"
+        "{agent_runtime_profile_id}/activate"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/prompt-runtime/api/profiles/"
+            "{agent_runtime_profile_id}/activate"
+        ),
+        requested_action="activate_agent_profile",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin",),
+    ),
     "POST:/admin/model-providers": ProtectedSurface(
         surface_key="POST:/admin/model-providers",
         requested_action="create_model_provider_connection",

@@ -1,0 +1,648 @@
+openapi: 3.1.0
+info:
+  title: Prompt Library And Agent Runtime Profiles API
+  version: 0.1.0
+  description: >
+    Admin API for prompt lineages, prompt draft versions, safe fixture previews,
+    immutable prompt publication, retirement, tenant grants, agent runtime
+    profiles, profile activation, workflow validation support, and safe audit
+    history.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /admin/prompt-runtime/api/prompts:
+    get:
+      summary: List prompt lineages and visible prompt versions
+      tags: [prompt-library]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: scope_type
+          in: query
+          schema: { $ref: '#/components/schemas/ScopeType' }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/PromptVersionStatus' }
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 200 }
+      responses:
+        '200':
+          description: Visible prompt lineages
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/PromptLineageSummary' }
+    post:
+      summary: Create a prompt lineage and first draft
+      tags: [prompt-library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PromptLineageCreate' }
+      responses:
+        '201':
+          description: Created prompt lineage with active draft
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptDraftDetail' }
+        '403': { $ref: '#/components/responses/SafeForbidden' }
+        '422': { $ref: '#/components/responses/SafeValidationError' }
+  /admin/prompt-runtime/api/prompts/{prompt_lineage_id}/draft:
+    get:
+      summary: Get active prompt draft
+      tags: [prompt-library]
+      parameters:
+        - $ref: '#/components/parameters/PromptLineageId'
+      responses:
+        '200':
+          description: Active prompt draft
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptDraftDetail' }
+        '404': { $ref: '#/components/responses/SafeNotFound' }
+    put:
+      summary: Save prompt draft revision
+      tags: [prompt-library]
+      parameters:
+        - $ref: '#/components/parameters/PromptLineageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PromptDraftSave' }
+      responses:
+        '200':
+          description: Saved prompt draft revision
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptDraftDetail' }
+        '409': { $ref: '#/components/responses/StaleRevision' }
+        '422': { $ref: '#/components/responses/SafeValidationError' }
+  /admin/prompt-runtime/api/prompts/{prompt_lineage_id}/validate:
+    post:
+      summary: Validate current prompt draft revision
+      tags: [prompt-library]
+      parameters:
+        - $ref: '#/components/parameters/PromptLineageId'
+      responses:
+        '200':
+          description: Prompt validation result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationResult' }
+  /admin/prompt-runtime/api/prompts/{prompt_lineage_id}/preview:
+    post:
+      summary: Render safe prompt preview from persisted fixture values
+      tags: [prompt-library]
+      parameters:
+        - $ref: '#/components/parameters/PromptLineageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PromptPreviewRequest' }
+      responses:
+        '200':
+          description: Safe fixture preview
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptPreviewResponse' }
+        '422': { $ref: '#/components/responses/SafeValidationError' }
+  /admin/prompt-runtime/api/prompts/{prompt_lineage_id}/publish:
+    post:
+      summary: Publish immutable prompt version
+      tags: [prompt-library]
+      parameters:
+        - $ref: '#/components/parameters/PromptLineageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PublishRequest' }
+      responses:
+        '201':
+          description: Published prompt version
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptVersionDetail' }
+        '409': { $ref: '#/components/responses/StaleValidation' }
+  /admin/prompt-runtime/api/prompts/versions/{prompt_version_id}/retire:
+    post:
+      summary: Retire prompt version from new use
+      tags: [prompt-library]
+      parameters:
+        - $ref: '#/components/parameters/PromptVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RetireRequest' }
+      responses:
+        '200':
+          description: Retired prompt version
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptVersionDetail' }
+  /admin/prompt-runtime/api/prompts/versions/{prompt_version_id}/grants:
+    post:
+      summary: Grant platform prompt version to tenants
+      tags: [prompt-library]
+      parameters:
+        - $ref: '#/components/parameters/PromptVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TenantGrantRequest' }
+      responses:
+        '200':
+          description: Grant results
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantGrantResponse' }
+  /admin/prompt-runtime/api/profiles:
+    get:
+      summary: List visible agent runtime profiles
+      tags: [agent-runtime-profiles]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: agent_key
+          in: query
+          schema: { type: string, maxLength: 128 }
+        - name: agent_kind
+          in: query
+          schema: { $ref: '#/components/schemas/AgentKind' }
+      responses:
+        '200':
+          description: Visible profiles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProfileSummary' }
+    post:
+      summary: Create an agent runtime profile and first draft
+      tags: [agent-runtime-profiles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProfileCreate' }
+      responses:
+        '201':
+          description: Created profile draft
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileDraftDetail' }
+  /admin/prompt-runtime/api/profiles/{agent_runtime_profile_id}/draft:
+    put:
+      summary: Save profile draft revision
+      tags: [agent-runtime-profiles]
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProfileDraftSave' }
+      responses:
+        '200':
+          description: Saved profile draft
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileDraftDetail' }
+        '409': { $ref: '#/components/responses/StaleRevision' }
+  /admin/prompt-runtime/api/profiles/{agent_runtime_profile_id}/validate:
+    post:
+      summary: Validate current profile draft revision
+      tags: [agent-runtime-profiles]
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      responses:
+        '200':
+          description: Profile validation result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationResult' }
+  /admin/prompt-runtime/api/profiles/{agent_runtime_profile_id}/activate:
+    post:
+      summary: Activate immutable profile version
+      tags: [agent-runtime-profiles]
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActivateProfileRequest' }
+      responses:
+        '201':
+          description: Active profile version
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileVersionDetail' }
+        '409': { $ref: '#/components/responses/StaleValidation' }
+  /admin/prompt-runtime/api/profiles/versions/{agent_profile_version_id}/retire:
+    post:
+      summary: Retire profile version from new use
+      tags: [agent-runtime-profiles]
+      parameters:
+        - $ref: '#/components/parameters/ProfileVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RetireRequest' }
+      responses:
+        '200':
+          description: Retired profile version
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileVersionDetail' }
+  /admin/prompt-runtime/api/profiles/versions/{agent_profile_version_id}/grants:
+    post:
+      summary: Grant platform profile version to tenants
+      tags: [agent-runtime-profiles]
+      parameters:
+        - $ref: '#/components/parameters/ProfileVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TenantGrantRequest' }
+      responses:
+        '200':
+          description: Grant results
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantGrantResponse' }
+  /admin/prompt-runtime/api/resolve-profile:
+    post:
+      summary: Preview tenant-over-platform runtime profile resolution
+      tags: [agent-runtime-profiles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProfileResolveRequest' }
+      responses:
+        '200':
+          description: Resolution preview
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileResolveResponse' }
+  /admin/prompt-runtime/api/history:
+    get:
+      summary: List safe prompt/profile audit history
+      tags: [prompt-runtime-audit]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: resource_kind
+          in: query
+          schema: { type: string, enum: [prompt, profile] }
+        - name: resource_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Safe history events
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/AuditEventSummary' }
+components:
+  parameters:
+    TenantId:
+      name: tenant_id
+      in: query
+      schema: { type: string, format: uuid }
+    PromptLineageId:
+      name: prompt_lineage_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PromptVersionId:
+      name: prompt_version_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ProfileId:
+      name: agent_runtime_profile_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ProfileVersionId:
+      name: agent_profile_version_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    SafeForbidden:
+      description: Safe authorization denial
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SafeError' }
+    SafeNotFound:
+      description: Safe not found or not visible
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SafeError' }
+    SafeValidationError:
+      description: Safe validation error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SafeError' }
+    StaleRevision:
+      description: Expected draft revision does not match current draft head
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SafeError' }
+    StaleValidation:
+      description: Latest validation does not match current draft revision
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SafeError' }
+  schemas:
+    ScopeType:
+      type: string
+      enum: [platform, tenant]
+    AgentKind:
+      type: string
+      enum: [agent, sub_agent]
+    PromptVersionStatus:
+      type: string
+      enum: [draft, active, retired, historical_only]
+    ProfileVersionStatus:
+      type: string
+      enum: [draft, active, retired, historical_only]
+    PromptVariable:
+      type: object
+      required: [name, purpose, required, allowed_value_category]
+      properties:
+        name: { type: string, pattern: '^[A-Za-z_][A-Za-z0-9_]*$' }
+        purpose: { type: string, minLength: 1, maxLength: 1000 }
+        required: { type: boolean }
+        allowed_value_category:
+          type: string
+          enum: [fixture_text, fixture_identifier, fixture_url, fixture_json, non_sensitive_summary]
+        sample_guidance: { type: string, maxLength: 1000 }
+    FixtureValueSet:
+      type: object
+      required: [label, values]
+      properties:
+        fixture_set_id: { type: string, format: uuid }
+        label: { type: string, minLength: 1, maxLength: 120 }
+        values:
+          type: object
+          additionalProperties: { type: string, maxLength: 10000 }
+    PromptLineageCreate:
+      type: object
+      required: [scope_type, slug, display_name, purpose, template_content, variables]
+      properties:
+        scope_type: { $ref: '#/components/schemas/ScopeType' }
+        tenant_id: { type: string, format: uuid }
+        slug: { type: string, minLength: 1, maxLength: 128 }
+        display_name: { type: string, minLength: 1, maxLength: 255 }
+        purpose: { type: string, minLength: 1, maxLength: 2000 }
+        template_content: { type: string, minLength: 1, maxLength: 65536 }
+        variables:
+          type: array
+          items: { $ref: '#/components/schemas/PromptVariable' }
+        fixture_value_sets:
+          type: array
+          items: { $ref: '#/components/schemas/FixtureValueSet' }
+    PromptDraftSave:
+      allOf:
+        - $ref: '#/components/schemas/PromptLineageCreate'
+        - type: object
+          required: [expected_revision_number]
+          properties:
+            expected_revision_number: { type: integer, minimum: 1 }
+            usage_notes: { type: string, maxLength: 4000 }
+            change_summary: { type: string, maxLength: 1000 }
+    PromptLineageSummary:
+      type: object
+      required: [prompt_lineage_id, scope_type, display_name, status]
+      properties:
+        prompt_lineage_id: { type: string, format: uuid }
+        scope_type: { $ref: '#/components/schemas/ScopeType' }
+        tenant_id: { type: string, format: uuid }
+        display_name: { type: string }
+        status: { type: string }
+        latest_published_prompt_version_id: { type: string, format: uuid }
+        validation_status: { type: string }
+    PromptDraftDetail:
+      type: object
+      properties:
+        prompt_lineage_id: { type: string, format: uuid }
+        prompt_draft_id: { type: string, format: uuid }
+        current_revision_number: { type: integer }
+        template_content: { type: string }
+        variables:
+          type: array
+          items: { $ref: '#/components/schemas/PromptVariable' }
+        fixture_value_sets:
+          type: array
+          items: { $ref: '#/components/schemas/FixtureValueSet' }
+        latest_validation: { $ref: '#/components/schemas/ValidationResult' }
+    PromptPreviewRequest:
+      type: object
+      required: [fixture_set_id]
+      properties:
+        fixture_set_id: { type: string, format: uuid }
+    PromptPreviewResponse:
+      type: object
+      required: [rendered_preview, redaction_categories, audit_recorded]
+      properties:
+        rendered_preview: { type: string }
+        redaction_categories:
+          type: array
+          items: { type: string }
+        audit_recorded: { type: boolean }
+    PublishRequest:
+      type: object
+      required: [expected_revision_number, validation_result_id, reason]
+      properties:
+        expected_revision_number: { type: integer, minimum: 1 }
+        validation_result_id: { type: string, format: uuid }
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+    PromptVersionDetail:
+      type: object
+      properties:
+        prompt_version_id: { type: string, format: uuid }
+        prompt_lineage_id: { type: string, format: uuid }
+        display_version: { type: string }
+        status: { $ref: '#/components/schemas/PromptVersionStatus' }
+        template_content_sha256: { type: string }
+        safe_summary: { type: object, additionalProperties: true }
+    ProfileCreate:
+      type: object
+      required: [scope_type, agent_key, agent_kind, display_name, purpose]
+      properties:
+        scope_type: { $ref: '#/components/schemas/ScopeType' }
+        tenant_id: { type: string, format: uuid }
+        agent_key: { type: string, minLength: 1, maxLength: 128 }
+        agent_kind: { $ref: '#/components/schemas/AgentKind' }
+        display_name: { type: string, minLength: 1, maxLength: 255 }
+        purpose: { type: string, minLength: 1, maxLength: 2000 }
+    ProfileDraftSave:
+      type: object
+      required:
+        - expected_revision_number
+        - purpose
+        - prompt_references
+        - model_routing_hints
+        - memory_scope_policy
+        - skill_requirements
+        - tool_policy_expectations
+        - output_contract_expectations
+        - test_suite_requirements
+      properties:
+        expected_revision_number: { type: integer, minimum: 1 }
+        purpose: { type: string, minLength: 1, maxLength: 2000 }
+        prompt_references:
+          type: array
+          items: { $ref: '#/components/schemas/ProfilePromptReference' }
+        model_routing_hints: { type: object, additionalProperties: true }
+        memory_scope_policy: { type: object, additionalProperties: true }
+        skill_requirements:
+          type: array
+          items: { type: object, additionalProperties: true }
+        tool_policy_expectations:
+          type: array
+          items: { type: object, additionalProperties: true }
+        output_contract_expectations: { type: object, additionalProperties: true }
+        test_suite_requirements:
+          type: array
+          items: { type: object, additionalProperties: true }
+    ProfilePromptReference:
+      type: object
+      required: [purpose, prompt_version_id, required]
+      properties:
+        purpose: { type: string, minLength: 1, maxLength: 120 }
+        prompt_version_id: { type: string, format: uuid }
+        required: { type: boolean }
+    ProfileSummary:
+      type: object
+      properties:
+        agent_runtime_profile_id: { type: string, format: uuid }
+        agent_key: { type: string }
+        agent_kind: { $ref: '#/components/schemas/AgentKind' }
+        scope_type: { $ref: '#/components/schemas/ScopeType' }
+        active_profile_version_id: { type: string, format: uuid }
+        validation_status: { type: string }
+    ProfileDraftDetail:
+      type: object
+      properties:
+        agent_runtime_profile_id: { type: string, format: uuid }
+        current_revision_number: { type: integer }
+        latest_validation: { $ref: '#/components/schemas/ValidationResult' }
+    ActivateProfileRequest:
+      type: object
+      required: [expected_revision_number, validation_result_id, reason]
+      properties:
+        expected_revision_number: { type: integer, minimum: 1 }
+        validation_result_id: { type: string, format: uuid }
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+        expected_previous_profile_version_id: { type: string, format: uuid }
+    ProfileVersionDetail:
+      type: object
+      properties:
+        agent_profile_version_id: { type: string, format: uuid }
+        agent_key: { type: string }
+        agent_kind: { $ref: '#/components/schemas/AgentKind' }
+        status: { $ref: '#/components/schemas/ProfileVersionStatus' }
+        safe_summary: { type: object, additionalProperties: true }
+    ProfileResolveRequest:
+      type: object
+      required: [tenant_id, agent_key, agent_kind]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        agent_key: { type: string }
+        agent_kind: { $ref: '#/components/schemas/AgentKind' }
+    ProfileResolveResponse:
+      type: object
+      required: [resolved]
+      properties:
+        resolved: { type: boolean }
+        selected_profile_version_id: { type: string, format: uuid }
+        source_scope: { $ref: '#/components/schemas/ScopeType' }
+        considered_profile_version_ids:
+          type: array
+          items: { type: string, format: uuid }
+        blocking_issues:
+          type: array
+          items: { $ref: '#/components/schemas/ValidationFinding' }
+    ValidationResult:
+      type: object
+      properties:
+        validation_result_id: { type: string, format: uuid }
+        status: { type: string, enum: [passed, failed, superseded] }
+        blocking_issue_count: { type: integer }
+        advisory_issue_count: { type: integer }
+        findings:
+          type: array
+          items: { $ref: '#/components/schemas/ValidationFinding' }
+    ValidationFinding:
+      type: object
+      required: [severity, code, message]
+      properties:
+        severity: { type: string, enum: [blocking, advisory] }
+        code: { type: string }
+        message: { type: string }
+        section: { type: string }
+        field: { type: string }
+    RetireRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+    TenantGrantRequest:
+      type: object
+      required: [tenant_ids, reason]
+      properties:
+        tenant_ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+    TenantGrantResponse:
+      type: object
+      properties:
+        granted_tenant_ids:
+          type: array
+          items: { type: string, format: uuid }
+        revoked_tenant_ids:
+          type: array
+          items: { type: string, format: uuid }
+    AuditEventSummary:
+      type: object
+      properties:
+        action: { type: string }
+        actor_principal_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        outcome: { type: string }
+        reason: { type: string }
+        redacted_diff_summary: { type: object, additionalProperties: true }
+    SafeError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        safe_details: { type: object, additionalProperties: true }

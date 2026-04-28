@@ -65,6 +65,16 @@ Auto-generated from all feature plans. Last updated: 2026-04-28
   connection test results, health snapshots, catalog synchronization records,
   gateway invocation metadata, safe audit summaries, and migration state
   (011-model-provider-gateway)
+- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
+  Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+,
+  psycopg 3, Auth0 JWT validation, existing workflow registry,
+  model_skill_config prompt references, memory policy, audit/redaction helpers,
+  prometheus-client, pytest, pytest-asyncio, httpx, Ruff, mypy, uv
+  (012-prompt-runtime-profiles)
+- PostgreSQL for prompt lineages, prompt drafts, immutable prompt versions,
+  render tests, prompt audit records, agent runtime profiles, immutable profile
+  versions, tenant grants, workflow validation references, bundle pins, and run
+  provenance metadata (012-prompt-runtime-profiles)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -94,6 +104,13 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 012-prompt-runtime-profiles: Planned prompt library and agent runtime profile
+  management with prompt lineages, draft revisions, template variable
+  validation, safe fixture previews, immutable prompt publication, retirement,
+  tenant grants, profile versioning, workflow validation hooks, Spec 007 prompt
+  reference integration, run acceptance and dynamic first-use pinning, safe
+  audit records, browser admin views for non-developers, API contracts, docs,
+  and tests.
 - 011-model-provider-gateway: Planned model provider connection management
   and shared ModelGateway with OpenAI/local OpenAI-compatible adapters, safe
   probes, health snapshots, catalog synchronization, secret-reference
@@ -134,5 +151,5 @@ async patterns for PostgreSQL access.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/011-model-provider-gateway/plan.md`
+`specs/012-prompt-runtime-profiles/plan.md`
 <!-- SPECKIT END -->
