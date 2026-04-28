@@ -55,3 +55,16 @@ summaries, or admin pages.
 Use [Prompt Runtime Profiles Testing](/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles-testing.md)
 and [Spec 012 QA](/Users/scottcornell/src/my-projects/multi-agent/specs/012-prompt-runtime-profiles/qa012.md)
 for reviewer evidence.
+
+## Spec 012 V2 Runtime Gateway Completion
+
+Spec 012 V2 routes model-backed runtime execution, profile test bench
+execution, and model-backed workflow validation through `ModelGateway` after
+prompt/profile pins are resolved. Gateway operation identities, provider probe
+operations, catalog sync operations, retry summaries, breaker summaries,
+latency, usage availability, and safe provider provenance are stored as
+additive records only.
+
+Historical prompt versions, profile versions, workflow bundle pins, run
+provenance, provider attempts, and audit records are not rewritten. Older runs
+without V2 gateway metadata render as `pre_v2_metadata_unavailable`.

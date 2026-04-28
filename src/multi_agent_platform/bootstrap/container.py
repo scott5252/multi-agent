@@ -23,13 +23,27 @@ from multi_agent_platform.db.repositories.agent_profiles import AgentProfileRepo
 from multi_agent_platform.db.repositories.audit_debugging import (
     AuditDebuggingRepository,
 )
+from multi_agent_platform.db.repositories.model_providers import ModelProviderRepository
 from multi_agent_platform.db.repositories.model_skill_config import (
     ModelSkillConfigRepository,
 )
 from multi_agent_platform.db.repositories.prompts import PromptRepository
 from multi_agent_platform.db.session import create_engine
+from multi_agent_platform.model_providers.adapters import ProviderAdapterRegistry
+from multi_agent_platform.model_providers.allowlist import LocalEndpointAllowlist
+from multi_agent_platform.model_providers.gateway import ModelGateway
+from multi_agent_platform.model_providers.local_adapter import (
+    LocalOpenAICompatibleAdapter,
+)
+from multi_agent_platform.model_providers.models import ProviderType
+from multi_agent_platform.model_providers.openai_adapter import OpenAIAdapter
+from multi_agent_platform.model_providers.probes import ProviderProbeRunner
+from multi_agent_platform.model_providers.secrets import ProviderSecretResolver
+from multi_agent_platform.model_providers.service import ModelProviderService
 from multi_agent_platform.observability.logging import configure_logging
 from multi_agent_platform.prompts.service import PromptService
+from multi_agent_platform.reliability.breakers import gateway_breaker_summary
+from multi_agent_platform.reliability.retries import gateway_retry_summary
 from multi_agent_platform.secrets.base import SecretProvider
 from multi_agent_platform.secrets.providers.env import EnvSecretProvider
 from multi_agent_platform.secrets.providers.secret_manager import SecretManagerProvider
@@ -69,6 +83,20 @@ class Container:
     local_principal_catalog: LocalPrincipalCatalog
     logger: logging.Logger
     model_skill_service_factory: Callable[[AsyncSession], ModelSkillConfigService]
+    model_provider_repository_factory: Callable[[AsyncSession], ModelProviderRepository]
+    model_provider_service_factory: (
+        Callable[[AsyncSession], ModelProviderService] | None
+    )
+    provider_adapter_registry_factory: Callable[[], ProviderAdapterRegistry] | None
+    model_gateway_factory: Callable[[AsyncSession], ModelGateway] | None
+    provider_secret_resolver_factory: (
+        Callable[[AsyncSession], ProviderSecretResolver] | None
+    )
+    gateway_metrics_hooks: object | None
+    gateway_tracing_hooks: object | None
+    gateway_audit_hooks: object | None
+    retry_decision_helper: object | None
+    breaker_decision_helper: object | None
     prompt_service_factory: Callable[[AsyncSession], PromptService]
     agent_profile_service_factory: Callable[[AsyncSession], AgentProfileService]
     audit_debugging_service_factory: Callable[[AsyncSession], AuditDebuggingService]
@@ -77,7 +105,36 @@ class Container:
     state: dict[str, object] = field(default_factory=dict)
 
     async def dispose(self) -> None:
+        registry = self.state.get("provider_adapter_registry")
+        if isinstance(registry, ProviderAdapterRegistry):
+            await registry.aclose()
         await self.engine.dispose()
+
+
+def build_model_provider_allowlist(settings: Settings) -> LocalEndpointAllowlist:
+    return LocalEndpointAllowlist(
+        schemes=settings.model_provider_local_allowed_schemes,
+        hosts=settings.model_provider_local_allowed_hosts,
+        ports=settings.model_provider_local_allowed_ports,
+        cidrs=settings.model_provider_local_allowed_cidrs,
+    )
+
+
+def _provider_adapter_registry(container: Container) -> ProviderAdapterRegistry:
+    registry = container.state.get("provider_adapter_registry")
+    if isinstance(registry, ProviderAdapterRegistry):
+        return registry
+    allowlist = build_model_provider_allowlist(container.settings)
+    registry = ProviderAdapterRegistry(
+        {
+            ProviderType.OPENAI: OpenAIAdapter(),
+            ProviderType.LOCAL_OPENAI_COMPATIBLE: LocalOpenAICompatibleAdapter(
+                allowlist=allowlist
+            ),
+        }
+    )
+    container.state["provider_adapter_registry"] = registry
+    return registry
 
 
 def build_container(settings: Settings | None = None) -> Container:
@@ -85,7 +142,8 @@ def build_container(settings: Settings | None = None) -> Container:
     resolved_settings.ensure_directories()
     engine = create_engine(resolved_settings)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
-    return Container(
+    holder: dict[str, Container] = {}
+    container = Container(
         settings=resolved_settings,
         engine=engine,
         session_factory=session_factory,
@@ -102,6 +160,31 @@ def build_container(settings: Settings | None = None) -> Container:
         model_skill_service_factory=lambda session: ModelSkillConfigService(
             repository=ModelSkillConfigRepository(session),
         ),
+        model_provider_repository_factory=lambda session: ModelProviderRepository(
+            session
+        ),
+        model_provider_service_factory=lambda session: ModelProviderService(
+            repository=ModelProviderRepository(session),
+            allowlist=build_model_provider_allowlist(resolved_settings),
+            probe_runner=ProviderProbeRunner(
+                _provider_adapter_registry(holder["container"])
+            ),
+        ),
+        provider_adapter_registry_factory=lambda: _provider_adapter_registry(
+            holder["container"]
+        ),
+        model_gateway_factory=lambda session: ModelGateway(
+            repository=ModelProviderRepository(session),
+            registry=_provider_adapter_registry(holder["container"]),
+        ),
+        provider_secret_resolver_factory=lambda _session: ProviderSecretResolver(
+            build_secret_provider(resolved_settings)
+        ),
+        gateway_metrics_hooks=object(),
+        gateway_tracing_hooks=object(),
+        gateway_audit_hooks=object(),
+        retry_decision_helper=gateway_retry_summary,
+        breaker_decision_helper=gateway_breaker_summary,
         prompt_service_factory=lambda session: PromptService(
             repository=PromptRepository(session),
         ),
@@ -113,3 +196,5 @@ def build_container(settings: Settings | None = None) -> Container:
         ),
         auth_failure_detail=auth_configuration_error(resolved_settings),
     )
+    holder["container"] = container
+    return container

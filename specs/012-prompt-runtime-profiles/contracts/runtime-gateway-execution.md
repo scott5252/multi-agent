@@ -254,6 +254,10 @@ src/multi_agent_platform/model_providers/local_adapter.py
 src/multi_agent_platform/model_providers/adapters.py
 ```
 
+The executable allowlist source is
+`src/multi_agent_platform/model_providers/guardrails.py`; static and runtime
+guardrail tests must import that same allowlist instead of duplicating paths.
+
 Static guardrail tests must fail when direct provider SDK imports, direct
 provider client construction, or direct outbound provider HTTP calls appear in:
 

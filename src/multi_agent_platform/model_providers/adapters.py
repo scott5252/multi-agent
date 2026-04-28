@@ -23,16 +23,29 @@ class ProviderAdapter(Protocol):
     async def chat_completion(self, request: AdapterRequest) -> AdapterResponse:
         raise NotImplementedError
 
+    async def aclose(self) -> None:
+        raise NotImplementedError
+
 
 class ProviderAdapterRegistry:
     def __init__(self, adapters: Mapping[ProviderType, ProviderAdapter]) -> None:
         self._adapters = dict(adapters)
+        self.closed = False
 
     def get(self, provider_type: ProviderType) -> ProviderAdapter:
         try:
             return self._adapters[provider_type]
         except KeyError as exc:
             raise ValueError(f"unsupported provider type: {provider_type}") from exc
+
+    async def aclose(self) -> None:
+        if self.closed:
+            return
+        for adapter in self._adapters.values():
+            close = getattr(adapter, "aclose", None)
+            if close is not None:
+                await close()
+        self.closed = True
 
 
 async def post_openai_chat_completion(

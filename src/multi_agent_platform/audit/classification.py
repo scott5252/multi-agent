@@ -23,6 +23,17 @@ PROMPT_RUNTIME_SAFE_FIELDS = {
     "validation_status",
     "finding_codes",
     "redaction_categories",
+    "gateway_operation_id",
+    "operation_identity",
+    "provider_connection_id",
+    "provider_model_definition_id",
+    "model_id",
+    "retry_category",
+    "breaker_scope",
+    "usage_available",
+    "normalized_error_category",
+    "provider_probe_operation_id",
+    "catalog_sync_operation_id",
 }
 SAFE_FIELD_ALLOWLIST = {
     "id",

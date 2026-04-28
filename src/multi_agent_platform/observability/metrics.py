@@ -279,5 +279,21 @@ def observe_model_provider_latency(
     ).observe(latency_ms / 1000)
 
 
+def record_gateway_operation(
+    *,
+    operation_kind: str,
+    outcome: str,
+    retry_category: str | None = None,
+    breaker_decision: str | None = None,
+    recovered: bool = False,
+) -> None:
+    reason = retry_category or breaker_decision or ("recovered" if recovered else None)
+    record_model_provider_action(
+        action=operation_kind,
+        outcome=outcome,
+        reason=reason,
+    )
+
+
 def record_admin_shell_fail_closed(*, surface: str, reason: str) -> None:
     ADMIN_SHELL_FAIL_CLOSED_COUNTER.labels(surface=surface, reason=reason).inc()

@@ -122,3 +122,35 @@ def audit_diff_summary(
         "new_version_id": str(new_version_id) if new_version_id else None,
         "summary": safe_summary,
     }
+
+
+def combine_gateway_prompt_profile_provenance(
+    projection: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "tenant_id": projection.get("tenant_id"),
+        "workflow_run_id": projection.get("workflow_run_id"),
+        "workflow_run_step_id": projection.get("workflow_run_step_id"),
+        "agent_key": projection.get("agent_key"),
+        "agent_kind": projection.get("agent_kind"),
+        "agent_profile_version_id": projection.get("agent_profile_version_id"),
+        "prompt_version_ids": projection.get("prompt_version_ids", []),
+        "prompt_reference_version_ids": projection.get(
+            "prompt_reference_version_ids",
+            [],
+        ),
+        "gateway_operation_id": projection.get("gateway_operation_id"),
+        "provider_connection_id": projection.get("provider_connection_id"),
+        "provider_model_definition_id": projection.get("provider_model_definition_id"),
+        "model_id": projection.get("model_id"),
+        "retry_category": projection.get("retry_category"),
+        "breaker_scope": projection.get("breaker_scope"),
+        "latency_ms": projection.get("latency_ms"),
+        "usage_available": projection.get("usage_available"),
+        "normalized_outcome": projection.get("normalized_outcome"),
+        "metadata_available": projection.get("metadata_available", False),
+        "metadata_status": projection.get(
+            "metadata_status",
+            "pre_v2_metadata_unavailable",
+        ),
+    }

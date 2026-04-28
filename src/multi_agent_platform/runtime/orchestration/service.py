@@ -14,6 +14,8 @@ from multi_agent_platform.config.service import (
 )
 from multi_agent_platform.memory.models import RuntimeMemoryContext
 from multi_agent_platform.memory.service import MemoryService
+from multi_agent_platform.model_providers.gateway import ModelGateway
+from multi_agent_platform.model_providers.models import GatewayResult
 from multi_agent_platform.observability.tracing import generate_trace_id
 from multi_agent_platform.runtime.orchestration.compiler import (
     PublishedWorkflowBundle,
@@ -27,6 +29,7 @@ from multi_agent_platform.runtime.orchestration.models import RunStatus, Workflo
 from multi_agent_platform.runtime.orchestration.repository import (
     InMemoryRuntimeRepository,
 )
+from multi_agent_platform.runtime.versioning import build_gateway_context_from_pins
 
 
 class RuntimeOrchestrationService:
@@ -139,6 +142,53 @@ class RuntimeOrchestrationService:
                     "prompt_version_ids": [str(value) for value in prompt_version_ids],
                 },
             )
+        )
+
+    async def invoke_model_gateway_step(
+        self,
+        *,
+        model_gateway: ModelGateway,
+        connection_id: UUID,
+        model_id: str,
+        messages: tuple[dict[str, str], ...],
+        tenant_id: UUID,
+        workflow_run_id: UUID,
+        workflow_run_step_id: UUID,
+        trace_id: str,
+        idempotency_key: str,
+        agent_key: str,
+        agent_kind: str,
+        agent_profile_version_id: UUID,
+        prompt_version_ids: tuple[UUID, ...],
+        prompt_reference_version_ids: tuple[UUID, ...],
+        model_routing_provenance: dict[str, object],
+        profile_provenance: dict[str, object] | None = None,
+        memory_policy_context: dict[str, object] | None = None,
+        tool_policy_expectations: dict[str, object] | None = None,
+        output_contract_metadata: dict[str, object] | None = None,
+    ) -> GatewayResult:
+        context = build_gateway_context_from_pins(
+            tenant_id=tenant_id,
+            workflow_run_id=workflow_run_id,
+            workflow_run_step_id=workflow_run_step_id,
+            trace_id=trace_id,
+            idempotency_key=idempotency_key,
+            agent_key=agent_key,
+            agent_kind=agent_kind,
+            agent_profile_version_id=agent_profile_version_id,
+            prompt_version_ids=prompt_version_ids,
+            prompt_reference_version_ids=prompt_reference_version_ids,
+            model_routing_provenance=model_routing_provenance,
+            profile_provenance=profile_provenance,
+            memory_policy_context=memory_policy_context,
+            tool_policy_expectations=tool_policy_expectations,
+            output_contract_metadata=output_contract_metadata,
+        )
+        return await model_gateway.invoke(
+            connection_id=connection_id,
+            model_id=model_id,
+            messages=messages,
+            context=context,
         )
 
     async def inspect_run(

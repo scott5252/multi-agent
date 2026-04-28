@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from uuid import UUID
 
 from multi_agent_platform.api.schemas.workflow_registry import WorkflowDraftDocument
+from multi_agent_platform.model_providers.gateway import ModelGateway
+from multi_agent_platform.model_providers.models import GatewayResult
+from multi_agent_platform.runtime.versioning import build_gateway_context_from_pins
 
 EXACT_VERSION_BLOCKLIST = ("latest", "main", "dev")
 SECRET_MARKERS = (
@@ -264,6 +268,44 @@ def validate_authoring_document(
     if prompt_profile_findings:
         findings.extend(prompt_profile_findings)
     return findings
+
+
+async def execute_model_backed_validation(
+    *,
+    model_gateway: ModelGateway,
+    connection_id: UUID,
+    model_id: str,
+    workflow_validation_id: UUID,
+    tenant_id: UUID,
+    trace_id: str,
+    agent_key: str,
+    agent_kind: str,
+    agent_profile_version_id: UUID,
+    prompt_version_ids: tuple[UUID, ...],
+    prompt_reference_version_ids: tuple[UUID, ...],
+    model_routing_provenance: dict[str, object],
+) -> GatewayResult:
+    context = build_gateway_context_from_pins(
+        tenant_id=tenant_id,
+        workflow_validation_id=workflow_validation_id,
+        trace_id=trace_id,
+        idempotency_key=f"workflow-validation:{workflow_validation_id}",
+        agent_key=agent_key,
+        agent_kind=agent_kind,
+        agent_profile_version_id=agent_profile_version_id,
+        prompt_version_ids=prompt_version_ids,
+        prompt_reference_version_ids=prompt_reference_version_ids,
+        model_routing_provenance=model_routing_provenance,
+    )
+    return await model_gateway.invoke(
+        connection_id=connection_id,
+        model_id=model_id,
+        messages=(
+            {"role": "system", "content": "Return safe workflow validation output."},
+            {"role": "user", "content": "validate"},
+        ),
+        context=context,
+    )
 
 
 def _validate_contract_compatibility(

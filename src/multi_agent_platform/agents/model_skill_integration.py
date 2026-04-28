@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import UUID
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,3 +65,25 @@ def prompt_reference_digest_findings(
                 }
             )
     return tuple(findings)
+
+
+def build_profile_gateway_routing_context(
+    *,
+    agent_profile_version_id: UUID,
+    model_routing_hints: dict[str, object],
+    memory_policy: dict[str, object],
+    tool_policy_expectations: dict[str, object],
+    output_contract: dict[str, object],
+    source_scope: str,
+) -> dict[str, object]:
+    return {
+        "agent_profile_version_id": str(agent_profile_version_id),
+        "model_routing_hints": dict(model_routing_hints),
+        "memory_policy_context": dict(memory_policy),
+        "tool_policy_expectations": dict(tool_policy_expectations),
+        "output_contract_metadata": dict(output_contract),
+        "profile_provenance": {
+            "source_scope": source_scope,
+            "tenant_profile_precedence_applied": source_scope == "tenant",
+        },
+    }

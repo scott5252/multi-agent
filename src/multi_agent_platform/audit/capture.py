@@ -198,6 +198,30 @@ def build_prompt_runtime_event(
     )
 
 
+def build_provider_operation_event(
+    *,
+    tenant_id: UUID | None,
+    workflow_run_id: UUID,
+    trace_id: str,
+    source_event_id: str,
+    action: str,
+    actor_principal_id: str | None = None,
+    details: Mapping[str, object] | None = None,
+) -> TimelineEventCreate:
+    return TimelineEventCreate(
+        tenant_id=tenant_id,
+        workflow_run_id=workflow_run_id,
+        event_category=TimelineEventCategory.RUNTIME_DECISION,
+        run_status_after=RunStatusAfter.UNKNOWN,
+        actor_principal_id=actor_principal_id,
+        trace_id=trace_id,
+        source_event_id=source_event_id,
+        criticality=CaptureCriticality.SECURITY_GOVERNANCE,
+        safe_summary=f"Provider operation {action}",
+        safe_details=build_safe_summary({"action": action, **dict(details or {})}),
+    )
+
+
 def build_failed_stage_event(
     *,
     tenant_id: UUID | None,

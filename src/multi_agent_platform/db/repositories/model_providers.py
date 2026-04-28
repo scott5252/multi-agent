@@ -3,23 +3,28 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, delete, false, select
+from sqlalchemy import Select, delete, false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.db.base import utcnow
 from multi_agent_platform.db.models.model_providers import (
+    CatalogSyncOperation,
     CatalogSyncRecord,
     ConnectionHealthSnapshot,
     ConnectionTenantVisibility,
     ConnectionTestResult,
     GatewayInvocationAttempt,
+    GatewayOperation,
+    GatewayPhysicalAttempt,
     ModelProviderConnection,
     ProviderModelDefinition,
+    ProviderProbeOperation,
 )
 from multi_agent_platform.model_providers.models import (
     ErrorCategory,
     GatewayResult,
     HealthState,
+    OperationStatus,
     ProviderConnectionSummary,
     ProviderModel,
     ProviderTestSummary,
@@ -288,6 +293,11 @@ class ModelProviderRepository:
         test_bench_run_id: UUID | None = None,
         trace_id: str | None = None,
         idempotency_key: str | None = None,
+        workflow_run_step_id: UUID | None = None,
+        workflow_validation_id: UUID | None = None,
+        retry_decision_summary: dict[str, object] | None = None,
+        breaker_scope: str | None = None,
+        breaker_decision_summary: dict[str, object] | None = None,
     ) -> GatewayInvocationAttempt:
         now = utcnow()
         record = GatewayInvocationAttempt(
@@ -306,6 +316,9 @@ class ModelProviderRepository:
             latency_ms=result.latency_ms,
             outcome=result.outcome,
             normalized_error_category=result.normalized_error_category,
+            retry_decision_summary=retry_decision_summary or {},
+            breaker_scope=breaker_scope,
+            breaker_decision_summary=breaker_decision_summary or {},
             usage_metadata=result.usage.model_dump(mode="json"),
             usage_available=result.usage.availability.value == "available",
             safe_audit_summary=result.safe_audit_summary,
@@ -313,6 +326,227 @@ class ModelProviderRepository:
         self._session.add(record)
         await self._session.flush()
         return record
+
+    async def get_or_create_gateway_operation(
+        self,
+        *,
+        operation_identity: str,
+        tenant_id: UUID | None,
+        workflow_run_id: UUID | None,
+        workflow_run_step_id: UUID | None,
+        trace_id: str | None,
+        idempotency_key: str | None,
+        agent_profile_version_id: UUID | None,
+        prompt_version_ids: list[UUID],
+        prompt_reference_version_ids: list[UUID],
+        model_routing_provenance: dict[str, object],
+        provider_connection_id: UUID | None,
+        provider_model_definition_id: UUID | None,
+        model_provider_entry_id: UUID | None,
+        model_id: str,
+        safe_summary: dict[str, object],
+        test_bench_run_id: UUID | None = None,
+        workflow_validation_id: UUID | None = None,
+    ) -> tuple[GatewayOperation, bool]:
+        existing = await self._session.scalar(
+            select(GatewayOperation).where(
+                GatewayOperation.operation_identity == operation_identity
+            )
+        )
+        if existing is not None:
+            return existing, False
+        operation = GatewayOperation(
+            operation_identity=operation_identity,
+            tenant_id=tenant_id,
+            workflow_run_id=workflow_run_id,
+            workflow_run_step_id=workflow_run_step_id,
+            test_bench_run_id=test_bench_run_id,
+            workflow_validation_id=workflow_validation_id,
+            trace_id=trace_id,
+            idempotency_key=idempotency_key or operation_identity,
+            agent_profile_version_id=agent_profile_version_id,
+            prompt_version_ids=[str(value) for value in prompt_version_ids],
+            prompt_reference_version_ids=[
+                str(value) for value in prompt_reference_version_ids
+            ],
+            model_routing_provenance_json=dict(model_routing_provenance),
+            provider_connection_id=provider_connection_id,
+            provider_model_definition_id=provider_model_definition_id,
+            model_provider_entry_id=model_provider_entry_id,
+            model_id=model_id,
+            safe_summary_json=dict(safe_summary),
+        )
+        self._session.add(operation)
+        await self._session.flush()
+        return operation, True
+
+    async def record_gateway_physical_attempt(
+        self,
+        *,
+        operation: GatewayOperation,
+        gateway_invocation_attempt_id: UUID | None,
+        result: GatewayResult,
+        retry_category: str,
+        retry_decision_summary: dict[str, object],
+        retry_budget_snapshot: dict[str, object],
+        breaker_scope: str | None,
+        breaker_decision_summary: dict[str, object],
+        duplicate_suppressed: bool,
+        provider_request_id_safe: str | None = None,
+        recovered_from_attempt_id: UUID | None = None,
+    ) -> GatewayPhysicalAttempt:
+        now = utcnow()
+        current = await self._session.scalar(
+            select(func.max(GatewayPhysicalAttempt.physical_attempt_number)).where(
+                GatewayPhysicalAttempt.gateway_operation_id
+                == operation.gateway_operation_id
+            )
+        )
+        attempt = GatewayPhysicalAttempt(
+            gateway_operation_id=operation.gateway_operation_id,
+            gateway_invocation_attempt_id=gateway_invocation_attempt_id,
+            physical_attempt_number=int(current or 0) + 1,
+            started_at=now,
+            completed_at=now,
+            latency_ms=result.latency_ms,
+            outcome=result.outcome,
+            normalized_error_category=result.normalized_error_category,
+            retry_category=retry_category,
+            retry_decision_summary_json=dict(retry_decision_summary),
+            retry_budget_snapshot_json=dict(retry_budget_snapshot),
+            breaker_scope=breaker_scope,
+            breaker_decision_summary_json=dict(breaker_decision_summary),
+            provider_request_id_safe=provider_request_id_safe,
+            usage_metadata_json=result.usage.model_dump(mode="json"),
+            usage_available=result.usage.availability.value == "available",
+            duplicate_suppressed=duplicate_suppressed,
+            recovered_from_attempt_id=recovered_from_attempt_id,
+            safe_audit_summary_json=result.safe_audit_summary,
+        )
+        self._session.add(attempt)
+        await self._session.flush()
+        operation.authoritative_attempt_id = attempt.gateway_physical_attempt_id
+        operation.authoritative_outcome = result.outcome.value
+        operation.normalized_error_category = result.normalized_error_category
+        operation.usage_available = attempt.usage_available
+        operation.safe_summary_json = {
+            **operation.safe_summary_json,
+            "outcome": result.outcome.value,
+            "normalized_error_category": result.normalized_error_category.value,
+        }
+        operation.status = (
+            OperationStatus.COMPLETED
+            if result.outcome is TestOutcome.SUCCESS
+            else OperationStatus.FAILED
+        )
+        operation.completed_at = now
+        await self._session.flush()
+        return attempt
+
+    async def get_or_create_provider_probe_operation(
+        self,
+        *,
+        operation_identity: str,
+        provider_connection_id: UUID,
+        provider_model_definition_id: UUID | None,
+        tenant_id: UUID | None,
+        actor_principal_id: str,
+        rate_limit_scope: dict[str, object],
+        bounded_operation_decision: dict[str, object],
+        safe_summary: dict[str, object],
+    ) -> tuple[ProviderProbeOperation, bool]:
+        existing = await self._session.scalar(
+            select(ProviderProbeOperation).where(
+                ProviderProbeOperation.operation_identity == operation_identity,
+                ProviderProbeOperation.provider_connection_id == provider_connection_id,
+                ProviderProbeOperation.actor_principal_id == actor_principal_id,
+            )
+        )
+        if existing is not None:
+            return existing, False
+        operation = ProviderProbeOperation(
+            operation_identity=operation_identity,
+            provider_connection_id=provider_connection_id,
+            provider_model_definition_id=provider_model_definition_id,
+            tenant_id=tenant_id,
+            actor_principal_id=actor_principal_id,
+            rate_limit_scope_json=dict(rate_limit_scope),
+            bounded_operation_decision_json=dict(bounded_operation_decision),
+            safe_summary_json=dict(safe_summary),
+        )
+        self._session.add(operation)
+        await self._session.flush()
+        return operation, True
+
+    async def complete_provider_probe_operation(
+        self,
+        *,
+        operation: ProviderProbeOperation,
+        outcome: TestOutcome,
+        reason: ErrorCategory,
+        safe_summary: dict[str, object],
+        test_result_id: UUID | None = None,
+        status: OperationStatus | None = None,
+    ) -> ProviderProbeOperation:
+        operation.authoritative_test_result_id = test_result_id
+        operation.authoritative_outcome = outcome.value
+        operation.normalized_reason = reason
+        operation.safe_summary_json = dict(safe_summary)
+        operation.status = status or (
+            OperationStatus.COMPLETED
+            if outcome is TestOutcome.SUCCESS
+            else OperationStatus.FAILED
+        )
+        operation.completed_at = utcnow()
+        await self._session.flush()
+        return operation
+
+    async def get_or_create_catalog_sync_operation(
+        self,
+        *,
+        operation_identity: str,
+        provider_connection_id: UUID,
+        tenant_id: UUID | None,
+        actor_principal_id: str,
+        checkpoint: dict[str, object],
+        safe_summary: dict[str, object],
+    ) -> tuple[CatalogSyncOperation, bool]:
+        existing = await self._session.scalar(
+            select(CatalogSyncOperation).where(
+                CatalogSyncOperation.operation_identity == operation_identity,
+                CatalogSyncOperation.provider_connection_id == provider_connection_id,
+            )
+        )
+        if existing is not None:
+            return existing, False
+        operation = CatalogSyncOperation(
+            operation_identity=operation_identity,
+            provider_connection_id=provider_connection_id,
+            tenant_id=tenant_id,
+            actor_principal_id=actor_principal_id,
+            checkpoint_json=dict(checkpoint),
+            safe_summary_json=dict(safe_summary),
+        )
+        self._session.add(operation)
+        await self._session.flush()
+        return operation, True
+
+    async def complete_catalog_sync_operation(
+        self,
+        *,
+        operation: CatalogSyncOperation,
+        result: dict[str, object],
+        reason: ErrorCategory,
+        safe_summary: dict[str, object],
+        status: OperationStatus = OperationStatus.COMPLETED,
+    ) -> CatalogSyncOperation:
+        operation.authoritative_result_json = dict(result)
+        operation.normalized_reason = reason
+        operation.safe_summary_json = dict(safe_summary)
+        operation.status = status
+        operation.completed_at = utcnow()
+        await self._session.flush()
+        return operation
 
 
 def _tenant_visible_stmt(

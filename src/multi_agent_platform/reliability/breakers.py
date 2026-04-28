@@ -68,6 +68,48 @@ def allow_protected_work(breaker: CircuitBreaker) -> bool:
     return False
 
 
+def gateway_breaker_scope(
+    *,
+    provider_connection_id: str,
+    model_id: str,
+    provider_model_definition_id: str | None = None,
+) -> str:
+    identity = provider_model_definition_id or model_id
+    return f"provider_connection:{provider_connection_id}:model:{identity}"
+
+
+def gateway_breaker_summary(
+    *,
+    provider_connection_id: str,
+    model_id: str,
+    provider_model_definition_id: str | None = None,
+    state: BreakerState = BreakerState.CLOSED,
+    tenant_id: str | None = None,
+    workflow_run_id: str | None = None,
+    workflow_run_step_id: str | None = None,
+    trace_id: str | None = None,
+) -> dict[str, object]:
+    breaker = CircuitBreaker(
+        scope_key=gateway_breaker_scope(
+            provider_connection_id=provider_connection_id,
+            model_id=model_id,
+            provider_model_definition_id=provider_model_definition_id,
+        ),
+        state=state,
+    )
+    return {
+        "scope": breaker.scope_key,
+        "state": breaker.state.value,
+        "allowed": allow_protected_work(breaker),
+        "evidence": {
+            "tenant_id": tenant_id,
+            "workflow_run_id": workflow_run_id,
+            "workflow_run_step_id": workflow_run_step_id,
+            "trace_id": trace_id,
+        },
+    }
+
+
 def reset_breaker(
     breaker: CircuitBreaker, *, actor_id: str, reason: str
 ) -> CircuitBreaker:

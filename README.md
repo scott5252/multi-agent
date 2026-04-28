@@ -213,6 +213,9 @@ Latest full validation run: `2026-04-24`
 - [Admin Console Shell](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-console-shell.md)
 - [Prompt Runtime Profiles](/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles.md)
 - [Prompt Runtime Profiles Testing](/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles-testing.md)
+- Spec 012 V2 `ModelGateway` runtime hardening evidence is included in
+  [Prompt Runtime Profiles Testing](/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles-testing.md)
+  and the PR notes.
 - [Foundation Runbook](/Users/scottcornell/src/my-projects/multi-agent/docs/foundation-runbook.md)
 - [Architecture](/Users/scottcornell/src/my-projects/multi-agent/docs/architecture.md)
 - [Constitution](/Users/scottcornell/src/my-projects/multi-agent/.specify/memory/constitution.md)
