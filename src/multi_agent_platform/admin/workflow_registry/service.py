@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from enum import Enum
 from hashlib import sha256
 from logging import Logger
@@ -128,6 +129,49 @@ def _enum_value(value: object) -> str:
     return str(value)
 
 
+def _normalize_registry_scope_filter(scope_filter: str) -> str:
+    normalized = scope_filter.strip().lower()
+    if normalized in {"tenant", "platform"}:
+        return normalized
+    return "all"
+
+
+def _normalize_registry_status_filter(status: str | None) -> str | None:
+    normalized = (status or "").strip().lower()
+    if normalized in {"", "all"}:
+        return None
+    return normalized
+
+
+def _matches_registry_search(search_query: str | None, *values: object) -> bool:
+    terms = [term for term in (search_query or "").casefold().split() if term]
+    if not terms:
+        return True
+    haystack = " ".join(_iter_registry_search_values(values)).casefold()
+    return all(term in haystack for term in terms)
+
+
+def _iter_registry_search_values(value: object) -> Iterator[str]:
+    if value is None:
+        return
+    if isinstance(value, Enum):
+        yield str(value.value)
+        return
+    if isinstance(value, (str, int, float, bool, UUID)):
+        yield str(value)
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield str(key)
+            yield from _iter_registry_search_values(item)
+        return
+    if isinstance(value, (list, tuple, set)):
+        for item in value:
+            yield from _iter_registry_search_values(item)
+        return
+    yield str(value)
+
+
 def _canonical_document_json(
     document: WorkflowDraftDocument,
 ) -> tuple[dict[str, object], str]:
@@ -170,15 +214,18 @@ class WorkflowRegistryService:
         principal: PrincipalContext,
         scope_filter: str = "all",
         status: str | None = None,
+        search_query: str | None = None,
     ) -> list[WorkflowRegistryItem]:
         items: list[WorkflowRegistryItem] = []
         is_platform_admin = "platform_admin" in principal.role_codes
+        normalized_scope_filter = _normalize_registry_scope_filter(scope_filter)
+        normalized_status = _normalize_registry_status_filter(status)
 
-        if status in (None, "", "draft"):
+        if normalized_status in (None, "draft", "validation_failed", "publish_ready"):
             lineages = await self.repository.list_visible_lineages(
                 tenant_id=principal.tenant_id,
                 include_platform=is_platform_admin,
-                scope_filter=scope_filter,
+                scope_filter=normalized_scope_filter,
             )
             for lineage in lineages:
                 draft = await self.repository.find_active_draft_for_lineage(
@@ -195,37 +242,56 @@ class WorkflowRegistryService:
                     tenant_id=lineage.tenant_id,
                 ):
                     continue
-                items.append(
-                    WorkflowRegistryItem(
-                        workflow_lineage_id=lineage.workflow_lineage_id,
-                        workflow_draft_id=draft.workflow_draft_id,
-                        slug=lineage.slug,
-                        display_name=lineage.display_name,
-                        workflow_kind=WorkflowKind(_enum_value(lineage.workflow_kind)),
-                        scope_type=WorkflowScopeType(lineage.scope_type),
-                        tenant_id=lineage.tenant_id,
-                        visibility_status=WorkflowVisibilityStatus.DRAFT,
-                        current_revision_number=draft.current_revision_number,
-                        latest_validation_status=(
-                            _enum_value(draft_record.latest_validation.status)
-                            if draft_record is not None
-                            and draft_record.latest_validation is not None
-                            else None
-                        ),
-                        publish_readiness_status=(
-                            "ready"
-                            if draft_record is not None
-                            and draft_record.latest_validation is not None
-                            and draft_record.latest_validation.status
-                            == ValidationResultStatus.PASSED
-                            else "not_evaluated"
-                        ),
-                        updated_at=draft.updated_at,
-                    )
+                item = WorkflowRegistryItem(
+                    workflow_lineage_id=lineage.workflow_lineage_id,
+                    workflow_draft_id=draft.workflow_draft_id,
+                    slug=lineage.slug,
+                    display_name=lineage.display_name,
+                    workflow_kind=WorkflowKind(_enum_value(lineage.workflow_kind)),
+                    scope_type=WorkflowScopeType(lineage.scope_type),
+                    tenant_id=lineage.tenant_id,
+                    visibility_status=WorkflowVisibilityStatus.DRAFT,
+                    current_revision_number=draft.current_revision_number,
+                    latest_validation_status=(
+                        _enum_value(draft_record.latest_validation.status)
+                        if draft_record is not None
+                        and draft_record.latest_validation is not None
+                        else None
+                    ),
+                    publish_readiness_status=(
+                        "ready"
+                        if draft_record is not None
+                        and draft_record.latest_validation is not None
+                        and draft_record.latest_validation.status
+                        == ValidationResultStatus.PASSED
+                        else "not_evaluated"
+                    ),
+                    updated_at=draft.updated_at,
                 )
+                if normalized_status == "validation_failed" and (
+                    item.latest_validation_status != ValidationResultStatus.FAILED.value
+                ):
+                    continue
+                if (
+                    normalized_status == "publish_ready"
+                    and item.publish_readiness_status != "ready"
+                ):
+                    continue
+                if not _matches_registry_search(
+                    search_query,
+                    item.model_dump(mode="json"),
+                    lineage.description,
+                    draft_record.revision.authoring_document_json
+                    if draft_record is not None
+                    else None,
+                ):
+                    continue
+                items.append(item)
 
-        if status in (None, "", "published", "hidden", "retired"):
-            versions = await self.repository.list_versions(scope_filter=scope_filter)
+        if normalized_status in (None, "published", "hidden", "retired"):
+            versions = await self.repository.list_versions(
+                scope_filter=normalized_scope_filter
+            )
             for version in versions:
                 record = await self.repository.get_version_record(
                     version.workflow_version_bundle_id
@@ -235,9 +301,20 @@ class WorkflowRegistryService:
                     record=record,
                 ):
                     continue
-                if status not in (None, "", _enum_value(record.version.status)):
+                if normalized_status not in (
+                    None,
+                    _enum_value(record.version.status),
+                ):
                     continue
-                items.append(self._to_registry_item_from_version(record))
+                item = self._to_registry_item_from_version(record)
+                if not _matches_registry_search(
+                    search_query,
+                    item.model_dump(mode="json"),
+                    record.lineage.description,
+                    record.version.summary_json,
+                ):
+                    continue
+                items.append(item)
 
         items.sort(key=lambda item: item.updated_at, reverse=True)
         WORKFLOW_REGISTRY_ACTION_COUNTER.labels(

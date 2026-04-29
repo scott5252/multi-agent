@@ -8,27 +8,34 @@
         </div>
         <a class="button-link" href="{{ page.create_page_path }}">Create Workflow</a>
       </header>
-      <form class="filter-strip" method="get" action="/admin/workflows/ui">
-        <label>
+      <form class="filter-strip" method="get" action="/admin/workflows/ui" data-registry-filters data-no-dirty-check>
+        {% if shell.active_scope.scope_type == "tenant" and shell.active_scope.tenant_id %}
+          <input type="hidden" name="tenant_id" value="{{ shell.active_scope.tenant_id }}">
+        {% endif %}
+        <label for="workflow-scope-filter">
           <span>Scope</span>
-          <select name="scope_filter">
+          <select id="workflow-scope-filter" name="scope_filter">
             {% for scope in page.scope_filters %}
-              <option value="{{ scope }}">{{ scope }}</option>
+              <option value="{{ scope }}" {% if scope == page.active_scope_filter %}selected{% endif %}>{{ scope|replace("_", " ")|title }}</option>
             {% endfor %}
           </select>
         </label>
-        <label>
+        <label for="workflow-status-filter">
           <span>Status</span>
-          <select name="status">
+          <select id="workflow-status-filter" name="status">
             {% for status in page.status_filters %}
-              <option value="{{ status }}">{{ status }}</option>
+              <option value="{{ status }}" {% if status == page.active_status_filter %}selected{% endif %}>{{ status|replace("_", " ")|title }}</option>
             {% endfor %}
           </select>
         </label>
-        <label>
+        <label for="workflow-search-filter">
           <span>Search</span>
-          <input name="q" placeholder="Name, slug, owner, tag, role, reference">
+          <input id="workflow-search-filter" name="q" value="{{ page.search_query }}" placeholder="Name, slug, owner, tag, role, reference">
         </label>
+        <button type="submit">Apply</button>
+        {% if page.active_scope_filter != "all" or page.active_status_filter != "all" or page.search_query %}
+          <a class="button-link" href="/admin/workflows/ui{% if shell.active_scope.scope_type == "tenant" and shell.active_scope.tenant_id %}?tenant_id={{ shell.active_scope.tenant_id }}{% endif %}">Clear</a>
+        {% endif %}
       </form>
       <section class="registry-grid" aria-label="Workflow registry list">
         {% if page.items %}
@@ -56,7 +63,7 @@
         {% else %}
           <article class="builder-panel empty-state">
             <h2>No drafts yet</h2>
-            <p>Create a tenant or platform draft through the JSON API, then come back here to review and edit it.</p>
+            <p>Create a tenant or platform draft with the browser form, then come back here to review and edit it.</p>
           </article>
         {% endif %}
       </section>

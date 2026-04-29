@@ -24,11 +24,15 @@ class WorkflowRegistryPageModel(BaseModel):
     create_page_path: str = "/admin/workflows/new"
     editor_base_path: str = "/admin/workflows/drafts"
     version_base_path: str = "/admin/workflows/versions"
+    active_scope_filter: str = "all"
+    active_status_filter: str = "all"
+    search_query: str = ""
     scope_filters: list[str] = Field(
         default_factory=lambda: ["all", "tenant", "platform"]
     )
     status_filters: list[str] = Field(
         default_factory=lambda: [
+            "all",
             "draft",
             "validation_failed",
             "publish_ready",
@@ -83,8 +87,25 @@ class WorkflowPublishGatePageModel(BaseModel):
 
 def build_workflow_registry_page_model(
     items: list[WorkflowRegistryItem],
+    *,
+    scope_filter: str = "all",
+    status_filter: str | None = None,
+    search_query: str | None = None,
 ) -> WorkflowRegistryPageModel:
-    return WorkflowRegistryPageModel(items=items)
+    page = WorkflowRegistryPageModel(items=items)
+    normalized_scope = scope_filter.strip().lower()
+    if normalized_scope not in page.scope_filters:
+        normalized_scope = "all"
+    normalized_status = (status_filter or "all").strip().lower() or "all"
+    if normalized_status not in page.status_filters:
+        normalized_status = "all"
+    return page.model_copy(
+        update={
+            "active_scope_filter": normalized_scope,
+            "active_status_filter": normalized_status,
+            "search_query": (search_query or "").strip(),
+        }
+    )
 
 
 def build_workflow_draft_editor_model(

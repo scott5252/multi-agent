@@ -294,6 +294,67 @@ async def test_validate_supersedes_previous_result_for_same_revision(
     assert fetched.latest_validation.validation_result_id == second.validation_result_id
 
 
+async def test_list_registry_filters_publish_readiness_and_search(
+    session, settings, filesystem_storage_provider, sample_workflow_document
+) -> None:
+    principal = (
+        LocalPrincipalCatalog(settings.local_principal_catalog_json)
+        .as_principal_context(
+            "platform-admin",
+            trace_id="trace-list-filters",
+            request_id="req-list-filters",
+        )
+        .model_copy(update={"principal_identity_id": uuid4()})
+    )
+    service = build_service(session, settings, filesystem_storage_provider)
+    needle = await service.create_draft(
+        principal=principal,
+        payload=WorkflowDraftCreateRequest(
+            scope_type="platform",
+            workflow_kind="main_workflow",
+            slug="needle-flow",
+            display_name="Needle Flow",
+            document=sample_workflow_document.model_copy(
+                update={
+                    "workflow_key": "needle-flow",
+                    "display_name": "Needle Flow",
+                }
+            ),
+        ),
+    )
+    await service.create_draft(
+        principal=principal,
+        payload=WorkflowDraftCreateRequest(
+            scope_type="platform",
+            workflow_kind="main_workflow",
+            slug="ordinary-flow",
+            display_name="Ordinary Flow",
+            document=sample_workflow_document.model_copy(
+                update={
+                    "workflow_key": "ordinary-flow",
+                    "display_name": "Ordinary Flow",
+                }
+            ),
+        ),
+    )
+    await service.validate_draft(
+        principal=principal,
+        workflow_draft_id=needle.workflow_draft_id,
+    )
+
+    ready_items = await service.list_registry(
+        principal=principal,
+        status="publish_ready",
+    )
+    search_items = await service.list_registry(
+        principal=principal,
+        search_query="needle",
+    )
+
+    assert [item.slug for item in ready_items] == ["needle-flow"]
+    assert [item.slug for item in search_items] == ["needle-flow"]
+
+
 async def test_publish_requires_current_validation_and_creates_successor_seed(
     session, settings, filesystem_storage_provider, sample_workflow_document
 ) -> None:

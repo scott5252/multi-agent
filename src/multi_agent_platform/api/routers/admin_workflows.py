@@ -80,8 +80,9 @@ async def list_workflows(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-    scope_filter: str = Query(default="all"),
-    status_filter: str | None = Query(default=None, alias="status"),
+    scope_filter: Annotated[str, Query()] = "all",
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    search_query: Annotated[str | None, Query(alias="q")] = None,
 ) -> WorkflowRegistryListResponse:
     service = _build_admin_service(session, container)
     try:
@@ -89,6 +90,7 @@ async def list_workflows(
             principal=principal,
             scope_filter=scope_filter,
             status=status_filter,
+            search_query=search_query,
         )
     except WorkflowAccessError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc

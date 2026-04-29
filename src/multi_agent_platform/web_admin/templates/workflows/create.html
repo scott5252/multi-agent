@@ -8,14 +8,21 @@
     </div>
   </header>
 
-  <form class="builder-form" method="post" action="{{ page.create_endpoint }}">
+  <form class="builder-form" method="post" action="/admin/workflows/new">
     <section class="builder-panel">
       <h2>Overview</h2>
+      <label class="field-row">
+        <span>Starter Template</span>
+        <select name="starter_template">
+          <option value="qa013_blocked_readiness">QA013 Blocked Readiness</option>
+          <option value="minimal_ready">Minimal Ready</option>
+        </select>
+      </label>
       <label class="field-row">
         <span>Scope</span>
         <select name="scope_type">
           {% for option in page.metadata.scope_options %}
-            <option value="{{ option.value }}">{{ option.label }}</option>
+            <option value="{{ option.value }}" {% if option.value == "tenant" %}selected{% endif %}>{{ option.label }}</option>
           {% endfor %}
         </select>
       </label>
@@ -29,18 +36,22 @@
       </label>
       <label class="field-row">
         <span>Slug</span>
-        <input name="slug" value="guided-builder-smoke">
+        <input name="slug" value="qa013-blocked-builder-ui">
       </label>
       <label class="field-row">
         <span>Display Name</span>
-        <input name="display_name" value="Guided Builder Smoke">
+        <input name="display_name" value="QA013 Blocked Builder">
       </label>
-      <button type="button" data-create-draft>Open API payload example</button>
+      <label class="field-row">
+        <span>Description</span>
+        <textarea name="description" rows="4">Draft with deliberate readiness gaps.</textarea>
+      </label>
+      <button type="submit">Create Draft</button>
     </section>
   </form>
 {% endblock %}
 
 {% block page_scripts %}
-  <script id="field-help-data" type="application/json">{{ page.metadata.model_dump_json() }}</script>
+  <script id="field-help-data" type="application/json">{{ page.metadata.model_dump_json() | safe }}</script>
   <script src="/admin/static/workflow_studio.js"></script>
 {% endblock %}

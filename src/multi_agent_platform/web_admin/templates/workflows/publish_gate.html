@@ -47,9 +47,13 @@
     {% endfor %}
   </section>
 
-  <form class="builder-panel" method="post" action="{{ page.publish_endpoint }}">
+  <form class="builder-panel" method="post" action="{{ page.publish_endpoint }}/ui">
     <input type="hidden" name="validation_result_id" value="{{ page.gate.validation_result_id or '' }}">
     <input type="hidden" name="publish_gate_id" value="{{ page.gate.publish_gate_id }}">
+    <label class="field-row">
+      <span>Publish Reason</span>
+      <input name="reason" value="QA013 publish check">
+    </label>
     <button type="submit" {% if page.gate.status != "ready" %}disabled{% endif %}>Confirm Publish</button>
   </form>
 {% endblock %}

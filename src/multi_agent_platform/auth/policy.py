@@ -173,9 +173,24 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_workflow_create_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "POST:/admin/workflows/new": ProtectedSurface(
+        surface_key="POST:/admin/workflows/new",
+        requested_action="create_workflow_draft_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
     ("GET:/admin/workflows/drafts/{workflow_draft_id}/editor"): ProtectedSurface(
         surface_key="GET:/admin/workflows/drafts/{workflow_draft_id}/editor",
         requested_action="render_workflow_draft_editor_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/workflows/drafts/{workflow_draft_id}/save-ui": ProtectedSurface(
+        surface_key="POST:/admin/workflows/drafts/{workflow_draft_id}/save-ui",
+        requested_action="save_workflow_draft_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/workflows/drafts/{workflow_draft_id}/validate/ui": ProtectedSurface(
+        surface_key="POST:/admin/workflows/drafts/{workflow_draft_id}/validate/ui",
+        requested_action="validate_workflow_draft_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
     ("GET:/admin/workflows/drafts/{workflow_draft_id}/revisions/ui"): ProtectedSurface(
@@ -183,11 +198,26 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_workflow_revision_history_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "POST:/admin/workflows/drafts/{workflow_draft_id}/restore/ui": ProtectedSurface(
+        surface_key="POST:/admin/workflows/drafts/{workflow_draft_id}/restore/ui",
+        requested_action="restore_workflow_draft_revision_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/workflows/drafts/{workflow_draft_id}/copy/ui": ProtectedSurface(
+        surface_key="POST:/admin/workflows/drafts/{workflow_draft_id}/copy/ui",
+        requested_action="copy_workflow_draft_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
     (
         "GET:/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui"
     ): ProtectedSurface(
         surface_key="GET:/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui",
         requested_action="render_workflow_publish_gate_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/workflows/drafts/{workflow_draft_id}/publish/ui": ProtectedSurface(
+        surface_key="POST:/admin/workflows/drafts/{workflow_draft_id}/publish/ui",
+        requested_action="publish_workflow_draft_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
     (

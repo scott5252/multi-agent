@@ -57,6 +57,27 @@ def test_resolve_surface_registers_workflow_builder_surfaces() -> None:
             "GET",
             "/admin/workflows/drafts/{workflow_draft_id}/revisions/ui",
         ): "render_workflow_revision_history_ui",
+        ("POST", "/admin/workflows/new"): "create_workflow_draft_ui",
+        (
+            "POST",
+            "/admin/workflows/drafts/{workflow_draft_id}/save-ui",
+        ): "save_workflow_draft_ui",
+        (
+            "POST",
+            "/admin/workflows/drafts/{workflow_draft_id}/validate/ui",
+        ): "validate_workflow_draft_ui",
+        (
+            "POST",
+            "/admin/workflows/drafts/{workflow_draft_id}/restore/ui",
+        ): "restore_workflow_draft_revision_ui",
+        (
+            "POST",
+            "/admin/workflows/drafts/{workflow_draft_id}/copy/ui",
+        ): "copy_workflow_draft_ui",
+        (
+            "POST",
+            "/admin/workflows/drafts/{workflow_draft_id}/publish/ui",
+        ): "publish_workflow_draft_ui",
     }
 
     for (method, path), action in expected.items():

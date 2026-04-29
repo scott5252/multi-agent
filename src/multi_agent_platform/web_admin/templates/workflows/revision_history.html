@@ -19,10 +19,24 @@
           <p>{{ revision.change_summary or "Snapshot saved" }}</p>
           <p>Changed sections: {{ revision.changed_sections|join(", ") }}</p>
         </div>
-        <form method="post" action="{{ page.restore_endpoint }}">
+        <form method="post" action="{{ page.restore_endpoint }}/ui">
           <input type="hidden" name="revision_number" value="{{ revision.revision_number }}">
           <input type="hidden" name="base_revision_number" value="{{ page.revisions.current_revision_number }}">
+          <input type="hidden" name="change_summary" value="QA013 restore check">
           <button type="submit">Restore</button>
+        </form>
+        <form method="post" action="{{ page.copy_endpoint }}/ui">
+          <input type="hidden" name="source_revision_number" value="{{ revision.revision_number }}">
+          <label class="field-row">
+            <span>Copy Slug</span>
+            <input name="new_slug" value="{{ page.draft.slug }}-copy-r{{ revision.revision_number }}">
+          </label>
+          <label class="field-row">
+            <span>Copy Name</span>
+            <input name="display_name" value="{{ page.draft.display_name }} Copy">
+          </label>
+          <input type="hidden" name="change_summary" value="QA013 copy check">
+          <button type="submit">Copy</button>
         </form>
       </article>
     {% else %}

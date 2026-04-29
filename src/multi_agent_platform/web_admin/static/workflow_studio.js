@@ -2,7 +2,14 @@
   const modal = document.getElementById("field-help-modal");
   const payload = document.getElementById("field-help-data");
 
-  const metadata = payload ? JSON.parse(payload.textContent || "{}") : {};
+  let metadata = {};
+  if (payload) {
+    try {
+      metadata = JSON.parse(payload.textContent || "{}");
+    } catch (error) {
+      console.error("Unable to parse workflow field help metadata.", error);
+    }
+  }
   const help = metadata.field_help || {};
   const title = document.getElementById("field-help-title");
   const explanation = document.getElementById("field-help-explanation");
@@ -43,8 +50,22 @@
     );
   });
 
+  const registryFilters = document.querySelector("[data-registry-filters]");
+  if (registryFilters) {
+    registryFilters.querySelectorAll("select").forEach((select) => {
+      select.addEventListener("change", () => {
+        registryFilters.requestSubmit();
+      });
+    });
+  }
+
   let dirty = false;
-  document.querySelectorAll("input, textarea, select").forEach((field) => {
+  const dirtyFields = document.querySelectorAll(
+    "form:not([data-no-dirty-check]) input, " +
+      "form:not([data-no-dirty-check]) textarea, " +
+      "form:not([data-no-dirty-check]) select"
+  );
+  dirtyFields.forEach((field) => {
     if (field.hasAttribute("readonly")) {
       return;
     }

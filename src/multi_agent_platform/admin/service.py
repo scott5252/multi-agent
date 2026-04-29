@@ -156,11 +156,13 @@ class AdminService:
         principal: PrincipalContext,
         scope_filter: str = "all",
         status: str | None = None,
+        search_query: str | None = None,
     ) -> list[WorkflowRegistryItem]:
         return await self.workflow_registry_service().list_registry(
             principal=principal,
             scope_filter=scope_filter,
             status=status,
+            search_query=search_query,
         )
 
     async def create_workflow_draft(

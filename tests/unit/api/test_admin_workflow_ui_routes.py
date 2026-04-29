@@ -266,6 +266,52 @@ async def test_admin_workflow_ui_routes_render_templates(
 
 
 @pytest.mark.asyncio
+async def test_workflow_registry_ui_route_applies_filter_query(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class CapturingUIService(FakeUIService):
+        async def list_workflows(self, **kwargs):
+            captured.update(kwargs)
+            return []
+
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "_build_admin_service",
+        lambda session, container: CapturingUIService(items=[]),
+    )
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "AdminSavedFilterRepository",
+        FakeSavedFilterRepository,
+    )
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "resolve_scope_for_request",
+        fake_resolve_scope_for_request,
+    )
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "build_shell_for_request",
+        fake_build_shell_for_request,
+    )
+
+    response = await admin_workflow_ui.workflow_registry_page(
+        request=build_request("/admin/workflows/ui"),
+        principal=PrincipalContext(principal_id="tenant-admin"),
+        session=object(),
+        container=build_container(),
+        scope_filter="tenant",
+        status_filter="publish_ready",
+        search_query="triage",
+    )
+
+    assert response.status_code == 200
+    assert captured["scope_filter"] == "tenant"
+    assert captured["status"] == "publish_ready"
+    assert captured["search_query"] == "triage"
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "exc,status_code",
     [(WorkflowNotFoundError("missing"), 404), (WorkflowAccessError("forbidden"), 403)],

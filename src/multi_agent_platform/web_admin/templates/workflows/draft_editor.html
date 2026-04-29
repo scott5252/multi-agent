@@ -33,6 +33,19 @@
             <input value="{{ page.draft.workflow_kind.value }}" readonly>
           </label>
         </article>
+        <form class="builder-panel section-card" method="post" action="{{ page.save_endpoint }}/save-ui">
+          <h2>Save Draft Revision</h2>
+          <input type="hidden" name="base_revision_number" value="{{ page.draft.current_revision_number }}">
+          <label class="field-row">
+            <span>Description</span>
+            <textarea name="description" rows="5">{{ page.draft.description or page.draft.document.description or "" }}</textarea>
+          </label>
+          <label class="field-row">
+            <span>Change Summary</span>
+            <input name="change_summary" value="QA013 save update">
+          </label>
+          <button type="submit">Save Draft Revision</button>
+        </form>
         <article class="builder-panel section-card" id="section-roles">
           <h2>Roles And Skills</h2>
           <p>
@@ -81,6 +94,6 @@
 {% endblock %}
 
 {% block page_scripts %}
-  <script id="field-help-data" type="application/json">{{ page.metadata.model_dump_json() }}</script>
+  <script id="field-help-data" type="application/json">{{ page.metadata.model_dump_json() | safe }}</script>
   <script src="/admin/static/workflow_studio.js"></script>
 {% endblock %}
