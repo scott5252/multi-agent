@@ -26,10 +26,19 @@ if TYPE_CHECKING:
     from multi_agent_platform.admin.workflow_registry.service import (
         WorkflowRegistryService,
     )
+    from multi_agent_platform.api.schemas.workflow_editor import (
+        EditorLookupResponse,
+        GraphPreviewResponse,
+        PublishGateRequest,
+        PublishGateResponse,
+    )
     from multi_agent_platform.api.schemas.workflow_registry import (
+        CopyDraftRequest,
+        DraftRevisionListResponse,
         PublishDraftRequest,
         RegistrySharingGrantCreateRequest,
         RegistrySharingGrantResponse,
+        RestoreRevisionRequest,
         ValidationResultResponse,
         WorkflowDraftCreateRequest,
         WorkflowDraftResponse,
@@ -222,6 +231,82 @@ class AdminService:
         return await self.workflow_registry_service().get_version(
             principal=principal,
             workflow_version_bundle_id=workflow_version_bundle_id,
+        )
+
+    async def get_workflow_editor_lookups(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID | None = None,
+        lookup_kind: str | None = None,
+        search: str | None = None,
+    ) -> EditorLookupResponse:
+        return await self.workflow_registry_service().get_editor_lookups(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            lookup_kind=lookup_kind,
+            search=search,
+        )
+
+    async def get_workflow_graph_preview(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+    ) -> GraphPreviewResponse:
+        return await self.workflow_registry_service().get_graph_preview(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+        )
+
+    async def list_workflow_draft_revisions(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+    ) -> DraftRevisionListResponse:
+        return await self.workflow_registry_service().list_draft_revisions(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+        )
+
+    async def restore_workflow_revision(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: RestoreRevisionRequest,
+    ) -> WorkflowDraftResponse:
+        return await self.workflow_registry_service().restore_revision(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            payload=payload,
+        )
+
+    async def copy_workflow_draft(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: CopyDraftRequest,
+    ) -> WorkflowDraftResponse:
+        return await self.workflow_registry_service().copy_draft(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            payload=payload,
+        )
+
+    async def evaluate_workflow_publish_gate(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: PublishGateRequest,
+    ) -> PublishGateResponse:
+        return await self.workflow_registry_service().evaluate_publish_gate(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            payload=payload,
         )
 
     async def create_workflow_sharing_grant(

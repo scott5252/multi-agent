@@ -1,7 +1,7 @@
 {% extends "admin_shell/base.html" %}
 
 {% block content %}
-      <article class="card">
+      <article class="builder-panel">
         <p class="eyebrow">Published Version Detail</p>
         <h1>{{ page.version.display_name }} {{ page.version.display_version }}</h1>
         <p class="mono">{{ page.version.slug }}</p>
@@ -10,5 +10,14 @@
         <p><strong>Scope:</strong> {{ page.version.scope_type.value }}</p>
         <p><strong>Status:</strong> {{ page.version.status }}</p>
         <p><strong>Sharing Grants:</strong> {{ page.version.sharing_grants|length }}</p>
+        <p><strong>Source Revision:</strong> {{ page.source_revision_id or page.version.published_from_revision_id }}</p>
+        <p><strong>Publish Gate Digest:</strong> {{ page.publish_gate_digest or "not recorded" }}</p>
       </article>
+      <section class="builder-panel">
+        <h2>Builder Pins</h2>
+        {% for key, value in page.pin_summary.items() %}
+          <h3>{{ key }}</h3>
+          <pre>{{ value }}</pre>
+        {% endfor %}
+      </section>
 {% endblock %}

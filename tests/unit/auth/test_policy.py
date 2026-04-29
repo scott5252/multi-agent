@@ -36,3 +36,30 @@ def test_resolve_surface_registers_model_skill_config_mutation() -> None:
     assert surface.classification == "tenant_user"
     assert surface.requested_action == "create_model_routing_config"
     assert surface.required_permissions == ("tenant:read",)
+
+
+def test_resolve_surface_registers_workflow_builder_surfaces() -> None:
+    expected = {
+        ("GET", "/admin/workflows/editor-lookups"): "read_workflow_editor_lookups",
+        (
+            "GET",
+            "/admin/workflows/drafts/{workflow_draft_id}/graph-preview",
+        ): "read_workflow_graph_preview",
+        (
+            "GET",
+            "/admin/workflows/drafts/{workflow_draft_id}/revisions",
+        ): "list_workflow_draft_revisions",
+        (
+            "POST",
+            "/admin/workflows/drafts/{workflow_draft_id}/publish-gate",
+        ): "evaluate_workflow_publish_gate",
+        (
+            "GET",
+            "/admin/workflows/drafts/{workflow_draft_id}/revisions/ui",
+        ): "render_workflow_revision_history_ui",
+    }
+
+    for (method, path), action in expected.items():
+        surface = resolve_surface(method, path)
+        assert surface.classification == "authenticated"
+        assert surface.requested_action == action

@@ -11,11 +11,17 @@ from multi_agent_platform.admin.workflow_registry.service import (
     WorkflowNotFoundError,
     WorkflowRegistryService,
 )
+from multi_agent_platform.api.schemas.workflow_editor import PublishGateRequest
 from multi_agent_platform.api.schemas.workflow_registry import (
+    CopyDraftRequest,
     PublishDraftRequest,
     RegistrySharingGrantCreateRequest,
+    RestoreRevisionRequest,
     WorkflowDraftCreateRequest,
     WorkflowDraftSaveRequest,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    TestSuiteRequirement as BuilderTestSuiteRequirement,
 )
 from multi_agent_platform.audit.service import AuditService
 from multi_agent_platform.auth.local_principals import LocalPrincipalCatalog
@@ -79,6 +85,111 @@ async def test_create_and_save_workflow_draft(
     assert created.current_revision_number == 1
     assert saved.current_revision_number == 2
     assert saved.display_name == "Customer Intake Updated"
+
+
+async def test_builder_service_flows_cover_lookups_revisions_gate_and_copy(
+    session, settings, filesystem_storage_provider, sample_workflow_document
+) -> None:
+    principal = (
+        LocalPrincipalCatalog(settings.local_principal_catalog_json)
+        .as_principal_context(
+            "platform-admin",
+            trace_id="trace-builder",
+            request_id="req-builder",
+        )
+        .model_copy(update={"principal_identity_id": uuid4()})
+    )
+    service = build_service(session, settings, filesystem_storage_provider)
+    document = sample_workflow_document.model_copy(
+        update={
+            "workflow_key": "builder-service-flow",
+            "display_name": "Builder Service Flow",
+            "test_requirements": [
+                BuilderTestSuiteRequirement(
+                    requirement_key="smoke",
+                    suite_id="workflow-smoke",
+                    latest_result_status="passed",
+                )
+            ],
+        }
+    )
+    created = await service.create_draft(
+        principal=principal,
+        payload=WorkflowDraftCreateRequest(
+            scope_type="platform",
+            workflow_kind="main_workflow",
+            slug="builder-service-flow",
+            display_name="Builder Service Flow",
+            document=document,
+        ),
+    )
+    saved = await service.save_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=WorkflowDraftSaveRequest(
+            base_revision_number=created.current_revision_number,
+            display_name="Builder Service Flow Updated",
+            document=document.model_copy(update={"display_name": "Updated"}),
+        ),
+    )
+
+    lookups = await service.get_editor_lookups(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        lookup_kind="contracts",
+        search="intake",
+    )
+    preview = await service.get_graph_preview(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+    )
+    revisions = await service.list_draft_revisions(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+    )
+    restored = await service.restore_revision(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=RestoreRevisionRequest(
+            revision_number=1,
+            base_revision_number=saved.current_revision_number,
+        ),
+    )
+    validation = await service.validate_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+    )
+    gate = await service.evaluate_publish_gate(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=PublishGateRequest(
+            validation_result_id=str(validation.validation_result_id)
+        ),
+    )
+    published = await service.publish_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=PublishDraftRequest(
+            validation_result_id=validation.validation_result_id,
+            publish_gate_id=gate.publish_gate_id,
+        ),
+    )
+    copied = await service.copy_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=CopyDraftRequest(
+            new_slug="builder-service-flow-copy",
+            display_name="Builder Service Flow Copy",
+        ),
+    )
+
+    assert lookups.groups[0].options[0].value == "intake-request"
+    assert preview.summary.entry_node_id == "node:triage-node"
+    assert len(revisions.revisions) == 2
+    assert restored.current_revision_number == 3
+    assert gate.status == "ready"
+    assert published.summary_json["publish_gate_digest"] == gate.digest
+    assert copied.slug == "builder-service-flow-copy"
 
 
 async def test_save_rejects_stale_revision(

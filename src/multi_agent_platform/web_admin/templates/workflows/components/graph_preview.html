@@ -1,0 +1,55 @@
+<section class="builder-panel full-width" aria-label="Workflow graph preview">
+  <div class="panel-heading">
+    <h2>Graph Builder</h2>
+    <span class="badge">{{ page.graph_preview.summary.node_count }} nodes</span>
+    <span class="badge muted">{{ page.graph_preview.summary.edge_count }} edges</span>
+  </div>
+  <div class="graph-preview" data-graph-preview>
+    <div class="graph-node-list">
+      {% for node in page.graph_preview.nodes %}
+        <button
+          type="button"
+          class="graph-node {% if node.terminal %}graph-node--terminal{% endif %}"
+          data-graph-element="{{ node.id }}"
+          data-field-path="{{ node.field_path }}"
+        >
+          <span>{{ node.label }}</span>
+          <small>{{ node.node_type }}</small>
+          {% for badge in node.badges %}
+            <span class="status-pill status-pill--{{ badge.severity }}">{{ badge.code }}</span>
+          {% endfor %}
+        </button>
+      {% else %}
+        <p>No graph nodes have been authored yet.</p>
+      {% endfor %}
+    </div>
+    <div class="graph-edge-list">
+      {% for edge in page.graph_preview.edges %}
+        <button
+          type="button"
+          class="graph-edge"
+          data-graph-element="{{ edge.id }}"
+          data-field-path="{{ edge.field_path }}"
+        >
+          <span>{{ edge.label }}</span>
+          <small>{{ edge.edge_type }}{% if edge.contract_key %} - {{ edge.contract_key }}{% endif %}</small>
+          {% for badge in edge.badges %}
+            <span class="status-pill status-pill--{{ badge.severity }}">{{ badge.code }}</span>
+          {% endfor %}
+        </button>
+      {% else %}
+        <p>No edges have been authored yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% if page.graph_preview.summary.disconnected_node_ids or page.graph_preview.summary.cycle_summaries %}
+    <div class="graph-summary">
+      {% for node_id in page.graph_preview.summary.disconnected_node_ids %}
+        <p><strong>Disconnected:</strong> {{ node_id }}</p>
+      {% endfor %}
+      {% for cycle in page.graph_preview.summary.cycle_summaries %}
+        <p><strong>Cycle:</strong> {{ cycle }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>

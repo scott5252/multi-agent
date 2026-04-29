@@ -596,7 +596,10 @@ components:
         - status
         - blocking_issue_count
         - findings
+        - reference_readiness
         - pin_summary
+        - required_test_summary
+        - digest
       properties:
         publish_gate_id:
           type: string
@@ -619,12 +622,54 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BuilderValidationFinding"
+        reference_readiness:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReferenceReadinessSnapshot"
         pin_summary:
           type: object
+        required_test_summary:
+          $ref: "#/components/schemas/RequiredTestSummary"
         expires_at:
           type: string
           format: date-time
           nullable: true
+        digest:
+          type: string
+    ReferenceReadinessSnapshot:
+      type: object
+      required: [reference_type, reference_key, status, blocking]
+      properties:
+        reference_type:
+          type: string
+        reference_key:
+          type: string
+        status:
+          type: string
+        blocking:
+          type: boolean
+        detail_url:
+          type: string
+          nullable: true
+        safe_summary:
+          type: string
+          nullable: true
+        pin_payload:
+          type: object
+    RequiredTestSummary:
+      type: object
+      required: [required_count, passing_count, failing_count, missing_count, stale_count]
+      properties:
+        required_count:
+          type: integer
+        passing_count:
+          type: integer
+        failing_count:
+          type: integer
+        missing_count:
+          type: integer
+        stale_count:
+          type: integer
     PublishDraftRequest:
       type: object
       required: [validation_result_id]

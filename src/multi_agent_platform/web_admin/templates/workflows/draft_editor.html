@@ -1,11 +1,15 @@
 {% extends "admin_shell/base.html" %}
 
 {% block content %}
-      <header class="hero compact">
+      <header class="admin-page-header">
         <div>
           <p class="eyebrow">Draft Editor</p>
           <h1>{{ page.draft.display_name }}</h1>
           <p class="subhead">Revision {{ page.draft.current_revision_number }} for {{ page.draft.scope_type.value }} scope.</p>
+        </div>
+        <div class="provider-actions">
+          <a class="button-link" href="{{ page.revision_history_path }}">Revisions</a>
+          <a class="button-link" href="{{ page.publish_gate_endpoint }}/ui">Publish Gate</a>
         </div>
       </header>
       {% if page.conflict_message %}
@@ -14,7 +18,7 @@
         </section>
       {% endif %}
       <section class="editor-grid">
-        <article class="card section-card">
+        <article class="builder-panel section-card" id="section-overview">
           <h2>Overview</h2>
           <label class="field-row">
             <span>Scope <button type="button" class="help-button" data-help-key="scope_type" aria-haspopup="dialog">?</button></span>
@@ -29,7 +33,7 @@
             <input value="{{ page.draft.workflow_kind.value }}" readonly>
           </label>
         </article>
-        <article class="card section-card">
+        <article class="builder-panel section-card" id="section-roles">
           <h2>Roles And Skills</h2>
           <p>
             Input Contract
@@ -44,36 +48,34 @@
             <button type="button" class="help-button" data-help-key="roles[].skill_bindings[].skill_version" aria-haspopup="dialog">?</button>
           </p>
         </article>
-        <article class="card section-card">
+        <article class="builder-panel section-card" id="section-subworkflows">
           <h2>Subworkflow References</h2>
           <p>
             Published Version Reference
             <button type="button" class="help-button" data-help-key="subworkflow_refs[].workflow_version_ref" aria-haspopup="dialog">?</button>
           </p>
         </article>
-        <article class="card section-card">
+        <article class="builder-panel section-card" id="section-joins">
           <h2>Join Policies</h2>
           <p>
             Strategy
             <button type="button" class="help-button" data-help-key="join_policies[].strategy" aria-haspopup="dialog">?</button>
           </p>
         </article>
-        <article class="card section-card">
+        <article class="builder-panel section-card" id="section-approvals">
           <h2>Approval Gates</h2>
           <p>
             Approver Scope
             <button type="button" class="help-button" data-help-key="approval_gates[].approver_scope" aria-haspopup="dialog">?</button>
           </p>
         </article>
-        <article class="card section-card full-width">
-          <h2>Authoring Document</h2>
+        {% include "workflows/components/reference_picker.html" %}
+        {% include "workflows/components/graph_preview.html" %}
+        <article class="builder-panel section-card full-width">
+          <h2>Advanced JSON Inspector</h2>
           <textarea id="document-json" rows="22" readonly>{{ page.document_json }}</textarea>
         </article>
         {% include "workflows/components/validation_panel.html" %}
-        <article class="card section-card full-width">
-          <h2>Prompt Runtime</h2>
-          <p>Workflow validation includes prompt library versions, agent profile resolution, and authorized detail links when available.</p>
-        </article>
       </section>
     {% include "workflows/components/field_help_modal.html" %}
 {% endblock %}

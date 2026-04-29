@@ -1,0 +1,46 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+  <header class="admin-page-header">
+    <div>
+      <p class="eyebrow">Workflow Builder</p>
+      <h1>Create Draft</h1>
+    </div>
+  </header>
+
+  <form class="builder-form" method="post" action="{{ page.create_endpoint }}">
+    <section class="builder-panel">
+      <h2>Overview</h2>
+      <label class="field-row">
+        <span>Scope</span>
+        <select name="scope_type">
+          {% for option in page.metadata.scope_options %}
+            <option value="{{ option.value }}">{{ option.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field-row">
+        <span>Workflow Kind</span>
+        <select name="workflow_kind">
+          {% for option in page.metadata.workflow_kind_options %}
+            <option value="{{ option.value }}">{{ option.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field-row">
+        <span>Slug</span>
+        <input name="slug" value="guided-builder-smoke">
+      </label>
+      <label class="field-row">
+        <span>Display Name</span>
+        <input name="display_name" value="Guided Builder Smoke">
+      </label>
+      <button type="button" data-create-draft>Open API payload example</button>
+    </section>
+  </form>
+{% endblock %}
+
+{% block page_scripts %}
+  <script id="field-help-data" type="application/json">{{ page.metadata.model_dump_json() }}</script>
+  <script src="/admin/static/workflow_studio.js"></script>
+{% endblock %}

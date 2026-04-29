@@ -47,6 +47,9 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   immutable prompt/profile versions, safe fixture previews, tenant grants,
   workflow validation hooks, model-skill prompt reference digests, runtime
   provenance pins, audit-safe summaries, and reviewer QA evidence
+- guided admin workflow builder under `/admin/workflows/ui` with create,
+  editor, graph preview, reference lookup, validation, revision history,
+  publish gate, and published bundle pin/provenance views
 
 ## Quickstart
 
@@ -62,7 +65,10 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
    [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui).
 9. Open [http://127.0.0.1:8000/runs](http://127.0.0.1:8000/runs) to start
    and inspect runs through the Web UI channel.
-10. Validate the repo with `./scripts/check.sh`.
+10. Validate a guided workflow draft at
+    `/admin/workflows/drafts/{workflow_draft_id}/editor`, then review
+    `/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui`.
+11. Validate the repo with `./scripts/check.sh`.
 
 ## Admin Console Shell
 
@@ -206,6 +212,8 @@ Latest full validation run: `2026-04-24`
 - [Quickstart](/Users/scottcornell/src/my-projects/multi-agent/docs/quickstart.md)
 - [User Interaction Channels](/Users/scottcornell/src/my-projects/multi-agent/docs/user-interaction-channels.md)
 - [Admin Workflow Studio](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-workflow-studio.md)
+- [Guided Admin Workflow Builder](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-workflow-builder.md)
+- [Guided Admin Workflow Builder Testing](/Users/scottcornell/src/my-projects/multi-agent/docs/admin-workflow-builder-testing.md)
 - [Durable Orchestration Runtime](/Users/scottcornell/src/my-projects/multi-agent/docs/durable-orchestration-runtime.md)
 - [Immutable Memory](/Users/scottcornell/src/my-projects/multi-agent/docs/immutable-memory.md)
 - [Production Audit Debugging](/Users/scottcornell/src/my-projects/multi-agent/docs/production-audit-debugging.md)

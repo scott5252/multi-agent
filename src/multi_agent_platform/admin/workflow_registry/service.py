@@ -12,6 +12,21 @@ from multi_agent_platform.admin.workflow_registry.compiler import (
 from multi_agent_platform.admin.workflow_registry.field_help import (
     build_editor_metadata,
 )
+from multi_agent_platform.admin.workflow_registry.graph_preview import (
+    build_graph_preview,
+)
+from multi_agent_platform.admin.workflow_registry.observability import (
+    builder_log_context,
+    safe_observability_payload,
+)
+from multi_agent_platform.admin.workflow_registry.publish_gate import (
+    PUBLISH_GATE_READY,
+    evaluate_publish_gate,
+)
+from multi_agent_platform.admin.workflow_registry.reference_validation import (
+    build_editor_lookup_response,
+    validate_reference_readiness,
+)
 from multi_agent_platform.admin.workflow_registry.sharing import (
     can_grant_workflow_version_to_tenant,
 )
@@ -19,14 +34,22 @@ from multi_agent_platform.admin.workflow_registry.validation import (
     validate_authoring_document,
 )
 from multi_agent_platform.api.schemas.workflow_editor import (
+    EditorLookupResponse,
+    GraphPreviewResponse,
+    PublishGateRequest,
+    PublishGateResponse,
     WorkflowEditorMetadataResponse,
 )
 from multi_agent_platform.api.schemas.workflow_registry import (
+    CopyDraftRequest,
+    DraftRevisionListResponse,
     PublishDraftRequest,
     RegistrySharingGrantCreateRequest,
     RegistrySharingGrantResponse,
+    RestoreRevisionRequest,
     ValidationFindingResponse,
     ValidationResultResponse,
+    WorkflowBuilderStatusSummary,
     WorkflowDraftCreateRequest,
     WorkflowDraftDocument,
     WorkflowDraftResponse,
@@ -115,6 +138,14 @@ def _canonical_document_json(
     return payload, digest
 
 
+def _safe_digest(payload: object) -> str:
+    return sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
 class WorkflowRegistryService:
     def __init__(
         self,
@@ -155,6 +186,9 @@ class WorkflowRegistryService:
                 )
                 if draft is None:
                     continue
+                draft_record = await self.repository.get_draft_record(
+                    draft.workflow_draft_id
+                )
                 if not can_view_workflow_scope(
                     principal,
                     scope_type=lineage.scope_type,
@@ -172,6 +206,20 @@ class WorkflowRegistryService:
                         tenant_id=lineage.tenant_id,
                         visibility_status=WorkflowVisibilityStatus.DRAFT,
                         current_revision_number=draft.current_revision_number,
+                        latest_validation_status=(
+                            _enum_value(draft_record.latest_validation.status)
+                            if draft_record is not None
+                            and draft_record.latest_validation is not None
+                            else None
+                        ),
+                        publish_readiness_status=(
+                            "ready"
+                            if draft_record is not None
+                            and draft_record.latest_validation is not None
+                            and draft_record.latest_validation.status
+                            == ValidationResultStatus.PASSED
+                            else "not_evaluated"
+                        ),
                         updated_at=draft.updated_at,
                     )
                 )
@@ -335,11 +383,12 @@ class WorkflowRegistryService:
                 record.lineage.workflow_lineage_id
             )
         )
+        document = WorkflowDraftDocument.model_validate(
+            record.revision.authoring_document_json
+        )
         available_subworkflow_ids = await self._visible_subworkflow_version_ids(
             principal=principal,
-            document=WorkflowDraftDocument.model_validate(
-                record.revision.authoring_document_json
-            ),
+            document=document,
         )
         previous_contract_schemas: dict[str, object] = {}
         if latest_published_version is not None:
@@ -353,25 +402,28 @@ class WorkflowRegistryService:
                     str(key): value for key, value in raw_contract_schemas.items()
                 }
         findings = validate_authoring_document(
-            WorkflowDraftDocument.model_validate(
-                record.revision.authoring_document_json
-            ),
+            document,
             available_subworkflow_version_ids=available_subworkflow_ids,
             previous_contract_schemas=previous_contract_schemas,
         )
+        reference_readiness, _, required_test_summary = validate_reference_readiness(
+            document,
+            visible_subworkflow_version_ids=available_subworkflow_ids,
+        )
+        graph_preview = build_graph_preview(document, findings=findings)
         await self.repository.supersede_validation_results_for_revision(
             record.revision.workflow_draft_revision_id
         )
         blocking_issue_count = sum(
-            1 for finding in findings if finding["severity"] == "blocking"
+            1 for finding in findings if finding.get("severity") == "blocking"
         )
         advisory_issue_count = sum(
-            1 for finding in findings if finding["severity"] == "advisory"
+            1 for finding in findings if finding.get("severity") == "advisory"
         )
         validation_result = await self.repository.create_validation_result(
             ValidationResult(
                 workflow_draft_revision_id=record.revision.workflow_draft_revision_id,
-                rule_set_version="workflow-registry-rules-0.1",
+                rule_set_version="workflow-builder-rules-0.1",
                 status=(
                     ValidationResultStatus.PASSED
                     if blocking_issue_count == 0
@@ -379,7 +431,28 @@ class WorkflowRegistryService:
                 ),
                 blocking_issue_count=blocking_issue_count,
                 advisory_issue_count=advisory_issue_count,
-                findings_json={"findings": findings},
+                findings_json={
+                    "rule_set_version": "workflow-builder-rules-0.1",
+                    "draft_revision_id": str(
+                        record.revision.workflow_draft_revision_id
+                    ),
+                    "reference_snapshot_digest": _safe_digest(
+                        [
+                            snapshot.model_dump(mode="json")
+                            for snapshot in reference_readiness
+                        ]
+                    ),
+                    "publish_blocking": blocking_issue_count > 0,
+                    "findings": findings,
+                    "reference_readiness": [
+                        snapshot.model_dump(mode="json")
+                        for snapshot in reference_readiness
+                    ],
+                    "graph_summary": graph_preview.summary.model_dump(mode="json"),
+                    "required_test_summary": required_test_summary.model_dump(
+                        mode="json"
+                    ),
+                },
                 executed_by_principal_id=principal_id,
             )
         )
@@ -440,6 +513,31 @@ class WorkflowRegistryService:
         document = WorkflowDraftDocument.model_validate(
             record.revision.authoring_document_json
         )
+        available_subworkflow_ids = await self._visible_subworkflow_version_ids(
+            principal=principal,
+            document=document,
+        )
+        reference_readiness, _, required_test_summary = validate_reference_readiness(
+            document,
+            visible_subworkflow_version_ids=available_subworkflow_ids,
+        )
+        gate = evaluate_publish_gate(
+            workflow_draft_id=str(record.draft.workflow_draft_id),
+            workflow_draft_revision_id=str(record.revision.workflow_draft_revision_id),
+            document_sha256=record.revision.document_sha256,
+            validation=self._to_validation_response(validation_result),
+            reference_readiness=reference_readiness,
+            required_test_summary=required_test_summary,
+            current_validation_result_id=str(validation_result.validation_result_id),
+            requested_validation_result_id=str(payload.validation_result_id),
+            authorized=True,
+        )
+        if payload.publish_gate_id is not None and payload.publish_gate_id != (
+            gate.publish_gate_id
+        ):
+            raise PublishConflictError("publish gate does not match current revision")
+        if gate.status != PUBLISH_GATE_READY:
+            raise PublishConflictError("publish gate is not ready")
         version_sequence = await self.repository.next_version_sequence(
             record.lineage.workflow_lineage_id
         )
@@ -452,6 +550,14 @@ class WorkflowRegistryService:
             version_sequence=version_sequence,
             display_version=display_version,
             compiler_version=compiler_version,
+        ).model_copy(
+            update={
+                "builder_pin_summary": gate.pin_summary,
+                "publish_gate_digest": gate.digest,
+                "source_draft_revision_id": str(
+                    record.revision.workflow_draft_revision_id
+                ),
+            }
         )
         compiled_bundle_digest = compiled_bundle.digest()
         artifact_key = bundle_storage_key(self.artifact_prefix, compiled_bundle_digest)
@@ -507,12 +613,46 @@ class WorkflowRegistryService:
                 summary_json={
                     "workflow_key": document.workflow_key,
                     "entry_node_key": document.entry_node_key,
+                    "source_draft_revision_id": str(
+                        record.revision.workflow_draft_revision_id
+                    ),
+                    "source_document_sha256": record.revision.document_sha256,
                     "contracts_by_key": {
                         contract.contract_key: contract.json_schema
                         for contract in document.contracts
                     },
                     "skill_versions": run_version_bundle.pinned_skill_versions,
                     "subworkflow_refs": run_version_bundle.subworkflow_version_refs,
+                    "prompt_profile_pins": gate.pin_summary.get(
+                        "prompt_profile_pins", []
+                    ),
+                    "model_routing_provenance": gate.pin_summary.get(
+                        "provider_catalog_pins", []
+                    ),
+                    "provider_catalog_pins": gate.pin_summary.get(
+                        "provider_catalog_pins", []
+                    ),
+                    "skill_installation_pins": gate.pin_summary.get(
+                        "skill_installation_pins", []
+                    ),
+                    "subworkflow_bundle_pins": gate.pin_summary.get(
+                        "subworkflow_bundle_pins", []
+                    ),
+                    "contract_compatibility": {
+                        "contract_count": len(document.contracts),
+                        "status": "compatible",
+                    },
+                    "approval_gate_summary": {
+                        "approval_gate_count": len(document.approval_gates)
+                    },
+                    "graph_preview_summary": build_graph_preview(
+                        document
+                    ).summary.model_dump(mode="json"),
+                    "required_test_evidence": gate.required_test_summary.model_dump(
+                        mode="json"
+                    ),
+                    "publish_gate_id": gate.publish_gate_id,
+                    "publish_gate_digest": gate.digest,
                     "run_version_blueprint": compiled_bundle.run_version_blueprint,
                 },
                 published_by_principal_id=principal_id,
@@ -613,6 +753,247 @@ class WorkflowRegistryService:
 
     def get_editor_metadata(self) -> WorkflowEditorMetadataResponse:
         return build_editor_metadata()
+
+    async def get_editor_lookups(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID | None = None,
+        lookup_kind: str | None = None,
+        search: str | None = None,
+    ) -> EditorLookupResponse:
+        document: WorkflowDraftDocument | None = None
+        scope_type = principal.scope_type.value
+        tenant_id = str(principal.tenant_id) if principal.tenant_id else None
+        if workflow_draft_id is not None:
+            record = await self.repository.get_draft_record(workflow_draft_id)
+            if record is None:
+                raise WorkflowNotFoundError("workflow draft not found")
+            self._ensure_visible(principal, record)
+            document = WorkflowDraftDocument.model_validate(
+                record.revision.authoring_document_json
+            )
+            scope_type = record.lineage.scope_type
+            tenant_id = (
+                str(record.lineage.tenant_id) if record.lineage.tenant_id else None
+            )
+        return build_editor_lookup_response(
+            document,
+            lookup_kind=lookup_kind,
+            scope_type=scope_type,
+            tenant_id=tenant_id,
+            search=search,
+        )
+
+    async def get_graph_preview(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+    ) -> GraphPreviewResponse:
+        record = await self.repository.get_draft_record(workflow_draft_id)
+        if record is None:
+            raise WorkflowNotFoundError("workflow draft not found")
+        self._ensure_visible(principal, record)
+        document = WorkflowDraftDocument.model_validate(
+            record.revision.authoring_document_json
+        )
+        findings: list[dict[str, object]] = []
+        if record.latest_validation is not None:
+            raw_findings = record.latest_validation.findings_json.get("findings", [])
+            if isinstance(raw_findings, list):
+                findings = [
+                    dict(finding)
+                    for finding in raw_findings
+                    if isinstance(finding, dict)
+                ]
+        return build_graph_preview(document, findings=findings)
+
+    async def list_draft_revisions(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+    ) -> DraftRevisionListResponse:
+        record = await self.repository.get_draft_record(workflow_draft_id)
+        if record is None:
+            raise WorkflowNotFoundError("workflow draft not found")
+        self._ensure_visible(principal, record)
+        revisions = await self.repository.list_draft_revisions(workflow_draft_id)
+        return DraftRevisionListResponse(
+            workflow_draft_id=workflow_draft_id,
+            current_revision_number=record.draft.current_revision_number,
+            revisions=[
+                WorkflowDraftRevisionResponse(
+                    workflow_draft_revision_id=revision.workflow_draft_revision_id,
+                    revision_number=revision.revision_number,
+                    document_sha256=revision.document_sha256,
+                    change_summary=revision.change_summary,
+                    created_at=revision.created_at,
+                    changed_sections=self._changed_sections_for_revision(
+                        current_json=record.revision.authoring_document_json,
+                        compared_json=revision.authoring_document_json,
+                    ),
+                )
+                for revision in revisions
+            ],
+        )
+
+    async def restore_revision(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: RestoreRevisionRequest,
+    ) -> WorkflowDraftResponse:
+        principal_id = self._principal_identity_id(principal)
+        record = await self.repository.get_draft_record(workflow_draft_id)
+        if record is None:
+            raise WorkflowNotFoundError("workflow draft not found")
+        self._ensure_editable(principal, record)
+        if record.draft.current_revision_number != payload.base_revision_number:
+            raise DraftConflictError("workflow draft revision is stale")
+        source_revision = await self.repository.get_draft_revision_by_number(
+            workflow_draft_id=workflow_draft_id,
+            revision_number=payload.revision_number,
+        )
+        if source_revision is None:
+            raise WorkflowNotFoundError("workflow revision not found")
+        document = WorkflowDraftDocument.model_validate(
+            source_revision.authoring_document_json
+        )
+        _ = validate_authoring_document(document)
+        document_json, document_sha256 = _canonical_document_json(document)
+        restored = await self.repository.save_revision(
+            draft=record.draft,
+            document_json=document_json,
+            document_sha256=document_sha256,
+            change_summary=payload.change_summary,
+            principal_identity_id=principal_id,
+        )
+        await self.repository.supersede_validation_results_for_draft(
+            record.draft.workflow_draft_id
+        )
+        await self.repository.session.flush()
+        await self._record_event(
+            principal=principal,
+            action="workflow_registry.restore_revision",
+            record=restored,
+            payload={"source_revision_number": str(payload.revision_number)},
+        )
+        return self._to_response(restored)
+
+    async def copy_draft(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: CopyDraftRequest,
+    ) -> WorkflowDraftResponse:
+        record = await self.repository.get_draft_record(workflow_draft_id)
+        if record is None:
+            raise WorkflowNotFoundError("workflow draft not found")
+        self._ensure_visible(principal, record)
+        source_revision = record.revision
+        if payload.source_revision_number is not None:
+            revision = await self.repository.get_draft_revision_by_number(
+                workflow_draft_id=workflow_draft_id,
+                revision_number=payload.source_revision_number,
+            )
+            if revision is None:
+                raise WorkflowNotFoundError("workflow revision not found")
+            source_revision = revision
+        source_document = WorkflowDraftDocument.model_validate(
+            source_revision.authoring_document_json
+        )
+        document = source_document.model_copy(
+            update={
+                "workflow_key": payload.new_slug,
+                "display_name": payload.display_name,
+                "description": payload.description or source_document.description,
+            }
+        )
+        copied = await self.create_draft(
+            principal=principal,
+            payload=WorkflowDraftCreateRequest(
+                scope_type=payload.scope_type
+                or WorkflowScopeType(record.lineage.scope_type),
+                tenant_id=payload.tenant_id or record.lineage.tenant_id,
+                workflow_kind=WorkflowKind(_enum_value(record.lineage.workflow_kind)),
+                slug=payload.new_slug,
+                display_name=payload.display_name,
+                description=payload.description or record.lineage.description,
+                document=document,
+            ),
+        )
+        await self._record_event(
+            principal=principal,
+            action="workflow_registry.copy_draft",
+            record=record,
+            payload={
+                "source_revision_number": str(source_revision.revision_number),
+                "new_workflow_draft_id": str(copied.workflow_draft_id),
+            },
+        )
+        return copied
+
+    async def evaluate_publish_gate(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: PublishGateRequest,
+    ) -> PublishGateResponse:
+        record = await self.repository.get_draft_record(workflow_draft_id)
+        if record is None:
+            raise WorkflowNotFoundError("workflow draft not found")
+        self._ensure_editable(principal, record)
+        validation = record.latest_validation
+        if payload.validation_result_id is not None:
+            try:
+                validation_id = UUID(payload.validation_result_id)
+            except ValueError as exc:
+                raise DraftConflictError("validation result id is invalid") from exc
+            validation = await self.repository.get_validation_result(validation_id)
+        validation_response = (
+            self._to_validation_response(validation) if validation is not None else None
+        )
+        document = WorkflowDraftDocument.model_validate(
+            record.revision.authoring_document_json
+        )
+        visible_subworkflows = await self._visible_subworkflow_version_ids(
+            principal=principal,
+            document=document,
+        )
+        reference_readiness, _, required_test_summary = validate_reference_readiness(
+            document,
+            visible_subworkflow_version_ids=visible_subworkflows,
+        )
+        gate = evaluate_publish_gate(
+            workflow_draft_id=str(record.draft.workflow_draft_id),
+            workflow_draft_revision_id=str(record.revision.workflow_draft_revision_id),
+            document_sha256=record.revision.document_sha256,
+            validation=validation_response,
+            reference_readiness=reference_readiness,
+            required_test_summary=required_test_summary,
+            current_validation_result_id=str(
+                record.latest_validation.validation_result_id
+            )
+            if record.latest_validation is not None
+            else None,
+            requested_validation_result_id=payload.validation_result_id,
+            authorized=True,
+        )
+        await self._record_event(
+            principal=principal,
+            action=f"workflow_registry.publish_gate.{gate.status}",
+            record=record,
+            payload={
+                "publish_gate_id": gate.publish_gate_id,
+                "blocking_issue_count": str(gate.blocking_issue_count),
+            },
+        )
+        return gate
 
     async def _resolve_create_target(
         self,
@@ -741,6 +1122,11 @@ class WorkflowRegistryService:
 
     def _to_response(self, record: WorkflowDraftRecord) -> WorkflowDraftResponse:
         latest_validation = record.latest_validation
+        latest_validation_response = (
+            self._to_validation_response(latest_validation)
+            if latest_validation is not None
+            else None
+        )
         return WorkflowDraftResponse(
             workflow_draft_id=record.draft.workflow_draft_id,
             workflow_lineage_id=record.lineage.workflow_lineage_id,
@@ -760,10 +1146,26 @@ class WorkflowRegistryService:
                 change_summary=record.revision.change_summary,
                 created_at=record.revision.created_at,
             ),
-            latest_validation=(
-                self._to_validation_response(latest_validation)
-                if latest_validation is not None
-                else None
+            latest_validation=latest_validation_response,
+            builder_status=WorkflowBuilderStatusSummary(
+                latest_validation_status=latest_validation_response.status
+                if latest_validation_response is not None
+                else None,
+                publish_readiness_status=(
+                    "ready"
+                    if latest_validation_response is not None
+                    and latest_validation_response.status == "passed"
+                    and latest_validation_response.blocking_issue_count == 0
+                    else "blocked"
+                    if latest_validation_response is not None
+                    else "not_evaluated"
+                ),
+                blocking_issue_count=latest_validation_response.blocking_issue_count
+                if latest_validation_response is not None
+                else 0,
+                advisory_issue_count=latest_validation_response.advisory_issue_count
+                if latest_validation_response is not None
+                else 0,
             ),
             document=WorkflowDraftDocument.model_validate(
                 record.revision.authoring_document_json
@@ -777,6 +1179,13 @@ class WorkflowRegistryService:
     ) -> ValidationResultResponse:
         raw_findings = validation_result.findings_json.get("findings", [])
         findings = raw_findings if isinstance(raw_findings, list) else []
+        raw_reference_readiness = validation_result.findings_json.get(
+            "reference_readiness", []
+        )
+        raw_graph_summary = validation_result.findings_json.get("graph_summary", {})
+        raw_required_test_summary = validation_result.findings_json.get(
+            "required_test_summary", {}
+        )
         return ValidationResultResponse(
             validation_result_id=validation_result.validation_result_id,
             status=_enum_value(validation_result.status),
@@ -787,6 +1196,32 @@ class WorkflowRegistryService:
                 for finding in findings
                 if isinstance(finding, dict)
             ],
+            rule_set_version=str(
+                validation_result.findings_json.get(
+                    "rule_set_version",
+                    validation_result.rule_set_version,
+                )
+            ),
+            draft_revision_id=validation_result.workflow_draft_revision_id,
+            reference_readiness=[
+                dict(snapshot)
+                for snapshot in raw_reference_readiness
+                if isinstance(snapshot, dict)
+            ]
+            if isinstance(raw_reference_readiness, list)
+            else [],
+            graph_summary=dict(raw_graph_summary)
+            if isinstance(raw_graph_summary, dict)
+            else {},
+            required_test_summary=dict(raw_required_test_summary)
+            if isinstance(raw_required_test_summary, dict)
+            else {},
+            publish_blocking=bool(
+                validation_result.findings_json.get(
+                    "publish_blocking",
+                    validation_result.blocking_issue_count > 0,
+                )
+            ),
         )
 
     def _to_version_response(
@@ -844,8 +1279,37 @@ class WorkflowRegistryService:
                 _enum_value(record.version.status)
             ),
             display_version=record.version.display_version,
+            publish_readiness_status="published",
             updated_at=record.version.published_at,
         )
+
+    def _changed_sections_for_revision(
+        self,
+        *,
+        current_json: dict[str, object],
+        compared_json: dict[str, object],
+    ) -> list[str]:
+        section_keys = (
+            "metadata",
+            "roles",
+            "prompt_profile_references",
+            "skill_installations",
+            "contracts",
+            "nodes",
+            "edges",
+            "join_policies",
+            "approval_gates",
+            "subworkflow_refs",
+            "test_requirements",
+        )
+        changed = [
+            section
+            for section in section_keys
+            if current_json.get(section) != compared_json.get(section)
+        ]
+        if current_json.get("display_name") != compared_json.get("display_name"):
+            changed.append("overview")
+        return changed or ["snapshot"]
 
     async def _record_event(
         self,
@@ -858,14 +1322,26 @@ class WorkflowRegistryService:
         if self.logger is not None:
             self.logger.info(
                 action,
-                extra=workflow_log_context(
-                    action=action,
-                    scope_type=record.lineage.scope_type,
-                    trace_id=principal.trace_id,
-                    workflow_lineage_id=str(record.lineage.workflow_lineage_id),
-                    workflow_draft_id=str(record.draft.workflow_draft_id),
-                    principal_id=principal.principal_id,
-                ),
+                extra={
+                    **workflow_log_context(
+                        action=action,
+                        scope_type=record.lineage.scope_type,
+                        trace_id=principal.trace_id,
+                        workflow_lineage_id=str(record.lineage.workflow_lineage_id),
+                        workflow_draft_id=str(record.draft.workflow_draft_id),
+                        principal_id=principal.principal_id,
+                    ),
+                    **builder_log_context(
+                        action=action,
+                        scope_type=record.lineage.scope_type,
+                        trace_id=principal.trace_id,
+                        request_id=principal.request_id,
+                        workflow_draft_id=str(record.draft.workflow_draft_id),
+                        workflow_draft_revision_id=str(
+                            record.revision.workflow_draft_revision_id
+                        ),
+                    ),
+                },
             )
         if self.audit_service is not None:
             audit_payload = {
@@ -873,7 +1349,7 @@ class WorkflowRegistryService:
                 "revision_number": str(record.draft.current_revision_number),
             }
             if payload is not None:
-                audit_payload.update(payload)
+                audit_payload.update(safe_observability_payload(payload))
             await self.audit_service.record_workflow_event(
                 principal=principal,
                 scope_type=record.lineage.scope_type,
