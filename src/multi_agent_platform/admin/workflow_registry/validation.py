@@ -3,6 +3,13 @@ from __future__ import annotations
 from collections.abc import Mapping
 from uuid import UUID
 
+from multi_agent_platform.admin.workflow_registry.graph_preview import (
+    build_graph_preview,
+    validate_graph_policy,
+)
+from multi_agent_platform.admin.workflow_registry.reference_validation import (
+    validate_reference_readiness,
+)
 from multi_agent_platform.api.schemas.workflow_registry import WorkflowDraftDocument
 from multi_agent_platform.model_providers.gateway import ModelGateway
 from multi_agent_platform.model_providers.models import GatewayResult
@@ -28,10 +35,10 @@ def validate_authoring_document(
     *,
     available_subworkflow_version_ids: set[str] | None = None,
     previous_contract_schemas: Mapping[str, object] | None = None,
-    prompt_profile_findings: list[dict[str, str]] | None = None,
-) -> list[dict[str, str]]:
+    prompt_profile_findings: list[dict[str, object]] | None = None,
+) -> list[dict[str, object]]:
     document = WorkflowDraftDocument.model_validate(document.model_dump(mode="json"))
-    findings: list[dict[str, str]] = []
+    findings: list[dict[str, object]] = []
     contract_keys = {contract.contract_key for contract in document.contracts}
     role_keys = {role.role_key for role in document.roles}
     join_policy_keys = {
@@ -56,6 +63,9 @@ def validate_authoring_document(
                 "severity": "advisory",
                 "message": "Draft has no roles yet; this is allowed during authoring.",
                 "field_path": "roles",
+                "section_key": "roles",
+                "code": "roles.empty",
+                "blocking": False,
             }
         )
 
@@ -265,8 +275,23 @@ def validate_authoring_document(
             previous_contract_schemas=previous_contract_schemas or {},
         )
     )
+    reference_snapshots, reference_findings, _ = validate_reference_readiness(
+        document,
+        visible_subworkflow_version_ids=visible_subworkflow_ids,
+    )
+    findings.extend(reference_findings)
+    findings.extend(validate_graph_policy(document))
     if prompt_profile_findings:
         findings.extend(prompt_profile_findings)
+    preview = build_graph_preview(document, findings=findings)
+    for finding in findings:
+        if "graph_element_id" not in finding and isinstance(
+            finding.get("field_path"), str
+        ):
+            graph_element_id = preview.field_to_graph.get(str(finding["field_path"]))
+            if graph_element_id:
+                finding["graph_element_id"] = graph_element_id
+    _ = reference_snapshots
     return findings
 
 
@@ -312,8 +337,8 @@ def _validate_contract_compatibility(
     *,
     document: WorkflowDraftDocument,
     previous_contract_schemas: Mapping[str, object],
-) -> list[dict[str, str]]:
-    findings: list[dict[str, str]] = []
+) -> list[dict[str, object]]:
+    findings: list[dict[str, object]] = []
     previous_by_key = {
         str(contract_key): schema
         for contract_key, schema in previous_contract_schemas.items()
@@ -380,12 +405,16 @@ def _validate_contract_compatibility(
     return findings
 
 
-def _blocking(*, category: str, field_path: str, message: str) -> dict[str, str]:
+def _blocking(*, category: str, field_path: str, message: str) -> dict[str, object]:
     return {
         "category": category,
         "severity": "blocking",
         "message": message,
         "field_path": field_path,
+        "section_key": _section_for_field_path(field_path),
+        "code": f"{category}.blocking",
+        "remediation": "Update the referenced builder field and rerun validation.",
+        "blocking": True,
     }
 
 
@@ -407,3 +436,19 @@ def _as_str_list(value: object) -> list[str]:
     if isinstance(value, (list, tuple)):
         return [str(item) for item in value]
     return []
+
+
+def _section_for_field_path(field_path: str) -> str:
+    if field_path.startswith("roles"):
+        return "roles"
+    if field_path.startswith("contracts"):
+        return "contracts"
+    if field_path.startswith("nodes") or field_path.startswith("edges"):
+        return "graph"
+    if field_path.startswith("join_policies"):
+        return "joins"
+    if field_path.startswith("approval_gates"):
+        return "approvals"
+    if field_path.startswith("subworkflow_refs"):
+        return "subworkflows"
+    return field_path.split("[", maxsplit=1)[0]

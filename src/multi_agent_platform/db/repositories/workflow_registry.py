@@ -159,6 +159,29 @@ class WorkflowRegistryRepository:
             raise RuntimeError("workflow lineage missing")
         return WorkflowDraftRecord(lineage=lineage, draft=draft, revision=revision)
 
+    async def list_draft_revisions(
+        self,
+        workflow_draft_id: UUID,
+    ) -> list[WorkflowDraftRevision]:
+        stmt = (
+            select(WorkflowDraftRevision)
+            .where(WorkflowDraftRevision.workflow_draft_id == workflow_draft_id)
+            .order_by(WorkflowDraftRevision.revision_number.desc())
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def get_draft_revision_by_number(
+        self,
+        *,
+        workflow_draft_id: UUID,
+        revision_number: int,
+    ) -> WorkflowDraftRevision | None:
+        stmt = select(WorkflowDraftRevision).where(
+            WorkflowDraftRevision.workflow_draft_id == workflow_draft_id,
+            WorkflowDraftRevision.revision_number == revision_number,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
     async def create_validation_result(
         self, validation_result: ValidationResult
     ) -> ValidationResult:

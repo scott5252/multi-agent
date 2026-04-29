@@ -16,12 +16,19 @@ from multi_agent_platform.admin.workflow_registry.service import (
 )
 from multi_agent_platform.api.deps import ContainerDep, get_session
 from multi_agent_platform.api.schemas.workflow_editor import (
+    EditorLookupResponse,
+    GraphPreviewResponse,
+    PublishGateRequest,
+    PublishGateResponse,
     WorkflowEditorMetadataResponse,
 )
 from multi_agent_platform.api.schemas.workflow_registry import (
+    CopyDraftRequest,
+    DraftRevisionListResponse,
     PublishDraftRequest,
     RegistrySharingGrantCreateRequest,
     RegistrySharingGrantResponse,
+    RestoreRevisionRequest,
     ValidationResultResponse,
     WorkflowDraftCreateRequest,
     WorkflowDraftResponse,
@@ -41,6 +48,7 @@ from multi_agent_platform.db.repositories.workflow_registry import (
 router = APIRouter(prefix="/admin/workflows", tags=["workflow-registry"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+MAX_BUILDER_PAYLOAD_BYTES = 1_000_000
 
 
 def _build_admin_service(
@@ -56,13 +64,25 @@ def _build_admin_service(
     )
 
 
+def _ensure_payload_size(payload: object) -> None:
+    if not hasattr(payload, "model_dump_json"):
+        return
+    size_bytes = len(payload.model_dump_json().encode("utf-8"))
+    if size_bytes > MAX_BUILDER_PAYLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail="workflow builder payload exceeds the bounded request limit",
+        )
+
+
 @router.get("", response_model=WorkflowRegistryListResponse)
 async def list_workflows(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-    scope_filter: str = Query(default="all"),
-    status_filter: str | None = Query(default=None, alias="status"),
+    scope_filter: Annotated[str, Query()] = "all",
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    search_query: Annotated[str | None, Query(alias="q")] = None,
 ) -> WorkflowRegistryListResponse:
     service = _build_admin_service(session, container)
     try:
@@ -70,6 +90,7 @@ async def list_workflows(
             principal=principal,
             scope_filter=scope_filter,
             status=status_filter,
+            search_query=search_query,
         )
     except WorkflowAccessError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
@@ -85,6 +106,7 @@ async def create_workflow_draft(
     session: SessionDep,
     container: ContainerDep,
 ) -> WorkflowDraftResponse:
+    _ensure_payload_size(payload)
     service = _build_admin_service(session, container)
     try:
         return await service.create_workflow_draft(principal=principal, payload=payload)
@@ -103,6 +125,29 @@ async def get_editor_metadata(
     _ = principal, session
     service = _build_admin_service(session, container)
     return service.workflow_registry_service().get_editor_metadata()
+
+
+@router.get("/editor-lookups", response_model=EditorLookupResponse)
+async def get_editor_lookups(
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    workflow_draft_id: Annotated[UUID | None, Query()] = None,
+    lookup_kind: Annotated[str | None, Query()] = None,
+    search: Annotated[str | None, Query()] = None,
+) -> EditorLookupResponse:
+    service = _build_admin_service(session, container)
+    try:
+        return await service.get_workflow_editor_lookups(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            lookup_kind=lookup_kind,
+            search=search,
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 @router.get("/drafts/{workflow_draft_id}", response_model=WorkflowDraftResponse)
@@ -132,6 +177,7 @@ async def save_workflow_draft(
     session: SessionDep,
     container: ContainerDep,
 ) -> WorkflowDraftResponse:
+    _ensure_payload_size(payload)
     service = _build_admin_service(session, container)
     try:
         return await service.save_workflow_draft(
@@ -144,6 +190,102 @@ async def save_workflow_draft(
     except WorkflowAccessError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except DraftConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.get(
+    "/drafts/{workflow_draft_id}/graph-preview",
+    response_model=GraphPreviewResponse,
+)
+async def get_workflow_graph_preview(
+    workflow_draft_id: UUID,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> GraphPreviewResponse:
+    service = _build_admin_service(session, container)
+    try:
+        return await service.get_workflow_graph_preview(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get(
+    "/drafts/{workflow_draft_id}/revisions",
+    response_model=DraftRevisionListResponse,
+)
+async def list_workflow_draft_revisions(
+    workflow_draft_id: UUID,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> DraftRevisionListResponse:
+    service = _build_admin_service(session, container)
+    try:
+        return await service.list_workflow_draft_revisions(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.post(
+    "/drafts/{workflow_draft_id}/restore", response_model=WorkflowDraftResponse
+)
+async def restore_workflow_revision(
+    workflow_draft_id: UUID,
+    payload: RestoreRevisionRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> WorkflowDraftResponse:
+    service = _build_admin_service(session, container)
+    try:
+        return await service.restore_workflow_revision(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            payload=payload,
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except DraftConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post(
+    "/drafts/{workflow_draft_id}/copy",
+    response_model=WorkflowDraftResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def copy_workflow_draft(
+    workflow_draft_id: UUID,
+    payload: CopyDraftRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> WorkflowDraftResponse:
+    service = _build_admin_service(session, container)
+    try:
+        return await service.copy_workflow_draft(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            payload=payload,
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
@@ -162,6 +304,32 @@ async def validate_workflow_draft(
         return await service.validate_workflow_draft(
             principal=principal,
             workflow_draft_id=workflow_draft_id,
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except DraftConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post(
+    "/drafts/{workflow_draft_id}/publish-gate",
+    response_model=PublishGateResponse,
+)
+async def evaluate_workflow_publish_gate(
+    workflow_draft_id: UUID,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    payload: PublishGateRequest | None = None,
+) -> PublishGateResponse:
+    service = _build_admin_service(session, container)
+    try:
+        return await service.evaluate_workflow_publish_gate(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            payload=payload or PublishGateRequest(),
         )
     except WorkflowNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

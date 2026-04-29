@@ -1,0 +1,691 @@
+openapi: 3.1.0
+info:
+  title: Guided Workflow Builder Admin API
+  version: 0.1.0
+  description: >
+    Additive admin API for guided workflow builder metadata, lookup options,
+    graph preview, draft revision history, reference validation, publish gate,
+    and immutable publication through the existing workflow registry.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /admin/workflows/editor-metadata:
+    get:
+      summary: Load builder metadata for fields, sections, graph types, and validation mapping
+      tags: [workflow-builder]
+      parameters:
+        - in: query
+          name: workflow_draft_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: scope_type
+          schema:
+            type: string
+            enum: [tenant, platform]
+        - in: query
+          name: tenant_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Builder metadata filtered for current principal and scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuilderEditorMetadataResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/workflows/editor-lookups:
+    get:
+      summary: Load eligible reference options for the builder
+      tags: [workflow-builder]
+      parameters:
+        - in: query
+          name: workflow_draft_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: lookup_kind
+          schema:
+            type: string
+            enum:
+              - prompts
+              - profiles
+              - model_routes
+              - provider_catalog
+              - skills
+              - subworkflows
+              - contracts
+              - approval_roles
+              - test_suites
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scope-authorized lookup options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorLookupResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/workflows/drafts/{workflow_draft_id}:
+    put:
+      summary: Save a guided builder draft using optimistic concurrency
+      tags: [workflow-builder]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowBuilderDraftSaveRequest"
+      responses:
+        "200":
+          description: Draft saved as a new immutable revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowDraftResponse"
+        "409":
+          description: Stale draft revision; no revision was created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConflictResponse"
+  /admin/workflows/drafts/{workflow_draft_id}/graph-preview:
+    get:
+      summary: Return server-derived graph preview for the latest draft revision
+      tags: [workflow-builder]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      responses:
+        "200":
+          description: Graph preview projection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphPreviewResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /admin/workflows/drafts/{workflow_draft_id}/revisions:
+    get:
+      summary: List immutable draft revisions and safe changed-section summaries
+      tags: [workflow-builder]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      responses:
+        "200":
+          description: Revision history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftRevisionListResponse"
+  /admin/workflows/drafts/{workflow_draft_id}/restore:
+    post:
+      summary: Create a new revision from an older revision
+      tags: [workflow-builder]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestoreRevisionRequest"
+      responses:
+        "200":
+          description: New revision created from historical content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowDraftResponse"
+        "409":
+          description: Stale base revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConflictResponse"
+  /admin/workflows/drafts/{workflow_draft_id}/copy:
+    post:
+      summary: Copy a revision or published bundle into a new authorized workflow draft
+      tags: [workflow-builder]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CopyDraftRequest"
+      responses:
+        "201":
+          description: New draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowDraftResponse"
+  /admin/workflows/drafts/{workflow_draft_id}/validate:
+    post:
+      summary: Validate current guided builder draft revision
+      tags: [workflow-builder]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      responses:
+        "200":
+          description: Validation complete and persisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuilderValidationResultResponse"
+  /admin/workflows/drafts/{workflow_draft_id}/publish-gate:
+    post:
+      summary: Evaluate publish readiness for the current draft revision
+      tags: [workflow-builder]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishGateRequest"
+      responses:
+        "200":
+          description: Publish gate result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishGateResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/workflows/drafts/{workflow_draft_id}/publish:
+    post:
+      summary: Publish current draft revision through an accepted publish gate
+      tags: [workflow-builder]
+      parameters:
+        - $ref: "#/components/parameters/WorkflowDraftId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishDraftRequest"
+      responses:
+        "201":
+          description: Immutable workflow bundle created and activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowVersionResponse"
+        "409":
+          description: Publish gate stale, failed, blocked, or revision mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConflictResponse"
+        "503":
+          description: Artifact or storage dependency unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    WorkflowDraftId:
+      in: path
+      name: workflow_draft_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Forbidden:
+      description: Current principal is not authorized for the requested scope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found or not visible
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+    ConflictResponse:
+      type: object
+      required: [detail, conflict_type]
+      properties:
+        detail:
+          type: string
+        conflict_type:
+          type: string
+          enum: [stale_revision, stale_validation, blocked_publish, stale_gate]
+        current_revision_number:
+          type: integer
+          nullable: true
+    BuilderEditorMetadataResponse:
+      type: object
+      required: [sections, field_definitions, field_help, validation_code_mapping]
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/EditorSection"
+        field_definitions:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/EditorFieldDefinition"
+        field_help:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/FieldHelpDefinition"
+        graph_node_types:
+          type: array
+          items:
+            type: string
+        graph_edge_types:
+          type: array
+          items:
+            type: string
+        validation_code_mapping:
+          type: object
+          additionalProperties:
+            type: string
+        capabilities:
+          type: object
+          additionalProperties:
+            type: boolean
+    EditorSection:
+      type: object
+      required: [section_key, label, order]
+      properties:
+        section_key:
+          type: string
+        label:
+          type: string
+        order:
+          type: integer
+    EditorFieldDefinition:
+      type: object
+      required: [field_path, label, section_key, control_type]
+      properties:
+        field_path:
+          type: string
+        label:
+          type: string
+        section_key:
+          type: string
+        control_type:
+          type: string
+        required:
+          type: boolean
+        lookup_kind:
+          type: string
+          nullable: true
+    FieldHelpDefinition:
+      type: object
+      required: [field_key, label, title, explanation, runtime_impact]
+      properties:
+        field_key:
+          type: string
+        label:
+          type: string
+        title:
+          type: string
+        explanation:
+          type: string
+        runtime_impact:
+          type: string
+        example:
+          type: string
+          nullable: true
+        validation_hint:
+          type: string
+          nullable: true
+    EditorLookupResponse:
+      type: object
+      required: [lookup_kind, options]
+      properties:
+        lookup_kind:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/LookupOption"
+    LookupOption:
+      type: object
+      required: [value, label, readiness_status]
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+        scope_type:
+          type: string
+          enum: [tenant, platform]
+          nullable: true
+        readiness_status:
+          type: string
+          enum: [ready, advisory, blocked, unavailable]
+        safe_summary:
+          type: string
+        detail_url:
+          type: string
+          nullable: true
+    WorkflowBuilderDraftSaveRequest:
+      type: object
+      required: [base_revision_number, display_name, document]
+      properties:
+        base_revision_number:
+          type: integer
+          minimum: 0
+        display_name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        document:
+          type: object
+        change_summary:
+          type: string
+          nullable: true
+    GraphPreviewResponse:
+      type: object
+      required: [draft_revision_id, document_sha256, nodes, edges]
+      properties:
+        draft_revision_id:
+          type: string
+          format: uuid
+        document_sha256:
+          type: string
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphPreviewNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphPreviewEdge"
+        validation_badges:
+          type: object
+          additionalProperties:
+            type: string
+    GraphPreviewNode:
+      type: object
+      required: [node_key, node_type, label, field_path]
+      properties:
+        node_key:
+          type: string
+        node_type:
+          type: string
+        label:
+          type: string
+        field_path:
+          type: string
+        status:
+          type: string
+        reference_keys:
+          type: array
+          items:
+            type: string
+    GraphPreviewEdge:
+      type: object
+      required: [edge_key, source_node_key, target_node_key, field_path]
+      properties:
+        edge_key:
+          type: string
+        source_node_key:
+          type: string
+        target_node_key:
+          type: string
+        edge_type:
+          type: string
+        field_path:
+          type: string
+        contract_key:
+          type: string
+          nullable: true
+    DraftRevisionListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DraftRevisionSummary"
+    DraftRevisionSummary:
+      type: object
+      required: [workflow_draft_revision_id, revision_number, document_sha256, created_at]
+      properties:
+        workflow_draft_revision_id:
+          type: string
+          format: uuid
+        revision_number:
+          type: integer
+        document_sha256:
+          type: string
+        change_summary:
+          type: string
+          nullable: true
+        changed_sections:
+          type: array
+          items:
+            type: string
+        created_by_principal_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+    RestoreRevisionRequest:
+      type: object
+      required: [base_revision_number, source_revision_id, reason]
+      properties:
+        base_revision_number:
+          type: integer
+        source_revision_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+    CopyDraftRequest:
+      type: object
+      required: [source_revision_id, target_scope_type, slug, display_name, reason]
+      properties:
+        source_revision_id:
+          type: string
+          format: uuid
+        target_scope_type:
+          type: string
+          enum: [tenant, platform]
+        target_tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        slug:
+          type: string
+        display_name:
+          type: string
+        reason:
+          type: string
+    BuilderValidationResultResponse:
+      type: object
+      required: [validation_result_id, status, blocking_issue_count, findings]
+      properties:
+        validation_result_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [passed, failed, superseded]
+        blocking_issue_count:
+          type: integer
+        advisory_issue_count:
+          type: integer
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuilderValidationFinding"
+    BuilderValidationFinding:
+      type: object
+      required: [category, code, severity, blocking, message, section_key]
+      properties:
+        category:
+          type: string
+        code:
+          type: string
+        severity:
+          type: string
+          enum: [blocking, advisory, info]
+        blocking:
+          type: boolean
+        message:
+          type: string
+        remediation:
+          type: string
+        section_key:
+          type: string
+        field_path:
+          type: string
+          nullable: true
+        graph_element_id:
+          type: string
+          nullable: true
+        reference_type:
+          type: string
+          nullable: true
+        reference_id:
+          type: string
+          nullable: true
+        authorized_link:
+          type: string
+          nullable: true
+    PublishGateRequest:
+      type: object
+      properties:
+        validation_result_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+    PublishGateResponse:
+      type: object
+      required:
+        - publish_gate_id
+        - workflow_draft_revision_id
+        - status
+        - blocking_issue_count
+        - findings
+        - reference_readiness
+        - pin_summary
+        - required_test_summary
+        - digest
+      properties:
+        publish_gate_id:
+          type: string
+        workflow_draft_revision_id:
+          type: string
+          format: uuid
+        document_sha256:
+          type: string
+        validation_result_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ready, blocked, stale, unauthorized]
+        blocking_issue_count:
+          type: integer
+        advisory_issue_count:
+          type: integer
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuilderValidationFinding"
+        reference_readiness:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReferenceReadinessSnapshot"
+        pin_summary:
+          type: object
+        required_test_summary:
+          $ref: "#/components/schemas/RequiredTestSummary"
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        digest:
+          type: string
+    ReferenceReadinessSnapshot:
+      type: object
+      required: [reference_type, reference_key, status, blocking]
+      properties:
+        reference_type:
+          type: string
+        reference_key:
+          type: string
+        status:
+          type: string
+        blocking:
+          type: boolean
+        detail_url:
+          type: string
+          nullable: true
+        safe_summary:
+          type: string
+          nullable: true
+        pin_payload:
+          type: object
+    RequiredTestSummary:
+      type: object
+      required: [required_count, passing_count, failing_count, missing_count, stale_count]
+      properties:
+        required_count:
+          type: integer
+        passing_count:
+          type: integer
+        failing_count:
+          type: integer
+        missing_count:
+          type: integer
+        stale_count:
+          type: integer
+    PublishDraftRequest:
+      type: object
+      required: [validation_result_id]
+      properties:
+        validation_result_id:
+          type: string
+          format: uuid
+        publish_gate_id:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+    WorkflowDraftResponse:
+      type: object
+      description: Existing workflow registry draft response with extended builder document
+    WorkflowVersionResponse:
+      type: object
+      description: Existing workflow registry version response with builder pin summaries

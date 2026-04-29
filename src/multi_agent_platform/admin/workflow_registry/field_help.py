@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from multi_agent_platform.api.schemas.workflow_editor import (
+    EditorActionUrls,
+    EditorCapability,
+    EditorFieldDefinition,
     EditorOption,
+    EditorSectionDefinition,
     FieldHelpDefinition,
+    ValidationCodeMapping,
     WorkflowEditorMetadataResponse,
 )
 
@@ -137,17 +142,221 @@ FIELD_HELP: dict[str, FieldHelpDefinition] = {
         ),
         example="tenant_admin",
     ),
+    "prompt_profile_references[].readiness_status": FieldHelpDefinition(
+        field_key="prompt_profile_references[].readiness_status",
+        label="Prompt/Profile Readiness",
+        title="Prompt And Runtime Profile Readiness",
+        explanation=(
+            "Shows whether selected prompt and runtime profile versions are active, "
+            "authorized, and digest-compatible."
+        ),
+        runtime_impact=(
+            "Publication is blocked until every required role has ready prompt and "
+            "profile evidence."
+        ),
+        example="ready",
+    ),
+    "skill_installations[].skill_version": FieldHelpDefinition(
+        field_key="skill_installations[].skill_version",
+        label="Installed Skill Version",
+        title="Installed Skill Version",
+        explanation="Pin an installed skill by exact version for this workflow.",
+        runtime_impact=(
+            "The publish gate stores exact skill pins so runtime execution uses the "
+            "reviewed capability."
+        ),
+        example="2026.04.1",
+    ),
+    "nodes[].node_key": FieldHelpDefinition(
+        field_key="nodes[].node_key",
+        label="Graph Node",
+        title="Graph Node Key",
+        explanation=(
+            "A stable semantic node key used by graph preview and runtime wiring."
+        ),
+        runtime_impact="Validation findings and audit summaries use this stable key.",
+        example="triage-node",
+    ),
+    "edges[].edge_key": FieldHelpDefinition(
+        field_key="edges[].edge_key",
+        label="Graph Edge",
+        title="Graph Edge Key",
+        explanation="A stable semantic edge key between two workflow nodes.",
+        runtime_impact="Graph validation maps edge findings back to this key.",
+        example="triage-to-approval",
+    ),
+    "test_requirements[].latest_result_status": FieldHelpDefinition(
+        field_key="test_requirements[].latest_result_status",
+        label="Required Test Result",
+        title="Required Test Result",
+        explanation=(
+            "The latest safe status for a required workflow or profile test suite."
+        ),
+        runtime_impact=("Missing, stale, or failing required tests block publication."),
+        example="passed",
+    ),
 }
 
 SECTION_ORDER = [
     "Overview",
     "Roles And Skills",
     "Contracts",
-    "Nodes And Flow",
-    "Subworkflow References",
+    "Prompt And Runtime Profile References",
+    "Model Routing Preview",
+    "Skill Installations",
+    "Graph Builder",
     "Join Policies",
     "Approval Gates",
+    "Reusable Subworkflows",
+    "Test Requirements",
     "Validation And Publish",
+    "Revision History",
+]
+
+SECTIONS = [
+    EditorSectionDefinition(
+        section_key="overview",
+        label="Overview",
+        description="Scope, name, owner, tags, and publication intent.",
+        field_paths=[
+            "metadata.scope_type",
+            "workflow_kind",
+            "workflow_key",
+            "display_name",
+            "description",
+        ],
+    ),
+    EditorSectionDefinition(
+        section_key="roles",
+        label="Roles And Sub-Agent Roles",
+        description="Agent and sub-agent responsibilities, contracts, and skills.",
+        field_paths=[
+            "roles[].role_key",
+            "roles[].input_contract_key",
+            "roles[].output_contract_key",
+        ],
+    ),
+    EditorSectionDefinition(
+        section_key="prompt_profile_references",
+        label="Prompt And Runtime Profile References",
+        description="Prompt/profile governance references and readiness evidence.",
+        field_paths=["prompt_profile_references[].readiness_status"],
+    ),
+    EditorSectionDefinition(
+        section_key="model_routing",
+        label="Model Routing Preview",
+        description="Safe routing preview links and provider readiness summaries.",
+        field_paths=["prompt_profile_references[].model_routing_preview"],
+    ),
+    EditorSectionDefinition(
+        section_key="skills",
+        label="Skill Installations",
+        description="Exact skill pins, policies, and credential readiness.",
+        field_paths=["skill_installations[].skill_version"],
+    ),
+    EditorSectionDefinition(
+        section_key="contracts",
+        label="Contracts",
+        description="Workflow, handoff, approval, memory, and failure contracts.",
+        field_paths=["contracts[].json_schema"],
+    ),
+    EditorSectionDefinition(
+        section_key="graph",
+        label="Graph Builder",
+        description="Server-derived nodes, edges, terminal paths, and graph policy.",
+        field_paths=["nodes[].node_key", "edges[].edge_key"],
+    ),
+    EditorSectionDefinition(
+        section_key="joins",
+        label="Join Policies",
+        description="Branch merge strategy, quorum, timeout, and merge contracts.",
+        field_paths=["join_policies[].strategy"],
+    ),
+    EditorSectionDefinition(
+        section_key="approvals",
+        label="Approval Gates",
+        description="Approver scope, decision contracts, timeout, and resume behavior.",
+        field_paths=["approval_gates[].approver_scope"],
+    ),
+    EditorSectionDefinition(
+        section_key="subworkflows",
+        label="Reusable Subworkflows",
+        description="Pinned subworkflow bundle references and compatibility status.",
+        field_paths=["subworkflow_refs[].workflow_version_ref"],
+    ),
+    EditorSectionDefinition(
+        section_key="tests",
+        label="Test Requirements",
+        description="Required suite evidence and freshness status.",
+        field_paths=["test_requirements[].latest_result_status"],
+    ),
+    EditorSectionDefinition(
+        section_key="validation_publish",
+        label="Validation And Publish",
+        description="Field findings, publish gate status, and confirmation state.",
+        field_paths=["validation"],
+    ),
+    EditorSectionDefinition(
+        section_key="revision_history",
+        label="Revision History",
+        description="Safe revision summaries, copy, restore, and lineage links.",
+        field_paths=["revisions"],
+    ),
+]
+
+
+def _lookup_source_for_field(field_path: str) -> str | None:
+    if "prompt_profile_references" in field_path:
+        return "profiles"
+    if "skill_installations" in field_path:
+        return "skills"
+    if "contract" in field_path:
+        return "contracts"
+    if "subworkflow_refs" in field_path:
+        return "subworkflows"
+    if "test_requirements" in field_path:
+        return "test_suites"
+    return None
+
+
+FIELDS = [
+    EditorFieldDefinition(
+        field_path=field_path,
+        label=FIELD_HELP.get(field_path, FIELD_HELP["display_name"]).label,
+        section_key=section.section_key,
+        required=not field_path.endswith("reviewer_notes"),
+        lookup_source=_lookup_source_for_field(field_path),
+        help_key=field_path if field_path in FIELD_HELP else None,
+    )
+    for section in SECTIONS
+    for field_path in section.field_paths
+]
+
+VALIDATION_CODES = [
+    ValidationCodeMapping(
+        code="graph.node.disconnected",
+        section_key="graph",
+        field_path_template="nodes[]",
+        remediation="Connect the node to the entry path or mark it inactive.",
+    ),
+    ValidationCodeMapping(
+        code="reference.prompt_profile.not_ready",
+        section_key="prompt_profile_references",
+        field_path_template="prompt_profile_references[].readiness_status",
+        remediation="Select an active profile and prompt versions.",
+    ),
+    ValidationCodeMapping(
+        code="reference.skill.not_ready",
+        section_key="skills",
+        field_path_template="skill_installations[].skill_version",
+        remediation="Pin an installed skill with ready credential references.",
+    ),
+    ValidationCodeMapping(
+        code="reference.required_test.not_passing",
+        section_key="tests",
+        field_path_template="test_requirements[].latest_result_status",
+        remediation="Attach a current passing test result.",
+    ),
 ]
 
 
@@ -163,4 +372,23 @@ def build_editor_metadata() -> WorkflowEditorMetadataResponse:
             EditorOption(value="subworkflow", label="Subworkflow"),
         ],
         section_order=SECTION_ORDER,
+        sections=SECTIONS,
+        fields=FIELDS,
+        lookup_sources={
+            "profiles": "/admin/workflows/editor-lookups?lookup_kind=profiles",
+            "skills": "/admin/workflows/editor-lookups?lookup_kind=skills",
+            "contracts": "/admin/workflows/editor-lookups?lookup_kind=contracts",
+            "subworkflows": "/admin/workflows/editor-lookups?lookup_kind=subworkflows",
+            "test_suites": "/admin/workflows/editor-lookups?lookup_kind=test_suites",
+        },
+        capabilities=[
+            EditorCapability(capability_key="create_draft", allowed=True),
+            EditorCapability(capability_key="save_draft", allowed=True),
+            EditorCapability(capability_key="validate", allowed=True),
+            EditorCapability(capability_key="publish_gate", allowed=True),
+            EditorCapability(capability_key="restore_revision", allowed=True),
+            EditorCapability(capability_key="copy_draft", allowed=True),
+        ],
+        action_urls=EditorActionUrls(),
+        validation_codes=VALIDATION_CODES,
     )

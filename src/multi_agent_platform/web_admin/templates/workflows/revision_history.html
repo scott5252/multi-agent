@@ -1,0 +1,52 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+  <header class="admin-page-header">
+    <div>
+      <p class="eyebrow">Revision History</p>
+      <h1>{{ page.draft.display_name }}</h1>
+      <p class="subhead">Current revision {{ page.revisions.current_revision_number }}</p>
+    </div>
+    <a class="button-link" href="/admin/workflows/drafts/{{ page.draft.workflow_draft_id }}/editor">Open Editor</a>
+  </header>
+
+  <section class="revision-list">
+    {% for revision in page.revisions.revisions %}
+      <article class="builder-panel revision-row">
+        <div>
+          <h2>Revision {{ revision.revision_number }}</h2>
+          <p class="mono">{{ revision.workflow_draft_revision_id }}</p>
+          <p>{{ revision.change_summary or "Snapshot saved" }}</p>
+          <p>Changed sections: {{ revision.changed_sections|join(", ") }}</p>
+        </div>
+        <form method="post" action="{{ page.restore_endpoint }}/ui">
+          <input type="hidden" name="revision_number" value="{{ revision.revision_number }}">
+          <input type="hidden" name="base_revision_number" value="{{ page.revisions.current_revision_number }}">
+          <input type="hidden" name="change_summary" value="QA013 restore check">
+          <button type="submit">Restore</button>
+        </form>
+        <form method="post" action="{{ page.copy_endpoint }}/ui">
+          <input type="hidden" name="source_revision_number" value="{{ revision.revision_number }}">
+          <label class="field-row">
+            <span>Copy Slug</span>
+            <input name="new_slug" value="{{ page.draft.slug }}-copy-r{{ revision.revision_number }}">
+          </label>
+          <label class="field-row">
+            <span>Copy Name</span>
+            <input name="display_name" value="{{ page.draft.display_name }} Copy">
+          </label>
+          <input type="hidden" name="change_summary" value="QA013 copy check">
+          <button type="submit">Copy</button>
+        </form>
+      </article>
+    {% else %}
+      <section class="builder-panel">
+        <h2>No revisions</h2>
+      </section>
+    {% endfor %}
+  </section>
+{% endblock %}
+
+{% block page_scripts %}
+  <script src="/admin/static/workflow_studio.js"></script>
+{% endblock %}

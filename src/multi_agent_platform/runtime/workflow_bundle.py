@@ -18,6 +18,9 @@ class CompiledWorkflowBundle(BaseModel):
     compiler_version: str = ""
     dependencies: dict[str, object] = Field(default_factory=dict)
     run_version_blueprint: dict[str, object] = Field(default_factory=dict)
+    builder_pin_summary: dict[str, object] = Field(default_factory=dict)
+    publish_gate_digest: str | None = None
+    source_draft_revision_id: str | None = None
     document: dict[str, object]
 
     def canonical_json(self) -> bytes:

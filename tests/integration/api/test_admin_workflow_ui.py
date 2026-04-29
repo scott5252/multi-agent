@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -123,6 +124,14 @@ def test_registry_and_editor_pages_render_help_metadata(tmp_path, monkeypatch) -
             "/admin/workflows/ui",
             headers={"X-Local-Principal": "tenant-admin-acme"},
         )
+        filtered_registry = client.get(
+            "/admin/workflows/ui?scope_filter=tenant&status=draft&q=UI",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+        empty_filtered_registry = client.get(
+            "/admin/workflows/ui?scope_filter=tenant&status=draft&q=missing",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
         editor = client.get(
             f"/admin/workflows/drafts/{draft_id}/editor",
             headers={"X-Local-Principal": "tenant-admin-acme"},
@@ -135,8 +144,24 @@ def test_registry_and_editor_pages_render_help_metadata(tmp_path, monkeypatch) -
     assert registry.status_code == 200
     assert "Workflow Registry" in registry.text
     assert "Open Draft" in registry.text
+    assert filtered_registry.status_code == 200
+    assert 'value="tenant" selected' in filtered_registry.text
+    assert 'value="draft" selected' in filtered_registry.text
+    assert 'name="q" value="UI"' in filtered_registry.text
+    assert "Open Draft" in filtered_registry.text
+    assert empty_filtered_registry.status_code == 200
+    assert "Open Draft" not in empty_filtered_registry.text
     assert editor.status_code == 200
     assert 'aria-haspopup="dialog"' in editor.text
+    match = re.search(
+        r'<script id="field-help-data" type="application/json">(.+?)</script>',
+        editor.text,
+        re.S,
+    )
+    assert match is not None
+    metadata = json.loads(match.group(1))
+    assert "&#34;" not in match.group(1)
+    assert "roles[].input_contract_key" in metadata["field_help"]
     assert "validation-panel-placeholder" in editor.text
     assert conflict.status_code == 200
     assert "newer draft revision already exists" in conflict.text
@@ -219,6 +244,56 @@ def test_editor_and_version_pages_render_validation_and_publish_details(
     assert version.status_code == 200
     assert "Compiled Bundle Digest" in version.text
     assert "v1" in version.text
+
+
+def test_create_form_posts_platform_draft(tmp_path, monkeypatch) -> None:
+    tenant_id = uuid4()
+    configure_env(monkeypatch, tmp_path, tenant_id)
+    monkeypatch.setenv(
+        "LOCAL_PRINCIPAL_CATALOG_JSON",
+        json.dumps(
+            {
+                "tenant-admin-acme": {
+                    "catalog_key": "tenant-admin-acme",
+                    "display_name": "Tenant Admin",
+                    "tenant_id": str(tenant_id),
+                    "org_id": "org-acme",
+                    "role_codes": ["tenant_user", "tenant_admin"],
+                    "permission_codes": ["tenant:read", "tenant:admin"],
+                },
+                "platform-admin": {
+                    "catalog_key": "platform-admin",
+                    "display_name": "Platform Admin",
+                    "role_codes": ["platform_admin"],
+                    "permission_codes": ["tenant:admin"],
+                },
+            }
+        ),
+    )
+    app = create_app()
+    with TestClient(app) as client:
+        created = client.post(
+            "/admin/workflows/new",
+            headers={"X-Local-Principal": "platform-admin"},
+            data={
+                "starter_template": "minimal_ready",
+                "scope_type": "platform",
+                "workflow_kind": "main_workflow",
+                "slug": "ui-form-platform",
+                "display_name": "UI Form Platform",
+                "description": "Created from the browser form.",
+            },
+            follow_redirects=False,
+        )
+        editor = client.get(
+            created.headers["location"],
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+
+    assert created.status_code == 303
+    assert "/admin/workflows/drafts/" in created.headers["location"]
+    assert editor.status_code == 200
+    assert "UI Form Platform" in editor.text
 
 
 def test_editor_and_version_pages_return_expected_404s(tmp_path, monkeypatch) -> None:

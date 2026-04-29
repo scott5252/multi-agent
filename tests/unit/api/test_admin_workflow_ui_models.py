@@ -16,6 +16,20 @@ def test_registry_page_model_builds_default_paths() -> None:
     page = build_workflow_registry_page_model([])
     assert page.create_endpoint == "/admin/workflows"
     assert page.editor_base_path.endswith("/drafts")
+    assert page.active_scope_filter == "all"
+    assert page.active_status_filter == "all"
+
+
+def test_registry_page_model_preserves_active_filters() -> None:
+    page = build_workflow_registry_page_model(
+        [],
+        scope_filter="tenant",
+        status_filter="publish_ready",
+        search_query="triage",
+    )
+    assert page.active_scope_filter == "tenant"
+    assert page.active_status_filter == "publish_ready"
+    assert page.search_query == "triage"
 
 
 def test_draft_editor_model_serializes_document(sample_workflow_document) -> None:

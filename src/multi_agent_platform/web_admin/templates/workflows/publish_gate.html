@@ -1,0 +1,59 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+  <header class="admin-page-header">
+    <div>
+      <p class="eyebrow">Publish Gate</p>
+      <h1>{{ page.draft.display_name }}</h1>
+      <p class="subhead">Gate status: {{ page.gate.status }}</p>
+    </div>
+    <a class="button-link" href="/admin/workflows/drafts/{{ page.draft.workflow_draft_id }}/editor">Open Editor</a>
+  </header>
+
+  <section class="builder-panel">
+    <h2>Readiness</h2>
+    <p><strong>Blocking issues:</strong> {{ page.gate.blocking_issue_count }}</p>
+    <p><strong>Advisory issues:</strong> {{ page.gate.advisory_issue_count }}</p>
+    <p class="mono">Digest: {{ page.gate.digest }}</p>
+    <p class="mono">Gate: {{ page.gate.publish_gate_id }}</p>
+  </section>
+
+  <section class="builder-panel">
+    <h2>Blocking Reasons</h2>
+    {% if page.gate.findings %}
+      <ul class="validation-findings">
+        {% for finding in page.gate.findings %}
+          <li>
+            <strong>{{ finding.code or finding.category }}</strong>
+            {{ finding.message }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No blocking findings.</p>
+    {% endif %}
+  </section>
+
+  <section class="builder-panel">
+    <h2>Reference Pins</h2>
+    {% for snapshot in page.gate.reference_readiness %}
+      <p>
+        <strong>{{ snapshot.reference_type }}</strong>
+        {{ snapshot.reference_key }}
+        <span class="status-pill status-pill--{{ snapshot.status }}">{{ snapshot.status }}</span>
+      </p>
+    {% else %}
+      <p>No external references are required by this draft.</p>
+    {% endfor %}
+  </section>
+
+  <form class="builder-panel" method="post" action="{{ page.publish_endpoint }}/ui">
+    <input type="hidden" name="validation_result_id" value="{{ page.gate.validation_result_id or '' }}">
+    <input type="hidden" name="publish_gate_id" value="{{ page.gate.publish_gate_id }}">
+    <label class="field-row">
+      <span>Publish Reason</span>
+      <input name="reason" value="QA013 publish check">
+    </label>
+    <button type="submit" {% if page.gate.status != "ready" %}disabled{% endif %}>Confirm Publish</button>
+  </form>
+{% endblock %}

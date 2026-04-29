@@ -16,9 +16,14 @@ from multi_agent_platform.admin.workflow_registry.service import (
 )
 from multi_agent_platform.api.routers import admin_workflow_ui
 from multi_agent_platform.api.schemas.workflow_editor import (
+    EditorLookupResponse,
+    GraphPreviewResponse,
+    PublishGateResponse,
+    RequiredTestSummary,
     WorkflowEditorMetadataResponse,
 )
 from multi_agent_platform.api.schemas.workflow_registry import (
+    DraftRevisionListResponse,
     WorkflowDraftResponse,
     WorkflowDraftRevisionResponse,
     WorkflowScopeType,
@@ -79,6 +84,33 @@ class FakeUIService:
         if self.exc is not None:
             raise self.exc
         return self.version
+
+    async def get_workflow_graph_preview(self, **kwargs):
+        return GraphPreviewResponse()
+
+    async def get_workflow_editor_lookups(self, **kwargs):
+        return EditorLookupResponse()
+
+    async def list_workflow_draft_revisions(self, **kwargs):
+        return DraftRevisionListResponse(
+            workflow_draft_id=self.draft.workflow_draft_id,
+            current_revision_number=self.draft.current_revision_number,
+            revisions=[self.draft.latest_revision],
+        )
+
+    async def evaluate_workflow_publish_gate(self, **kwargs):
+        return PublishGateResponse(
+            publish_gate_id="gate",
+            workflow_draft_id=str(self.draft.workflow_draft_id),
+            workflow_draft_revision_id=str(
+                self.draft.latest_revision.workflow_draft_revision_id
+            ),
+            document_sha256=self.draft.latest_revision.document_sha256,
+            validation_result_id=None,
+            status="blocked",
+            required_test_summary=RequiredTestSummary(),
+            digest="digest",
+        )
 
     def workflow_registry_service(self):
         return SimpleNamespace(
@@ -180,6 +212,13 @@ async def test_admin_workflow_ui_routes_render_templates(
         container=container,
     )
     assert registry.status_code == 200
+    create = await admin_workflow_ui.workflow_draft_create_page(
+        request=build_request("/admin/workflows/new"),
+        principal=principal,
+        session=object(),
+        container=container,
+    )
+    assert create.status_code == 200
 
     monkeypatch.setattr(
         admin_workflow_ui,
@@ -194,6 +233,22 @@ async def test_admin_workflow_ui_routes_render_templates(
         container=container,
     )
     assert editor.status_code == 200
+    revisions = await admin_workflow_ui.workflow_draft_revision_history_page(
+        workflow_draft_id=draft.workflow_draft_id,
+        request=build_request("/admin/workflows/drafts/revisions"),
+        principal=principal,
+        session=object(),
+        container=container,
+    )
+    publish_gate = await admin_workflow_ui.workflow_publish_gate_page(
+        workflow_draft_id=draft.workflow_draft_id,
+        request=build_request("/admin/workflows/drafts/publish-gate"),
+        principal=principal,
+        session=object(),
+        container=container,
+    )
+    assert revisions.status_code == 200
+    assert publish_gate.status_code == 200
 
     monkeypatch.setattr(
         admin_workflow_ui,
@@ -208,6 +263,52 @@ async def test_admin_workflow_ui_routes_render_templates(
         container=container,
     )
     assert detail.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_workflow_registry_ui_route_applies_filter_query(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class CapturingUIService(FakeUIService):
+        async def list_workflows(self, **kwargs):
+            captured.update(kwargs)
+            return []
+
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "_build_admin_service",
+        lambda session, container: CapturingUIService(items=[]),
+    )
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "AdminSavedFilterRepository",
+        FakeSavedFilterRepository,
+    )
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "resolve_scope_for_request",
+        fake_resolve_scope_for_request,
+    )
+    monkeypatch.setattr(
+        admin_workflow_ui,
+        "build_shell_for_request",
+        fake_build_shell_for_request,
+    )
+
+    response = await admin_workflow_ui.workflow_registry_page(
+        request=build_request("/admin/workflows/ui"),
+        principal=PrincipalContext(principal_id="tenant-admin"),
+        session=object(),
+        container=build_container(),
+        scope_filter="tenant",
+        status_filter="publish_ready",
+        search_query="triage",
+    )
+
+    assert response.status_code == 200
+    assert captured["scope_filter"] == "tenant"
+    assert captured["status"] == "publish_ready"
+    assert captured["search_query"] == "triage"
 
 
 @pytest.mark.asyncio
