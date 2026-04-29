@@ -1,0 +1,29 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<header class="workflow-header">
+  <h1>{{ page.title }}</h1>
+  <p>{{ page.redaction_notice }}</p>
+</header>
+<section>
+  <h2>Installations</h2>
+  <table>
+    <thead>
+      <tr><th>Skill</th><th>Package version</th><th>Install version</th><th>Readiness</th><th>Binding</th></tr>
+    </thead>
+    <tbody>
+      {% for installation in page.installations %}
+      <tr>
+        <td><a href="/admin/skill-registry/ui/installations/{{ installation.installation_id }}">{{ installation.slug }}</a></td>
+        <td>{{ installation.semantic_version }}</td>
+        <td>{{ installation.installation_version }}</td>
+        <td>{{ installation.readiness_state }}</td>
+        <td>{{ installation.binding_eligibility_status }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No installed skills are visible for this tenant.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

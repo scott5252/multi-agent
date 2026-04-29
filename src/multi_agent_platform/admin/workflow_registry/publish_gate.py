@@ -4,6 +4,10 @@ import json
 from collections.abc import Iterable
 from hashlib import sha256
 
+from multi_agent_platform.admin.skill_registry.eligibility import (
+    InstalledSkillEvidence,
+    evaluate_binding_eligibility,
+)
 from multi_agent_platform.admin.workflow_registry.reference_validation import (
     pin_summary_from_snapshots,
 )
@@ -20,6 +24,25 @@ PUBLISH_GATE_BLOCKED = "blocked"
 PUBLISH_GATE_STALE = "stale"
 PUBLISH_GATE_UNAUTHORIZED = "unauthorized"
 PUBLISH_GATE_RULE_SET_VERSION = "workflow-builder-publish-gate-0.1"
+
+
+def validate_installed_skill_references(
+    references: Iterable[InstalledSkillEvidence],
+) -> list[BuilderValidationFinding]:
+    findings: list[BuilderValidationFinding] = []
+    for reference in references:
+        decision = evaluate_binding_eligibility(reference)
+        if not decision.allowed:
+            findings.append(
+                _gate_finding(
+                    code="publish_gate.skill_registry.not_eligible",
+                    message=(
+                        "Installed skill reference is not eligible for workflow "
+                        f"publish: {', '.join(decision.reason_codes)}."
+                    ),
+                )
+            )
+    return findings
 
 
 def evaluate_publish_gate(

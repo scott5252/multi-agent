@@ -75,6 +75,32 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         required_roles=("platform_admin",),
         required_permissions=("admin:support-overrides:write",),
     ),
+    "GET:/admin/skill-registry/ui/packages": ProtectedSurface(
+        surface_key="GET:/admin/skill-registry/ui/packages",
+        requested_action="render_skill_registry_packages",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/skill-registry/ui/installations": ProtectedSurface(
+        surface_key="GET:/admin/skill-registry/ui/installations",
+        requested_action="render_skill_registry_installations",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    "POST:/admin/skill-registry/packages": ProtectedSurface(
+        surface_key="POST:/admin/skill-registry/packages",
+        requested_action="create_skill_package",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    "POST:/admin/skill-registry/installations": ProtectedSurface(
+        surface_key="POST:/admin/skill-registry/installations",
+        requested_action="install_tenant_skill",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
     (
         "POST:/admin/support-overrides/{support_override_request_id}/approve"
     ): ProtectedSurface(

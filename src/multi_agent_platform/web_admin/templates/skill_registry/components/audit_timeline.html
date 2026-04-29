@@ -1,0 +1,12 @@
+<section>
+  <h2>Audit Timeline</h2>
+  {% if page.audit_events %}
+  <ol>
+    {% for event in page.audit_events %}
+    <li>{{ event.event_type }}: {{ event.outcome }}</li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p>No audit events are visible in this view.</p>
+  {% endif %}
+</section>

@@ -235,3 +235,25 @@ class SafeError(BaseModel):
 def stable_digest(payload: Mapping[str, Any]) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def installed_skill_binding_constraints(
+    *,
+    installation_id: str,
+    installation_version: int,
+    package_slug: str,
+    semantic_version: str,
+    manifest_digest: str,
+    artifact_digest: str,
+    policy_summary: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "source": "skill_registry",
+        "installation_id": installation_id,
+        "installation_version": installation_version,
+        "package_slug": package_slug,
+        "semantic_version": semantic_version,
+        "manifest_digest": manifest_digest,
+        "artifact_digest": artifact_digest,
+        "policy_summary": dict(policy_summary or {}),
+    }

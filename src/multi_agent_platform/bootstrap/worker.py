@@ -23,6 +23,7 @@ class WorkerBootstrap:
     )
     retry_decision_helper: object | None
     breaker_decision_helper: object | None
+    skill_registry_lifecycle_ready: bool = False
 
 
 def build_worker_bootstrap(container: Container) -> WorkerBootstrap:
@@ -55,4 +56,5 @@ def build_worker_bootstrap(container: Container) -> WorkerBootstrap:
         model_provider_service_factory=container.model_provider_service_factory,
         retry_decision_helper=container.retry_decision_helper,
         breaker_decision_helper=container.breaker_decision_helper,
+        skill_registry_lifecycle_ready=True,
     )

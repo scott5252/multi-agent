@@ -1,0 +1,6 @@
+<section>
+  <h2>Binding Eligibility</h2>
+  {% for installation in page.installations %}
+  <p>{{ installation.binding_eligibility_status }}</p>
+  {% endfor %}
+</section>

@@ -1,0 +1,35 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<header class="workflow-header">
+  <h1>{{ page.title }}</h1>
+  <p>{{ page.redaction_notice }}</p>
+</header>
+<section>
+  <h2>Packages</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Slug</th>
+        <th>Name</th>
+        <th>State</th>
+        <th>Latest</th>
+        <th>Versions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for package in page.packages %}
+      <tr>
+        <td><a href="/admin/skill-registry/ui/packages/{{ package.slug }}">{{ package.slug }}</a></td>
+        <td>{{ package.display_name }}</td>
+        <td>{{ package.lifecycle_state }}</td>
+        <td>{{ package.latest_published_version or "None" }}</td>
+        <td>{{ package.version_count }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No skill packages are visible in this scope.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

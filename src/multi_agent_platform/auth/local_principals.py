@@ -46,3 +46,24 @@ class LocalPrincipalCatalog:
             request_id=request_id,
             token_subject=entry.catalog_key,
         )
+
+
+SKILL_REGISTRY_PLATFORM_PERMISSIONS = (
+    "platform:admin",
+    "skill-registry:publish",
+    "skill-registry:quarantine",
+    "skill-registry:audit",
+)
+SKILL_REGISTRY_TENANT_PERMISSIONS = (
+    "tenant:read",
+    "tenant:admin",
+    "skill-registry:install",
+    "skill-registry:bind",
+    "skill-registry:audit",
+)
+
+
+def skill_registry_permission_codes(*, platform: bool) -> tuple[str, ...]:
+    if platform:
+        return SKILL_REGISTRY_PLATFORM_PERMISSIONS
+    return SKILL_REGISTRY_TENANT_PERMISSIONS
