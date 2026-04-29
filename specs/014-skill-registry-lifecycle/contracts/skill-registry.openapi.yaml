@@ -1,0 +1,1112 @@
+openapi: 3.1.0
+info:
+  title: Skill Registry And Installation Lifecycle API
+  version: 0.1.0
+  description: >
+    Platform and tenant admin API for declarative skill package publication,
+    immutable package versions, tenant installation, credential readiness,
+    smoke tests, quarantine, Spec 007 binding eligibility, workflow publish
+    validation, and safe lifecycle audit review.
+servers:
+  - url: http://127.0.0.1:8000
+tags:
+  - name: platform-skill-packages
+  - name: tenant-skill-installations
+  - name: skill-policy-integration
+  - name: skill-audit
+paths:
+  /admin/skill-registry/packages:
+    get:
+      summary: List platform skill packages visible to the caller
+      tags: [platform-skill-packages]
+      parameters:
+        - $ref: "#/components/parameters/TenantScope"
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/PackageLifecycleState"
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Skill packages page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillPackageListResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      summary: Create a platform skill package identity
+      tags: [platform-skill-packages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillPackageCreateRequest"
+      responses:
+        "201":
+          description: Package created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillPackageResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /admin/skill-registry/packages/{slug}:
+    get:
+      summary: Get package lineage and safe version summary
+      tags: [platform-skill-packages]
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Package detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillPackageResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/skill-registry/packages/{slug}/versions/validate:
+    post:
+      summary: Validate a candidate skill package version before publication
+      tags: [platform-skill-packages]
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillPackageVersionValidationRequest"
+      responses:
+        "202":
+          description: Validation accepted or completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackageValidationResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/skill-registry/packages/{slug}/versions/publish:
+    post:
+      summary: Publish an immutable skill package version
+      tags: [platform-skill-packages]
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillPackageVersionPublishRequest"
+      responses:
+        "201":
+          description: Published package version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillPackageVersionResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /admin/skill-registry/packages/{slug}/versions/{version}:
+    get:
+      summary: Get immutable package version detail
+      tags: [platform-skill-packages]
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+        - $ref: "#/components/parameters/SemanticVersion"
+      responses:
+        "200":
+          description: Package version detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillPackageVersionResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/skill-registry/packages/{slug}/versions/{version}/availability:
+    post:
+      summary: Grant or revoke tenant availability for a package version
+      tags: [platform-skill-packages]
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+        - $ref: "#/components/parameters/SemanticVersion"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantAvailabilityRequest"
+      responses:
+        "200":
+          description: Availability updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantAvailabilityResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /admin/skill-registry/packages/{slug}/versions/{version}/withdraw:
+    post:
+      summary: Withdraw a package version from new installations
+      tags: [platform-skill-packages]
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+        - $ref: "#/components/parameters/SemanticVersion"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReasonRequest"
+      responses:
+        "200":
+          description: Package version withdrawn from new installs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillPackageVersionResponse"
+
+  /admin/skill-registry/packages/{slug}/versions/{version}/quarantine:
+    post:
+      summary: Quarantine or resolve quarantine for a package version
+      tags: [platform-skill-packages]
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+        - $ref: "#/components/parameters/SemanticVersion"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuarantineRequest"
+      responses:
+        "200":
+          description: Quarantine state updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuarantineResponse"
+
+  /admin/skill-registry/available:
+    get:
+      summary: List package versions authorized for tenant installation
+      tags: [tenant-skill-installations]
+      parameters:
+        - $ref: "#/components/parameters/TenantScopeRequired"
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Available package versions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailableSkillVersionsResponse"
+
+  /admin/skill-registry/installations:
+    get:
+      summary: List tenant skill installations
+      tags: [tenant-skill-installations]
+      parameters:
+        - $ref: "#/components/parameters/TenantScopeRequired"
+        - in: query
+          name: readiness_state
+          schema:
+            $ref: "#/components/schemas/InstallationReadinessState"
+      responses:
+        "200":
+          description: Installation page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillInstallationListResponse"
+    post:
+      summary: Install an authorized package version for a tenant
+      tags: [tenant-skill-installations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillInstallationCreateRequest"
+      responses:
+        "201":
+          description: Installation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillInstallationResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /admin/skill-registry/installations/{installation_id}:
+    get:
+      summary: Get tenant installation detail and readiness evidence
+      tags: [tenant-skill-installations]
+      parameters:
+        - $ref: "#/components/parameters/InstallationId"
+      responses:
+        "200":
+          description: Installation detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillInstallationResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/skill-registry/installations/{installation_id}/credentials:
+    post:
+      summary: Configure secret references or delegated credentials
+      tags: [tenant-skill-installations]
+      parameters:
+        - $ref: "#/components/parameters/InstallationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialConfigurationRequest"
+      responses:
+        "200":
+          description: Credential readiness updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillInstallationResponse"
+        "409":
+          $ref: "#/components/responses/StaleRevision"
+
+  /admin/skill-registry/installations/{installation_id}/smoke-tests:
+    get:
+      summary: List smoke-test history for an installation
+      tags: [tenant-skill-installations]
+      parameters:
+        - $ref: "#/components/parameters/InstallationId"
+      responses:
+        "200":
+          description: Smoke-test runs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmokeTestListResponse"
+    post:
+      summary: Run package-declared tenant smoke tests
+      tags: [tenant-skill-installations]
+      parameters:
+        - $ref: "#/components/parameters/InstallationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmokeTestRunRequest"
+      responses:
+        "202":
+          description: Smoke-test run accepted or completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmokeTestRunResponse"
+        "409":
+          $ref: "#/components/responses/StaleRevision"
+
+  /admin/skill-registry/installations/{installation_id}/readiness:
+    post:
+      summary: Promote or recompute readiness for binding
+      tags: [tenant-skill-installations]
+      parameters:
+        - $ref: "#/components/parameters/InstallationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReadinessPromotionRequest"
+      responses:
+        "200":
+          description: Readiness recomputed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillInstallationResponse"
+        "409":
+          $ref: "#/components/responses/StaleRevision"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /admin/skill-registry/installations/{installation_id}/upgrade:
+    post:
+      summary: Install a newer package version as a new installation version
+      tags: [tenant-skill-installations]
+      parameters:
+        - $ref: "#/components/parameters/InstallationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpgradeInstallationRequest"
+      responses:
+        "201":
+          description: New installation version created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillInstallationResponse"
+
+  /admin/skill-registry/installations/{installation_id}/binding-eligibility:
+    get:
+      summary: Explain whether an installed skill can be bound
+      tags: [skill-policy-integration]
+      parameters:
+        - $ref: "#/components/parameters/InstallationId"
+      responses:
+        "200":
+          description: Binding eligibility result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BindingEligibilityResponse"
+
+  /admin/skill-registry/installations/{installation_id}/binding-preview:
+    post:
+      summary: Preview Spec 007 skill binding and tool policy outcome
+      tags: [skill-policy-integration]
+      parameters:
+        - $ref: "#/components/parameters/InstallationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BindingPreviewRequest"
+      responses:
+        "200":
+          description: Binding preview result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BindingEligibilityResponse"
+
+  /admin/skill-registry/workflow-publish/validate-installed-skills:
+    post:
+      summary: Validate installed skill references during workflow publication
+      tags: [skill-policy-integration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowPublishSkillValidationRequest"
+      responses:
+        "200":
+          description: Workflow publish skill validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowPublishSkillValidationResponse"
+
+  /admin/skill-registry/audit:
+    get:
+      summary: List safe skill lifecycle audit records
+      tags: [skill-audit]
+      parameters:
+        - $ref: "#/components/parameters/TenantScope"
+        - in: query
+          name: slug
+          schema:
+            type: string
+        - in: query
+          name: installation_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Audit page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillAuditListResponse"
+
+components:
+  parameters:
+    TenantScope:
+      in: query
+      name: tenant_id
+      schema:
+        type: string
+        format: uuid
+    TenantScopeRequired:
+      in: query
+      name: tenant_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Slug:
+      in: path
+      name: slug
+      required: true
+      schema:
+        type: string
+        pattern: "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$"
+    SemanticVersion:
+      in: path
+      name: version
+      required: true
+      schema:
+        type: string
+        pattern: "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    InstallationId:
+      in: path
+      name: installation_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Forbidden:
+      description: Caller is not authorized for the requested scope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found or not visible to caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Duplicate version, lifecycle conflict, or policy conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    StaleRevision:
+      description: Optimistic concurrency token is stale
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Request failed validation or lifecycle readiness checks
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    PackageLifecycleState:
+      type: string
+      enum: [draft, approved, retired, quarantined]
+    PackageVersionLifecycleState:
+      type: string
+      enum: [candidate, validated, published, withdrawn_from_new_installs, quarantined]
+    InstallationReadinessState:
+      type: string
+      enum: [installed, configuring, testing, ready, blocked, quarantined, retired]
+    SmokeTestOutcome:
+      type: string
+      enum: [queued, running, passed, failed, skipped, errored]
+    PackageValidationStatus:
+      type: string
+      enum: [not_run, running, passed, warnings, blocked, errored]
+
+    SkillPackageCreateRequest:
+      type: object
+      required: [slug, display_name, description, owner_principal_id]
+      properties:
+        slug:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        owner_principal_id:
+          type: string
+          format: uuid
+        safe_documentation_summary:
+          type: string
+
+    SkillPackageVersionValidationRequest:
+      type: object
+      required: [semantic_version, manifest, artifact, idempotency_key]
+      properties:
+        semantic_version:
+          type: string
+        manifest:
+          $ref: "#/components/schemas/SkillManifest"
+        artifact:
+          $ref: "#/components/schemas/ArtifactUploadReference"
+        documentation_artifact:
+          $ref: "#/components/schemas/ArtifactUploadReference"
+        fixture_artifact:
+          $ref: "#/components/schemas/ArtifactUploadReference"
+        idempotency_key:
+          type: string
+
+    SkillPackageVersionPublishRequest:
+      type: object
+      required: [semantic_version, validation_run_id, manifest_digest, artifact_digest, reason]
+      properties:
+        semantic_version:
+          type: string
+        validation_run_id:
+          type: string
+          format: uuid
+        manifest_digest:
+          type: string
+        artifact_digest:
+          type: string
+        reason:
+          type: string
+
+    TenantAvailabilityRequest:
+      type: object
+      required: [grant_mode, reason]
+      properties:
+        grant_mode:
+          type: string
+          enum: [all_tenants, selected_tenants, revoke_selected, no_new_tenants]
+        tenant_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        reason:
+          type: string
+
+    SkillInstallationCreateRequest:
+      type: object
+      required: [tenant_id, slug, semantic_version, idempotency_key]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        semantic_version:
+          type: string
+        idempotency_key:
+          type: string
+
+    CredentialConfigurationRequest:
+      type: object
+      required: [revision_token, credentials]
+      properties:
+        revision_token:
+          type: string
+        credentials:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialRequirementSatisfaction"
+
+    SmokeTestRunRequest:
+      type: object
+      required: [revision_token, idempotency_key]
+      properties:
+        revision_token:
+          type: string
+        fixture_keys:
+          type: array
+          items:
+            type: string
+        idempotency_key:
+          type: string
+
+    ReadinessPromotionRequest:
+      type: object
+      required: [revision_token, reason]
+      properties:
+        revision_token:
+          type: string
+        reason:
+          type: string
+
+    UpgradeInstallationRequest:
+      type: object
+      required: [target_semantic_version, reason, idempotency_key]
+      properties:
+        target_semantic_version:
+          type: string
+        reason:
+          type: string
+        idempotency_key:
+          type: string
+
+    BindingPreviewRequest:
+      type: object
+      required: [tenant_id, scope, agent_key]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        scope:
+          type: object
+          additionalProperties: true
+        workflow_lineage_id:
+          type: string
+          format: uuid
+        workflow_version_bundle_id:
+          type: string
+          format: uuid
+        agent_key:
+          type: string
+        role_key:
+          type: string
+
+    WorkflowPublishSkillValidationRequest:
+      type: object
+      required: [tenant_id, workflow_lineage_id, draft_revision_id, installed_skill_refs]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        workflow_lineage_id:
+          type: string
+          format: uuid
+        draft_revision_id:
+          type: string
+          format: uuid
+        installed_skill_refs:
+          type: array
+          items:
+            $ref: "#/components/schemas/InstalledSkillReference"
+
+    QuarantineRequest:
+      type: object
+      required: [state, reason_code, safe_reason]
+      properties:
+        state:
+          type: string
+          enum: [quarantined, resolved]
+        reason_code:
+          type: string
+        safe_reason:
+          type: string
+        block_runtime_use:
+          type: boolean
+          default: true
+
+    ReasonRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+
+    SkillManifest:
+      type: object
+      required:
+        - schema_version
+        - slug
+        - semantic_version
+        - description
+        - entrypoint
+        - tools
+        - action_categories
+        - network_requirements
+        - credential_requirements
+        - runtime_permissions
+        - test_fixtures
+        - compatibility
+        - safe_documentation
+      additionalProperties: false
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        slug:
+          type: string
+        semantic_version:
+          type: string
+        description:
+          type: string
+        entrypoint:
+          type: object
+          required: [type, approved_integration_ref]
+          properties:
+            type:
+              type: string
+              enum: [approved_tool_ref, approved_mcp_ref]
+            approved_integration_ref:
+              type: string
+        tools:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        action_categories:
+          type: array
+          items:
+            type: string
+        network_requirements:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        credential_requirements:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        runtime_permissions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        test_fixtures:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        compatibility:
+          type: object
+          additionalProperties: true
+        safe_documentation:
+          type: object
+          additionalProperties: true
+
+    ArtifactUploadReference:
+      type: object
+      required: [provider, storage_key, digest, size_bytes, media_type]
+      properties:
+        provider:
+          type: string
+        storage_key:
+          type: string
+        digest:
+          type: string
+        size_bytes:
+          type: integer
+        media_type:
+          type: string
+
+    CredentialRequirementSatisfaction:
+      type: object
+      required: [requirement_key, credential_kind]
+      properties:
+        requirement_key:
+          type: string
+        credential_kind:
+          type: string
+          enum: [secret_reference, delegated_credential]
+        secret_reference_id:
+          type: string
+          format: uuid
+        secret_reference_version_id:
+          type: string
+          format: uuid
+        delegated_credential_link_id:
+          type: string
+          format: uuid
+
+    InstalledSkillReference:
+      type: object
+      required: [installation_id, installation_version, slug, semantic_version, manifest_digest]
+      properties:
+        installation_id:
+          type: string
+          format: uuid
+        installation_version:
+          type: integer
+        slug:
+          type: string
+        semantic_version:
+          type: string
+        manifest_digest:
+          type: string
+        role_key:
+          type: string
+        agent_key:
+          type: string
+
+    SkillPackageListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillPackageResponse"
+
+    SkillPackageResponse:
+      type: object
+      required: [slug, display_name, description, lifecycle_state, versions]
+      properties:
+        slug:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        lifecycle_state:
+          $ref: "#/components/schemas/PackageLifecycleState"
+        safe_documentation_summary:
+          type: string
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillPackageVersionSummary"
+
+    SkillPackageVersionSummary:
+      type: object
+      required: [semantic_version, lifecycle_state, manifest_digest, validation_status]
+      properties:
+        semantic_version:
+          type: string
+        lifecycle_state:
+          $ref: "#/components/schemas/PackageVersionLifecycleState"
+        manifest_digest:
+          type: string
+        validation_status:
+          $ref: "#/components/schemas/PackageValidationStatus"
+
+    SkillPackageVersionResponse:
+      allOf:
+        - $ref: "#/components/schemas/SkillPackageVersionSummary"
+        - type: object
+          properties:
+            slug:
+              type: string
+            artifact_digest:
+              type: string
+            documentation_digest:
+              type: string
+            fixture_digest:
+              type: string
+            manifest_summary:
+              type: object
+              additionalProperties: true
+            validation_summary:
+              type: object
+              additionalProperties: true
+            tenant_availability:
+              type: object
+              additionalProperties: true
+
+    PackageValidationResponse:
+      type: object
+      required: [validation_run_id, status, findings]
+      properties:
+        validation_run_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/PackageValidationStatus"
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Finding"
+
+    TenantAvailabilityResponse:
+      type: object
+      properties:
+        grants:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    AvailableSkillVersionsResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillPackageVersionResponse"
+
+    SkillInstallationListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillInstallationResponse"
+
+    SkillInstallationResponse:
+      type: object
+      required:
+        - installation_id
+        - tenant_id
+        - slug
+        - semantic_version
+        - installation_version
+        - readiness_state
+        - revision_token
+      properties:
+        installation_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        semantic_version:
+          type: string
+        installation_version:
+          type: integer
+        manifest_digest:
+          type: string
+        readiness_state:
+          $ref: "#/components/schemas/InstallationReadinessState"
+        credential_status:
+          type: string
+        smoke_test_status:
+          type: string
+        compatibility_status:
+          type: string
+        binding_eligibility_status:
+          type: string
+        revision_token:
+          type: string
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Finding"
+
+    SmokeTestListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SmokeTestRunResponse"
+
+    SmokeTestRunResponse:
+      type: object
+      required: [test_run_id, outcome]
+      properties:
+        test_run_id:
+          type: string
+          format: uuid
+        outcome:
+          $ref: "#/components/schemas/SmokeTestOutcome"
+        fixture_key:
+          type: string
+        failure_reasons:
+          type: array
+          items:
+            type: string
+        safe_output_summary:
+          type: object
+          additionalProperties: true
+
+    BindingEligibilityResponse:
+      type: object
+      required: [eligible, denial_reasons]
+      properties:
+        eligible:
+          type: boolean
+        denial_reasons:
+          type: array
+          items:
+            type: string
+        matched_policy_version_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        manifest_digest:
+          type: string
+        revision_token:
+          type: string
+
+    WorkflowPublishSkillValidationResponse:
+      type: object
+      required: [allowed, findings, pinned_skill_evidence]
+      properties:
+        allowed:
+          type: boolean
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Finding"
+        pinned_skill_evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/InstalledSkillReference"
+
+    QuarantineResponse:
+      type: object
+      required: [state, safe_reason]
+      properties:
+        state:
+          type: string
+        safe_reason:
+          type: string
+        blocked_runtime_use:
+          type: boolean
+
+    SkillAuditListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    Finding:
+      type: object
+      required: [code, severity, message]
+      properties:
+        code:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, blocking]
+        message:
+          type: string
+        field_path:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Finding"
