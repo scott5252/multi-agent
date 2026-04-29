@@ -58,25 +58,36 @@ spec_num="${spec_dir_name%%-*}"
 
 qa_id="qa$spec_num"
 guide_file="$feature_dir/$qa_id.md"
+ui_file="$feature_dir/${qa_id}_ui.md"
 env_file="$feature_dir/.env.$qa_id"
 
 [[ -s "$guide_file" ]] || fail "missing or empty guide: $guide_file"
+[[ -s "$ui_file" ]] || fail "missing or empty UI walkthrough: $ui_file"
 [[ -s "$env_file" ]] || fail "missing or empty environment file: $env_file"
 
 min_guide_lines="$(read_config_int "min_guide_lines" "SPECKIT_QA_DOCS_MIN_GUIDE_LINES" 180)"
 min_env_lines="$(read_config_int "min_env_lines" "SPECKIT_QA_DOCS_MIN_ENV_LINES" 35)"
+min_ui_lines="$(read_config_int "min_ui_lines" "SPECKIT_QA_DOCS_MIN_UI_LINES" 160)"
 min_code_fences="$(read_config_int "min_code_fences" "SPECKIT_QA_DOCS_MIN_CODE_FENCES" 10)"
 min_expected_markers="$(read_config_int "min_expected_markers" "SPECKIT_QA_DOCS_MIN_EXPECTED_MARKERS" 12)"
+min_ui_code_fences="$(read_config_int "min_ui_code_fences" "SPECKIT_QA_DOCS_MIN_UI_CODE_FENCES" 6)"
+min_ui_expected_markers="$(read_config_int "min_ui_expected_markers" "SPECKIT_QA_DOCS_MIN_UI_EXPECTED_MARKERS" 8)"
 
 guide_lines="$(wc -l < "$guide_file" | tr -d ' ')"
 env_lines="$(wc -l < "$env_file" | tr -d ' ')"
+ui_lines="$(wc -l < "$ui_file" | tr -d ' ')"
 code_fences="$(grep -c '^```' "$guide_file" || true)"
 expected_markers="$(grep -c 'Expected:' "$guide_file" || true)"
+ui_code_fences="$(grep -c '^```' "$ui_file" || true)"
+ui_expected_markers="$(grep -c 'Expected:' "$ui_file" || true)"
 
 (( guide_lines >= min_guide_lines )) || fail "$guide_file has $guide_lines lines; expected at least $min_guide_lines"
 (( env_lines >= min_env_lines )) || fail "$env_file has $env_lines lines; expected at least $min_env_lines"
+(( ui_lines >= min_ui_lines )) || fail "$ui_file has $ui_lines lines; expected at least $min_ui_lines"
 (( code_fences >= min_code_fences )) || fail "$guide_file has $code_fences fenced code markers; expected at least $min_code_fences"
 (( expected_markers >= min_expected_markers )) || fail "$guide_file has $expected_markers Expected: markers; expected at least $min_expected_markers"
+(( ui_code_fences >= min_ui_code_fences )) || fail "$ui_file has $ui_code_fences fenced code markers; expected at least $min_ui_code_fences"
+(( ui_expected_markers >= min_ui_expected_markers )) || fail "$ui_file has $ui_expected_markers Expected: markers; expected at least $min_ui_expected_markers"
 
 required_headings=(
   "## Goal"
@@ -95,17 +106,49 @@ for heading in "${required_headings[@]}"; do
   grep -Fq "$heading" "$guide_file" || fail "$guide_file missing required heading: $heading"
 done
 
+required_ui_headings=(
+  "## Goal"
+  "## How To Use This Guide"
+  "## Environment Setup"
+  "## Browser Walkthrough"
+  "## Required Automated Evidence"
+  "## UI Evidence Checklist"
+  "## Acceptance Notes Template"
+  "## Troubleshooting"
+  "## Related Files"
+)
+
+for heading in "${required_ui_headings[@]}"; do
+  grep -Fq "$heading" "$ui_file" || fail "$ui_file missing required heading: $heading"
+done
+
 grep -Fq "$qa_id" "$guide_file" || fail "$guide_file does not reference $qa_id"
 grep -Fq ".env.$qa_id" "$guide_file" || fail "$guide_file does not reference .env.$qa_id"
 grep -Fq "/tmp/$qa_id-" "$guide_file" || fail "$guide_file does not save evidence under /tmp/$qa_id-*"
 grep -Fq "What this proves:" "$guide_file" || fail "$guide_file missing 'What this proves:' reviewer notes"
+grep -Fq "$qa_id" "$ui_file" || fail "$ui_file does not reference $qa_id"
+grep -Fq ".env.$qa_id" "$ui_file" || fail "$ui_file does not reference .env.$qa_id"
+if ! grep -Eiq 'screenshot|reviewer note|review notes|evidence' "$ui_file"; then
+  fail "$ui_file missing UI reviewer evidence guidance"
+fi
+grep -Fq "http://127.0.0.1:8000/auth/local-login" "$ui_file" || fail "$ui_file missing local browser login flow"
+grep -Fq "What is happening:" "$ui_file" || fail "$ui_file missing 'What is happening:' UI reviewer notes"
+grep -Fq "Why this matters:" "$ui_file" || fail "$ui_file missing 'Why this matters:' UI reviewer notes"
 grep -Fq "uv run ruff check ." "$guide_file" || fail "$guide_file missing Ruff check command"
 grep -Fq "uv run ruff format --check ." "$guide_file" || fail "$guide_file missing Ruff format command"
 grep -Fq "uv run mypy src" "$guide_file" || fail "$guide_file missing mypy command"
 grep -Fq "uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90" "$guide_file" || fail "$guide_file missing full coverage command"
+grep -Fq "uv run ruff check ." "$ui_file" || fail "$ui_file missing Ruff check command"
+grep -Fq "uv run ruff format --check ." "$ui_file" || fail "$ui_file missing Ruff format command"
+grep -Fq "uv run mypy src" "$ui_file" || fail "$ui_file missing mypy command"
+grep -Fq "uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90" "$ui_file" || fail "$ui_file missing full coverage command"
 
 if grep -Eiq 'TODO|TBD|REPLACE_ME|INSERT_|<[^>]+>' "$guide_file"; then
   fail "$guide_file contains placeholder text"
+fi
+
+if grep -Eiq 'TODO|TBD|REPLACE_ME|INSERT_' "$ui_file"; then
+  fail "$ui_file contains placeholder text"
 fi
 
 required_env_keys=(
@@ -139,4 +182,5 @@ fi
 
 printf 'QA document validation passed for %s\n' "$feature_dir"
 printf 'Guide: %s\n' "$guide_file"
+printf 'UI walkthrough: %s\n' "$ui_file"
 printf 'Environment: %s\n' "$env_file"

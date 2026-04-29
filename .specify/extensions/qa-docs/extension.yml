@@ -3,8 +3,8 @@ schema_version: "1.0"
 extension:
   id: qa-docs
   name: "Post-Implementation QA Documents"
-  version: "1.0.0"
-  description: "Creates a spec-specific manual QA guide and self-contained QA environment file after implementation"
+  version: "1.1.0"
+  description: "Creates spec-specific manual QA, UI walkthrough, and self-contained QA environment files after implementation"
   author: multi-agent-project
   license: MIT
 
@@ -28,19 +28,19 @@ provides:
   commands:
     - name: speckit.qa-docs.generate-documents
       file: commands/speckit.qa-docs.generate-documents.md
-      description: "Generate the required qaNNN.md guide and .env.qaNNN file for the active implemented spec"
+      description: "Generate the required qaNNN.md guide, qaNNN_ui.md walkthrough, and .env.qaNNN file for the active implemented spec"
 
   config:
     - name: "qa-docs-config.yml"
       template: "config-template.yml"
-      description: "Post-implementation QA document thresholds and reference files"
+      description: "Post-implementation QA document thresholds, UI thresholds, and reference files"
       required: false
 
 hooks:
   after_implement:
     command: speckit.qa-docs.generate-documents
     optional: false
-    description: "Generate and validate post-implementation QA guide and QA environment documents"
+    description: "Generate and validate post-implementation QA guide, UI walkthrough, and QA environment documents"
 
 tags:
   - "qa"
@@ -51,7 +51,12 @@ tags:
 defaults:
   guide_prefix: qa
   reference_spec_dir: specs/008-production-audit-debugging
-  min_guide_lines: 180
-  min_env_lines: 35
-  min_code_fences: 10
-  min_expected_markers: 12
+  ui_reference_file: specs/013-admin-workflow-builder/qa013_ui.md
+  validation:
+    min_guide_lines: 180
+    min_env_lines: 35
+    min_ui_lines: 160
+    min_code_fences: 10
+    min_expected_markers: 12
+    min_ui_code_fences: 6
+    min_ui_expected_markers: 8

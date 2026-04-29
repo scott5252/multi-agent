@@ -27,9 +27,9 @@
       "installed_at": "2026-04-24T18:06:52.660885+00:00"
     },
     "qa-docs": {
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": "local",
-      "manifest_hash": "sha256:20628cc46f7c0459ca70423147b60acbf896b47537749a527de5798276ec3e16",
+      "manifest_hash": "sha256:66d93406a922f96e2974e4d462d7f1e6d39a04646637d448925edcb00395ddb9",
       "enabled": true,
       "priority": 20,
       "registered_commands": {

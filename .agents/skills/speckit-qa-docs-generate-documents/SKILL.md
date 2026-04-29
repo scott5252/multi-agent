@@ -1,6 +1,6 @@
 ---
 name: speckit-qa-docs-generate-documents
-description: Generate required post-implementation QA guide and QA environment documents for the active Spec Kit feature.
+description: Generate required post-implementation QA guide, UI walkthrough, and QA environment documents for the active Spec Kit feature.
 compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
   author: multi-agent-project
@@ -9,8 +9,8 @@ metadata:
 
 # Generate Post-Implementation QA Documents
 
-Create the mandatory manual QA guide and self-contained QA environment file for
-the active implemented spec.
+Create the mandatory manual QA guide, browser-first UI walkthrough, and
+self-contained QA environment file for the active implemented spec.
 
 ## User Input
 
@@ -24,26 +24,31 @@ feature directory.
 
 ## Required Outputs
 
-Create both files in the active spec directory:
+Create all three files in the active spec directory:
 
 - `qaNNN.md`
+- `qaNNN_ui.md`
 - `.env.qaNNN`
 
 `NNN` is the three-digit spec number from the spec directory name. For example,
-`specs/009-reliability-scale-hardening` must produce `qa009.md` and
-`.env.qa009`.
+`specs/009-reliability-scale-hardening` must produce `qa009.md`,
+`qa009_ui.md`, and `.env.qa009`.
 
 ## Reference Standard
 
-Before writing either file, read these reference files and match their level of
+Before writing any file, read these reference files and match their level of
 specificity, reviewer tone, and copy/paste usability:
 
 - `specs/008-production-audit-debugging/qa008.md`
 - `specs/008-production-audit-debugging/.env.qa008`
+- `specs/013-admin-workflow-builder/qa013_ui.md`
 
-Do not copy QA008 blindly. Use it as the detail bar, then tailor every command,
-endpoint, seed record, principal, expected response, and known gap to the active
-spec.
+Do not copy QA008 or QA013 UI blindly. Use them as the detail bar, then tailor
+every command, endpoint, browser URL, seed record, principal, expected response,
+screen description, and known gap to the active spec. The UI document must be
+accurate enough for a non-developer reviewer to understand what each screen is
+for, what fields mean, what action to take, what should happen, and why the
+check matters.
 
 ## Extension Configuration
 
@@ -57,10 +62,14 @@ Default values:
 
 - `guide_prefix`: `qa`
 - `reference_spec_dir`: `specs/008-production-audit-debugging`
+- `ui_reference_file`: `specs/013-admin-workflow-builder/qa013_ui.md`
 - `validation.min_guide_lines`: `180`
 - `validation.min_env_lines`: `35`
+- `validation.min_ui_lines`: `160`
 - `validation.min_code_fences`: `10`
 - `validation.min_expected_markers`: `12`
+- `validation.min_ui_code_fences`: `6`
+- `validation.min_ui_expected_markers`: `8`
 
 ## Execution
 
@@ -84,6 +93,7 @@ Default values:
 
    ```text
    specs/009-reliability-scale-hardening -> qa009.md and .env.qa009
+   specs/009-reliability-scale-hardening -> qa009_ui.md
    ```
 
 3. Load implementation context.
@@ -183,23 +193,83 @@ Default values:
    Add focused test commands for the implemented spec before the full coverage
    gate.
 
-6. Validate the files.
+6. Generate `qaNNN_ui.md`.
 
-   After writing both files, run:
+   Write a browser-first guide for a non-developer reviewer. It must be
+   executable from a fresh checkout, include the setup needed to boot the app,
+   and walk the reviewer through the UI without requiring them to run `qaNNN.md`
+   first. Use `specs/013-admin-workflow-builder/qa013_ui.md` as the detail
+   model.
+
+   Required sections:
+
+   - `# QANNN UI: <Feature Name>`
+   - `## Goal`
+   - `## How To Use This Guide`
+   - `## Environment Setup`
+   - `## Browser Walkthrough`
+   - `## Required Automated Evidence`
+   - `## UI Evidence Checklist`
+   - `## Acceptance Notes Template`
+   - `## Troubleshooting`
+   - `## Related Files`
+
+   The guide must include:
+
+   - Exact setup commands to copy `.env.qaNNN` to `.env`, run `uv sync`, start
+     PostgreSQL when needed, create or reset the QA database, run migrations,
+     seed deterministic data, and start the API or any worker process needed by
+     the spec.
+   - A local browser login flow using
+     `http://127.0.0.1:8000/auth/local-login`, including which principal to
+     pick first and how to switch principals.
+   - Reviewer note or screenshot file names under `/tmp/qaNNN-*`.
+   - A `Browser Walkthrough` with numbered screen-level steps. Each important
+     step must include the page URL, navigation path, actions to complete,
+     `Expected:` outcome, `What is happening:` explanation, and
+     `Why this matters:` explanation.
+   - Field-level explanations for forms, filters, selectors, tabs, toggles,
+     tables, cards, publish/approval controls, and read-only inspectors that a
+     non-developer reviewer must evaluate.
+   - Authorization, tenant isolation, failure, stale-state, or negative-path UI
+     checks whenever the implementation has protected behavior.
+   - Security/redaction or data-safety UI checks whenever secrets, prompts,
+     memory, artifacts, callbacks, audits, provider payloads, model/tool
+     routing, or credentials are involved.
+   - If the active spec has no browser UI, still create `qaNNN_ui.md`; under
+     `Browser Walkthrough`, explain that no browser-admin surface changed,
+     identify any existing UI that should remain unaffected, and provide a
+     minimal login/navigation smoke test plus links back to `qaNNN.md`.
+   - The exact automated quality commands required for this project:
+
+     ```bash
+     uv run ruff check .
+     uv run ruff format --check .
+     uv run mypy src
+     uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90
+     ```
+
+   Add focused test commands for the implemented spec before the full coverage
+   gate.
+
+7. Validate the files.
+
+   After writing all three files, run:
 
    ```bash
    bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh "$FEATURE_DIR"
    ```
 
-   If validation fails, revise the QA guide and environment file until it
-   passes. Do not report implementation completion while this command is
-   failing.
+   If validation fails, revise the QA guide, UI walkthrough, and environment
+   file until it passes. Do not report implementation completion while this
+   command is failing.
 
 ## Output
 
 Report:
 
 - The generated guide path.
+- The generated UI walkthrough path.
 - The generated environment path.
 - The validator result.
 - Any known implementation gap documented in the guide.

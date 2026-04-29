@@ -14,9 +14,10 @@ Execute approved tasks without drifting from the constitution, spec, or plan.
   operational validation where applicable.
 - Update docs, `README.md`, quickstarts, and task checkboxes as the approved
   work is completed.
-- After implementation, create the spec-specific post-implementation QA guide
-  and QA environment file in the active spec directory:
+- After implementation, create the spec-specific post-implementation QA guide,
+  UI walkthrough, and QA environment file in the active spec directory:
   - `qaNNN.md`
+  - `qaNNN_ui.md`
   - `.env.qaNNN`
 - The QA guide MUST follow the detail level of
   `specs/008-production-audit-debugging/qa008.md`, with copy/paste setup,
@@ -27,12 +28,17 @@ Execute approved tasks without drifting from the constitution, spec, or plan.
   `specs/008-production-audit-debugging/.env.qa008`, using a dedicated
   `multi_agent_platform_qaNNN` database, local-principal auth, fake
   spec-specific secret references, and `.data/qaNNN-artifacts` storage.
+- The QA UI walkthrough MUST follow the browser-first reviewer shape of
+  `specs/013-admin-workflow-builder/qa013_ui.md`, including local login,
+  navigation paths, screen-level actions, expected visible results, field
+  explanations, security/redaction checks, reviewer evidence, and automated
+  quality commands.
 
 ## Completion Gate
 
 Implementation is incomplete if tests, documentation, constitution-required
-runtime validation, `qaNNN.md`, `.env.qaNNN`, or the QA document validator are
-missing.
+runtime validation, `qaNNN.md`, `qaNNN_ui.md`, `.env.qaNNN`, or the QA document
+validator are missing.
 
 Before reporting completion, run:
 

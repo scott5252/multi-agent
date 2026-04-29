@@ -3,12 +3,16 @@
 
 guide_prefix: qa
 reference_spec_dir: specs/008-production-audit-debugging
+ui_reference_file: specs/013-admin-workflow-builder/qa013_ui.md
 
 validation:
   min_guide_lines: 180
   min_env_lines: 35
+  min_ui_lines: 160
   min_code_fences: 10
   min_expected_markers: 12
+  min_ui_code_fences: 6
+  min_ui_expected_markers: 8
 
 # Optional local overrides:
 # - .specify/extensions/qa-docs/qa-docs-config.local.yml
@@ -16,5 +20,8 @@ validation:
 # Optional environment overrides:
 # - SPECKIT_QA_DOCS_MIN_GUIDE_LINES
 # - SPECKIT_QA_DOCS_MIN_ENV_LINES
+# - SPECKIT_QA_DOCS_MIN_UI_LINES
 # - SPECKIT_QA_DOCS_MIN_CODE_FENCES
 # - SPECKIT_QA_DOCS_MIN_EXPECTED_MARKERS
+# - SPECKIT_QA_DOCS_MIN_UI_CODE_FENCES
+# - SPECKIT_QA_DOCS_MIN_UI_EXPECTED_MARKERS

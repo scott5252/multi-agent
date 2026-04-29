@@ -170,9 +170,10 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
-   - Create the spec-specific post-implementation QA guide and QA environment
-     file in the active feature directory:
+   - Create the spec-specific post-implementation QA guide, UI walkthrough, and
+     QA environment file in the active feature directory:
      - `qaNNN.md`
+     - `qaNNN_ui.md`
      - `.env.qaNNN`
    - The QA guide MUST match the detail level of
      `specs/008-production-audit-debugging/qa008.md`, including copy/paste
@@ -183,6 +184,11 @@ You **MUST** consider the user input before proceeding (if not empty).
      `specs/008-production-audit-debugging/.env.qa008`, using a dedicated
      `multi_agent_platform_qaNNN` database, local-principal auth, fake
      spec-specific secret references, and `.data/qaNNN-artifacts` storage.
+   - The QA UI walkthrough MUST match the browser-first reviewer shape of
+     `specs/013-admin-workflow-builder/qa013_ui.md`, including local login,
+     navigation paths, screen-level actions, expected visible results, field
+     explanations, security/redaction checks, reviewer evidence, and automated
+     quality commands.
    - Run
      `bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh "$FEATURE_DIR"`
      and treat any validation failure as an incomplete implementation.

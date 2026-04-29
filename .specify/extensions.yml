@@ -121,7 +121,7 @@ hooks:
     command: speckit.qa-docs.generate-documents
     enabled: true
     optional: false
-    description: Generate and validate qaNNN.md and .env.qaNNN after implementation
+    description: Generate and validate qaNNN.md, qaNNN_ui.md, and .env.qaNNN after implementation
     condition: null
   - extension: git
     command: speckit.git.commit
