@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 import pytest
 from fastapi import HTTPException
 
@@ -33,6 +35,20 @@ def _principal() -> PrincipalContext:
         auth_provider=AuthProvider.LOCAL_PRINCIPAL,
         role_codes=("platform_admin", "tenant_admin"),
         permission_codes=("skill-registry:publish", "skill-registry:install"),
+    )
+
+
+def _tenant_principal(tenant_id: str) -> PrincipalContext:
+    return PrincipalContext(
+        principal_id=f"tenant-admin-{tenant_id}",
+        auth_provider=AuthProvider.LOCAL_PRINCIPAL,
+        tenant_id=UUID(tenant_id),
+        role_codes=("tenant_admin",),
+        permission_codes=(
+            "tenant:admin",
+            "skill-registry:install",
+            "skill-registry:bind",
+        ),
     )
 
 
@@ -134,3 +150,62 @@ async def test_skill_registry_json_router_maps_errors() -> None:
         )
 
     assert exc_info.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_skill_registry_router_rejects_cross_tenant_installation_access() -> None:
+    service = SkillRegistryService()
+    platform_principal = _principal()
+    acme_id = "11111111-1111-1111-1111-111111111111"
+    globex_id = "22222222-2222-2222-2222-222222222222"
+
+    await create_skill_package(
+        SkillPackageCreateRequest(
+            slug="calendar-assistant",
+            display_name="Calendar Assistant",
+            description="Safe skill.",
+            owner_principal_id="platform-admin",
+        ),
+        platform_principal,
+        service,
+    )
+    await publish_skill_version(
+        "calendar-assistant",
+        SkillVersionPublishRequest(
+            manifest=valid_skill_manifest(),
+            approved_integration_refs={"tool:calendar:v1"},
+            artifact_digest="sha256:artifact",
+        ),
+        platform_principal,
+        service,
+    )
+    await grant_skill_version_availability(
+        "calendar-assistant",
+        "1.2.3",
+        TenantAvailabilityGrantRequest(tenant_id=acme_id),
+        platform_principal,
+        service,
+    )
+    installation = await create_skill_installation(
+        SkillInstallationCreateRequest(
+            tenant_id=acme_id,
+            slug="calendar-assistant",
+            semantic_version="1.2.3",
+        ),
+        _tenant_principal(acme_id),
+        service,
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await configure_installation_credentials(
+            installation.installation_id,
+            ConfigureCredentialsRequest(
+                revision_token=installation.revision_token,
+                credentials=[],
+            ),
+            _tenant_principal(globex_id),
+            service,
+        )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == "cross_tenant"

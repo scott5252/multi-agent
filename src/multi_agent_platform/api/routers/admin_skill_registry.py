@@ -164,7 +164,7 @@ async def list_available_skill_versions(
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
     principal: PrincipalDep,
 ) -> list[SkillPackageVersionResponse]:
-    _ = principal
+    _ensure_tenant_access(principal, tenant_id)
     return [
         _version_response(version)
         for version in service.list_available_versions(tenant_id=tenant_id)
@@ -177,6 +177,7 @@ async def create_skill_installation(
     principal: PrincipalDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
 ) -> SkillInstallationResponse:
+    _ensure_tenant_access(principal, request.tenant_id)
     try:
         installation = service.install_version(
             tenant_id=request.tenant_id,
@@ -200,7 +201,7 @@ async def configure_installation_credentials(
     principal: PrincipalDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
 ) -> SkillInstallationResponse:
-    _ = principal
+    _installation_for_principal(service, installation_id, principal)
     try:
         installation = service.configure_credentials(
             installation_id=installation_id,
@@ -230,7 +231,7 @@ async def preview_installation_eligibility(
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
     principal: PrincipalDep,
 ) -> BindingEligibilityResponse:
-    _ = principal
+    _installation_for_principal(service, installation_id, principal)
     try:
         decision = service.binding_eligibility(installation_id=installation_id)
     except SkillRegistryServiceError as exc:
@@ -406,9 +407,7 @@ async def skill_registry_installation_detail_page(
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
 ) -> HTMLResponse:
-    installation = service.installations.get(installation_id)
-    if installation is None:
-        raise HTTPException(status_code=404, detail="skill installation not found")
+    installation = _installation_for_principal(service, installation_id, principal)
     page = build_installation_detail_page(installation)
     shell = await build_shell_for_request(
         request=request,
@@ -479,6 +478,26 @@ def _installation_response(
         runtime_blocked=installation.runtime_blocked,
         quarantined=installation.quarantined,
     )
+
+
+def _installation_for_principal(
+    service: SkillRegistryService,
+    installation_id: str,
+    principal: PrincipalContext,
+) -> SkillInstallationRecord:
+    installation = service.installations.get(installation_id)
+    if installation is None:
+        raise HTTPException(status_code=404, detail="skill installation not found")
+    _ensure_tenant_access(principal, installation.tenant_id)
+    return installation
+
+
+def _ensure_tenant_access(principal: PrincipalContext, tenant_id: str) -> None:
+    if "platform_admin" in principal.role_codes:
+        return
+    if principal.tenant_id is not None and str(principal.tenant_id) == tenant_id:
+        return
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="cross_tenant")
 
 
 def _http_error(exc: SkillRegistryServiceError) -> HTTPException:

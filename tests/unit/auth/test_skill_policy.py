@@ -5,8 +5,26 @@ from multi_agent_platform.auth.policy import SURFACE_POLICIES
 
 
 def test_skill_registry_surface_policies_are_registered() -> None:
-    assert "POST:/admin/skill-registry/packages" in SURFACE_POLICIES
-    assert "POST:/admin/skill-registry/installations" in SURFACE_POLICIES
+    expected_surfaces = {
+        "GET:/admin/skill-registry/ui/packages",
+        "GET:/admin/skill-registry/ui/packages/{slug}",
+        "GET:/admin/skill-registry/ui/packages/{slug}/versions/{semantic_version}",
+        "GET:/admin/skill-registry/ui/installations",
+        "GET:/admin/skill-registry/ui/installations/{installation_id}",
+        "POST:/admin/skill-registry/packages",
+        "POST:/admin/skill-registry/packages/{slug}/versions/validate",
+        "POST:/admin/skill-registry/packages/{slug}/versions",
+        (
+            "POST:/admin/skill-registry/packages/{slug}/versions/"
+            "{semantic_version}/availability"
+        ),
+        "GET:/admin/skill-registry/tenants/{tenant_id}/available-versions",
+        "POST:/admin/skill-registry/installations",
+        "POST:/admin/skill-registry/installations/{installation_id}/credentials",
+        "GET:/admin/skill-registry/installations/{installation_id}/eligibility",
+    }
+
+    assert expected_surfaces.issubset(SURFACE_POLICIES)
 
 
 def test_local_principal_skill_registry_grants_include_install_permission() -> None:
