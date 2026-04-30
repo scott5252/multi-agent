@@ -40,16 +40,19 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 **Critical**: No user story implementation should start until these tasks are complete.
 
-- [ ] T005 Add failing protected surface policy tests for all new UI GET/POST routes in `tests/unit/auth/test_skill_policy.py`
-- [ ] T006 Add protected surface policies for package creation, candidate entry, candidate validation, publish, grants, available versions, install, credentials, smoke-tests, and eligibility preview in `src/multi_agent_platform/auth/policy.py`
-- [ ] T007 Adjust local-principal platform-admin and tenant-admin permission grants for new UI actions in `src/multi_agent_platform/auth/local_principals.py`
-- [ ] T008 Add unit tests for browser form parsing, YAML/JSON upload precedence, idempotency keys, revision tokens, and safe error mapping in `tests/unit/api/test_skill_registry_ui_models.py`
-- [ ] T009 Implement shared browser form and safe view models for `SkillPackageCreateForm`, `ManifestCandidateForm`, `TenantGrantForm`, `InstallSkillForm`, `CredentialReferenceConfigForm`, `SmokeTestActionForm`, `BindingEligibilityPreviewForm`, `RevisionConflictView`, and `RedactionSafePageContext` in `src/multi_agent_platform/api/ui/skill_registry.py`
-- [ ] T010 Extend shared API schemas only where router form adapters need typed request mapping in `src/multi_agent_platform/api/schemas/skill_registry.py`
-- [ ] T011 Add shared form, validation, stale conflict, empty, denied, readiness, smoke-test, policy, and audit partial coverage in `tests/integration/api/test_admin_console_templates.py`
-- [ ] T012 Implement shared skill registry template partials for form errors, stale conflicts, validation findings, readiness, smoke-test history, policy eligibility, and audit timeline in `src/multi_agent_platform/web_admin/templates/skill_registry/components/form_errors.html`
-- [ ] T013 Implement the shared stale conflict template partial in `src/multi_agent_platform/web_admin/templates/skill_registry/components/stale_conflict.html`
-- [ ] T014 Wire common form parsing, redirect/flash handling, safe template rendering, and service error translation helpers in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T005 Verify existing Spec 014 storage supports durable browser manifest candidate revisions, validation run linkage, grant-form revision tokens, smoke-test/idempotency evidence, and browser idempotency keys; if gaps exist, add an additive Alembic migration and repository tests before browser POST handlers are implemented
+- [ ] T006 Add failing protected surface policy tests for all new UI GET/POST routes in `tests/unit/auth/test_skill_policy.py`
+- [ ] T007 Add protected surface policies for package creation, candidate entry, candidate validation, publish, grants, available versions, install, credentials, smoke-tests, and eligibility preview in `src/multi_agent_platform/auth/policy.py`
+- [ ] T008 Adjust local-principal platform-admin and tenant-admin permission grants for new UI actions in `src/multi_agent_platform/auth/local_principals.py`
+- [ ] T009 Add unit tests for browser form parsing, YAML/JSON upload precedence, idempotency keys, revision tokens, and safe error mapping in `tests/unit/api/test_skill_registry_ui_models.py`
+- [ ] T010 Implement shared browser form and safe view models for `SkillPackageCreateForm`, `ManifestCandidateForm`, `TenantGrantForm`, `InstallSkillForm`, `CredentialReferenceConfigForm`, `SmokeTestActionForm`, `BindingEligibilityPreviewForm`, `RevisionConflictView`, and `RedactionSafePageContext` in `src/multi_agent_platform/api/ui/skill_registry.py`
+- [ ] T011 Extend shared API schemas only where router form adapters need typed request mapping in `src/multi_agent_platform/api/schemas/skill_registry.py`
+- [ ] T012 Add shared form, validation, stale conflict, empty, denied, readiness, smoke-test, policy, and audit partial coverage in `tests/integration/api/test_admin_console_templates.py`
+- [ ] T013 Implement shared skill registry template partials for form errors, stale conflicts, validation findings, readiness, smoke-test history, policy eligibility, and audit timeline in `src/multi_agent_platform/web_admin/templates/skill_registry/components/form_errors.html`
+- [ ] T014 Implement the shared stale conflict template partial in `src/multi_agent_platform/web_admin/templates/skill_registry/components/stale_conflict.html`
+- [ ] T015 Wire common form parsing, redirect/flash handling, safe template rendering, and service error translation helpers in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T016 Add security-review and observability coverage for new browser mutation paths, including role/tenant enforcement, safe redirects, CSRF/session behavior where available, audit outcome fields, and redaction-safe structured context in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T017 Add integration coverage proving primary browser mutation forms submit, validate, redirect, and render recoverable errors without custom JavaScript in `tests/integration/api/test_admin_skill_registry_ui.py`
 
 **Checkpoint**: Browser route policies, form models, template components, and router helpers are ready for user-story work.
 
@@ -63,25 +66,25 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 ### Tests for User Story 1
 
-- [ ] T015 [P] [US1] Add platform-admin route tests for package list, package create GET/POST, field errors, duplicate package conflict, and package detail redirects in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T016 [P] [US1] Add platform-admin route tests for manifest paste/upload, parse errors, schema errors, safe summary rendering, and raw manifest omission in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T017 [P] [US1] Add platform-admin route tests for candidate validation findings, blocked publish, successful publish, immutable version detail, and grant form save in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T018 [P] [US1] Add page model tests for package creation, candidate summary, grouped validation findings, publish gate state, version provenance, and grant summary in `tests/unit/api/test_skill_registry_ui_models.py`
+- [ ] T018 [P] [US1] Add platform-admin route tests for package list, package create GET/POST, field errors, duplicate package conflict, and package detail redirects in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T019 [P] [US1] Add platform-admin route tests for manifest paste/upload, parse errors, schema errors, safe summary rendering, and raw manifest omission in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T020 [P] [US1] Add platform-admin route tests for candidate validation findings, blocked publish, successful publish, immutable version detail, and grant form save in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T021 [P] [US1] Add page model tests for package creation, candidate summary, grouped validation findings, publish gate state, version provenance, and grant summary in `tests/unit/api/test_skill_registry_ui_models.py`
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] Implement platform-admin `GET /admin/skill-registry/ui/packages/new` and `POST /admin/skill-registry/ui/packages` in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T020 [US1] Implement platform-admin package creation template with slug, display name, description, owner/steward, lifecycle intent, safe docs summary, field errors, and success redirect in `src/multi_agent_platform/web_admin/templates/skill_registry/package_create.html`
-- [ ] T021 [US1] Update platform-admin package list actions, filters, empty state, and create-package entry point in `src/multi_agent_platform/web_admin/templates/skill_registry/package_list.html`
-- [ ] T022 [US1] Implement platform-admin `GET/POST /admin/skill-registry/ui/packages/{slug}/candidate` with structured YAML/JSON parsing, upload precedence, v1 schema validation, candidate revision, digests, safe summary, and raw payload omission in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T023 [US1] Implement platform-admin manifest candidate form with paste/upload controls, artifact digest/reference, approved integration refs, validation reason, candidate revision, parse/schema errors, and safe summary in `src/multi_agent_platform/web_admin/templates/skill_registry/package_candidate_form.html`
-- [ ] T024 [US1] Implement platform-admin `POST /admin/skill-registry/ui/packages/{slug}/candidate/validate` with current candidate revision checks and grouped inline findings in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T025 [US1] Update validation finding grouping and safe remediation rendering in `src/multi_agent_platform/web_admin/templates/skill_registry/components/validation_findings.html`
-- [ ] T026 [US1] Implement platform-admin `POST /admin/skill-registry/ui/packages/{slug}/candidate/publish` gated by current passing validation, duplicate semantic version checks, lifecycle state, and stale revision handling in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T027 [US1] Update package detail with candidate status, validation action, publish action, stale conflict banner, version lineage, grant summary, and audit timeline in `src/multi_agent_platform/web_admin/templates/skill_registry/package_detail.html`
-- [ ] T028 [US1] Update immutable version detail with pinned version, manifest/artifact digests, validation evidence, safe manifest summary, provenance, smoke-test expectations, grant action, and redaction notice in `src/multi_agent_platform/web_admin/templates/skill_registry/package_version_detail.html`
-- [ ] T029 [US1] Implement platform-admin `GET/POST /admin/skill-registry/ui/packages/{slug}/versions/{semantic_version}/grants` for one-or-many tenant grants, removals affecting future discovery only, grant revision checks, and safe confirmation in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T030 [US1] Implement platform-admin tenant availability grant form with selected tenants, current availability list, grant reason, grant revision, empty state, stale conflict, and safe cross-tenant summaries in `src/multi_agent_platform/web_admin/templates/skill_registry/tenant_grant_form.html`
+- [ ] T022 [US1] Implement platform-admin `GET /admin/skill-registry/ui/packages/new` and `POST /admin/skill-registry/ui/packages` in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T023 [US1] Implement platform-admin package creation template with slug, display name, description, owner/steward, lifecycle intent, safe docs summary, field errors, and success redirect in `src/multi_agent_platform/web_admin/templates/skill_registry/package_create.html`
+- [ ] T024 [US1] Update platform-admin package list actions, filters, empty state, and create-package entry point in `src/multi_agent_platform/web_admin/templates/skill_registry/package_list.html`
+- [ ] T025 [US1] Implement platform-admin `GET/POST /admin/skill-registry/ui/packages/{slug}/candidate` with structured YAML/JSON parsing, upload precedence, v1 schema validation, candidate revision, digests, safe summary, and raw payload omission in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T026 [US1] Implement platform-admin manifest candidate form with paste/upload controls, artifact digest/reference, approved integration refs, validation reason, candidate revision, parse/schema errors, and safe summary in `src/multi_agent_platform/web_admin/templates/skill_registry/package_candidate_form.html`
+- [ ] T027 [US1] Implement platform-admin `POST /admin/skill-registry/ui/packages/{slug}/candidate/validate` with current candidate revision checks and grouped inline findings in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T028 [US1] Update validation finding grouping and safe remediation rendering in `src/multi_agent_platform/web_admin/templates/skill_registry/components/validation_findings.html`
+- [ ] T029 [US1] Implement platform-admin `POST /admin/skill-registry/ui/packages/{slug}/candidate/publish` gated by current passing validation, duplicate semantic version checks, lifecycle state, and stale revision handling in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T030 [US1] Update package detail with candidate status, validation action, publish action, stale conflict banner, version lineage, grant summary, and audit timeline in `src/multi_agent_platform/web_admin/templates/skill_registry/package_detail.html`
+- [ ] T031 [US1] Update immutable version detail with pinned version, manifest/artifact digests, validation evidence, safe manifest summary, provenance, smoke-test expectations, grant action, and redaction notice in `src/multi_agent_platform/web_admin/templates/skill_registry/package_version_detail.html`
+- [ ] T032 [US1] Implement platform-admin `GET/POST /admin/skill-registry/ui/packages/{slug}/versions/{semantic_version}/grants` for one-or-many tenant grants, removals affecting future discovery only, grant revision checks, and safe confirmation in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T033 [US1] Implement platform-admin tenant availability grant form with selected tenants, current availability list, grant reason, grant revision, empty state, stale conflict, and safe cross-tenant summaries in `src/multi_agent_platform/web_admin/templates/skill_registry/tenant_grant_form.html`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable as the platform-admin MVP.
 
@@ -95,24 +98,24 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 ### Tests for User Story 2
 
-- [ ] T031 [P] [US2] Add tenant-admin route tests for available versions, Acme authorized discovery, Globex empty discovery, safe summaries, and install action visibility in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T032 [P] [US2] Add tenant-admin route tests for install POST, installation list, installation detail, exact pinned version, readiness state, and no raw payload rendering in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T033 [P] [US2] Add tenant-admin route tests for credential picker options, delegated metadata fields, forbidden raw secret fields, no arbitrary reference identifier entry, wrong-scope/revoked/missing findings, and readiness recompute in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T034 [P] [US2] Add tenant-admin route tests for smoke-test enqueue, queued/running immediate response, final status refresh, safe fixture summaries, and blocked-by-policy states in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T035 [P] [US2] Add page model tests for available versions, install action state, credential readiness, smoke-test evidence, readiness findings, and pinned-version messaging in `tests/unit/api/test_skill_registry_ui_models.py`
+- [ ] T034 [P] [US2] Add tenant-admin route tests for available versions, Acme authorized discovery, Globex empty discovery, safe summaries, and install action visibility in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T035 [P] [US2] Add tenant-admin route tests for install POST, installation list, installation detail, exact pinned version, readiness state, and no raw payload rendering in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T036 [P] [US2] Add tenant-admin route tests for credential picker options, delegated metadata fields, forbidden raw secret fields, no arbitrary reference identifier entry, wrong-scope/revoked/missing findings, and readiness recompute in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T037 [P] [US2] Add tenant-admin route tests for smoke-test enqueue, queued/running immediate response, final status refresh, safe fixture summaries, and blocked-by-policy states in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T038 [P] [US2] Add page model tests for available versions, install action state, credential readiness, smoke-test evidence, readiness findings, and pinned-version messaging in `tests/unit/api/test_skill_registry_ui_models.py`
 
 ### Implementation for User Story 2
 
-- [ ] T036 [US2] Implement tenant-admin `GET /admin/skill-registry/ui/available-versions?tenant_id=...` with authorized granted versions, credential requirements, smoke-test expectations, compatibility, install actions, and empty state in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T037 [US2] Implement tenant-admin available versions template with safe package summaries, grant status, install controls, withdrawal/quarantine indicators, and Globex empty state in `src/multi_agent_platform/web_admin/templates/skill_registry/available_versions.html`
-- [ ] T038 [US2] Implement tenant-admin `POST /admin/skill-registry/ui/installations` with granted-version checks, tenant-scope checks, exact version pinning, idempotency, safe failures, and redirect to detail in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T039 [US2] Update tenant-admin installation list with ready/blocked/smoke failed/quarantined/withdrawn states, exact package versions, credential status, smoke status, binding status, and empty state in `src/multi_agent_platform/web_admin/templates/skill_registry/installation_list.html`
-- [ ] T040 [US2] Update tenant-admin installation detail with exact package version, installation version, revision token, readiness findings, credential status, smoke-test status/history, compatibility, quarantine/runtime blocks, audit, and pinned-version note in `src/multi_agent_platform/web_admin/templates/skill_registry/installation_detail.html`
-- [ ] T041 [US2] Implement tenant-admin `GET/POST /admin/skill-registry/ui/installations/{installation_id}/credentials` with tenant-authorized picker options, predefined delegated metadata fields, revision token checks, readiness recompute, and safe failure mapping in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T042 [US2] Implement tenant-admin credential configuration template with one row per requirement, picker controls, delegated metadata controls, no raw secret fields, per-requirement readiness findings, and stale conflict rendering in `src/multi_agent_platform/web_admin/templates/skill_registry/installation_configure.html`
-- [ ] T043 [US2] Update readiness component with satisfied, missing, revoked, unauthorized, wrong-scope, incompatible, blocked, ready, quarantined, withdrawn, and corrective guidance states in `src/multi_agent_platform/web_admin/templates/skill_registry/components/readiness_panel.html`
-- [ ] T044 [US2] Implement tenant-admin `POST /admin/skill-registry/ui/installations/{installation_id}/smoke-tests` with revision token checks, policy checks, queued job enqueue, duplicate handling, refresh URL, and safe evidence state in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T045 [US2] Update smoke-test history component with queued, running, passed, failed, skipped, blocked, timeout, last-run time, safe fixture identity, safe evidence summary, and redacted failure reasons in `src/multi_agent_platform/web_admin/templates/skill_registry/components/smoke_test_history.html`
+- [ ] T039 [US2] Implement tenant-admin `GET /admin/skill-registry/ui/available-versions?tenant_id=...` with authorized granted versions, credential requirements, smoke-test expectations, compatibility, install actions, and empty state in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T040 [US2] Implement tenant-admin available versions template with safe package summaries, grant status, install controls, withdrawal/quarantine indicators, and Globex empty state in `src/multi_agent_platform/web_admin/templates/skill_registry/available_versions.html`
+- [ ] T041 [US2] Implement tenant-admin `POST /admin/skill-registry/ui/installations` with granted-version checks, tenant-scope checks, exact version pinning, idempotency, safe failures, and redirect to detail in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T042 [US2] Update tenant-admin installation list with ready/blocked/smoke failed/quarantined/withdrawn states, exact package versions, credential status, smoke status, binding status, and empty state in `src/multi_agent_platform/web_admin/templates/skill_registry/installation_list.html`
+- [ ] T043 [US2] Update tenant-admin installation detail with exact package version, installation version, revision token, readiness findings, credential status, smoke-test status/history, compatibility, quarantine/runtime blocks, audit, and pinned-version note in `src/multi_agent_platform/web_admin/templates/skill_registry/installation_detail.html`
+- [ ] T044 [US2] Implement tenant-admin `GET/POST /admin/skill-registry/ui/installations/{installation_id}/credentials` with tenant-authorized picker options, predefined delegated metadata fields, revision token checks, readiness recompute, and safe failure mapping in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T045 [US2] Implement tenant-admin credential configuration template with one row per requirement, picker controls, delegated metadata controls, no raw secret fields, per-requirement readiness findings, and stale conflict rendering in `src/multi_agent_platform/web_admin/templates/skill_registry/installation_configure.html`
+- [ ] T046 [US2] Update readiness component with satisfied, missing, revoked, unauthorized, wrong-scope, incompatible, blocked, ready, quarantined, withdrawn, and corrective guidance states in `src/multi_agent_platform/web_admin/templates/skill_registry/components/readiness_panel.html`
+- [ ] T047 [US2] Implement tenant-admin `POST /admin/skill-registry/ui/installations/{installation_id}/smoke-tests` with revision token checks, policy checks, queued job enqueue, duplicate handling, refresh URL, and safe evidence state in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T048 [US2] Update smoke-test history component with queued, running, passed, failed, skipped, blocked, timeout, last-run time, safe fixture identity, safe evidence summary, and redacted failure reasons in `src/multi_agent_platform/web_admin/templates/skill_registry/components/smoke_test_history.html`
 
 **Checkpoint**: User Story 2 is fully functional and independently testable for tenant-admin install, credential, smoke-test, and readiness workflows.
 
@@ -126,15 +129,15 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 ### Tests for User Story 3
 
-- [ ] T046 [P] [US3] Add tenant-admin route tests for eligibility context option filtering, allowed result rendering, denied result rendering, redacted policy reasons, and pinned version evidence in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T047 [P] [US3] Add page model tests for binding eligibility preview form options, allow/deny summaries, remediation guidance, and existing binding pinning language in `tests/unit/api/test_skill_registry_ui_models.py`
+- [ ] T049 [P] [US3] Add tenant-admin route tests for eligibility context option filtering, allowed result rendering, denied result rendering, redacted policy reasons, and pinned version evidence in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T050 [P] [US3] Add page model tests for binding eligibility preview form options, allow/deny summaries, remediation guidance, and existing binding pinning language in `tests/unit/api/test_skill_registry_ui_models.py`
 
 ### Implementation for User Story 3
 
-- [ ] T048 [US3] Implement tenant-admin authorized profile and workflow-role context loading for eligibility preview in `src/multi_agent_platform/api/ui/skill_registry.py`
-- [ ] T049 [US3] Implement tenant-admin `POST /admin/skill-registry/ui/installations/{installation_id}/eligibility-preview` with revision token checks, tenant access, policy preview delegation, and safe allow/deny result mapping in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T050 [US3] Update binding eligibility component with context selector, allowed/denied status, exact installation version, package version, readiness, credential, policy, compatibility, quarantine reasons, remediation, and pinned binding note in `src/multi_agent_platform/web_admin/templates/skill_registry/components/policy_eligibility.html`
-- [ ] T051 [US3] Integrate the eligibility preview panel and result state into tenant-admin installation detail in `src/multi_agent_platform/web_admin/templates/skill_registry/installation_detail.html`
+- [ ] T051 [US3] Implement tenant-admin authorized profile and workflow-role context loading for eligibility preview in `src/multi_agent_platform/api/ui/skill_registry.py`
+- [ ] T052 [US3] Implement tenant-admin `POST /admin/skill-registry/ui/installations/{installation_id}/eligibility-preview` with revision token checks, tenant access, policy preview delegation, and safe allow/deny result mapping in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T053 [US3] Update binding eligibility component with context selector, allowed/denied status, exact installation version, package version, readiness, credential, policy, compatibility, quarantine reasons, remediation, and pinned binding note in `src/multi_agent_platform/web_admin/templates/skill_registry/components/policy_eligibility.html`
+- [ ] T054 [US3] Integrate the eligibility preview panel and result state into tenant-admin installation detail in `src/multi_agent_platform/web_admin/templates/skill_registry/installation_detail.html`
 
 **Checkpoint**: User Story 3 is fully functional and independently testable from the tenant installation detail page.
 
@@ -148,16 +151,16 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 ### Tests for User Story 4
 
-- [ ] T052 [P] [US4] Add two-session platform-admin stale conflict tests for candidate validation, candidate publish, and tenant grant revision submissions in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T053 [P] [US4] Add two-session tenant-admin stale conflict tests for credential configuration, smoke-test action, and eligibility preview revision submissions in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T054 [P] [US4] Add safe audit tests for rejected stale browser actions without raw submitted payloads in `tests/unit/admin/test_skill_audit_redaction.py`
+- [ ] T055 [P] [US4] Add two-session platform-admin stale conflict tests for candidate validation, candidate publish, and tenant grant revision submissions in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T056 [P] [US4] Add two-session tenant-admin stale conflict tests for credential configuration, smoke-test action, and eligibility preview revision submissions in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T057 [P] [US4] Add safe audit tests for rejected stale browser actions without raw submitted payloads in `tests/unit/admin/test_skill_audit_redaction.py`
 
 ### Implementation for User Story 4
 
-- [ ] T055 [US4] Map service stale revision errors into `RevisionConflictView` reload/retry contexts for platform-admin and tenant-admin forms in `src/multi_agent_platform/api/ui/skill_registry.py`
-- [ ] T056 [US4] Add hidden revision tokens and stale conflict handling to platform-admin candidate, validate, publish, and grant POST handlers in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T057 [US4] Add hidden revision tokens and stale conflict handling to tenant-admin credential, smoke-test, and eligibility POST handlers in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T058 [US4] Render stale conflict messages with no applied state, no raw submitted payloads, reload-latest action, retry path, and audit evidence reference in `src/multi_agent_platform/web_admin/templates/skill_registry/components/stale_conflict.html`
+- [ ] T058 [US4] Map service stale revision errors into `RevisionConflictView` reload/retry contexts for platform-admin and tenant-admin forms in `src/multi_agent_platform/api/ui/skill_registry.py`
+- [ ] T059 [US4] Add hidden revision tokens and stale conflict handling to platform-admin candidate, validate, publish, and grant POST handlers in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T060 [US4] Add hidden revision tokens and stale conflict handling to tenant-admin credential, smoke-test, and eligibility POST handlers in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T061 [US4] Render stale conflict messages with no applied state, no raw submitted payloads, reload-latest action, retry path, and audit evidence reference in `src/multi_agent_platform/web_admin/templates/skill_registry/components/stale_conflict.html`
 
 **Checkpoint**: User Story 4 stale conflict protection is testable across platform-admin and tenant-admin browser sessions.
 
@@ -171,17 +174,17 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 ### Tests for User Story 5
 
-- [ ] T059 [P] [US5] Add cross-tenant route tests for Globex unavailable versions, direct version links, installation links, credential pages, smoke-test actions, eligibility previews, and audit evidence absence in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T060 [P] [US5] Add same-tenant unauthorized role denial tests for protected skill lifecycle pages and POST actions in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T061 [P] [US5] Add template redaction tests covering raw package payloads, raw manifest input, raw credential values, provider tokens, unsafe docs, unsafe fixtures, raw smoke logs, and cross-tenant data in `tests/integration/api/test_admin_skill_registry_ui.py`
-- [ ] T062 [P] [US5] Add page model tests for denied, not found, empty, blocked, validation-failed, smoke-test-failed, quarantined, withdrawn, stale-conflict, and success states in `tests/unit/api/test_skill_registry_ui_models.py`
+- [ ] T062 [P] [US5] Add cross-tenant route tests for Globex unavailable versions, direct version links, installation links, credential pages, smoke-test actions, eligibility previews, and audit evidence absence in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T063 [P] [US5] Add same-tenant unauthorized role denial tests for protected skill lifecycle pages and POST actions in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T064 [P] [US5] Add template redaction tests covering raw package payloads, raw manifest input, raw credential values, provider tokens, unsafe docs, unsafe fixtures, raw smoke logs, and cross-tenant data in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T065 [P] [US5] Add page model tests for denied, not found, empty, blocked, validation-failed, smoke-test-failed, quarantined, withdrawn, stale-conflict, and success states in `tests/unit/api/test_skill_registry_ui_models.py`
 
 ### Implementation for User Story 5
 
-- [ ] T063 [US5] Centralize tenant access checks for UI GET/POST handlers so cross-tenant links render absent/not found and same-tenant role failures render denied in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T064 [US5] Enforce redaction-safe page context and screenshot-safe summaries for every skill registry page model in `src/multi_agent_platform/api/ui/skill_registry.py`
-- [ ] T065 [US5] Update package, version, available-version, installation, credential, readiness, smoke-test, eligibility, and audit templates to render safe empty/blocked/denied/not-found states without protected detail in `src/multi_agent_platform/web_admin/templates/skill_registry/index.html`
-- [ ] T066 [US5] Update audit timeline component to show safe lifecycle evidence for browser actions, denials, stale conflicts, redactions, and tenant-scoped events without raw payloads in `src/multi_agent_platform/web_admin/templates/skill_registry/components/audit_timeline.html`
+- [ ] T066 [US5] Centralize tenant access checks for UI GET/POST handlers so cross-tenant links render absent/not found and same-tenant role failures render denied in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T067 [US5] Enforce redaction-safe page context and screenshot-safe summaries for every skill registry page model in `src/multi_agent_platform/api/ui/skill_registry.py`
+- [ ] T068 [US5] Update package, version, available-version, installation, credential, readiness, smoke-test, eligibility, and audit templates to render safe empty/blocked/denied/not-found states without protected detail in `src/multi_agent_platform/web_admin/templates/skill_registry/index.html`
+- [ ] T069 [US5] Update audit timeline component to show safe lifecycle evidence for browser actions, denials, stale conflicts, redactions, and tenant-scoped events without raw payloads in `src/multi_agent_platform/web_admin/templates/skill_registry/components/audit_timeline.html`
 
 **Checkpoint**: User Story 5 isolation and redaction guarantees are independently testable across all browser pages.
 
@@ -195,17 +198,17 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 ### Tests for User Story 6
 
-- [ ] T067 [P] [US6] Add docs tests that fail if `specs/014-skill-registry-lifecycle/qa014_ui.md` includes curl, SQL, or direct API commands for feature actions outside setup, diagnostics, server startup, or automated evidence collection in `tests/docs/test_skill_registry_docs.py`
-- [ ] T068 [P] [US6] Add browser-flow integration tests for the complete platform-admin package-to-grant walkthrough in `tests/integration/api/test_skill_registry_browser_flows.py`
-- [ ] T069 [P] [US6] Add browser-flow integration tests for the complete tenant-admin discovery-to-readiness-to-eligibility walkthrough in `tests/integration/api/test_skill_registry_browser_flows.py`
-- [ ] T070 [P] [US6] Add browser-flow integration tests for stale conflict recovery, Acme visibility, Globex absence/denial, and redaction evidence in `tests/integration/api/test_skill_registry_browser_flows.py`
+- [ ] T070 [P] [US6] Add docs tests that fail if `specs/014-skill-registry-lifecycle/qa014_ui.md` includes curl, SQL, or direct API commands for feature actions outside setup, diagnostics, server startup, or automated evidence collection in `tests/docs/test_skill_registry_docs.py`
+- [ ] T071 [P] [US6] Add browser-flow integration tests for the complete platform-admin package-to-grant walkthrough in `tests/integration/api/test_skill_registry_browser_flows.py`
+- [ ] T072 [P] [US6] Add browser-flow integration tests for the complete tenant-admin discovery-to-readiness-to-eligibility walkthrough in `tests/integration/api/test_skill_registry_browser_flows.py`
+- [ ] T073 [P] [US6] Add browser-flow integration tests for stale conflict recovery, Acme visibility, Globex absence/denial, and redaction evidence in `tests/integration/api/test_skill_registry_browser_flows.py`
 
 ### Implementation for User Story 6
 
-- [ ] T071 [US6] Rewrite `specs/014-skill-registry-lifecycle/qa014_ui.md` so package creation, manifest entry/upload, validation, publication, tenant grants, discovery, installation, credentials, smoke tests, readiness, eligibility, stale conflict, tenant isolation, and redaction are browser steps with screenshots and no feature-action curl
-- [ ] T072 [US6] Regenerate platform-admin browser screenshots for login, empty packages, package create, manifest candidate, validation findings, blocked publish, successful publish, version detail, and tenant grant under `output/playwright/qa014_ui`
-- [ ] T073 [US6] Regenerate tenant-admin browser screenshots for Acme login, available versions, install, blocked detail, credential picker, readiness/smoke status, ready detail, and binding eligibility under `output/playwright/qa014_ui`
-- [ ] T074 [US6] Regenerate isolation and conflict browser screenshots for stale revision recovery, Acme visibility, Globex empty discovery, Globex direct-link absence/denial, same-tenant denied state, and redaction scan under `output/playwright/qa014_ui`
+- [ ] T074 [US6] Rewrite `specs/014-skill-registry-lifecycle/qa014_ui.md` so package creation, manifest entry/upload, validation, publication, tenant grants, discovery, installation, credentials, smoke tests, readiness, eligibility, stale conflict, tenant isolation, and redaction are browser steps with screenshots and no feature-action curl
+- [ ] T075 [US6] Regenerate platform-admin browser screenshots for login, empty packages, package create, manifest candidate, validation findings, blocked publish, successful publish, version detail, and tenant grant under `output/playwright/qa014_ui`
+- [ ] T076 [US6] Regenerate tenant-admin browser screenshots for Acme login, available versions, install, blocked detail, credential picker, readiness/smoke status, ready detail, and binding eligibility under `output/playwright/qa014_ui`
+- [ ] T077 [US6] Regenerate isolation and conflict browser screenshots for stale revision recovery, Acme visibility, Globex empty discovery, Globex direct-link absence/denial, same-tenant denied state, and redaction scan under `output/playwright/qa014_ui`
 
 **Checkpoint**: User Story 6 documentation and evidence are independently reviewable and prove browser-first QA.
 
@@ -215,14 +218,16 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 **Purpose**: Validate focused Spec 014 behavior, docs, formatting, and browser evidence after all selected user stories are complete.
 
-- [ ] T075 [P] Run focused UI model and router tests with `uv run pytest tests/unit/api/test_skill_registry_ui_models.py tests/unit/api/test_admin_skill_registry_router.py tests/unit/auth/test_skill_policy.py` and fix failures in `src/multi_agent_platform/api/ui/skill_registry.py`
-- [ ] T076 [P] Run focused Spec 014 integration tests with `uv run pytest tests/integration/api/test_admin_skill_registry_ui.py tests/integration/api/test_skill_registry_browser_flows.py tests/integration/skill_registry` and fix failures in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T077 [P] Run docs tests with `uv run pytest tests/docs/test_skill_registry_docs.py` and fix failures in `specs/014-skill-registry-lifecycle/qa014_ui.md`
-- [ ] T078 [P] Run `uv run ruff check .` and fix lint failures in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
-- [ ] T079 [P] Run `uv run ruff format --check .` and format changed Python files in `src/multi_agent_platform/api/ui/skill_registry.py`
-- [ ] T080 [P] Run `uv run mypy src` and fix typing failures in `src/multi_agent_platform/api/schemas/skill_registry.py`
-- [ ] T081 Run relevant browser verification against `http://127.0.0.1:8000/admin/skill-registry/ui/packages` and update screenshot evidence under `output/playwright/qa014_ui`
-- [ ] T082 Run coverage gate with `uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90` and fix remaining Spec 014 regressions in `tests/integration/api/test_admin_skill_registry_ui.py`
+- [ ] T078 [P] Run focused UI model and router tests with `uv run pytest tests/unit/api/test_skill_registry_ui_models.py tests/unit/api/test_admin_skill_registry_router.py tests/unit/auth/test_skill_policy.py` and fix failures in `src/multi_agent_platform/api/ui/skill_registry.py`
+- [ ] T079 [P] Run focused Spec 014 integration tests with `uv run pytest tests/integration/api/test_admin_skill_registry_ui.py tests/integration/api/test_skill_registry_browser_flows.py tests/integration/skill_registry` and fix failures in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T080 [P] Run docs tests with `uv run pytest tests/docs/test_skill_registry_docs.py` and fix failures in `specs/014-skill-registry-lifecycle/qa014_ui.md`
+- [ ] T081 [P] Review and update `README.md` and `docs/quickstart.md` for Spec 014 V2 browser-first skill registry workflows, or record that no changes are required in `specs/014-skill-registry-lifecycle-v2/quickstart.md`
+- [ ] T082 [P] Run `uv run ruff check .` and fix lint failures in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
+- [ ] T083 [P] Run `uv run ruff format --check .` and format changed Python files in `src/multi_agent_platform/api/ui/skill_registry.py`
+- [ ] T084 [P] Run `uv run mypy src` and fix typing failures in `src/multi_agent_platform/api/schemas/skill_registry.py`
+- [ ] T085 Run relevant browser verification against `http://127.0.0.1:8000/admin/skill-registry/ui/packages` and update screenshot evidence under `output/playwright/qa014_ui`
+- [ ] T086 Run focused browser route timing checks for scoped package, version, installation, available-version GET pages, form POST acceptance, and QA-sized manifest validation against the p95 goals in `specs/014-skill-registry-lifecycle-v2/plan.md`; record results or justified deferrals in `specs/014-skill-registry-lifecycle-v2/quickstart.md`
+- [ ] T087 Run coverage gate with `uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90` and fix remaining Spec 014 regressions in `tests/integration/api/test_admin_skill_registry_ui.py`
 
 ---
 
@@ -252,14 +257,15 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 ### Parallel Opportunities
 
 - T002, T003, and T004 can run in parallel after T001 starts.
-- T005, T008, and T011 can run in parallel before implementation.
-- US1 tests T015-T018 can run in parallel, then US1 implementation proceeds T019-T030.
-- US2 tests T031-T035 can run in parallel, then US2 implementation proceeds T036-T045.
-- US3 tests T046-T047 can run in parallel, then US3 implementation proceeds T048-T051.
-- US4 tests T052-T054 can run in parallel, then stale conflict implementation proceeds T055-T058.
-- US5 tests T059-T062 can run in parallel, then isolation/redaction implementation proceeds T063-T066.
-- US6 tests T067-T070 can run in parallel after browser routes exist; screenshot tasks T072-T074 can be split by platform-admin, tenant-admin, and isolation evidence.
-- Polish tasks T075-T080 can run in parallel before T081 and T082.
+- T006, T009, and T012 can run in parallel before implementation.
+- US1 tests T018-T021 can run in parallel, then US1 implementation proceeds T022-T033.
+- US2 tests T034-T038 can run in parallel, then US2 implementation proceeds T039-T048.
+- US3 tests T049-T050 can run in parallel, then US3 implementation proceeds T051-T054.
+- US4 tests T055-T057 can run in parallel, then stale conflict implementation proceeds T058-T061.
+- US5 tests T062-T065 can run in parallel, then isolation/redaction implementation proceeds T066-T069.
+- US6 tests T070-T073 can run in parallel after browser routes exist; screenshot tasks T075-T077 can be split by platform-admin, tenant-admin, and isolation evidence.
+- Polish tasks T078-T084 can run in parallel before browser verification T085;
+  timing checks T086 follow browser verification before the coverage gate T087.
 
 ---
 
@@ -268,28 +274,28 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 ### User Story 1
 
 ```bash
-Task: "T015 platform-admin package create route tests in tests/integration/api/test_admin_skill_registry_ui.py"
-Task: "T016 platform-admin manifest candidate route tests in tests/integration/api/test_admin_skill_registry_ui.py"
-Task: "T017 platform-admin validate/publish/grant route tests in tests/integration/api/test_admin_skill_registry_ui.py"
-Task: "T018 platform-admin page model tests in tests/unit/api/test_skill_registry_ui_models.py"
+Task: "T018 platform-admin package create route tests in tests/integration/api/test_admin_skill_registry_ui.py"
+Task: "T019 platform-admin manifest candidate route tests in tests/integration/api/test_admin_skill_registry_ui.py"
+Task: "T020 platform-admin validate/publish/grant route tests in tests/integration/api/test_admin_skill_registry_ui.py"
+Task: "T021 platform-admin page model tests in tests/unit/api/test_skill_registry_ui_models.py"
 ```
 
 ### User Story 2
 
 ```bash
-Task: "T031 tenant-admin available versions tests in tests/integration/api/test_admin_skill_registry_ui.py"
-Task: "T033 tenant-admin credential picker tests in tests/integration/api/test_admin_skill_registry_ui.py"
-Task: "T034 tenant-admin smoke-test route tests in tests/integration/api/test_admin_skill_registry_ui.py"
-Task: "T035 tenant-admin page model tests in tests/unit/api/test_skill_registry_ui_models.py"
+Task: "T034 tenant-admin available versions tests in tests/integration/api/test_admin_skill_registry_ui.py"
+Task: "T036 tenant-admin credential picker tests in tests/integration/api/test_admin_skill_registry_ui.py"
+Task: "T037 tenant-admin smoke-test route tests in tests/integration/api/test_admin_skill_registry_ui.py"
+Task: "T038 tenant-admin page model tests in tests/unit/api/test_skill_registry_ui_models.py"
 ```
 
 ### User Story 6
 
 ```bash
-Task: "T067 browser-first docs guard in tests/docs/test_skill_registry_docs.py"
-Task: "T068 platform-admin browser-flow integration tests in tests/integration/api/test_skill_registry_browser_flows.py"
-Task: "T069 tenant-admin browser-flow integration tests in tests/integration/api/test_skill_registry_browser_flows.py"
-Task: "T070 conflict/isolation/redaction browser-flow integration tests in tests/integration/api/test_skill_registry_browser_flows.py"
+Task: "T070 browser-first docs guard in tests/docs/test_skill_registry_docs.py"
+Task: "T071 platform-admin browser-flow integration tests in tests/integration/api/test_skill_registry_browser_flows.py"
+Task: "T072 tenant-admin browser-flow integration tests in tests/integration/api/test_skill_registry_browser_flows.py"
+Task: "T073 conflict/isolation/redaction browser-flow integration tests in tests/integration/api/test_skill_registry_browser_flows.py"
 ```
 
 ---

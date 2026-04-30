@@ -329,6 +329,21 @@ write safe audit evidence, and render an in-browser conflict state with:
 - a link/button to reload the latest safe state,
 - a retry path that resubmits only after the page carries the latest revision.
 
+## Security Review And Observability
+
+Security review must verify that every browser GET/POST route enforces the
+existing Auth0/local-principal role model, tenant scope, CSRF/session protections
+where available, safe redirect behavior, no arbitrary credential-reference
+entry, and fail-closed handling for cross-tenant direct links.
+
+Observability must reuse existing audit/redaction helpers and emit structured
+lifecycle evidence for package creation, candidate submission, validation,
+publication, grant changes, installation, credential configuration,
+smoke-test enqueue/status, eligibility preview, stale conflict rejection,
+authorization denial, and redaction decisions. New browser mutation paths should
+preserve request, tenant, actor, route, outcome, and safe error context without
+raw manifests, secrets, provider tokens, unsafe fixtures, or cross-tenant data.
+
 ## Tests
 
 - Unit: form parsing, YAML/JSON structured parsing errors, page model mapping,
