@@ -387,6 +387,95 @@ integration, auth policy entries, migration, PR review notes, testing
 instructions, and README updates.
 ```
 
+### spec 014 Revisions
+
+/speckit.specify
+
+```
+Revise Spec 014 as “014-skill-registry-lifecycle-v2” to close the UI workflow gap.
+
+The current Spec 014 backend/API supports skill package creation, candidate validation, immutable version publication, tenant availability grants, tenant discovery, tenant installation, credential reference configuration, binding eligibility preview, stale revision rejection, smoke-test evidence, redaction, and cross-tenant isolation. However, the current browser UI only reviews much of this state and the QA guide still requires curl for primary user actions.
+
+V2 requirement: every primary skill lifecycle action must be executable from the admin browser UI by a non-technical platform admin or tenant admin. Curl, SQL, and direct API calls may be used only for environment setup, diagnostics, or automated tests, not for the main QA walkthrough.
+
+Add explicit browser UI user stories and acceptance criteria for:
+- Platform admin creates a platform-approved skill package from /admin/skill-registry/ui/packages.
+- Platform admin enters or uploads a declarative manifest candidate from the browser.
+- Platform admin validates the candidate and sees blocking/nonblocking findings inline.
+- Platform admin publishes an immutable package version from the browser after validation passes.
+- Platform admin grants a published package version to one or more tenants from the browser.
+- Tenant admin discovers granted skill versions from the browser.
+- Tenant admin installs a granted skill version from the browser.
+- Tenant admin configures credential references/delegated credential metadata from the browser without entering raw secret values.
+- Tenant admin sees readiness, smoke-test status, findings, and binding eligibility update in the browser.
+- Tenant admin previews binding eligibility from the browser.
+- Stale revision conflicts are shown in-browser with a clear recovery path.
+- Globex or any ungranted tenant cannot discover, install, or inspect Acme-only skill versions/installations.
+- All UI pages preserve redaction guarantees: no raw package payloads, credential values, provider tokens, unsafe docs, or cross-tenant data.
+
+Definition of done:
+- The QA UI guide can be completed using the browser for all feature actions.
+- The only terminal commands in the QA UI guide are environment setup, server startup, and automated evidence commands.
+- Browser screenshots exist for every major lifecycle step.
+```
+
+/speckit.plan
+
+```
+Create the implementation plan for Spec 014 V2.
+
+Design the browser UI work needed to replace every primary curl step in qa014_ui.md with server-rendered admin UI flows.
+
+Use existing FastAPI, Starlette/Jinja2 templates, admin shell navigation, local-principal auth, skill registry service/router/schema patterns, audit/redaction helpers, and existing skill registry templates where possible.
+
+Plan UI routes, templates, form models, validation handling, authorization, tenant-scope behavior, optimistic concurrency behavior, and tests for:
+- Create package form and POST handler.
+- Manifest candidate form/upload/paste experience.
+- Candidate validation action with inline findings.
+- Publish immutable version action gated by validation.
+- Tenant availability grant form.
+- Available skill versions tenant page.
+- Tenant install action.
+- Credential reference configuration form.
+- Binding eligibility preview panel/action.
+- Stale revision conflict UI.
+- Cross-tenant denial/empty states.
+- Smoke-test/readiness evidence display.
+- Redaction-safe rendering.
+
+The plan must explicitly state that API endpoints remain available but are no longer the primary QA path for non-technical users. Include migration/data considerations only if needed; prefer reusing existing services and schemas.
+```
+
+/speckit.task
+```
+Generate tasks for Spec 014 V2.
+
+Tasks must be dependency-ordered and must ensure every current curl feature in qa014_ui.md is implemented as a browser UI workflow.
+
+Create tasks for:
+- Auditing current qa014_ui.md curl steps and mapping each to a required UI page/action.
+- Adding/adjusting protected surface policies for all new UI GET/POST routes.
+- Implementing package creation UI.
+- Implementing manifest candidate entry/upload UI.
+- Implementing validation UI with inline findings and safe summaries.
+- Implementing publish UI gated by validation success.
+- Implementing tenant availability grant UI.
+- Implementing tenant available-versions discovery UI.
+- Implementing tenant install UI.
+- Implementing credential reference configuration UI with no raw secret entry.
+- Implementing binding eligibility preview UI.
+- Implementing stale revision conflict handling and recovery.
+- Implementing cross-tenant access/empty-state tests.
+- Adding server-rendered template tests and route tests.
+- Adding browser/integration tests for the complete platform-admin and tenant-admin flows.
+- Updating qa014_ui.md so all feature actions are browser steps with screenshots and no curl except environment setup.
+- Regenerating screenshots under output/playwright/qa014_ui.
+- Running focused Spec 014 tests, docs tests, ruff, format, and relevant browser verification.
+
+Each task should include the expected files/modules to touch and should distinguish platform-admin work from tenant-admin work.
+
+```
+
 ### Spec 015: Agent And Workflow Test Bench
 
 #### Goal
