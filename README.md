@@ -50,6 +50,10 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 - guided admin workflow builder under `/admin/workflows/ui` with create,
   editor, graph preview, reference lookup, validation, revision history,
   publish gate, and published bundle pin/provenance views
+- governed skill registry under `/admin/skill-registry/ui/packages` and
+  `/admin/skill-registry/ui/installations` for declarative package
+  publication, tenant installation, credential readiness, smoke-test evidence,
+  binding eligibility, upgrades, quarantine, and safe audit summaries
 
 ## Quickstart
 
@@ -68,7 +72,9 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 10. Validate a guided workflow draft at
     `/admin/workflows/drafts/{workflow_draft_id}/editor`, then review
     `/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui`.
-11. Validate the repo with `./scripts/check.sh`.
+11. Review skill packages at `/admin/skill-registry/ui/packages` and tenant
+    installations at `/admin/skill-registry/ui/installations`.
+12. Validate the repo with `./scripts/check.sh`.
 
 ## Admin Console Shell
 

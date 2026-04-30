@@ -1,0 +1,17 @@
+<section>
+  <h2>Readiness</h2>
+  {% for installation in page.installations %}
+  <dl>
+    <dt>Readiness</dt><dd>{{ installation.readiness_state }}</dd>
+    <dt>Credentials</dt><dd>{{ installation.credential_status }}</dd>
+    <dt>Smoke tests</dt><dd>{{ installation.smoke_test_status }}</dd>
+  </dl>
+  {% endfor %}
+  {% if page.findings %}
+  <ul>
+    {% for finding in page.findings %}
+    <li>{{ finding.code }}: {{ finding.message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>

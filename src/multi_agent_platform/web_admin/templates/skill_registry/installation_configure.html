@@ -1,0 +1,18 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<header class="workflow-header">
+  <h1>Configure Installed Skill</h1>
+  <p>{{ page.redaction_notice }}</p>
+</header>
+<section>
+  <h2>Credential References</h2>
+  <form method="post">
+    <label>Revision token <input name="revision_token" /></label>
+    <label>Requirement key <input name="requirement_key" /></label>
+    <label>Secret reference id <input name="reference_id" /></label>
+    <button type="submit">Save References</button>
+  </form>
+  <p>Only references to existing secrets or delegated credentials are accepted.</p>
+</section>
+{% endblock %}

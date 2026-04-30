@@ -16,6 +16,7 @@ build/
 .env.local
 !specs/012-prompt-runtime-profiles/.env.qa012
 !specs/013-admin-workflow-builder/.env.qa013
+!specs/014-skill-registry-lifecycle/.env.qa014
 .DS_Store
 Thumbs.db
 *.tmp

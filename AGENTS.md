@@ -1,6 +1,6 @@
 # multi-agent Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-28
+Auto-generated from all feature plans. Last updated: 2026-04-29
 
 ## Active Technologies
 - Python 3.12 + FastAPI security dependencies, Auth0 JWT validation, Pydantic
@@ -81,6 +81,22 @@ Auto-generated from all feature plans. Last updated: 2026-04-28
   (012-prompt-runtime-profiles V2)
 - Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2, Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+, psycopg 3, Auth0 JWT validation, local-principal admin test mode, existing workflow registry services/schemas/web_admin templates/static workflow_studio assets, prompt library services, agent runtime profile services, model_skill_config resolver and preview APIs, ModelGateway/provider catalog readiness, existing skill binding policy models, audit/redaction helpers, prometheus-client, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (013-admin-workflow-builder)
 - PostgreSQL for existing workflow lineages, active drafts, immutable draft revisions, validation results, published bundle metadata, sharing grants, audit records, prompt/profile references, provider catalog metadata, skill policy metadata, and future test bench result summaries; object/artifact storage for compiled workflow bundles and oversized validation reports (013-admin-workflow-builder)
+- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
+  Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+,
+  psycopg 3, Auth0 JWT validation, local-principal admin test mode,
+  existing secret providers, existing delegated credential metadata,
+  existing model_skill_config skill bindings, allowed tool policies,
+  outbound domain policies, credential requirement policies, existing workflow
+  registry publish validation hooks, existing object storage providers,
+  existing audit and redaction helpers, existing reliability quotas/retries/
+  breakers, prometheus-client, pytest, pytest-asyncio, httpx, Ruff, mypy, uv
+  (014-skill-registry-lifecycle)
+- PostgreSQL for skill packages, immutable package versions, tenant
+  availability grants, tenant installations, smoke-test evidence, credential
+  readiness, quarantine decisions, upgrade lineage, binding eligibility
+  projections, and skill audit records; object/artifact storage for immutable
+  package artifacts, safe docs, fixtures, pinned manifests, validation
+  evidence, and oversized smoke-test reports (014-skill-registry-lifecycle)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -110,6 +126,11 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 014-skill-registry-lifecycle: Planned governed skill registry and tenant
+  installation lifecycle with immutable package artifacts, manifest schema,
+  validation, credential readiness, smoke tests, quarantine, upgrade/rollback
+  semantics, Spec 007 skill-binding eligibility, workflow publish validation,
+  admin views, APIs, audit, reliability controls, docs, and tests.
 - 013-admin-workflow-builder: Planned guided admin workflow builder UX on top
   of existing workflow registry services, workflow schemas, admin templates,
   workflow_studio assets, prompt library, agent profiles, model routing
@@ -169,5 +190,5 @@ async patterns for PostgreSQL access.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/013-admin-workflow-builder/plan.md`
+`specs/014-skill-registry-lifecycle/plan.md`
 <!-- SPECKIT END -->

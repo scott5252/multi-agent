@@ -1,0 +1,18 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<header class="workflow-header">
+  <h1>Package Candidate</h1>
+  <p>{{ page.redaction_notice }}</p>
+</header>
+<section>
+  <h2>Validate And Publish</h2>
+  <form method="post">
+    <label>Manifest JSON <textarea name="manifest" rows="16"></textarea></label>
+    <label>Artifact digest <input name="artifact_digest" /></label>
+    <label>Idempotency key <input name="idempotency_key" /></label>
+    <button type="submit">Validate</button>
+  </form>
+</section>
+{% include "skill_registry/components/validation_findings.html" %}
+{% endblock %}

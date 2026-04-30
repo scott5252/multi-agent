@@ -1,0 +1,27 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<header class="workflow-header">
+  <h1>{{ page.title }}</h1>
+  <p>{{ page.redaction_notice }}</p>
+</header>
+<section>
+  <h2>Version Provenance</h2>
+  {% for version in page.versions %}
+  <dl>
+    <dt>Slug</dt><dd>{{ version.slug }}</dd>
+    <dt>Semantic version</dt><dd>{{ version.semantic_version }}</dd>
+    <dt>Lifecycle</dt><dd>{{ version.lifecycle_state }}</dd>
+    <dt>Manifest digest</dt><dd><code>{{ version.manifest_digest }}</code></dd>
+    <dt>Artifact digest</dt><dd><code>{{ version.artifact_digest }}</code></dd>
+    <dt>Runtime blocked</dt><dd>{{ "Yes" if version.runtime_blocked else "No" }}</dd>
+    <dt>Quarantined</dt><dd>{{ "Yes" if version.quarantined else "No" }}</dd>
+  </dl>
+  {% endfor %}
+</section>
+{% include "skill_registry/components/validation_findings.html" %}
+<section>
+  <h2>Safe Export</h2>
+  <p>Exports contain digests, identifiers, safe summaries, and redaction metadata only.</p>
+</section>
+{% endblock %}
