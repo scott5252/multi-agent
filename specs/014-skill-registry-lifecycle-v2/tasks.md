@@ -28,7 +28,7 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 **Purpose**: Establish the browser-first implementation inventory, test scaffolding, and route evidence expectations before changing lifecycle behavior.
 
 - [ ] T001 Audit every current feature-action curl in `specs/014-skill-registry-lifecycle/qa014_ui.md` and add the curl-to-browser mapping to `specs/014-skill-registry-lifecycle-v2/contracts/admin-skill-registry-browser-ui.md`
-- [ ] T002 [P] Add docs-test expectations that `specs/014-skill-registry-lifecycle/qa014_ui.md` permits curl/SQL only for setup, diagnostics, and automated evidence collection in `tests/docs/test_skill_registry_docs.py`
+- [ ] T002 [P] Add initial docs-test scaffolding helpers that classify allowed setup, diagnostics, server startup, and automated evidence commands in `specs/014-skill-registry-lifecycle/qa014_ui.md` for reuse by full browser-first enforcement in `tests/docs/test_skill_registry_docs.py`
 - [ ] T003 [P] Create browser route integration test scaffolding for platform-admin and tenant-admin flows in `tests/integration/api/test_admin_skill_registry_ui.py`
 - [ ] T004 [P] Create screenshot/evidence helper scaffolding for `output/playwright/qa014_ui` capture expectations in `tests/integration/api/test_skill_registry_browser_flows.py`
 
@@ -48,7 +48,7 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 - [ ] T010 Implement shared browser form and safe view models for `SkillPackageCreateForm`, `ManifestCandidateForm`, `TenantGrantForm`, `InstallSkillForm`, `CredentialReferenceConfigForm`, `SmokeTestActionForm`, `BindingEligibilityPreviewForm`, `RevisionConflictView`, and `RedactionSafePageContext` in `src/multi_agent_platform/api/ui/skill_registry.py`
 - [ ] T011 Extend shared API schemas only where router form adapters need typed request mapping in `src/multi_agent_platform/api/schemas/skill_registry.py`
 - [ ] T012 Add shared form, validation, stale conflict, empty, denied, readiness, smoke-test, policy, and audit partial coverage in `tests/integration/api/test_admin_console_templates.py`
-- [ ] T013 Implement shared skill registry template partials for form errors, stale conflicts, validation findings, readiness, smoke-test history, policy eligibility, and audit timeline in `src/multi_agent_platform/web_admin/templates/skill_registry/components/form_errors.html`
+- [ ] T013 Implement the shared form and page-level error partial in `src/multi_agent_platform/web_admin/templates/skill_registry/components/form_errors.html`
 - [ ] T014 Implement the shared stale conflict template partial in `src/multi_agent_platform/web_admin/templates/skill_registry/components/stale_conflict.html`
 - [ ] T015 Wire common form parsing, redirect/flash handling, safe template rendering, and service error translation helpers in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
 - [ ] T016 Add security-review and observability coverage for new browser mutation paths, including role/tenant enforcement, safe redirects, CSRF/session behavior where available, audit outcome fields, and redaction-safe structured context in `tests/integration/api/test_admin_skill_registry_ui.py`
@@ -183,7 +183,7 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 - [ ] T066 [US5] Centralize tenant access checks for UI GET/POST handlers so cross-tenant links render absent/not found and same-tenant role failures render denied in `src/multi_agent_platform/api/routers/admin_skill_registry.py`
 - [ ] T067 [US5] Enforce redaction-safe page context and screenshot-safe summaries for every skill registry page model in `src/multi_agent_platform/api/ui/skill_registry.py`
-- [ ] T068 [US5] Update package, version, available-version, installation, credential, readiness, smoke-test, eligibility, and audit templates to render safe empty/blocked/denied/not-found states without protected detail in `src/multi_agent_platform/web_admin/templates/skill_registry/index.html`
+- [ ] T068 [US5] Update package, version, available-version, installation, credential, readiness, smoke-test, eligibility, and audit templates to render safe empty/blocked/denied/not-found states without protected detail in `src/multi_agent_platform/web_admin/templates/skill_registry/package_list.html`, `src/multi_agent_platform/web_admin/templates/skill_registry/package_detail.html`, `src/multi_agent_platform/web_admin/templates/skill_registry/package_candidate_form.html`, `src/multi_agent_platform/web_admin/templates/skill_registry/package_version_detail.html`, `src/multi_agent_platform/web_admin/templates/skill_registry/tenant_grant_form.html`, `src/multi_agent_platform/web_admin/templates/skill_registry/available_versions.html`, `src/multi_agent_platform/web_admin/templates/skill_registry/installation_list.html`, `src/multi_agent_platform/web_admin/templates/skill_registry/installation_detail.html`, and `src/multi_agent_platform/web_admin/templates/skill_registry/installation_configure.html`
 - [ ] T069 [US5] Update audit timeline component to show safe lifecycle evidence for browser actions, denials, stale conflicts, redactions, and tenant-scoped events without raw payloads in `src/multi_agent_platform/web_admin/templates/skill_registry/components/audit_timeline.html`
 
 **Checkpoint**: User Story 5 isolation and redaction guarantees are independently testable across all browser pages.
@@ -198,7 +198,7 @@ Terminal setup and diagnostics remain allowed in `specs/014-skill-registry-lifec
 
 ### Tests for User Story 6
 
-- [ ] T070 [P] [US6] Add docs tests that fail if `specs/014-skill-registry-lifecycle/qa014_ui.md` includes curl, SQL, or direct API commands for feature actions outside setup, diagnostics, server startup, or automated evidence collection in `tests/docs/test_skill_registry_docs.py`
+- [ ] T070 [P] [US6] Add full browser-first docs tests that fail if `specs/014-skill-registry-lifecycle/qa014_ui.md` includes curl, SQL, or direct API commands for primary feature actions outside the allowed setup, diagnostics, server startup, or automated evidence categories defined by T002 in `tests/docs/test_skill_registry_docs.py`
 - [ ] T071 [P] [US6] Add browser-flow integration tests for the complete platform-admin package-to-grant walkthrough in `tests/integration/api/test_skill_registry_browser_flows.py`
 - [ ] T072 [P] [US6] Add browser-flow integration tests for the complete tenant-admin discovery-to-readiness-to-eligibility walkthrough in `tests/integration/api/test_skill_registry_browser_flows.py`
 - [ ] T073 [P] [US6] Add browser-flow integration tests for stale conflict recovery, Acme visibility, Globex absence/denial, and redaction evidence in `tests/integration/api/test_skill_registry_browser_flows.py`

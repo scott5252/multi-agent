@@ -163,7 +163,8 @@ src/multi_agent_platform/
 tests/
 ├── integration/
 │   └── api/
-│       └── test_admin_skill_registry_ui.py
+│       ├── test_admin_skill_registry_ui.py
+│       └── test_skill_registry_browser_flows.py
 ├── unit/
 │   └── api/
 │       ├── test_skill_registry_ui_models.py
@@ -343,6 +344,23 @@ smoke-test enqueue/status, eligibility preview, stale conflict rejection,
 authorization denial, and redaction decisions. New browser mutation paths should
 preserve request, tenant, actor, route, outcome, and safe error context without
 raw manifests, secrets, provider tokens, unsafe fixtures, or cross-tenant data.
+
+## PR Review Guidance
+
+Reviewers must verify that the browser workflows remain additive to existing
+Spec 014 lifecycle services, that all primary lifecycle actions are available
+from server-rendered admin pages, and that JSON APIs remain available only for
+automation, diagnostics, and integration tests. Review must include role and
+tenant-scope authorization, cross-tenant not-found behavior, same-tenant denied
+behavior, credential-reference picker restrictions, redaction of manifests,
+secrets, provider tokens, unsafe fixtures, and cross-tenant data, plus safe audit
+and observability evidence for every mutation outcome.
+
+Reviewers must also confirm the QA UI guide contains no feature-action curl,
+SQL, or direct API commands, screenshot evidence covers the required lifecycle
+steps, `README.md` and `docs/quickstart.md` impact is handled, and focused tests,
+browser verification, timing checks, Ruff, mypy, and the coverage gate are
+recorded before completion.
 
 ## Tests
 
