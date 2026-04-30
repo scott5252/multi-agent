@@ -1,6 +1,6 @@
 # multi-agent Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-29
+Auto-generated from all feature plans. Last updated: 2026-04-30
 
 ## Active Technologies
 - Python 3.12 + FastAPI security dependencies, Auth0 JWT validation, Pydantic
@@ -97,6 +97,20 @@ Auto-generated from all feature plans. Last updated: 2026-04-29
   projections, and skill audit records; object/artifact storage for immutable
   package artifacts, safe docs, fixtures, pinned manifests, validation
   evidence, and oversized smoke-test reports (014-skill-registry-lifecycle)
+- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
+  Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+,
+  psycopg 3, Auth0 JWT validation, local-principal admin test mode, existing
+  skill registry services/schemas/templates, admin shell navigation,
+  audit/redaction helpers, model_skill_config policy preview APIs,
+  prometheus-client, pytest, pytest-asyncio, httpx, Ruff, mypy, uv
+  (014-skill-registry-lifecycle-v2)
+- Reuse existing Spec 014 PostgreSQL tables for skill packages, manifest
+  candidates/validation evidence if already present, immutable package
+  versions, tenant availability grants, tenant installations, credential
+  readiness, smoke-test evidence, binding eligibility projections, revision
+  tokens, and audit records; object/artifact storage only for existing package
+  artifacts, safe docs, fixtures, pinned manifests, validation evidence, and
+  oversized smoke-test reports (014-skill-registry-lifecycle-v2)
 
 - Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
 
@@ -126,6 +140,13 @@ boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
 async patterns for PostgreSQL access.
 
 ## Recent Changes
+- 014-skill-registry-lifecycle-v2: Planned browser-first skill registry
+  lifecycle workflows to replace primary QA curl/API helper steps with
+  server-rendered admin UI forms for package creation, manifest paste/upload,
+  candidate validation, immutable publication, tenant grants, tenant
+  discovery, tenant installation, credential reference configuration,
+  smoke-test/readiness evidence, binding eligibility preview, stale conflict
+  recovery, tenant isolation, and redaction-safe screenshot evidence.
 - 014-skill-registry-lifecycle: Planned governed skill registry and tenant
   installation lifecycle with immutable package artifacts, manifest schema,
   validation, credential readiness, smoke tests, quarantine, upgrade/rollback
@@ -190,5 +211,5 @@ async patterns for PostgreSQL access.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/014-skill-registry-lifecycle/plan.md`
+`specs/014-skill-registry-lifecycle-v2/plan.md`
 <!-- SPECKIT END -->
