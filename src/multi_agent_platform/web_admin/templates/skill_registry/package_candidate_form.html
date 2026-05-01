@@ -14,11 +14,12 @@
 {% endif %}
 <section>
   <h2>Manifest Candidate</h2>
+  {% include "skill_registry/components/form_errors.html" %}
   <form method="post" enctype="multipart/form-data" action="/admin/skill-registry/ui/packages/{{ page.slug }}/candidate">
     {% if page.candidate %}
     <input type="hidden" name="revision_token" value="{{ page.candidate.revision_token }}">
     {% endif %}
-    <label>Manifest JSON Or YAML <textarea name="manifest" rows="18" required></textarea></label>
+    <label>Manifest JSON Or YAML <textarea name="manifest" rows="18"></textarea></label>
     <label>Manifest upload <input type="file" name="manifest_file" accept=".json,.yaml,.yml,application/json,text/yaml"></label>
     <label>Artifact digest <input name="artifact_digest" required value="{% if page.candidate %}{{ page.candidate.artifact_digest }}{% else %}sha256:artifact{% endif %}"></label>
     <label>Approved integration refs <input name="approved_integration_refs" value="{% if page.candidate %}{{ page.candidate.approved_integration_refs|join(', ') }}{% else %}tool:calendar:v1{% endif %}"></label>

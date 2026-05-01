@@ -408,6 +408,8 @@ def test_browser_skill_registry_error_and_secondary_routes(
     assert missing_package.status_code == 404
     assert missing_candidate.status_code == 404
     assert invalid_candidate.status_code == 422
+    assert "Form Needs Attention" in invalid_candidate.text
+    assert "Manifest YAML or JSON is required" in invalid_candidate.text
     assert stale_validate.status_code == 303
     assert stale_validate.headers["location"].endswith("conflict=stale")
     assert stale_publish.status_code == 303
@@ -429,6 +431,69 @@ def test_browser_skill_registry_error_and_secondary_routes(
     assert smoke.status_code == 303
     assert eligibility.status_code == 303
     assert missing_installation.status_code == 404
+
+
+def test_candidate_manifest_form_accepts_upload_or_paste(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    reset_skill_registry_service()
+    _configure_env(monkeypatch, tmp_path)
+    app = create_app()
+    manifest = valid_skill_manifest()
+
+    with TestClient(app) as client:
+        client.post(
+            "/admin/skill-registry/ui/packages",
+            headers=PLATFORM_HEADERS,
+            data={
+                "slug": "calendar-assistant",
+                "display_name": "Calendar Assistant",
+                "description": "Safe calendar skill.",
+                "owner_principal_id": "platform-admin",
+            },
+        )
+        form = client.get(
+            "/admin/skill-registry/ui/packages/calendar-assistant/candidate",
+            headers=PLATFORM_HEADERS,
+        )
+        uploaded = client.post(
+            "/admin/skill-registry/ui/packages/calendar-assistant/candidate",
+            headers=PLATFORM_HEADERS,
+            data={
+                "artifact_digest": "sha256:uploaded-artifact",
+                "approved_integration_refs": "tool:calendar:v1",
+            },
+            files={
+                "manifest_file": (
+                    "manifest.json",
+                    json.dumps(manifest).encode(),
+                    "application/json",
+                )
+            },
+            follow_redirects=True,
+        )
+        pasted = client.post(
+            "/admin/skill-registry/ui/packages/calendar-assistant/candidate",
+            headers=PLATFORM_HEADERS,
+            data={
+                "manifest": json.dumps(manifest),
+                "artifact_digest": "sha256:pasted-artifact",
+                "approved_integration_refs": "tool:calendar:v1",
+            },
+            files={"manifest_file": ("", b"", "application/octet-stream")},
+            follow_redirects=True,
+        )
+
+    assert form.status_code == 200
+    assert '<textarea name="manifest" rows="18"></textarea>' in form.text
+    assert 'textarea name="manifest" rows="18" required' not in form.text
+    assert uploaded.status_code == 200, uploaded.text
+    assert "sha256:uploaded-artifact" in uploaded.text
+    assert "Candidate Summary" in uploaded.text
+    assert pasted.status_code == 200, pasted.text
+    assert "sha256:pasted-artifact" in pasted.text
+    assert "Candidate Summary" in pasted.text
 
 
 def _extract_value(html: str, name: str) -> str:

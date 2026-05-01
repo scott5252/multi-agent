@@ -426,6 +426,36 @@ async def skill_registry_package_candidate_page(
     )
 
 
+async def _render_candidate_form(
+    *,
+    slug: str,
+    request: Request,
+    principal: PrincipalContext,
+    session: AsyncSession,
+    container: Any,
+    service: SkillRegistryService,
+    errors: tuple[BrowserFormError, ...],
+) -> HTMLResponse:
+    page = _candidate_page(slug, service)
+    page["errors"] = errors
+    shell = await _skill_registry_shell(
+        request=request,
+        principal=principal,
+        session=session,
+        title=page["title"],
+        package_slug=slug,
+    )
+    return cast(
+        HTMLResponse,
+        container.workflow_ui_templates.TemplateResponse(
+            request,
+            "skill_registry/package_candidate_form.html",
+            {"page": page, "principal": principal, "shell": shell},
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        ),
+    )
+
+
 @router.post(
     "/ui/packages/{slug}/candidate",
     response_class=HTMLResponse,
@@ -435,20 +465,24 @@ async def skill_registry_package_candidate_submit(
     slug: str,
     request: Request,
     principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> RedirectResponse:
+) -> Response:
     form = await request.form()
     browser_form = ManifestCandidateForm.from_mapping(
         form,
         uploaded_manifest_text=await _uploaded_manifest_text(form.get("manifest_file")),
     )
     if browser_form.errors:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=[
-                {"field": error.field, "message": error.message}
-                for error in browser_form.errors
-            ],
+        return await _render_candidate_form(
+            slug=slug,
+            request=request,
+            principal=principal,
+            session=session,
+            container=container,
+            service=service,
+            errors=browser_form.errors,
         )
     try:
         service.save_candidate(
@@ -1056,6 +1090,7 @@ def _candidate_page(slug: str, service: SkillRegistryService) -> dict[str, Any]:
         "title": f"Package Candidate: {slug}",
         "slug": slug,
         "redaction_notice": _redaction_notice(),
+        "errors": (),
         "candidate": candidate,
         "validation_status": validation.status if validation else "not_validated",
         "manifest_digest": validation.manifest_digest if validation else None,

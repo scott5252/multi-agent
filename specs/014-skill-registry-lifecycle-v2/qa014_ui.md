@@ -24,10 +24,26 @@ Use one browser window for the main path. Use a second browser tab for the
 stale revision recovery check. Record screenshot notes under `/tmp/qa014-*` if
 you recapture evidence locally.
 
-The screenshots referenced by the existing Spec 014 UI guide live in
+All data needed for the browser pass is included in this guide. You do not
+need to open another specification, QA guide, API contract, or fixture file to
+complete the walkthrough. The screenshots referenced below live in
 `output/playwright/qa014_ui`. UUIDs, digests, and revision tokens may differ
 when you run the walkthrough, but the page titles, controls, statuses, and
 redaction language should match.
+
+## Values To Record
+
+Record these values as you move through the browser walkthrough:
+
+- `QA014_INSTALLATION_ID`: after installing the Acme skill in Step 9, copy the
+  UUID after `/admin/skill-registry/ui/installations/` in the browser URL.
+- `QA014_CURRENT_REVISION`: before opening the second stale-conflict tab in
+  Step 13, copy the visible `Revision token` value from the installation detail
+  or credential configuration page.
+
+When a URL below contains `QA014_INSTALLATION_ID`, replace it with the value
+from your run. When a form asks for a revision token, use the value already
+rendered in that browser page.
 
 ## Environment Setup
 
@@ -272,10 +288,99 @@ Actions:
 
 1. From the package detail page, click `Enter Manifest Candidate`, or open the
    URL above directly.
-2. Paste the QA manifest from `specs/014-skill-registry-lifecycle/qa014.md`
-   into `Manifest JSON Or YAML`.
-3. To verify upload precedence, choose a `.json`, `.yaml`, or `.yml` file in
-   `Manifest upload`; uploaded content takes precedence over pasted content.
+2. Use either the paste field or the upload field. For the primary browser QA
+   path, paste this complete QA manifest into `Manifest JSON Or YAML`:
+
+   ```json
+   {
+     "schema_version": "1.0",
+     "slug": "calendar-assistant",
+     "semantic_version": "1.2.3",
+     "description": "Calendar assistant for safe scheduling operations.",
+     "entrypoint": {
+       "type": "approved_tool_ref",
+       "approved_integration_ref": "tool:calendar:v1"
+     },
+     "tools": [
+       {
+         "tool_id": "calendar.list",
+         "approved_integration_ref": "tool:calendar:v1",
+         "display_name": "List calendars",
+         "description": "Lists calendar metadata.",
+         "action_categories": ["read"],
+         "side_effect_profile": "read_only",
+         "safe_usage": "Use for tenant-scoped calendar listing."
+       }
+     ],
+     "action_categories": ["read"],
+     "network_requirements": [
+       {
+         "tool_id": "calendar.list",
+         "action_category": "read",
+         "allowed_schemes": ["https"],
+         "allowed_domain_patterns": ["calendar.example.com"],
+         "allowed_ports": [443],
+         "required": true,
+         "safe_description": "Calendar API endpoint."
+       }
+     ],
+     "credential_requirements": [
+       {
+         "requirement_key": "calendar-oauth",
+         "credential_kind": "delegated_credential",
+         "tool_id": "calendar.list",
+         "action_category": "read",
+         "required": true,
+         "delegated_credential_scopes": ["calendar.readonly"],
+         "safe_description": "Delegated calendar read access."
+       }
+     ],
+     "runtime_permissions": [
+       {
+         "permission_key": "calendar-read",
+         "permission_type": "tool_access",
+         "tool_id": "calendar.list",
+         "action_category": "read",
+         "side_effect_level": "read_only",
+         "required": true,
+         "safe_description": "Read calendar metadata."
+       }
+     ],
+     "test_fixtures": [
+       {
+         "fixture_key": "list-calendars",
+         "tool_id": "calendar.list",
+         "action_category": "read",
+         "fixture_kind": "policy_preview",
+         "safe_input_summary": "Policy-only calendar list probe.",
+         "fixture_digest": "sha256:fixture",
+         "requires_credentials": true,
+         "expected_outcome": "passed",
+         "timeout_seconds": 10
+       }
+     ],
+     "compatibility": {
+       "platform_min_version": "0.1.0"
+     },
+     "safe_documentation": {
+       "summary": "Safe operator documentation.",
+       "documentation_digest": "sha256:docs",
+       "redaction_classification": "safe",
+       "support_contacts": ["ops@example.com"]
+     },
+     "artifact_digests": {
+       "package": "sha256:artifact",
+       "documentation": "sha256:docs"
+     }
+   }
+   ```
+
+3. To verify file upload, save the same JSON above as
+   `qa014-calendar-assistant-manifest.json` on your machine, choose that file in
+   `Manifest upload`, and submit the form. The paste textarea may be blank for
+   upload-only QA. To verify upload precedence, leave different valid manifest
+   text in the paste textarea and upload the saved file; uploaded content takes
+   precedence over pasted content.
 4. Use `sha256:artifact` for artifact digest.
 5. Use `tool:calendar:v1` for approved integration refs.
 6. Click `Save Candidate`.
@@ -663,15 +768,18 @@ http://127.0.0.1:8000/admin/skill-registry/ui/packages/calendar-assistant
 
 Actions:
 
-1. Sign back in as `Platform Admin` if needed.
-2. Open the package detail URL above.
-3. Review package detail, candidate, version detail, available versions,
+1. If you are still signed in as Globex, open
+   `http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/skill-registry/ui/packages/calendar-assistant`.
+2. Choose `Platform Admin`, confirm the principal key is `platform-admin`, and
+   click `Sign In`.
+3. Open the package detail URL above if the browser did not redirect there.
+4. Review package detail, candidate, version detail, available versions,
    installation detail, credentials, readiness, smoke-test, eligibility, and
    denied or empty pages.
-4. Search the visible page for raw manifest text, raw credential values,
+5. Search the visible page for raw manifest text, raw credential values,
    provider tokens, unsafe docs, raw fixture payloads, raw smoke-test logs, and
    cross-tenant content.
-5. Record notes in `/tmp/qa014-redaction-notes.txt`.
+6. Record notes in `/tmp/qa014-redaction-notes.txt`.
 
 Expected: only safe summaries, digests, identifiers, statuses, and redaction
 notices are visible.
@@ -777,9 +885,7 @@ exceptions.
 
 ## Related Files
 
-- `specs/014-skill-registry-lifecycle-v2/qa014.md`
 - `specs/014-skill-registry-lifecycle-v2/.env.qa014`
-- `specs/014-skill-registry-lifecycle/qa014_ui.md`
 - `output/playwright/qa014_ui`
 - `src/multi_agent_platform/api/routers/admin_skill_registry.py`
 - `src/multi_agent_platform/api/ui/skill_registry.py`
