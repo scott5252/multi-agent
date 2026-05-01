@@ -19,8 +19,29 @@
   </dl>
   {% endfor %}
 </section>
+{% if request.query_params.get("conflict") == "stale" %}
+<section>
+  <h2>Stale Revision Conflict</h2>
+  <p>The installation changed after this form loaded. No stale action was applied.</p>
+</section>
+{% endif %}
 {% include "skill_registry/components/readiness_panel.html" %}
 {% include "skill_registry/components/smoke_test_history.html" %}
 {% include "skill_registry/components/policy_eligibility.html" %}
+{% for installation in page.installations %}
+<section>
+  <h2>Actions</h2>
+  <p><a href="/admin/skill-registry/ui/installations/{{ installation.installation_id }}/credentials">Configure Credentials</a></p>
+  <form method="post" action="/admin/skill-registry/ui/installations/{{ installation.installation_id }}/smoke-tests">
+    <input type="hidden" name="revision_token" value="{{ installation.revision_token }}">
+    <button type="submit">Run Smoke Tests</button>
+  </form>
+  <form method="post" action="/admin/skill-registry/ui/installations/{{ installation.installation_id }}/eligibility-preview">
+    <input type="hidden" name="revision_token" value="{{ installation.revision_token }}">
+    <label>Binding context <input name="binding_context" value="qa-profile"></label>
+    <button type="submit">Preview Binding</button>
+  </form>
+</section>
+{% endfor %}
 {% include "skill_registry/components/audit_timeline.html" %}
 {% endblock %}

@@ -1,0 +1,10 @@
+{% if page.errors %}
+<section class="form-errors" role="alert">
+  <h2>Form Needs Attention</h2>
+  <ul>
+    {% for error in page.errors %}
+    <li>{{ error.field }}: {{ error.message }}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

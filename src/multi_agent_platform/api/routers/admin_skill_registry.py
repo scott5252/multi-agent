@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Annotated
+import json
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.admin.skill_registry.readiness import (
@@ -33,10 +34,19 @@ from multi_agent_platform.api.schemas.skill_registry import (
 )
 from multi_agent_platform.api.ui.admin_console import BreadcrumbItem
 from multi_agent_platform.api.ui.skill_registry import (
+    BindingEligibilityPreviewForm,
+    BrowserFormError,
+    CredentialReferenceConfigForm,
+    InstallSkillForm,
+    ManifestCandidateForm,
+    SkillPackageCreateForm,
+    SmokeTestActionForm,
+    TenantGrantForm,
     build_installation_detail_page,
     build_installation_list_page,
     build_package_detail_page,
     build_package_list_page,
+    build_revision_conflict_view,
     build_version_detail_page,
 )
 from multi_agent_platform.auth.dependencies import require_authorized_principal
@@ -46,10 +56,16 @@ router = APIRouter(prefix="/admin/skill-registry", tags=["skill-registry"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 _SERVICE = SkillRegistryService()
+SEE_OTHER = status.HTTP_303_SEE_OTHER
 
 
 def get_skill_registry_service() -> SkillRegistryService:
     return _SERVICE
+
+
+def reset_skill_registry_service() -> None:
+    global _SERVICE
+    _SERVICE = SkillRegistryService()
 
 
 @router.post("/packages", response_model=SkillPackageResponse)
@@ -274,6 +290,256 @@ async def skill_registry_package_list_page(
     )
 
 
+@router.get("/ui/packages/new", response_class=HTMLResponse, include_in_schema=False)
+async def skill_registry_package_create_page(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> HTMLResponse:
+    page: dict[str, Any] = {
+        "title": "Create Skill Package",
+        "redaction_notice": _redaction_notice(),
+        "errors": (),
+    }
+    shell = await _skill_registry_shell(
+        request=request,
+        principal=principal,
+        session=session,
+        title=page["title"],
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "skill_registry/package_create.html",
+        {"page": page, "principal": principal, "shell": shell},
+    )
+
+
+async def _render_package_create_form(
+    *,
+    request: Request,
+    principal: PrincipalContext,
+    session: AsyncSession,
+    container: Any,
+    errors: tuple[object, ...],
+    values: object | None = None,
+) -> HTMLResponse:
+    page: dict[str, Any] = {
+        "title": "Create Skill Package",
+        "redaction_notice": _redaction_notice(),
+        "errors": errors,
+        "values": values,
+    }
+    shell = await _skill_registry_shell(
+        request=request,
+        principal=principal,
+        session=session,
+        title=page["title"],
+    )
+    return cast(
+        HTMLResponse,
+        container.workflow_ui_templates.TemplateResponse(
+            request,
+            "skill_registry/package_create.html",
+            {"page": page, "principal": principal, "shell": shell},
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        ),
+    )
+
+
+@router.post("/ui/packages", response_class=HTMLResponse, include_in_schema=False)
+async def skill_registry_package_create_submit(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> Response:
+    form = await request.form()
+    browser_form = SkillPackageCreateForm.from_mapping(
+        form, default_owner=principal.principal_id
+    )
+    if browser_form.errors:
+        return await _render_package_create_form(
+            request=request,
+            principal=principal,
+            session=session,
+            container=container,
+            errors=browser_form.errors,
+            values=browser_form,
+        )
+    try:
+        package = service.create_package(
+            slug=browser_form.slug,
+            display_name=browser_form.display_name,
+            description=browser_form.description,
+            owner_principal_id=browser_form.steward_principal_id,
+            actor_principal_id=principal.principal_id,
+        )
+    except SkillRegistryServiceError as exc:
+        if exc.category == "duplicate_package":
+            return await _render_package_create_form(
+                request=request,
+                principal=principal,
+                session=session,
+                container=container,
+                errors=(
+                    BrowserFormError(
+                        "slug",
+                        "A package with this slug already exists.",
+                    ),
+                ),
+                values=browser_form,
+            )
+        raise _http_error(exc) from exc
+    return RedirectResponse(
+        f"/admin/skill-registry/ui/packages/{package.slug}", status_code=SEE_OTHER
+    )
+
+
+@router.get(
+    "/ui/packages/{slug}/candidate",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_package_candidate_page(
+    slug: str,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> HTMLResponse:
+    _ = principal
+    page = _candidate_page(slug, service)
+    shell = await _skill_registry_shell(
+        request=request,
+        principal=principal,
+        session=session,
+        title=page["title"],
+        package_slug=slug,
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "skill_registry/package_candidate_form.html",
+        {"page": page, "principal": principal, "shell": shell},
+    )
+
+
+@router.post(
+    "/ui/packages/{slug}/candidate",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_package_candidate_submit(
+    slug: str,
+    request: Request,
+    principal: PrincipalDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> RedirectResponse:
+    form = await request.form()
+    browser_form = ManifestCandidateForm.from_mapping(
+        form,
+        uploaded_manifest_text=await _uploaded_manifest_text(form.get("manifest_file")),
+    )
+    if browser_form.errors:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=[
+                {"field": error.field, "message": error.message}
+                for error in browser_form.errors
+            ],
+        )
+    try:
+        service.save_candidate(
+            slug=slug,
+            manifest_payload=browser_form.manifest_payload,
+            artifact_digest=browser_form.artifact_digest,
+            approved_integration_refs=browser_form.approved_integration_refs,
+            actor_principal_id=principal.principal_id,
+            expected_revision_token=browser_form.candidate_revision,
+        )
+    except SkillRegistryServiceError as exc:
+        raise _http_error(exc) from exc
+    return RedirectResponse(
+        f"/admin/skill-registry/ui/packages/{slug}/candidate", status_code=SEE_OTHER
+    )
+
+
+@router.post(
+    "/ui/packages/{slug}/candidate/validate",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_package_candidate_validate_submit(
+    slug: str,
+    request: Request,
+    principal: PrincipalDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> RedirectResponse:
+    form = await request.form()
+    revision_token = str(form.get("revision_token", "")).strip()
+    try:
+        service.validate_saved_candidate(
+            slug=slug,
+            revision_token=revision_token,
+            actor_principal_id=principal.principal_id,
+        )
+    except SkillRegistryServiceError as exc:
+        if exc.category == "stale_revision":
+            candidate = service.candidates.get(slug)
+            _ = build_revision_conflict_view(
+                resource_type="manifest_candidate",
+                resource_id=slug,
+                submitted_revision=revision_token,
+                current_revision=candidate.revision_token if candidate else None,
+                reload_url=f"/admin/skill-registry/ui/packages/{slug}/candidate",
+            )
+            return RedirectResponse(
+                f"/admin/skill-registry/ui/packages/{slug}/candidate?conflict=stale",
+                status_code=SEE_OTHER,
+            )
+        raise _http_error(exc) from exc
+    return RedirectResponse(
+        f"/admin/skill-registry/ui/packages/{slug}/candidate", status_code=SEE_OTHER
+    )
+
+
+@router.post(
+    "/ui/packages/{slug}/candidate/publish",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_package_candidate_publish_submit(
+    slug: str,
+    request: Request,
+    principal: PrincipalDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> RedirectResponse:
+    form = await request.form()
+    revision_token = str(form.get("revision_token", "")).strip()
+    try:
+        version = service.publish_saved_candidate(
+            slug=slug,
+            revision_token=revision_token,
+            actor_principal_id=principal.principal_id,
+        )
+    except SkillRegistryServiceError as exc:
+        if exc.category == "stale_revision":
+            return RedirectResponse(
+                f"/admin/skill-registry/ui/packages/{slug}/candidate?conflict=stale",
+                status_code=SEE_OTHER,
+            )
+        raise _http_error(exc) from exc
+    return RedirectResponse(
+        (
+            f"/admin/skill-registry/ui/packages/{slug}/versions/"
+            f"{version.semantic_version}"
+        ),
+        status_code=SEE_OTHER,
+    )
+
+
 @router.get(
     "/ui/packages/{slug}",
     response_class=HTMLResponse,
@@ -356,6 +622,142 @@ async def skill_registry_package_version_page(
 
 
 @router.get(
+    "/ui/packages/{slug}/versions/{semantic_version}/grants",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_tenant_grant_page(
+    slug: str,
+    semantic_version: str,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> HTMLResponse:
+    _ = principal
+    package = service.packages.get(slug)
+    if package is None or semantic_version not in package.versions:
+        raise HTTPException(status_code=404, detail="skill package version not found")
+    version = package.versions[semantic_version]
+    page: dict[str, Any] = {
+        "title": f"Tenant Grants: {slug} {semantic_version}",
+        "redaction_notice": _redaction_notice(),
+        "version": _version_response(version).model_dump(),
+    }
+    shell = await _skill_registry_shell(
+        request=request,
+        principal=principal,
+        session=session,
+        title=page["title"],
+        package_slug=slug,
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "skill_registry/tenant_grant_form.html",
+        {"page": page, "principal": principal, "shell": shell},
+    )
+
+
+@router.post(
+    "/ui/packages/{slug}/versions/{semantic_version}/grants",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_tenant_grant_submit(
+    slug: str,
+    semantic_version: str,
+    request: Request,
+    principal: PrincipalDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> RedirectResponse:
+    form = await request.form()
+    browser_form = TenantGrantForm.from_mapping(form)
+    if browser_form.errors:
+        raise HTTPException(status_code=422, detail="tenant_ids required")
+    try:
+        for tenant_id in browser_form.selected_tenant_ids:
+            service.grant_tenant_availability(
+                slug=slug,
+                semantic_version=semantic_version,
+                tenant_id=tenant_id,
+                actor_principal_id=principal.principal_id,
+            )
+    except SkillRegistryServiceError as exc:
+        raise _http_error(exc) from exc
+    return RedirectResponse(
+        f"/admin/skill-registry/ui/packages/{slug}", status_code=SEE_OTHER
+    )
+
+
+@router.get(
+    "/ui/available-versions",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_available_versions_page(
+    request: Request,
+    tenant_id: str,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> HTMLResponse:
+    _ensure_tenant_access(principal, tenant_id)
+    page: dict[str, Any] = {
+        "title": "Available Skills",
+        "tenant_id": tenant_id,
+        "versions": [
+            _version_response(version).model_dump()
+            for version in service.list_available_versions(tenant_id=tenant_id)
+        ],
+        "redaction_notice": _redaction_notice(),
+    }
+    shell = await _skill_registry_shell(
+        request=request,
+        principal=principal,
+        session=session,
+        title=page["title"],
+    )
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "skill_registry/available_versions.html",
+        {"page": page, "principal": principal, "shell": shell},
+    )
+
+
+@router.post(
+    "/ui/installations",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_installation_submit(
+    request: Request,
+    principal: PrincipalDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> RedirectResponse:
+    form = await request.form()
+    browser_form = InstallSkillForm.from_mapping(form)
+    if browser_form.errors:
+        raise HTTPException(status_code=422, detail="install form is incomplete")
+    _ensure_tenant_access(principal, browser_form.tenant_id)
+    try:
+        installation = service.install_version(
+            tenant_id=browser_form.tenant_id,
+            slug=browser_form.slug,
+            semantic_version=browser_form.semantic_version,
+            actor_principal_id=principal.principal_id,
+            previous_installation_id=browser_form.previous_installation_id,
+        )
+    except SkillRegistryServiceError as exc:
+        raise _http_error(exc) from exc
+    return RedirectResponse(
+        f"/admin/skill-registry/ui/installations/{installation.installation_id}",
+        status_code=SEE_OTHER,
+    )
+
+
+@router.get(
     "/ui/installations",
     response_class=HTMLResponse,
     include_in_schema=False,
@@ -368,6 +770,7 @@ async def skill_registry_installation_list_page(
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
 ) -> HTMLResponse:
+    _ensure_tenant_access(principal, tenant_id)
     installations = [
         installation
         for installation in service.installations.values()
@@ -426,6 +829,147 @@ async def skill_registry_installation_detail_page(
         request,
         "skill_registry/installation_detail.html",
         {"page": page, "principal": principal, "shell": shell},
+    )
+
+
+@router.get(
+    "/ui/installations/{installation_id}/credentials",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_installation_credentials_page(
+    installation_id: str,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> HTMLResponse:
+    installation = _installation_for_principal(service, installation_id, principal)
+    page = build_installation_detail_page(installation)
+    context = {
+        "page": page,
+        "principal": principal,
+        "shell": await _skill_registry_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            title="Configure Installed Skill",
+        ),
+        "conflict": request.query_params.get("conflict") == "stale",
+    }
+    return container.workflow_ui_templates.TemplateResponse(
+        request,
+        "skill_registry/installation_configure.html",
+        context,
+    )
+
+
+@router.post(
+    "/ui/installations/{installation_id}/credentials",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_installation_credentials_submit(
+    installation_id: str,
+    request: Request,
+    principal: PrincipalDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> RedirectResponse:
+    _installation_for_principal(service, installation_id, principal)
+    form = await request.form()
+    browser_form = CredentialReferenceConfigForm.from_mapping(form)
+    if browser_form.errors:
+        raise HTTPException(status_code=422, detail="credential form is incomplete")
+    reference_id = browser_form.selected_reference_id or ""
+    status_value = "ready" if reference_id else "missing"
+    try:
+        installation = service.configure_credentials(
+            installation_id=installation_id,
+            revision_token=browser_form.revision_token,
+            credentials=[
+                CredentialReferenceSummary(
+                    requirement_key=browser_form.requirement_key,
+                    credential_kind=browser_form.credential_kind,
+                    reference_id=reference_id or None,
+                    status=status_value,
+                    safe_summary=browser_form.delegated_metadata_fields,
+                )
+            ],
+        )
+    except SkillRegistryServiceError as exc:
+        if exc.category == "stale_revision":
+            return RedirectResponse(
+                (
+                    "/admin/skill-registry/ui/installations/"
+                    f"{installation_id}/credentials?conflict=stale"
+                ),
+                status_code=SEE_OTHER,
+            )
+        raise _http_error(exc) from exc
+    return RedirectResponse(
+        f"/admin/skill-registry/ui/installations/{installation.installation_id}",
+        status_code=SEE_OTHER,
+    )
+
+
+@router.post(
+    "/ui/installations/{installation_id}/smoke-tests",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_installation_smoke_submit(
+    installation_id: str,
+    request: Request,
+    principal: PrincipalDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> RedirectResponse:
+    _installation_for_principal(service, installation_id, principal)
+    form = await request.form()
+    browser_form = SmokeTestActionForm.from_mapping(form)
+    try:
+        installation = service.refresh_smoke_tests(
+            installation_id=installation_id,
+            revision_token=browser_form.revision_token,
+        )
+    except SkillRegistryServiceError as exc:
+        if exc.category == "stale_revision":
+            return RedirectResponse(
+                f"/admin/skill-registry/ui/installations/{installation_id}?conflict=stale",
+                status_code=SEE_OTHER,
+            )
+        raise _http_error(exc) from exc
+    return RedirectResponse(
+        f"/admin/skill-registry/ui/installations/{installation.installation_id}",
+        status_code=SEE_OTHER,
+    )
+
+
+@router.post(
+    "/ui/installations/{installation_id}/eligibility-preview",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def skill_registry_installation_eligibility_submit(
+    installation_id: str,
+    request: Request,
+    principal: PrincipalDep,
+    service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
+) -> RedirectResponse:
+    _installation_for_principal(service, installation_id, principal)
+    form = BindingEligibilityPreviewForm.from_mapping(await request.form())
+    try:
+        service.binding_eligibility(
+            installation_id=installation_id,
+            required_action_categories={form.selected_context_type}
+            if form.selected_context_type == "unsupported_action"
+            else None,
+        )
+    except SkillRegistryServiceError as exc:
+        raise _http_error(exc) from exc
+    return RedirectResponse(
+        f"/admin/skill-registry/ui/installations/{installation_id}",
+        status_code=SEE_OTHER,
     )
 
 
@@ -498,6 +1042,104 @@ def _ensure_tenant_access(principal: PrincipalContext, tenant_id: str) -> None:
     if principal.tenant_id is not None and str(principal.tenant_id) == tenant_id:
         return
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="cross_tenant")
+
+
+def _candidate_page(slug: str, service: SkillRegistryService) -> dict[str, Any]:
+    package = service.packages.get(slug)
+    if package is None:
+        raise HTTPException(status_code=404, detail="skill package not found")
+    candidate = service.candidates.get(slug)
+    validation = candidate.validation if candidate else None
+    safe_summary = validation.safe_summary if validation else {}
+    findings = validation.findings if validation else ()
+    return {
+        "title": f"Package Candidate: {slug}",
+        "slug": slug,
+        "redaction_notice": _redaction_notice(),
+        "candidate": candidate,
+        "validation_status": validation.status if validation else "not_validated",
+        "manifest_digest": validation.manifest_digest if validation else None,
+        "safe_summary": safe_summary,
+        "findings": findings,
+    }
+
+
+async def _uploaded_manifest_text(value: object) -> str | None:
+    filename = getattr(value, "filename", None)
+    if not filename:
+        return None
+    read = getattr(value, "read", None)
+    if read is None:
+        return None
+    data = await read()
+    if isinstance(data, bytes):
+        return data.decode("utf-8")
+    return str(data)
+
+
+def _parse_manifest_payload(raw_manifest: str) -> dict[str, object]:
+    raw_manifest = raw_manifest.strip()
+    if not raw_manifest:
+        raise HTTPException(status_code=422, detail="manifest is required")
+    try:
+        parsed = json.loads(raw_manifest)
+    except json.JSONDecodeError:
+        try:
+            import yaml  # type: ignore[import-untyped]
+        except ImportError as exc:
+            raise HTTPException(
+                status_code=422, detail="manifest must be JSON"
+            ) from exc
+        parsed = yaml.safe_load(raw_manifest)
+    if not isinstance(parsed, dict):
+        raise HTTPException(status_code=422, detail="manifest must be an object")
+    return dict(parsed)
+
+
+def _split_form_values(raw_value: str) -> set[str]:
+    return {
+        item.strip()
+        for chunk in raw_value.splitlines()
+        for item in chunk.split(",")
+        if item.strip()
+    }
+
+
+def _redaction_notice() -> str:
+    return (
+        "Raw package payloads, secrets, credential values, provider tokens, "
+        "unsafe docs, and cross-tenant data are omitted."
+    )
+
+
+async def _skill_registry_shell(
+    *,
+    request: Request,
+    principal: PrincipalContext,
+    session: AsyncSession,
+    title: str,
+    package_slug: str | None = None,
+) -> object:
+    breadcrumbs = [
+        BreadcrumbItem(label="Admin", href="/admin"),
+        BreadcrumbItem(
+            label="Skill Registry", href="/admin/skill-registry/ui/packages"
+        ),
+    ]
+    if package_slug:
+        breadcrumbs.append(
+            BreadcrumbItem(
+                label=package_slug,
+                href=f"/admin/skill-registry/ui/packages/{package_slug}",
+            )
+        )
+    return await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title=title,
+        breadcrumbs=tuple(breadcrumbs),
+    )
 
 
 def _http_error(exc: SkillRegistryServiceError) -> HTTPException:

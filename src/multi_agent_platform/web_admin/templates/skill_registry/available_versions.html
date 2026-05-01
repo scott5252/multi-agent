@@ -1,0 +1,36 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<header class="workflow-header">
+  <h1>{{ page.title }}</h1>
+  <p>{{ page.redaction_notice }}</p>
+</header>
+<section>
+  <h2>Granted Versions</h2>
+  <table>
+    <thead>
+      <tr><th>Skill</th><th>Version</th><th>Validation</th><th>Manifest digest</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      {% for version in page.versions %}
+      <tr>
+        <td>{{ version.slug }}</td>
+        <td>{{ version.semantic_version }}</td>
+        <td>{{ version.validation_status }}</td>
+        <td><code>{{ version.manifest_digest }}</code></td>
+        <td>
+          <form method="post" action="/admin/skill-registry/ui/installations">
+            <input type="hidden" name="tenant_id" value="{{ page.tenant_id }}">
+            <input type="hidden" name="slug" value="{{ version.slug }}">
+            <input type="hidden" name="semantic_version" value="{{ version.semantic_version }}">
+            <button type="submit">Install</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No skill versions are available for this tenant.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

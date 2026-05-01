@@ -59,6 +59,16 @@ class SkillPackageVersionRecord:
 
 
 @dataclass(slots=True)
+class SkillManifestCandidateRecord:
+    slug: str
+    manifest_payload: dict[str, object]
+    artifact_digest: str
+    approved_integration_refs: set[str]
+    revision_token: str
+    validation: SkillPackageValidationResult | None = None
+
+
+@dataclass(slots=True)
 class SkillInstallationRecord:
     installation_id: str
     tenant_id: str
@@ -79,6 +89,7 @@ class SkillInstallationRecord:
 class SkillRegistryService:
     def __init__(self) -> None:
         self.packages: dict[str, SkillPackageRecord] = {}
+        self.candidates: dict[str, SkillManifestCandidateRecord] = {}
         self.installations: dict[str, SkillInstallationRecord] = {}
         self.audit_events: list[SkillAuditEvent] = []
 
@@ -108,6 +119,88 @@ class SkillRegistryService:
             summary={"slug": slug, "display_name": display_name},
         )
         return package
+
+    def save_candidate(
+        self,
+        *,
+        slug: str,
+        manifest_payload: dict[str, object],
+        artifact_digest: str,
+        approved_integration_refs: set[str] | None,
+        actor_principal_id: str,
+        expected_revision_token: str | None = None,
+    ) -> SkillManifestCandidateRecord:
+        if slug not in self.packages:
+            raise SkillRegistryServiceError("not_found", "package not found")
+        current = self.candidates.get(slug)
+        if (
+            expected_revision_token
+            and current is not None
+            and expected_revision_token != current.revision_token
+        ):
+            raise SkillRegistryServiceError("stale_revision", "candidate is stale")
+        candidate = SkillManifestCandidateRecord(
+            slug=slug,
+            manifest_payload=manifest_payload,
+            artifact_digest=artifact_digest,
+            approved_integration_refs=approved_integration_refs or set(),
+            revision_token=str(uuid4()),
+        )
+        self.candidates[slug] = candidate
+        self._audit(
+            "skill_package_candidate.saved",
+            actor_principal_id=actor_principal_id,
+            outcome="saved",
+            package_slug=slug,
+            summary={"artifact_digest": artifact_digest},
+        )
+        return candidate
+
+    def validate_saved_candidate(
+        self,
+        *,
+        slug: str,
+        revision_token: str,
+        actor_principal_id: str,
+    ) -> SkillManifestCandidateRecord:
+        candidate = self._candidate(slug)
+        if revision_token != candidate.revision_token:
+            raise SkillRegistryServiceError("stale_revision", "candidate is stale")
+        candidate.validation = self.validate_candidate(
+            manifest_payload=candidate.manifest_payload,
+            approved_integration_refs=candidate.approved_integration_refs,
+        )
+        candidate.revision_token = str(uuid4())
+        self._audit(
+            "skill_package_candidate.validated",
+            actor_principal_id=actor_principal_id,
+            outcome=candidate.validation.status,
+            package_slug=slug,
+            summary={"manifest_digest": candidate.validation.manifest_digest or ""},
+        )
+        return candidate
+
+    def publish_saved_candidate(
+        self,
+        *,
+        slug: str,
+        revision_token: str,
+        actor_principal_id: str,
+    ) -> SkillPackageVersionRecord:
+        candidate = self._candidate(slug)
+        if revision_token != candidate.revision_token:
+            raise SkillRegistryServiceError("stale_revision", "candidate is stale")
+        if candidate.validation is None:
+            raise SkillRegistryServiceError("validation_blocked", "validation required")
+        if candidate.validation.status != "passed":
+            raise SkillRegistryServiceError("validation_blocked", "validation failed")
+        return self.publish_version(
+            slug=slug,
+            manifest_payload=candidate.manifest_payload,
+            artifact_digest=candidate.artifact_digest,
+            actor_principal_id=actor_principal_id,
+            approved_integration_refs=candidate.approved_integration_refs,
+        )
 
     def validate_candidate(
         self,
@@ -292,6 +385,17 @@ class SkillRegistryService:
         installation.revision_token = str(uuid4())
         return self.recompute_readiness(installation_id=installation_id)
 
+    def refresh_smoke_tests(
+        self,
+        *,
+        installation_id: str,
+        revision_token: str,
+    ) -> SkillInstallationRecord:
+        installation = self.installations[installation_id]
+        self._check_revision(installation, revision_token)
+        installation.revision_token = str(uuid4())
+        return self.recompute_readiness(installation_id=installation_id)
+
     def recompute_readiness(self, *, installation_id: str) -> SkillInstallationRecord:
         installation = self.installations[installation_id]
         version = self._version(installation.slug, installation.semantic_version)
@@ -363,6 +467,12 @@ class SkillRegistryService:
         if package is None or semantic_version not in package.versions:
             raise SkillRegistryServiceError("not_found", "package version not found")
         return package.versions[semantic_version]
+
+    def _candidate(self, slug: str) -> SkillManifestCandidateRecord:
+        candidate = self.candidates.get(slug)
+        if candidate is None:
+            raise SkillRegistryServiceError("not_found", "candidate not found")
+        return candidate
 
     def _check_revision(
         self,
