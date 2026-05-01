@@ -193,6 +193,17 @@ def test_browser_skill_registry_lifecycle(tmp_path, monkeypatch) -> None:
             },
             follow_redirects=True,
         )
+        ready_revision_token = _extract_value(configured.text, "revision_token")
+        eligibility_preview = client.post(
+            f"{installation_path}/eligibility-preview",
+            headers=ACME_HEADERS,
+            data={
+                "revision_token": ready_revision_token,
+                "context_type": "profile",
+                "context_id": "qa-profile",
+            },
+            follow_redirects=True,
+        )
         stale = client.post(
             f"{installation_path}/credentials",
             headers=ACME_HEADERS,
@@ -225,8 +236,14 @@ def test_browser_skill_registry_lifecycle(tmp_path, monkeypatch) -> None:
     assert "blocked" in blocked_detail.text
     assert configured.status_code == 200
     assert "ready" in configured.text
+    assert eligibility_preview.status_code == 200
+    assert "Latest Preview" in eligibility_preview.text
+    assert "allowed" in eligibility_preview.text
+    assert "qa-profile" in eligibility_preview.text
     assert "Stale Revision Conflict" in stale.text
-    assert denied.status_code == 403
+    assert denied.status_code == 404
+    assert "Installed skill unavailable" in denied.text
+    assert "No records from another tenant were shown" in denied.text
 
 
 def test_browser_skill_registry_error_and_secondary_routes(
@@ -393,6 +410,16 @@ def test_browser_skill_registry_error_and_secondary_routes(
             },
             follow_redirects=False,
         )
+        stale_eligibility = client.post(
+            f"{installation_path}/eligibility-preview",
+            headers=ACME_HEADERS,
+            data={
+                "revision_token": "stale",
+                "context_type": "profile",
+                "context_id": "qa-profile",
+            },
+            follow_redirects=False,
+        )
         missing_installation = client.get(
             "/admin/skill-registry/ui/installations/missing",
             headers=ACME_HEADERS,
@@ -430,6 +457,10 @@ def test_browser_skill_registry_error_and_secondary_routes(
     assert stale_smoke.headers["location"].endswith("conflict=stale")
     assert smoke.status_code == 303
     assert eligibility.status_code == 303
+    assert "eligibility=denied" in eligibility.headers["location"]
+    assert "installation.not_ready" in eligibility.headers["location"]
+    assert stale_eligibility.status_code == 303
+    assert stale_eligibility.headers["location"].endswith("conflict=stale")
     assert missing_installation.status_code == 404
 
 

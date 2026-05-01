@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from typing import Annotated, Any, cast
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -32,7 +33,12 @@ from multi_agent_platform.api.schemas.skill_registry import (
     SkillVersionValidationResponse,
     TenantAvailabilityGrantRequest,
 )
-from multi_agent_platform.api.ui.admin_console import BreadcrumbItem
+from multi_agent_platform.api.ui.admin_console import (
+    BreadcrumbItem,
+    CommonStateType,
+    PageAction,
+    build_common_state,
+)
 from multi_agent_platform.api.ui.skill_registry import (
     BindingEligibilityPreviewForm,
     BrowserFormError,
@@ -844,7 +850,17 @@ async def skill_registry_installation_detail_page(
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
 ) -> HTMLResponse:
-    installation = _installation_for_principal(service, installation_id, principal)
+    try:
+        installation = _installation_for_principal(service, installation_id, principal)
+    except HTTPException as exc:
+        if exc.detail == "cross_tenant":
+            return await _render_installation_unavailable(
+                request=request,
+                principal=principal,
+                session=session,
+                container=container,
+            )
+        raise
     page = build_installation_detail_page(installation)
     shell = await build_shell_for_request(
         request=request,
@@ -879,7 +895,17 @@ async def skill_registry_installation_credentials_page(
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
 ) -> HTMLResponse:
-    installation = _installation_for_principal(service, installation_id, principal)
+    try:
+        installation = _installation_for_principal(service, installation_id, principal)
+    except HTTPException as exc:
+        if exc.detail == "cross_tenant":
+            return await _render_installation_unavailable(
+                request=request,
+                principal=principal,
+                session=session,
+                container=container,
+            )
+        raise
     page = build_installation_detail_page(installation)
     context = {
         "page": page,
@@ -990,10 +1016,15 @@ async def skill_registry_installation_eligibility_submit(
     principal: PrincipalDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
 ) -> RedirectResponse:
-    _installation_for_principal(service, installation_id, principal)
+    installation = _installation_for_principal(service, installation_id, principal)
     form = BindingEligibilityPreviewForm.from_mapping(await request.form())
+    if form.revision_token != installation.revision_token:
+        return RedirectResponse(
+            f"/admin/skill-registry/ui/installations/{installation_id}?conflict=stale",
+            status_code=SEE_OTHER,
+        )
     try:
-        service.binding_eligibility(
+        decision = service.binding_eligibility(
             installation_id=installation_id,
             required_action_categories={form.selected_context_type}
             if form.selected_context_type == "unsupported_action"
@@ -1001,8 +1032,15 @@ async def skill_registry_installation_eligibility_submit(
         )
     except SkillRegistryServiceError as exc:
         raise _http_error(exc) from exc
+    params = urlencode(
+        {
+            "eligibility": "allowed" if decision.allowed else "denied",
+            "context": form.selected_context_id,
+            "reasons": ",".join(decision.reason_codes),
+        }
+    )
     return RedirectResponse(
-        f"/admin/skill-registry/ui/installations/{installation_id}",
+        f"/admin/skill-registry/ui/installations/{installation_id}?{params}",
         status_code=SEE_OTHER,
     )
 
@@ -1144,6 +1182,50 @@ def _redaction_notice() -> str:
     return (
         "Raw package payloads, secrets, credential values, provider tokens, "
         "unsafe docs, and cross-tenant data are omitted."
+    )
+
+
+async def _render_installation_unavailable(
+    *,
+    request: Request,
+    principal: PrincipalContext,
+    session: AsyncSession,
+    container: Any,
+) -> HTMLResponse:
+    next_href = "/admin/skill-registry/ui/packages"
+    if principal.tenant_id is not None:
+        next_href = (
+            f"/admin/skill-registry/ui/installations?tenant_id={principal.tenant_id}"
+        )
+    state = build_common_state(
+        CommonStateType.NOT_FOUND,
+        title="Installed skill unavailable",
+        summary=(
+            "This installed skill is not available in your current tenant scope. "
+            "No records from another tenant were shown."
+        ),
+        trace_id=principal.trace_id,
+        next_actions=(PageAction(label="View Installed Skills", href=next_href),),
+    )
+    shell = await build_shell_for_request(
+        request=request,
+        principal=principal,
+        session=session,
+        title="Installed skill unavailable",
+        breadcrumbs=(
+            BreadcrumbItem(label="Admin", href="/admin"),
+            BreadcrumbItem(label="Installed Skills", href=next_href),
+        ),
+        common_state=state,
+    )
+    return cast(
+        HTMLResponse,
+        container.workflow_ui_templates.TemplateResponse(
+            request,
+            "admin_shell/unavailable.html",
+            {"shell": shell, "state": state, "principal": principal},
+            status_code=status.HTTP_404_NOT_FOUND,
+        ),
     )
 
 

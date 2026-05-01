@@ -169,7 +169,9 @@ absence.
 
 ### Environment Step 9 - Start The API
 
-Run this in Terminal A and keep it open:
+Run this in Terminal A and keep it open. If Terminal A already has the API
+running, stop it with `Ctrl-C` after the database reset above, then start it
+again with this command:
 
 ```bash
 uv run uvicorn multi_agent_platform.api.main:app --reload
@@ -180,6 +182,9 @@ Expected: the server listens on `http://127.0.0.1:8000`.
 What is happening: FastAPI serves the admin shell and skill registry UI.
 
 Why this matters: every primary lifecycle action below happens in the browser.
+The QA lifecycle records used by these browser pages are held by the API
+process for this walkthrough, so restarting the API after a reset gives Step 2
+the clean empty package list it expects.
 
 ## Browser Walkthrough
 
@@ -376,11 +381,13 @@ Actions:
    ```
 
 3. To verify file upload, save the same JSON above as
-   `qa014-calendar-assistant-manifest.json` on your machine, choose that file in
-   `Manifest upload`, and submit the form. The paste textarea may be blank for
-   upload-only QA. To verify upload precedence, leave different valid manifest
-   text in the paste textarea and upload the saved file; uploaded content takes
-   precedence over pasted content.
+   `qa014-calendar-assistant-manifest.json` on your machine, or use the copy
+   already included at
+   `specs/014-skill-registry-lifecycle-v2/qa014-calendar-assistant-manifest.json`.
+   Choose that file in `Manifest upload`, and submit the form. The paste
+   textarea may be blank for upload-only QA. To verify upload precedence, leave
+   different valid manifest text in the paste textarea and upload the saved
+   file; uploaded content takes precedence over pasted content.
 4. Use `sha256:artifact` for artifact digest.
 5. Use `tool:calendar:v1` for approved integration refs.
 6. Click `Save Candidate`.
@@ -569,7 +576,7 @@ Actions:
 
 1. From the installation detail page, click `Configure Credentials`, or replace
    `QA014_INSTALLATION_ID` in the URL above with the id from your run.
-2. Confirm there is one row for `calendar-oauth`.
+2. Confirm there is one credential requirement for `calendar-oauth`.
 3. Select `delegated-calendar-acme`.
 4. Confirm delegated scope is `calendar.readonly`.
 5. Click `Save References`.
@@ -639,7 +646,8 @@ Actions:
 2. On installation detail, find `Binding Eligibility`.
 3. Use `qa-profile` as the binding context.
 4. Click `Preview Binding`.
-5. Confirm the page still shows the exact installation version and package
+5. Confirm `Latest Preview` shows result `allowed`.
+6. Confirm the page still shows the exact installation version and package
    version.
 
 Expected: eligibility remains tied to the pinned installation and redacted
@@ -871,6 +879,8 @@ exceptions.
 - If the login page does not show local principals, confirm `.env.qa014` was
   copied to `.env` and restart the API.
 - If a page returns unauthorized, sign in again through `/auth/local-login`.
+- If Step 2 is not empty immediately after a database reset, restart the API
+  server and sign in again before continuing.
 - If Acme does not see a version, return to platform admin and confirm the
   grant form saved Acme's tenant id.
 - If readiness stays blocked, reopen credential configuration and confirm

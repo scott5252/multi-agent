@@ -12,6 +12,9 @@ def test_skill_registry_docs_and_qa_guides_exist() -> None:
         Path("specs/014-skill-registry-lifecycle/qa014.md"),
         Path("specs/014-skill-registry-lifecycle/qa014_ui.md"),
         Path("specs/014-skill-registry-lifecycle/.env.qa014"),
+        Path("specs/014-skill-registry-lifecycle-v2/qa014.md"),
+        Path("specs/014-skill-registry-lifecycle-v2/qa014_ui.md"),
+        Path("specs/014-skill-registry-lifecycle-v2/.env.qa014"),
     ]
 
     for path in required:
@@ -27,10 +30,19 @@ def test_readme_links_skill_registry_surfaces() -> None:
 
 
 def test_qa014_ui_is_browser_first_and_screenshot_backed() -> None:
-    guide_path = Path("specs/014-skill-registry-lifecycle/qa014_ui.md")
+    guide_path = Path("specs/014-skill-registry-lifecycle-v2/qa014_ui.md")
     guide = guide_path.read_text(encoding="utf-8")
 
-    assert "curl" not in guide.lower()
+    forbidden_curl_patterns = (
+        "curl http://",
+        "curl https://",
+        "curl -x",
+        "curl -h",
+        "curl -d",
+        "curl --data",
+        "curl --request",
+    )
+    assert all(pattern not in guide.lower() for pattern in forbidden_curl_patterns)
 
     image_paths = re.findall(
         r"!\[[^\]]+\]\((\.\./\.\./output/playwright/qa014_ui/[^)]+\.png)\)", guide

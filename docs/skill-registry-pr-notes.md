@@ -45,5 +45,5 @@ uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fai
 ## Manual QA Evidence
 
 Use `specs/014-skill-registry-lifecycle/qa014.md` and
-`specs/014-skill-registry-lifecycle/qa014_ui.md` for the copy/paste and
+`specs/014-skill-registry-lifecycle-v2/qa014_ui.md` for the copy/paste and
 browser reviewer pass.

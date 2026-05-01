@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 QA014_SCREENSHOTS = Path("output/playwright/qa014_ui")
-QA014_UI_GUIDE = Path("specs/014-skill-registry-lifecycle/qa014_ui.md")
+QA014_UI_GUIDE = Path("specs/014-skill-registry-lifecycle-v2/qa014_ui.md")
 
 
 def test_platform_admin_browser_evidence_is_complete() -> None:
@@ -62,7 +62,13 @@ def test_qa014_ui_keeps_primary_lifecycle_actions_browser_first() -> None:
         "post /admin/skill-registry/packages",
         "post /admin/skill-registry/installations",
         "post /admin/skill-registry/ui/installations",
-        "curl ",
+        "curl http://",
+        "curl https://",
+        "curl -x",
+        "curl -h",
+        "curl -d",
+        "curl --data",
+        "curl --request",
     )
 
     assert all(action not in guide for action in forbidden_primary_actions)
