@@ -1,162 +1,130 @@
-# QA014 UI: Skill Registry And Installation Lifecycle
+# QA014 UI: Browser-First Skill Registry Lifecycle
 
 ## Goal
 
-Use the browser UI to verify Spec 014: governed skill package review,
-immutable version provenance, tenant-scoped installation review, credential
-readiness, smoke-test status, binding eligibility, cross-tenant isolation, and
-safe redaction behavior.
+Validate Spec 014 through the server-rendered admin browser UI. A reviewer can
+prepare an isolated local environment, then create, validate, publish, grant,
+discover, install, configure, preview, conflict-test, and redaction-check the
+skill registry lifecycle from browser pages.
 
-This guide is written so a non-technical reviewer can start here without first
-running `qa014.md`.
+The only terminal work in this guide is environment setup, server startup, and
+automated evidence collection. Primary lifecycle actions are browser steps.
 
-## Important UI Scope Note
+## How To Use This Guide
 
-The current Spec 014 browser pages are review pages. They show package,
-version, installation, readiness, smoke-test, binding, audit, and redaction
-evidence. The current UI does not yet provide browser forms for creating a
-package, publishing a version, granting tenant availability, installing a
-skill, or configuring credential references.
+Use one browser window for the main path. Use a second tab only for the stale
+revision recovery step. Complete the environment setup first, then perform the
+browser walkthrough in order because later tenant actions depend on the package
+version and grant created earlier.
 
-Where the UI does not expose a form, this guide gives a copy/paste API helper
-command. After each helper command, the reviewer returns to the browser to
-verify the result on the HTML page.
+What is happening: QA014 is exercised from the same server-rendered admin pages
+that platform and tenant admins use for governed skill registry work.
+
+Why this matters: reviewer evidence should prove the browser experience, not a
+parallel command-line path.
 
 ## Screenshot Evidence
 
-The screenshots referenced below were captured from a live local QA014 run and
-are stored here:
+The screenshots referenced below are stored in:
 
 ```text
 output/playwright/qa014_ui/
 ```
 
-The UUIDs and digests in your run may be different. The page titles, visible
-sections, status changes, tenant isolation, and redaction language should match.
+Your UUIDs, digests, revision tokens, and timestamps may differ. The visible
+sections, statuses, isolation behavior, and redaction language should match.
+
+## Values To Record
+
+- `QA014_INSTALLATION_ID`: copy from the Acme installation detail URL after
+  installing the skill.
+- `QA014_CURRENT_REVISION`: copy from the Acme installation detail page before
+  opening the stale-conflict tab.
 
 ## Environment Setup
 
 Use two terminals from the repository root.
 
 - Terminal A runs the API server.
-- Terminal B runs setup commands, API helpers, and evidence checks.
-- Keep Terminal B open so the exported variables stay available.
+- Terminal B runs setup and automated evidence commands.
 
-### Step 1 - Copy the QA014 environment file
+### Environment Step 1 - Copy The QA Environment
 
-Run in Terminal B:
+Run this in Terminal B:
 
 ```bash
 cp specs/014-skill-registry-lifecycle/.env.qa014 .env
 ```
 
-Expected result: no output.
+Expected: no output. The app now uses local-principal auth, the PostgreSQL
+database `multi_agent_platform_qa014`, fake `qa014/` secret references, and
+`.data/qa014-artifacts` storage.
 
-What is happening: the app is configured for local-principal browser login,
-the dedicated `multi_agent_platform_qa014` PostgreSQL database, fake `qa014/`
-secret references, and `.data/qa014-artifacts` filesystem storage.
+### Environment Step 2 - Confirm Local Tools
 
-Why this matters: this keeps the QA run isolated from default local data and
-prevents the test from touching real credential material.
-
-### Step 2 - Confirm local tools
-
-Run in Terminal B:
+Run this in Terminal B:
 
 ```bash
-curl --version | head -1
 jq --version
 ```
 
-Expected result: each command prints a version.
+Expected: the command prints a version. `jq` is only used for optional evidence
+inspection outside the main browser path.
 
-What is happening: `curl` will run the helper actions that are not yet exposed
-as browser forms, and `jq` will read generated IDs from the safe JSON evidence.
+### Environment Step 3 - Remove Old QA014 Evidence Files
 
-Why this matters: later steps need these tools so the reviewer can copy/paste
-commands without editing JSON by hand.
-
-### Step 3 - Remove old QA014 evidence files
-
-Run in Terminal B:
+Run this in Terminal B:
 
 ```bash
 find /tmp -type f \( -name 'qa014-*.json' -o -name 'qa014-*.html' -o -name 'qa014-*.txt' \) -exec rm -f {} +
 ```
 
-Expected result: no output.
+Expected: no output. Old evidence from previous QA014 runs is removed.
 
-What is happening: old evidence files from previous QA014 runs are removed.
+### Environment Step 4 - Install Dependencies
 
-Why this matters: the browser walkthrough should use IDs and readiness states
-from the current run only.
-
-### Step 4 - Install dependencies
-
-Run in Terminal B:
+Run this in Terminal B:
 
 ```bash
 uv sync
 ```
 
-Expected result: the command completes without an error.
+Expected: command completes without an error.
 
-What is happening: the local Python environment is prepared with the project
-dependency set.
+### Environment Step 5 - Start PostgreSQL
 
-Why this matters: the FastAPI server, migrations, admin templates, and tests
-must all run against the same dependency versions.
-
-### Step 5 - Start PostgreSQL
-
-Run in Terminal B:
+Run this in Terminal B:
 
 ```bash
 docker compose up -d postgres
 ```
 
-Expected result: Docker reports the PostgreSQL service is running.
+Expected: Docker reports the PostgreSQL service is running.
 
-What is happening: the local database container is started.
+### Environment Step 6 - Reset The QA014 Database
 
-Why this matters: the admin shell, auth audit records, tenant records, and
-Spec 014 schema all depend on PostgreSQL.
-
-### Step 6 - Reset the QA database
-
-Run in Terminal B:
+Run this in Terminal B:
 
 ```bash
-docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa014 && createdb -U postgres multi_agent_platform_qa014'
+docker compose exec -T postgres sh -c \
+  'dropdb -U postgres --if-exists multi_agent_platform_qa014 && createdb -U postgres multi_agent_platform_qa014'
 ```
 
-Expected result: no output, or a harmless notice if the database did not exist.
+Expected: no output, or a harmless notice if the database did not exist.
 
-What is happening: the dedicated QA014 database is recreated from scratch.
+### Environment Step 7 - Apply Migrations
 
-Why this matters: the reviewer starts from a clean database and can trust that
-visible state was created by this guide.
-
-### Step 7 - Apply migrations
-
-Run in Terminal B:
+Run this in Terminal B:
 
 ```bash
 uv run alembic upgrade head
 ```
 
-Expected result: migrations complete without an error.
+Expected: migrations complete without an error.
 
-What is happening: the current database schema is applied, including the skill
-registry lifecycle tables.
+### Environment Step 8 - Seed Deterministic Tenants
 
-Why this matters: Spec 014 depends on tables such as `skill_packages`,
-`skill_package_versions`, `skill_installations`,
-`skill_installation_tests`, and `skill_audit_records`.
-
-### Step 8 - Seed deterministic tenants
-
-Run in Terminal B:
+Run this in Terminal B:
 
 ```bash
 docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa014 -v ON_ERROR_STOP=1 <<'SQL'
@@ -173,635 +141,437 @@ ON CONFLICT (tenant_id) DO UPDATE SET
 SQL
 ```
 
-Expected result: PostgreSQL reports two inserted or updated tenant rows.
+Expected: PostgreSQL reports two inserted or updated tenant rows.
 
-What is happening: Acme and Globex become valid tenant scopes for the admin
-shell.
+### Environment Step 9 - Verify Skill Registry Tables
 
-Why this matters: Acme is the tenant that receives the skill grant. Globex is
-used later to prove cross-tenant isolation.
-
-### Step 9 - Verify skill registry tables exist
-
-Run in Terminal B:
+Run this in Terminal B:
 
 ```bash
 docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa014 -c "\dt skill_*"
 ```
 
-Expected result: output includes `skill_packages`,
-`skill_package_versions`, `skill_installations`,
-`skill_installation_tests`, and `skill_audit_records`.
+Expected: output includes `skill_packages`, `skill_package_versions`,
+`skill_installations`, `skill_installation_tests`, and
+`skill_audit_records`.
 
-What is happening: the reviewer confirms the schema for Spec 014 is present.
+### Environment Step 10 - Start The API
 
-Why this matters: if these tables are missing, the environment is not ready for
-the lifecycle review.
-
-### Step 10 - Start the API server
-
-Run in Terminal A:
+Run this in Terminal A and keep it open:
 
 ```bash
 uv run uvicorn multi_agent_platform.api.main:app --reload
 ```
 
-Expected result: Uvicorn listens on:
-
-```text
-http://127.0.0.1:8000
-```
-
-What is happening: FastAPI serves the local login page, admin shell, skill
-registry UI pages, and JSON helper routes.
-
-Why this matters: every browser step below uses the live server-rendered app.
-
-### Step 11 - Set shared QA variables
-
-Run in Terminal B:
-
-```bash
-export BASE_URL=http://127.0.0.1:8000
-export ACME_TENANT_ID=11111111-1111-1111-1111-111111111111
-export GLOBEX_TENANT_ID=22222222-2222-2222-2222-222222222222
-export PLATFORM_HEADER='X-Local-Principal: platform-admin'
-export ACME_HEADER='X-Local-Principal: tenant-admin-acme'
-export GLOBEX_HEADER='X-Local-Principal: tenant-admin-globex'
-```
-
-Expected result: no output.
-
-What is happening: later commands reuse stable URLs, tenants, and local
-principals.
-
-Why this matters: the API helpers must run as the same roles the browser
-review uses: platform admin, Acme tenant admin, and Globex tenant admin.
-
-### Step 12 - Create the safe skill manifest request
-
-Run in Terminal B:
-
-```bash
-cat > /tmp/qa014-manifest.json <<'JSON'
-{
-  "manifest": {
-    "schema_version": "1.0",
-    "slug": "calendar-assistant",
-    "semantic_version": "1.2.3",
-    "description": "Calendar assistant for safe scheduling operations.",
-    "entrypoint": {"type": "approved_tool_ref", "approved_integration_ref": "tool:calendar:v1"},
-    "tools": [{"tool_id": "calendar.list", "approved_integration_ref": "tool:calendar:v1", "display_name": "List calendars", "description": "Lists calendar metadata.", "action_categories": ["read"], "side_effect_profile": "read_only", "safe_usage": "Use for tenant-scoped calendar listing."}],
-    "action_categories": ["read"],
-    "network_requirements": [{"tool_id": "calendar.list", "action_category": "read", "allowed_schemes": ["https"], "allowed_domain_patterns": ["calendar.example.com"], "allowed_ports": [443], "required": true, "safe_description": "Calendar API endpoint."}],
-    "credential_requirements": [{"requirement_key": "calendar-oauth", "credential_kind": "delegated_credential", "tool_id": "calendar.list", "action_category": "read", "required": true, "delegated_credential_scopes": ["calendar.readonly"], "safe_description": "Delegated calendar read access."}],
-    "runtime_permissions": [{"permission_key": "calendar-read", "permission_type": "tool_access", "tool_id": "calendar.list", "action_category": "read", "side_effect_level": "read_only", "required": true, "safe_description": "Read calendar metadata."}],
-    "test_fixtures": [{"fixture_key": "list-calendars", "tool_id": "calendar.list", "action_category": "read", "fixture_kind": "policy_preview", "safe_input_summary": "Policy-only calendar list probe.", "fixture_digest": "sha256:fixture", "requires_credentials": true, "expected_outcome": "passed", "timeout_seconds": 10}],
-    "compatibility": {"platform_min_version": "0.1.0"},
-    "safe_documentation": {"summary": "Safe operator documentation.", "documentation_digest": "sha256:docs", "redaction_classification": "safe", "support_contacts": ["ops@example.com"]},
-    "artifact_digests": {"package": "sha256:artifact", "documentation": "sha256:docs"}
-  },
-  "approved_integration_refs": ["tool:calendar:v1"],
-  "artifact_digest": "sha256:artifact"
-}
-JSON
-```
-
-Expected result: no output.
-
-What is happening: the package manifest describes an approved calendar tool,
-required delegated credential, runtime permission, test fixture, safe
-documentation, and artifact digests.
-
-Why this matters: Spec 014 requires declarative manifests and approved
-integration references. The request does not contain raw credential values.
+Expected: the server listens on `http://127.0.0.1:8000`.
 
 ## Browser Walkthrough
 
-### Part 1 - Platform Package And Version Review
+### Step 1 - Log In As Platform Admin
 
-#### Step 1 - Log in as the platform admin
+Screenshot:
 
-Open this URL in the browser:
+![Step 1 - Platform admin login](../../output/playwright/qa014_ui/01-login-platform-admin.png)
+
+Open:
 
 ```text
 http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/skill-registry/ui/packages
 ```
 
-Navigation path: open the login URL, then click `Sign In` on the `Platform
-Admin` card.
+Navigation path:
 
-Expected page URL after login:
+1. Find the `Platform Admin` card.
+2. Confirm the card shows `platform-admin`.
+3. Click `Sign In`.
+4. Confirm the browser redirects to `Skill Registry`.
 
-```text
-http://127.0.0.1:8000/admin/skill-registry/ui/packages
-```
+Expected: you are signed in as the platform admin.
 
-Expected screen: the local QA login page shows the platform admin option.
+What is happening: the browser stores a local QA cookie for the platform admin.
 
-![Step 1 platform admin login](../../output/playwright/qa014_ui/01-login-platform-admin.png)
+Why this matters: package, candidate, publication, and grant actions are
+platform-governed.
 
-What is happening: the browser stores a local QA cookie for the platform admin
-principal.
+### Step 2 - Review The Empty Package List
 
-Why this matters: package creation, validation, publication, and tenant
-availability grants are platform-governed actions.
+Screenshot:
 
-#### Step 2 - Review the empty package list
+![Step 2 - Empty package list](../../output/playwright/qa014_ui/02-package-list-empty.png)
 
-Navigation path: after login, you land on `Skill Registry`. If needed, click
-`Skill Registry` in the left navigation under `Model And Skill Config`.
+Navigation path:
 
-Expected page URL:
+1. Start from `/admin/skill-registry/ui/packages`.
+2. Confirm the page title is `Skill Registry`.
+3. Confirm the package table says no skill packages are visible.
 
-```text
-http://127.0.0.1:8000/admin/skill-registry/ui/packages
-```
+Expected: the QA run starts with no visible package lineages.
 
-Expected screen: the page title is `Skill Registry`, the redaction notice is
-visible, and the package table says no packages are visible.
+### Step 3 - Create The Package In The Browser
 
-![Step 2 empty package list](../../output/playwright/qa014_ui/02-package-list-empty.png)
+Screenshot:
 
-What is happening: the UI is showing the starting state before the package
-lineage exists.
+![Step 3 - Package creation form](../../output/playwright/qa014_ui/03-package-create-form.png)
 
-Why this matters: the reviewer proves the package shown later was created by
-this walkthrough, not by leftover state.
-
-#### Step 3 - Create the package lineage root
-
-Run in Terminal B:
-
-```bash
-curl -sS -X POST "$BASE_URL/admin/skill-registry/packages" \
-  -H "$PLATFORM_HEADER" -H 'Content-Type: application/json' \
-  -d '{"slug":"calendar-assistant","display_name":"Calendar Assistant","description":"Safe calendar skill.","owner_principal_id":"platform-admin"}' \
-  | tee /tmp/qa014-ui-package.json
-```
-
-Expected result: JSON contains `"slug":"calendar-assistant"` and
-`"lifecycle_state":"approved"`.
-
-Return to the browser. Navigation path: click `Skill Registry` in the left
-navigation or refresh the current page.
-
-Expected page URL:
+Open:
 
 ```text
-http://127.0.0.1:8000/admin/skill-registry/ui/packages
+http://127.0.0.1:8000/admin/skill-registry/ui/packages/new
 ```
 
-Expected screen: the table now includes `calendar-assistant`.
+Navigation path:
 
-![Step 3 package list with created package](../../output/playwright/qa014_ui/03-package-list-created.png)
+1. Enter `calendar-assistant` in `Slug`.
+2. Enter `Calendar Assistant` in `Display name`.
+3. Enter `Safe calendar skill.` in `Description`.
+4. Enter `platform-admin` in `Owner principal`.
+5. Click `Create Package`.
 
-What is happening: the helper creates the package lineage root, and the browser
-list reflects that state.
+Expected: the browser redirects to the package detail page for
+`calendar-assistant`.
 
-Why this matters: Spec 014 separates the package identity from immutable
-published versions.
+### Step 4 - Confirm The Created Package Detail
 
-#### Step 4 - Open package detail before publishing
+Screenshot:
 
-Navigation path: from `Skill Registry`, click the `calendar-assistant` link in
-the package table.
+![Step 4 - Package detail before version](../../output/playwright/qa014_ui/04-package-detail-before-version.png)
 
-Expected page URL:
+Navigation path:
+
+1. Confirm the URL is `/admin/skill-registry/ui/packages/calendar-assistant`.
+2. Confirm the package state is `approved`.
+3. Confirm the versions table says no published versions are visible.
+4. Confirm protected payloads, secrets, provider tokens, and unsafe docs are not
+   shown.
+
+Expected: only safe package metadata appears.
+
+### Step 5 - Enter The Manifest Candidate
+
+Screenshot:
+
+![Step 5 - Manifest candidate form](../../output/playwright/qa014_ui/05-manifest-candidate-form.png)
+
+Open:
 
 ```text
-http://127.0.0.1:8000/admin/skill-registry/ui/packages/calendar-assistant
+http://127.0.0.1:8000/admin/skill-registry/ui/packages/calendar-assistant/candidate
 ```
 
-Expected screen: the package detail shows slug, name, approved state,
-description, the redaction notice, and an empty versions table.
+Paste the QA014 manifest from `specs/014-skill-registry-lifecycle/qa014.md`
+into `Manifest JSON Or YAML`, enter `sha256:artifact` in `Artifact digest`,
+enter `tool:calendar:v1` in `Approved integration refs`, then click
+`Save Candidate`.
 
-![Step 4 package detail before version](../../output/playwright/qa014_ui/04-package-detail-before-version.png)
+Expected: the browser shows a safe candidate summary with revision token,
+artifact digest, validation status, and no protected credential material.
 
-What is happening: the browser is showing safe lineage metadata only.
+### Step 6 - Validate The Candidate In The Browser
 
-Why this matters: raw package payloads, secrets, provider tokens, unsafe docs,
-and cross-tenant data are intentionally omitted from the UI.
+Screenshot:
 
-#### Step 5 - Validate the candidate manifest
+![Step 6 - Validation findings](../../output/playwright/qa014_ui/06-validation-findings.png)
 
-Run in Terminal B:
+Navigation path:
 
-```bash
-curl -sS -X POST "$BASE_URL/admin/skill-registry/packages/calendar-assistant/versions/validate" \
-  -H "$PLATFORM_HEADER" -H 'Content-Type: application/json' \
-  -d @/tmp/qa014-manifest.json | tee /tmp/qa014-ui-validation.json
-```
+1. From the candidate page, click `Validate Candidate`.
+2. Confirm the validation panel updates without leaving the browser.
+3. Confirm status is `passed`.
+4. Confirm no blocking findings are shown.
+5. Confirm the manifest digest starts with `sha256:`.
 
-Expected result: JSON contains `"status":"passed"`, a `sha256:` manifest
-digest, no blocking findings, and a safe summary.
+Expected: the page shows safe validation findings and a passing candidate.
 
-What is happening: the registry validates that the manifest is declarative,
-uses the approved integration reference, includes safe documentation metadata,
-and avoids raw credential material.
+### Step 7 - Publish The Immutable Version
 
-Why this matters: Spec 014 requires unsafe or unapproved packages to be blocked
-before publication.
+Screenshot:
 
-#### Step 6 - Publish the immutable version and grant Acme availability
+![Step 7 - Publish gate](../../output/playwright/qa014_ui/07-publish-gate.png)
 
-Run in Terminal B:
+Navigation path:
 
-```bash
-curl -sS -X POST "$BASE_URL/admin/skill-registry/packages/calendar-assistant/versions" \
-  -H "$PLATFORM_HEADER" -H 'Content-Type: application/json' \
-  -d @/tmp/qa014-manifest.json | tee /tmp/qa014-ui-version.json
+1. From the candidate page, confirm validation status is still `passed`.
+2. Click `Publish Version`.
+3. Confirm the browser redirects to
+   `/admin/skill-registry/ui/packages/calendar-assistant/versions/1.2.3`.
 
-curl -sS -o /tmp/qa014-ui-grant.txt -w '%{http_code}\n' -X POST \
-  "$BASE_URL/admin/skill-registry/packages/calendar-assistant/versions/1.2.3/availability" \
-  -H "$PLATFORM_HEADER" -H 'Content-Type: application/json' \
-  -d '{"tenant_id":"11111111-1111-1111-1111-111111111111"}'
-```
+Expected: version `1.2.3` is published with immutable manifest and artifact
+digests.
 
-Expected result: the first command returns version `1.2.3` with
-`"validation_status":"passed"`. The second command prints `204`.
+### Step 8 - Grant Acme From The Browser
 
-Return to the browser. Navigation path: click `Skill Registry` in the left
-navigation, then click `calendar-assistant`.
+Screenshot:
 
-Expected page URL:
+![Step 8 - Tenant grant form](../../output/playwright/qa014_ui/08-tenant-grant-form.png)
+
+Open:
 
 ```text
-http://127.0.0.1:8000/admin/skill-registry/ui/packages/calendar-assistant
+http://127.0.0.1:8000/admin/skill-registry/ui/packages/calendar-assistant/versions/1.2.3/grants
 ```
 
-Expected screen: the versions table shows `1.2.3`, validation `passed`, the
-manifest digest, the artifact digest, and the Acme tenant grant.
+Navigation path:
 
-![Step 6 package detail after publish and grant](../../output/playwright/qa014_ui/05-package-detail-published-granted.png)
+1. Enter tenant `11111111-1111-1111-1111-111111111111` for Acme.
+2. Enter `QA014 browser grant` as the grant reason.
+3. Click `Save Tenant Grants`.
+4. Return to the package detail page.
 
-What is happening: the immutable package version is published and made
-available only to Acme.
+Expected: Acme appears in the version availability summary. Globex does not.
 
-Why this matters: tenant availability is explicit. Other tenants must not see
-or install the version unless granted.
+### Step 9 - Review Package Detail After Publish And Grant
 
-#### Step 7 - Open version provenance
+Screenshot:
 
-Navigation path: from the package detail page, click the `1.2.3` version link.
+![Step 9 - Published and granted package detail](../../output/playwright/qa014_ui/09-package-detail-published-granted.png)
 
-Expected page URL:
+Navigation path:
+
+1. Open `/admin/skill-registry/ui/packages/calendar-assistant`.
+2. Confirm version `1.2.3` appears.
+3. Confirm validation is `passed`.
+4. Confirm the manifest digest and artifact digest are visible.
+5. Confirm availability includes only the Acme tenant id.
+
+Expected: the package detail shows one immutable, Acme-granted version.
+
+### Step 10 - Review Version Provenance
+
+Screenshot:
+
+![Step 10 - Version provenance](../../output/playwright/qa014_ui/10-version-detail-provenance.png)
+
+Navigation path:
+
+1. From package detail, click version `1.2.3`.
+2. Confirm lifecycle is `published`.
+3. Confirm runtime blocked is `No`.
+4. Confirm quarantined is `No`.
+5. Confirm safe export text is visible.
+
+Expected: reviewers can inspect exactly which manifest and artifact were
+published without seeing raw package payloads.
+
+### Step 11 - Log In As Acme Tenant Admin
+
+Screenshot:
+
+![Step 11 - Acme tenant admin login](../../output/playwright/qa014_ui/11-login-acme-tenant-admin.png)
+
+Open:
 
 ```text
-http://127.0.0.1:8000/admin/skill-registry/ui/packages/calendar-assistant/versions/1.2.3
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/skill-registry/ui/available-versions?tenant_id=11111111-1111-1111-1111-111111111111
 ```
 
-Expected screen: the page shows semantic version, lifecycle `published`,
-manifest digest, artifact digest, runtime blocked `No`, quarantined `No`,
-validation findings, and safe export text.
+Navigation path: click `Sign In` on the `Acme Tenant Admin` card.
 
-![Step 7 version provenance](../../output/playwright/qa014_ui/06-version-detail-provenance.png)
+Expected: the browser session is scoped to Acme tenant administration.
 
-What is happening: the UI displays immutable provenance and safe review
-metadata for the published version.
+### Step 12 - Discover The Granted Version As Acme
 
-Why this matters: reviewers can confirm exactly which manifest and artifact are
-being installed without seeing raw package contents.
+Screenshot:
 
-### Part 2 - Tenant Installation And Readiness Review
+![Step 12 - Acme available versions](../../output/playwright/qa014_ui/12-acme-available-versions.png)
 
-#### Step 8 - Log in as the Acme tenant admin
+Navigation path:
 
-Open this URL in the browser:
+1. Open
+   `/admin/skill-registry/ui/available-versions?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Confirm `calendar-assistant` version `1.2.3` appears.
+3. Confirm there is an `Install` action.
 
-```text
-http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/skill-registry/ui/installations?tenant_id=11111111-1111-1111-1111-111111111111
-```
+Expected: Acme can discover the version granted by the platform admin.
 
-Navigation path: open the login URL, then click `Sign In` on the `Acme Tenant
-Admin` card.
+### Step 13 - Install The Skill From The Browser
 
-Expected page URL after login:
+Screenshot:
 
-```text
-http://127.0.0.1:8000/admin/skill-registry/ui/installations?tenant_id=11111111-1111-1111-1111-111111111111
-```
+![Step 13 - Install granted skill](../../output/playwright/qa014_ui/13-install-granted-skill.png)
 
-Expected screen: the login page shows `Acme Tenant Admin`.
+Navigation path:
 
-![Step 8 Acme tenant admin login](../../output/playwright/qa014_ui/07-login-acme-tenant-admin.png)
+1. From Acme available versions, click `Install` for `calendar-assistant`.
+2. Confirm the browser redirects to the installation detail page.
+3. Copy the installation id from the URL as `QA014_INSTALLATION_ID`.
 
-What is happening: the browser switches from platform scope to Acme tenant
-scope.
+Expected: the installed skill is pinned to version `1.2.3`.
 
-Why this matters: installation review is tenant-specific, and tenant admins
-must only see their tenant's installed skills.
+### Step 14 - Review The Blocked Installation
 
-#### Step 9 - Review the empty Acme installed skills list
+Screenshot:
 
-Navigation path: after login, you land on `Installed Skills`. If needed, click
-`Installed Skills` in the left navigation under `Model And Skill Config`.
+![Step 14 - Blocked installation detail](../../output/playwright/qa014_ui/14-installation-detail-blocked.png)
 
-Expected page URL:
+Navigation path:
 
-```text
-http://127.0.0.1:8000/admin/skill-registry/ui/installations?tenant_id=11111111-1111-1111-1111-111111111111
-```
+1. Confirm readiness is `blocked`.
+2. Confirm credentials are `blocked`.
+3. Confirm smoke tests are `pending`.
+4. Confirm binding eligibility is `denied`.
+5. Copy the displayed revision token as `QA014_CURRENT_REVISION`.
 
-Expected screen: the table says no installed skills are visible for this
-tenant, and the redaction notice is visible.
+Expected: the installation is blocked until the required delegated credential
+reference is configured.
 
-![Step 9 empty Acme installed skills list](../../output/playwright/qa014_ui/08-installation-list-empty.png)
+### Step 15 - Configure Credential References In The Browser
 
-What is happening: Acme has access to the package version, but has not
-installed it yet.
+Screenshot:
 
-Why this matters: tenant availability and tenant installation are separate
-lifecycle states.
+![Step 15 - Credential picker](../../output/playwright/qa014_ui/15-credential-picker.png)
 
-#### Step 10 - Confirm Acme can discover the version and Globex cannot
+Open the credential configuration page for `QA014_INSTALLATION_ID`, select
+`delegated-calendar-acme`, confirm the scope is `calendar.readonly`, and click
+`Save References`.
 
-Run in Terminal B:
+Expected: the browser returns to installation detail and readiness recomputes.
 
-```bash
-curl -sS "$BASE_URL/admin/skill-registry/tenants/$ACME_TENANT_ID/available-versions" \
-  -H "$ACME_HEADER" | tee /tmp/qa014-ui-acme-available.json
+### Step 16 - Review Ready Readiness And Smoke Evidence
 
-curl -sS "$BASE_URL/admin/skill-registry/tenants/$GLOBEX_TENANT_ID/available-versions" \
-  -H "$GLOBEX_HEADER" | tee /tmp/qa014-ui-globex-available.json
-```
+Screenshot:
 
-Expected result: Acme's file includes `calendar-assistant`. Globex's file is
-an empty JSON list.
+![Step 16 - Ready installation detail](../../output/playwright/qa014_ui/16-installation-detail-ready.png)
 
-What is happening: the same published package version is visible to the
-granted tenant and invisible to the ungranted tenant.
+Navigation path:
 
-Why this matters: Spec 014 requires tenant isolation for skill discovery.
+1. Refresh the installation detail page.
+2. Confirm readiness is `ready`.
+3. Confirm credentials are `ready`.
+4. Confirm smoke tests are `passed`.
+5. Confirm binding eligibility is `eligible`.
 
-#### Step 11 - Install the skill for Acme
+Expected: the installed skill is ready for policy binding.
 
-Run in Terminal B:
+### Step 17 - Confirm Ready Status In The Installed Skills List
 
-```bash
-curl -sS -X POST "$BASE_URL/admin/skill-registry/installations" \
-  -H "$ACME_HEADER" -H 'Content-Type: application/json' \
-  -d '{"tenant_id":"11111111-1111-1111-1111-111111111111","slug":"calendar-assistant","semantic_version":"1.2.3"}' \
-  | tee /tmp/qa014-ui-installation.json
-```
+Screenshot:
 
-Expected result: JSON contains `"readiness_state":"blocked"`,
-`"credential_status":"blocked"`, `"smoke_test_status":"pending"`, and
-`"binding_eligibility_status":"denied"`.
+![Step 17 - Ready installation list](../../output/playwright/qa014_ui/17-installation-list-ready.png)
 
-Return to the browser. Navigation path: click `Installed Skills` in the left
-navigation or refresh the current Acme installation list.
-
-Expected page URL:
-
-```text
-http://127.0.0.1:8000/admin/skill-registry/ui/installations?tenant_id=11111111-1111-1111-1111-111111111111
-```
-
-Expected screen: the `calendar-assistant` row appears with version `1.2.3`,
-install version `1`, readiness `blocked`, and binding `denied`.
-
-![Step 11 blocked installation list](../../output/playwright/qa014_ui/09-installation-list-blocked.png)
-
-What is happening: Acme has installed a specific immutable skill version, but
-the install is not ready because the required delegated credential is missing.
-
-Why this matters: Spec 014 must prevent binding or runtime use until required
-readiness checks pass.
-
-#### Step 12 - Open the blocked installation detail
-
-Run in Terminal B:
-
-```bash
-export QA014_UI_INSTALLATION_ID=$(jq -r '.installation_id' /tmp/qa014-ui-installation.json)
-printf 'http://127.0.0.1:8000/admin/skill-registry/ui/installations/%s\n' "$QA014_UI_INSTALLATION_ID"
-```
-
-Navigation path: from the Acme `Installed Skills` list, click the
-`calendar-assistant` link. The printed URL is provided in case you want to
-paste it directly.
-
-Expected page URL:
-
-```text
-http://127.0.0.1:8000/admin/skill-registry/ui/installations/<installation_id>
-```
-
-Expected screen: the page shows the tenant id, skill version, installation
-version, revision token, manifest digest, artifact digest, blocked readiness,
-pending smoke tests, denied binding eligibility, findings, and redaction
-notice.
-
-![Step 12 blocked installation detail](../../output/playwright/qa014_ui/10-installation-detail-blocked.png)
-
-What is happening: the detail page exposes only safe identifiers, lifecycle
-status, and findings. It does not display a credential value.
-
-Why this matters: tenant admins need enough detail to fix readiness without
-seeing or entering raw secrets in this UI.
-
-#### Step 13 - Configure the delegated credential reference
-
-Run in Terminal B:
-
-```bash
-export QA014_UI_REVISION_TOKEN=$(jq -r '.revision_token' /tmp/qa014-ui-installation.json)
-curl -sS -X POST "$BASE_URL/admin/skill-registry/installations/$QA014_UI_INSTALLATION_ID/credentials" \
-  -H "$ACME_HEADER" -H 'Content-Type: application/json' \
-  -d "{\"revision_token\":\"$QA014_UI_REVISION_TOKEN\",\"credentials\":[{\"requirement_key\":\"calendar-oauth\",\"credential_kind\":\"delegated_credential\",\"reference_id\":\"delegated-calendar-acme\",\"status\":\"ready\",\"safe_summary\":{\"scope\":\"calendar.readonly\"}}]}" \
-  | tee /tmp/qa014-ui-configured.json
-```
-
-Expected result: JSON contains `"readiness_state":"ready"`,
-`"credential_status":"ready"`, `"smoke_test_status":"passed"`, and
-`"binding_eligibility_status":"eligible"`.
-
-Return to the browser. Navigation path: refresh the installation detail page.
-
-Expected page URL:
-
-```text
-http://127.0.0.1:8000/admin/skill-registry/ui/installations/<installation_id>
-```
-
-Expected screen: readiness is `ready`, credentials are `ready`, smoke tests
-are `passed`, and binding eligibility is `eligible`.
-
-![Step 13 ready installation detail](../../output/playwright/qa014_ui/11-installation-detail-ready.png)
-
-What is happening: the app records a credential reference and safe summary,
-then recomputes readiness.
-
-Why this matters: Spec 014 allows references to approved credentials, not raw
-credential values. A ready installation can now be considered for policy
-binding.
-
-#### Step 14 - Confirm the installed skills list is ready
-
-Navigation path: click `Installed Skills` in the left navigation.
-
-Expected page URL:
+Open:
 
 ```text
 http://127.0.0.1:8000/admin/skill-registry/ui/installations?tenant_id=11111111-1111-1111-1111-111111111111
 ```
 
-Expected screen: the `calendar-assistant` row now shows readiness `ready` and
-binding `eligible`.
+Expected: `calendar-assistant` appears with readiness `ready` and binding
+`eligible`.
 
-![Step 14 ready installation list](../../output/playwright/qa014_ui/12-installation-list-ready.png)
+### Step 18 - Preview Binding Eligibility
 
-What is happening: the list view reflects the same readiness state as the
-detail page.
+Screenshot:
 
-Why this matters: tenant admins can scan installed skills and quickly identify
-which ones are usable.
+![Step 18 - Binding eligibility preview](../../output/playwright/qa014_ui/18-binding-eligibility-preview.png)
 
-#### Step 15 - Preview binding eligibility
+Navigation path:
 
-Run in Terminal B:
+1. Return to the installation detail page.
+2. In `Binding eligibility`, choose the QA profile or workflow-role context.
+3. Click `Preview Binding`.
+4. Confirm the preview result is allowed.
 
-```bash
-curl -sS "$BASE_URL/admin/skill-registry/installations/$QA014_UI_INSTALLATION_ID/eligibility" \
-  -H "$ACME_HEADER" | tee /tmp/qa014-ui-eligibility.json
-```
+Expected: the browser shows a redaction-safe allowed decision.
 
-Expected result: JSON contains `"allowed":true` and evidence with tenant id,
-installation id, installation version, package slug, semantic version, manifest
-digest, and artifact digest.
+### Step 19 - Confirm Stale Revision Recovery
 
-What is happening: the binding policy sees a ready installation and returns
-eligible evidence.
+Screenshot:
 
-Why this matters: Spec 014 requires ready installed skill versions to be
-bindable through existing workflow/profile policy checks.
+![Step 19 - Stale revision recovery](../../output/playwright/qa014_ui/19-stale-revision-recovery.png)
 
-#### Step 16 - Confirm stale updates are rejected
+Navigation path:
 
-Run in Terminal B:
+1. Open the credential configuration page in two browser tabs.
+2. In tab A, save a valid credential reference.
+3. In tab B, submit the older page without refreshing.
+4. Confirm the page shows a stale revision conflict message.
+5. Click `Reload Latest`.
 
-```bash
-curl -sS -o /tmp/qa014-ui-stale.json -w '%{http_code}\n' -X POST \
-  "$BASE_URL/admin/skill-registry/installations/$QA014_UI_INSTALLATION_ID/credentials" \
-  -H "$ACME_HEADER" -H 'Content-Type: application/json' \
-  -d "{\"revision_token\":\"$QA014_UI_REVISION_TOKEN\",\"credentials\":[]}"
-```
+Expected: stale browser submissions are rejected and no stale change is
+applied.
 
-Expected result: the command prints `409`.
+### Step 20 - Log In As Globex Tenant Admin
 
-What is happening: the command intentionally reuses the old revision token from
-before credentials were configured.
+Screenshot:
 
-Why this matters: Spec 014 requires optimistic concurrency so an outdated
-admin page cannot overwrite a newer credential readiness decision.
+![Step 20 - Globex tenant admin login](../../output/playwright/qa014_ui/20-login-globex-tenant-admin.png)
 
-### Part 3 - Cross-Tenant And Redaction Evidence
-
-#### Step 17 - Log in as the Globex tenant admin
-
-Open this URL in the browser:
+Open:
 
 ```text
-http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/skill-registry/ui/installations?tenant_id=22222222-2222-2222-2222-222222222222
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/skill-registry/ui/available-versions?tenant_id=22222222-2222-2222-2222-222222222222
 ```
 
-Navigation path: open the login URL, then click `Sign In` on the `Globex
-Tenant Admin` card.
+Expected: the browser session is scoped to Globex tenant administration.
 
-Expected page URL after login:
+### Step 21 - Confirm Globex Discovery Is Empty
+
+Screenshot:
+
+![Step 21 - Globex available versions empty](../../output/playwright/qa014_ui/21-globex-available-versions-empty.png)
+
+Navigation path:
+
+1. Open
+   `/admin/skill-registry/ui/available-versions?tenant_id=22222222-2222-2222-2222-222222222222`.
+2. Confirm the page shows an empty available-skills state.
+3. Confirm there is no install action for `calendar-assistant`.
+
+Expected: Globex cannot discover the Acme-only grant.
+
+### Step 22 - Confirm Globex Installed Skills Are Empty
+
+Screenshot:
+
+![Step 22 - Globex installed skills empty](../../output/playwright/qa014_ui/22-globex-installation-list-empty.png)
+
+Open:
 
 ```text
 http://127.0.0.1:8000/admin/skill-registry/ui/installations?tenant_id=22222222-2222-2222-2222-222222222222
 ```
 
-Expected screen: the login page shows `Globex Tenant Admin`.
+Expected: no installed skills are visible and Acme's installation id is not
+shown.
 
-![Step 17 Globex tenant admin login](../../output/playwright/qa014_ui/13-login-globex-tenant-admin.png)
+### Step 23 - Confirm Direct Link Denial Or Absence
 
-What is happening: the browser switches from Acme tenant scope to Globex tenant
-scope.
+Screenshot:
 
-Why this matters: the next screens verify that Acme's granted package and
-installation do not leak into Globex.
+![Step 23 - Globex direct link denied](../../output/playwright/qa014_ui/23-globex-direct-link-denied.png)
 
-#### Step 18 - Review Globex installed skills
+Navigation path:
 
-Navigation path: after login, you land on `Installed Skills`. If needed, click
-`Installed Skills` in the left navigation.
+1. While logged in as Globex, paste the Acme installation detail URL.
+2. Confirm the browser shows a denied, unavailable, or not-found state.
+3. Confirm the page does not reveal Acme credential, readiness, smoke-test, or
+   audit details.
 
-Expected page URL:
+Expected: cross-tenant direct links do not disclose protected data.
 
-```text
-http://127.0.0.1:8000/admin/skill-registry/ui/installations?tenant_id=22222222-2222-2222-2222-222222222222
-```
+### Step 24 - Review Browser Redaction Evidence
 
-Expected screen: the table says no installed skills are visible for this
-tenant.
+Screenshot:
 
-![Step 18 empty Globex installed skills list](../../output/playwright/qa014_ui/14-globex-installation-list-empty.png)
+![Step 24 - Redaction evidence](../../output/playwright/qa014_ui/24-redaction-evidence.png)
 
-What is happening: Globex has no installation records in its tenant scope.
+Navigation path:
 
-Why this matters: Acme's installed skill must not appear to another tenant.
+1. Review package detail, version detail, candidate summary, Acme installation
+   detail, credential configuration, eligibility preview, and Globex denial.
+2. Confirm pages omit raw package payloads, raw credential values, provider
+   tokens, unsafe documentation, unsafe fixtures, and cross-tenant data.
+3. Confirm only safe summaries, digests, identifiers, statuses, findings, and
+   remediation text are visible.
 
-#### Step 19 - Confirm Globex cannot discover the granted version
-
-Open this URL in the browser while logged in as Globex:
-
-```text
-http://127.0.0.1:8000/admin/skill-registry/tenants/22222222-2222-2222-2222-222222222222/available-versions
-```
-
-Navigation path: from the Globex `Installed Skills` page, paste the URL above
-into the browser address bar.
-
-Expected page URL:
-
-```text
-http://127.0.0.1:8000/admin/skill-registry/tenants/22222222-2222-2222-2222-222222222222/available-versions
-```
-
-Expected screen: the browser shows an empty JSON list, `[]`.
-
-![Step 19 Globex available versions are empty](../../output/playwright/qa014_ui/15-globex-available-versions-empty.png)
-
-What is happening: Globex asks for available skill versions and receives no
-entries.
-
-Why this matters: the version was granted to Acme only, so Globex discovery
-must be empty.
-
-#### Step 20 - Run the redaction scan
-
-Run in Terminal B:
-
-```bash
-grep -R -Ei 'password|refresh|bearer|credential_value|raw_payload|sk-' /tmp/qa014-ui-*.json || true
-```
-
-Expected result: no credential values, provider tokens, raw payloads, or
-secret-like strings are present.
-
-What is happening: the command searches the saved JSON evidence for dangerous
-credential or token patterns.
-
-Why this matters: Spec 014 requires API and UI evidence to use safe summaries,
-identifiers, and digests instead of protected content.
+Expected: every browser page and screenshot remains redaction-safe.
 
 ## Quarantine Coverage Note
 
-The current browser pages show `Runtime blocked` and `Quarantined` fields on
-version and installation detail pages, but this UI walkthrough does not expose
-a quarantine action. Quarantine behavior is covered by the focused automated
-tests listed below, especially `tests/unit/admin/test_skill_quarantine.py` and
-the runtime eligibility tests.
-
-What is happening: the browser can review quarantine state when present, while
-the local QA helper flow focuses on the package-to-ready-installation path.
-
-Why this matters: this keeps the UI guide accurate to the current
-implementation instead of documenting a browser control that does not exist.
+The browser pages show `Runtime blocked` and `Quarantined` fields on version
+and installation detail pages. This walkthrough verifies that the states remain
+visible and redaction-safe. Operator quarantine actions are covered by focused
+automated tests, especially `tests/unit/admin/test_skill_quarantine.py` and the
+runtime eligibility tests.
 
 ## Required Automated Evidence
 
@@ -811,7 +581,7 @@ Run Ruff:
 uv run ruff check .
 ```
 
-Expected result: command exits with status `0`.
+Expected: command exits with status `0`.
 
 Run format check:
 
@@ -819,7 +589,7 @@ Run format check:
 uv run ruff format --check .
 ```
 
-Expected result: command exits with status `0`.
+Expected: command exits with status `0`.
 
 Run mypy:
 
@@ -827,15 +597,23 @@ Run mypy:
 uv run mypy src
 ```
 
-Expected result: command exits with status `0`.
+Expected: command exits with status `0`.
 
-Run focused skill registry tests:
+Run docs checks:
 
 ```bash
-uv run pytest --no-cov tests/unit/admin/test_skill_manifest.py tests/unit/admin/test_skill_package_validation.py tests/unit/admin/test_skill_artifact_store.py tests/unit/admin/test_skill_audit_redaction.py tests/unit/admin/test_skill_readiness.py tests/unit/admin/test_skill_eligibility.py tests/unit/admin/test_skill_registry_jobs.py tests/unit/admin/test_skill_registry_fairness.py tests/unit/admin/test_skill_quarantine.py tests/unit/admin/test_skill_registry_observability.py tests/unit/admin/test_skill_runtime_eligibility.py tests/unit/api/test_skill_registry_ui_models.py tests/unit/api/test_skill_registry_schemas.py tests/unit/auth/test_skill_policy.py tests/integration/skill_registry/test_skill_smoke_runner.py tests/integration/skill_registry/test_skill_installation_lifecycle.py tests/integration/skill_registry/test_skill_workflow_publish_validation.py tests/integration/skill_registry/test_skill_policy_integration.py
+uv run pytest --no-cov tests/docs/test_skill_registry_docs.py
 ```
 
-Expected result: all focused tests pass.
+Expected: docs checks pass, including the browser-first QA014 UI guide guard.
+
+Run focused browser workflow tests:
+
+```bash
+uv run pytest --no-cov tests/integration/api/test_admin_skill_registry_ui.py
+```
+
+Expected: browser workflow tests pass.
 
 Run the full coverage gate before merge:
 
@@ -843,29 +621,31 @@ Run the full coverage gate before merge:
 uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90
 ```
 
-Expected result: command exits with status `0`.
+Expected: command exits with status `0`.
 
-## Reviewer Evidence Checklist
+## UI Evidence Checklist
 
-- Local QA login page captured for platform admin.
+- Platform admin login captured.
 - Package list starts empty.
-- Package list shows `calendar-assistant` after package creation.
+- Package creation is performed from the browser.
 - Package detail shows safe package metadata before publication.
-- Version validation passes.
-- Package detail shows version `1.2.3`, digests, and Acme availability grant.
+- Manifest candidate is entered or uploaded from the browser.
+- Candidate validation is triggered from the browser.
+- Immutable version publication is triggered from the browser.
+- Tenant grant is configured from the browser.
 - Version detail shows immutable provenance and safe export text.
-- Acme login page captured.
-- Acme installed skills starts empty.
-- Acme discovery includes `calendar-assistant`.
-- Globex discovery is empty.
+- Acme tenant admin login captured.
+- Acme discovers the granted version from the browser.
+- Acme installs the skill from the browser.
 - Acme installation starts blocked because credentials are missing.
-- Installation detail shows blocked readiness, pending smoke tests, denied
-  binding, and findings.
-- Credential reference update changes readiness to ready.
-- Installation detail shows passed smoke tests and eligible binding.
-- Stale credential update returns `409`.
-- Globex installed skills remains empty.
-- Redaction scan has no raw credential or token matches.
+- Credential reference configuration uses a browser picker and no raw secrets.
+- Readiness, smoke-test status, and binding eligibility become ready/eligible.
+- Stale revision recovery is visible in the browser.
+- Globex discovery is empty.
+- Globex installed skills are empty.
+- Globex direct link access is denied or absent without protected details.
+- Redaction review has no raw credential, token, unsafe fixture, or raw payload
+  exposure.
 - Automated evidence commands pass.
 
 ## Acceptance Notes Template
@@ -873,36 +653,37 @@ Expected result: command exits with status `0`.
 - Browser and date:
 - Platform principal used:
 - Tenant principals used:
-- Package list result:
-- Version validation result:
-- Version detail result:
+- Package creation result:
+- Candidate validation result:
+- Publish result:
+- Tenant grant result:
 - Acme discovery result:
-- Globex discovery result:
-- Acme installation blocked result:
+- Acme installation result:
 - Credential reference result:
 - Binding eligibility result:
 - Stale revision result:
-- Redaction scan result:
+- Globex discovery result:
+- Globex denial or absence result:
+- Redaction review result:
 - Automated evidence:
 
 ## Troubleshooting
 
 - If the login page does not show the local QA principals, recopy
   `.env.qa014` to `.env` and restart the API.
-- If a helper command returns `401`, confirm the matching
-  `X-Local-Principal` header variable is set.
-- If a helper command returns `403`, confirm the correct principal is being
-  used for the action: platform admin for package/version/grant actions, Acme
-  tenant admin for Acme installation actions.
-- If the package list loses rows after a server reload, rerun the package,
-  version, grant, and installation helper commands. The current UI helper state
-  is in-process for this QA flow.
-- If the Acme installation list denies access, use the tenant-scoped URL with
-  `tenant_id=11111111-1111-1111-1111-111111111111`.
-- If readiness remains blocked after credential configuration, inspect
-  `/tmp/qa014-ui-configured.json` for findings.
-- If the redaction scan prints a match, confirm whether it is only a safe field
-  name or an actual protected value. Protected values must not appear.
+- If browser pages show an authorization failure, confirm the current local
+  principal matches the action: platform admin for package, candidate,
+  publish, and grant actions; Acme tenant admin for Acme discovery,
+  installation, credentials, readiness, and binding actions.
+- If a browser form returns a duplicate package or duplicate version message,
+  reset the QA014 database and repeat the setup.
+- If readiness remains blocked after credential configuration, reopen the
+  credential form and confirm `calendar-oauth` is mapped to an authorized
+  delegated credential reference.
+- If stale conflict is not shown, confirm the second browser tab was opened
+  before the first tab saved a newer revision.
+- If Globex can see Acme data, stop the run and capture the page as a
+  cross-tenant isolation defect.
 - If a screenshot does not match the current run, recapture it from the
   corresponding page and replace the PNG under `output/playwright/qa014_ui/`.
 
@@ -911,10 +692,13 @@ Expected result: command exits with status `0`.
 - `specs/014-skill-registry-lifecycle/spec.md`
 - `specs/014-skill-registry-lifecycle/qa014.md`
 - `specs/014-skill-registry-lifecycle/.env.qa014`
+- `specs/014-skill-registry-lifecycle-v2/spec.md`
+- `specs/014-skill-registry-lifecycle-v2/tasks.md`
 - `src/multi_agent_platform/api/routers/admin_skill_registry.py`
 - `src/multi_agent_platform/api/ui/skill_registry.py`
 - `src/multi_agent_platform/web_admin/templates/skill_registry/package_list.html`
 - `src/multi_agent_platform/web_admin/templates/skill_registry/package_detail.html`
+- `src/multi_agent_platform/web_admin/templates/skill_registry/package_candidate_form.html`
 - `src/multi_agent_platform/web_admin/templates/skill_registry/package_version_detail.html`
 - `src/multi_agent_platform/web_admin/templates/skill_registry/installation_list.html`
 - `src/multi_agent_platform/web_admin/templates/skill_registry/installation_detail.html`

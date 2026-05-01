@@ -5,14 +5,35 @@
   <h1>Configure Installed Skill</h1>
   <p>{{ page.redaction_notice }}</p>
 </header>
+{% if conflict %}
+<section>
+  <h2>Stale Revision Conflict</h2>
+  <p>The installation changed after this form loaded. No stale credential change was applied.</p>
+  {% for installation in page.installations %}
+  <p><a href="/admin/skill-registry/ui/installations/{{ installation.installation_id }}/credentials">Reload Latest</a></p>
+  {% endfor %}
+</section>
+{% endif %}
 <section>
   <h2>Credential References</h2>
-  <form method="post">
-    <label>Revision token <input name="revision_token" /></label>
-    <label>Requirement key <input name="requirement_key" /></label>
-    <label>Secret reference id <input name="reference_id" /></label>
+  {% for installation in page.installations %}
+  <form method="post" action="/admin/skill-registry/ui/installations/{{ installation.installation_id }}/credentials">
+    <input type="hidden" name="revision_token" value="{{ installation.revision_token }}">
+    <label>Requirement key <input name="requirement_key" readonly value="calendar-oauth"></label>
+    <label>Credential kind
+      <select name="credential_kind">
+        <option value="delegated_credential">Delegated credential</option>
+      </select>
+    </label>
+    <label>Credential reference
+      <select name="reference_id">
+        <option value="delegated-calendar-acme">delegated-calendar-acme</option>
+      </select>
+    </label>
+    <label>Delegated scope <input name="delegated_scope" readonly value="calendar.readonly"></label>
     <button type="submit">Save References</button>
   </form>
-  <p>Only references to existing secrets or delegated credentials are accepted.</p>
+  {% endfor %}
+  <p>Only existing tenant-authorized references and safe delegated metadata are accepted. Raw secret values are not collected.</p>
 </section>
 {% endblock %}

@@ -7,6 +7,9 @@
 </header>
 <section>
   <h2>Packages</h2>
+  {% if "platform_admin" in principal.role_codes %}
+  <p><a href="/admin/skill-registry/ui/packages/new">Create Package</a></p>
+  {% endif %}
   <table>
     <thead>
       <tr>

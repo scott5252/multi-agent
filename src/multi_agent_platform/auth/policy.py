@@ -80,10 +80,56 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_skill_registry_packages",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/admin/skill-registry/ui/packages/new": ProtectedSurface(
+        surface_key="GET:/admin/skill-registry/ui/packages/new",
+        requested_action="render_skill_package_create_form",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    "POST:/admin/skill-registry/ui/packages": ProtectedSurface(
+        surface_key="POST:/admin/skill-registry/ui/packages",
+        requested_action="create_skill_package_from_browser",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
     "GET:/admin/skill-registry/ui/packages/{slug}": ProtectedSurface(
         surface_key="GET:/admin/skill-registry/ui/packages/{slug}",
         requested_action="render_skill_registry_package_detail",
         classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/skill-registry/ui/packages/{slug}/candidate": ProtectedSurface(
+        surface_key="GET:/admin/skill-registry/ui/packages/{slug}/candidate",
+        requested_action="render_skill_manifest_candidate_form",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    "POST:/admin/skill-registry/ui/packages/{slug}/candidate": ProtectedSurface(
+        surface_key="POST:/admin/skill-registry/ui/packages/{slug}/candidate",
+        requested_action="save_skill_manifest_candidate",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    (
+        "POST:/admin/skill-registry/ui/packages/{slug}/candidate/validate"
+    ): ProtectedSurface(
+        surface_key="POST:/admin/skill-registry/ui/packages/{slug}/candidate/validate",
+        requested_action="validate_skill_manifest_candidate_from_browser",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    (
+        "POST:/admin/skill-registry/ui/packages/{slug}/candidate/publish"
+    ): ProtectedSurface(
+        surface_key="POST:/admin/skill-registry/ui/packages/{slug}/candidate/publish",
+        requested_action="publish_skill_manifest_candidate_from_browser",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
     ),
     (
         "GET:/admin/skill-registry/ui/packages/{slug}/versions/{semantic_version}"
@@ -93,6 +139,46 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         ),
         requested_action="render_skill_registry_version_detail",
         classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/skill-registry/ui/packages/{slug}/versions/"
+        "{semantic_version}/grants"
+    ): ProtectedSurface(
+        surface_key=(
+            "GET:/admin/skill-registry/ui/packages/{slug}/versions/"
+            "{semantic_version}/grants"
+        ),
+        requested_action="render_skill_tenant_grants_form",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    (
+        "POST:/admin/skill-registry/ui/packages/{slug}/versions/"
+        "{semantic_version}/grants"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/skill-registry/ui/packages/{slug}/versions/"
+            "{semantic_version}/grants"
+        ),
+        requested_action="save_skill_tenant_grants_from_browser",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    "GET:/admin/skill-registry/ui/available-versions": ProtectedSurface(
+        surface_key="GET:/admin/skill-registry/ui/available-versions",
+        requested_action="render_available_skill_versions",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    "POST:/admin/skill-registry/ui/installations": ProtectedSurface(
+        surface_key="POST:/admin/skill-registry/ui/installations",
+        requested_action="install_tenant_skill_from_browser",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
     ),
     "GET:/admin/skill-registry/ui/installations": ProtectedSurface(
         surface_key="GET:/admin/skill-registry/ui/installations",
@@ -107,6 +193,52 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         classification=SurfaceClassification.TENANT_ADMIN,
         required_roles=("tenant_admin",),
         required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    (
+        "GET:/admin/skill-registry/ui/installations/{installation_id}/credentials"
+    ): ProtectedSurface(
+        surface_key=(
+            "GET:/admin/skill-registry/ui/installations/{installation_id}/credentials"
+        ),
+        requested_action="render_skill_credential_reference_form",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    (
+        "POST:/admin/skill-registry/ui/installations/{installation_id}/credentials"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/skill-registry/ui/installations/{installation_id}/credentials"
+        ),
+        requested_action="configure_skill_credentials_from_browser",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    (
+        "POST:/admin/skill-registry/ui/installations/{installation_id}/smoke-tests"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/skill-registry/ui/installations/{installation_id}/smoke-tests"
+        ),
+        requested_action="refresh_skill_smoke_tests_from_browser",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    (
+        "POST:/admin/skill-registry/ui/installations/{installation_id}/"
+        "eligibility-preview"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/skill-registry/ui/installations/{installation_id}/"
+            "eligibility-preview"
+        ),
+        requested_action="preview_skill_binding_from_browser",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:bind"),
     ),
     "POST:/admin/skill-registry/packages": ProtectedSurface(
         surface_key="POST:/admin/skill-registry/packages",

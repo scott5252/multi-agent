@@ -19,6 +19,15 @@
   </dl>
   {% endfor %}
 </section>
+{% for version in page.versions %}
+{% if "platform_admin" in principal.role_codes %}
+<section>
+  <h2>Tenant Availability</h2>
+  <p>{{ version.tenant_grants|join(", ") if version.tenant_grants else "No tenants granted yet." }}</p>
+  <p><a href="/admin/skill-registry/ui/packages/{{ version.slug }}/versions/{{ version.semantic_version }}/grants">Manage Tenant Grants</a></p>
+</section>
+{% endif %}
+{% endfor %}
 {% include "skill_registry/components/validation_findings.html" %}
 <section>
   <h2>Safe Export</h2>

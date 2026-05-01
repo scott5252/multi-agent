@@ -18,9 +18,14 @@
 </section>
 <section>
   <h2>Versions</h2>
+  {% if "platform_admin" in principal.role_codes %}
+  {% for package in page.packages %}
+  <p><a href="/admin/skill-registry/ui/packages/{{ package.slug }}/candidate">Enter Manifest Candidate</a></p>
+  {% endfor %}
+  {% endif %}
   <table>
     <thead>
-      <tr><th>Version</th><th>Validation</th><th>Manifest digest</th><th>Artifact digest</th><th>Availability</th></tr>
+      <tr><th>Version</th><th>Validation</th><th>Manifest digest</th><th>Artifact digest</th><th>Availability</th><th>Action</th></tr>
     </thead>
     <tbody>
       {% for version in page.versions %}
@@ -30,9 +35,10 @@
         <td><code>{{ version.manifest_digest }}</code></td>
         <td><code>{{ version.artifact_digest }}</code></td>
         <td>{{ version.tenant_grants|join(", ") if version.tenant_grants else "No grants" }}</td>
+        <td><a href="/admin/skill-registry/ui/packages/{{ version.slug }}/versions/{{ version.semantic_version }}/grants">Manage grants</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="5">No published versions are visible.</td></tr>
+      <tr><td colspan="6">No published versions are visible.</td></tr>
       {% endfor %}
     </tbody>
   </table>

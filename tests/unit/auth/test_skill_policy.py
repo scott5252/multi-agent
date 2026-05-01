@@ -7,10 +7,33 @@ from multi_agent_platform.auth.policy import SURFACE_POLICIES
 def test_skill_registry_surface_policies_are_registered() -> None:
     expected_surfaces = {
         "GET:/admin/skill-registry/ui/packages",
+        "GET:/admin/skill-registry/ui/packages/new",
+        "POST:/admin/skill-registry/ui/packages",
         "GET:/admin/skill-registry/ui/packages/{slug}",
+        "GET:/admin/skill-registry/ui/packages/{slug}/candidate",
+        "POST:/admin/skill-registry/ui/packages/{slug}/candidate",
+        "POST:/admin/skill-registry/ui/packages/{slug}/candidate/validate",
+        "POST:/admin/skill-registry/ui/packages/{slug}/candidate/publish",
         "GET:/admin/skill-registry/ui/packages/{slug}/versions/{semantic_version}",
+        (
+            "GET:/admin/skill-registry/ui/packages/{slug}/versions/"
+            "{semantic_version}/grants"
+        ),
+        (
+            "POST:/admin/skill-registry/ui/packages/{slug}/versions/"
+            "{semantic_version}/grants"
+        ),
+        "GET:/admin/skill-registry/ui/available-versions",
         "GET:/admin/skill-registry/ui/installations",
+        "POST:/admin/skill-registry/ui/installations",
         "GET:/admin/skill-registry/ui/installations/{installation_id}",
+        "GET:/admin/skill-registry/ui/installations/{installation_id}/credentials",
+        "POST:/admin/skill-registry/ui/installations/{installation_id}/credentials",
+        "POST:/admin/skill-registry/ui/installations/{installation_id}/smoke-tests",
+        (
+            "POST:/admin/skill-registry/ui/installations/{installation_id}/"
+            "eligibility-preview"
+        ),
         "POST:/admin/skill-registry/packages",
         "POST:/admin/skill-registry/packages/{slug}/versions/validate",
         "POST:/admin/skill-registry/packages/{slug}/versions",
