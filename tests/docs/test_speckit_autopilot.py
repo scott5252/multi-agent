@@ -74,6 +74,21 @@ def test_example_autopilot_files_are_portable_json_yaml() -> None:
     assert manifest["validation_file"] == "validation.yml"
 
 
+def test_spec_015_uses_shared_autopilot_defaults() -> None:
+    policy = json.loads(
+        read("specs/_autopilot/015-agent-workflow-test-bench/policy.yml")
+    )
+    validation = json.loads(
+        read("specs/_autopilot/015-agent-workflow-test-bench/validation.yml")
+    )
+
+    assert policy["extends"] == "../shared/policy.base.yml"
+    assert validation["extends"] == "../shared/validation.base.yml"
+    assert policy["variables"]["qa_database"] == "multi_agent_platform_qa015"
+    assert validation["variables"]["qa_id"] == "qa015"
+    assert "playwright" in validation
+
+
 def test_qa_runners_support_dry_run_from_validation_file() -> None:
     validation_file = ROOT / "specs/_autopilot/example/validation.yml"
 
@@ -114,3 +129,45 @@ def test_qa_runners_support_dry_run_from_validation_file() -> None:
     assert "start api" in ui_result.stdout
     assert "local-login-smoke" in ui_result.stdout
     assert "Playwright dry run completed" in ui_result.stdout
+
+
+def test_spec_015_validation_resolves_shared_defaults() -> None:
+    validation_file = (
+        ROOT / "specs/_autopilot/015-agent-workflow-test-bench/validation.yml"
+    )
+
+    api_result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/qa/run_spec_qa.py",
+            str(validation_file),
+            "--dry-run",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert api_result.returncode == 0, api_result.stderr
+    assert "multi_agent_platform_qa015" in api_result.stdout
+    assert "manual-qa-user-guide-required" in api_result.stdout
+    assert "qa015_user_guide.md" in api_result.stdout
+
+    ui_result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/qa/run_playwright_ui.py",
+            str(validation_file),
+            "--dry-run",
+            "--start-processes",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert ui_result.returncode == 0, ui_result.stderr
+    assert "agent-test-bench-ui-login" in ui_result.stdout
+    assert "output/playwright/qa015_ui" not in ui_result.stdout

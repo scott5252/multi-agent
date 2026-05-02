@@ -37,6 +37,14 @@ and should be accepted without extra dependencies.
 
 Paths are resolved relative to the manifest directory unless absolute.
 
+Policy and validation files may use:
+
+- `extends`: a relative or absolute path, or a list of paths, to shared base
+  config files
+- `variables`: string values referenced by shared configs as `${name}`
+
+Shared defaults live under `specs/_autopilot/shared/`.
+
 ## Conservative Defaults
 
 ```json

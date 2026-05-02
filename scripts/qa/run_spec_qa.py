@@ -2,20 +2,18 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import shlex
 import subprocess
 import sys
 import time
-import tomllib
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-JsonObject = dict[str, Any]
+from autopilot_config import JsonObject, load_config, repo_root_from
 
 
 @dataclass
@@ -23,42 +21,6 @@ class ManagedProcess:
     process_id: str
     process: subprocess.Popen[str]
     log_handle: Any | None
-
-
-def load_config(path: Path) -> JsonObject:
-    text = path.read_text(encoding="utf-8")
-
-    try:
-        loaded = json.loads(text)
-    except json.JSONDecodeError:
-        loaded = None
-
-    if loaded is None and path.suffix == ".toml":
-        loaded = tomllib.loads(text)
-
-    if loaded is None:
-        try:
-            import yaml  # type: ignore[import-not-found]
-        except ImportError as exc:
-            raise SystemExit(
-                f"{path} is not JSON/TOML. Install PyYAML or use JSON syntax "
-                "inside the .yml file."
-            ) from exc
-        loaded = yaml.safe_load(text)
-
-    if not isinstance(loaded, dict):
-        raise SystemExit(f"{path} must contain a mapping/object at the top level")
-    return loaded
-
-
-def repo_root_from(start: Path) -> Path:
-    candidate = start.resolve()
-    if candidate.is_file():
-        candidate = candidate.parent
-    for path in (candidate, *candidate.parents):
-        if (path / ".git").exists() and (path / ".specify").exists():
-            return path
-    return Path.cwd().resolve()
 
 
 def as_command(value: Any) -> str | list[str]:

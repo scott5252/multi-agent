@@ -38,6 +38,41 @@ uv run python scripts/qa/run_spec_qa.py specs/_autopilot/my-feature/validation.y
 uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/my-feature/validation.yml --start-processes
 ```
 
+## Reusable Configuration
+
+Most specs should extend the shared defaults:
+
+```json
+{
+  "extends": "../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "My Feature",
+    "spec_number": "016",
+    "spec_slug": "my-feature",
+    "feature_dir": "specs/016-my-feature",
+    "autopilot_dir": "specs/_autopilot/016-my-feature",
+    "branch": "codex/016-my-feature",
+    "qa_id": "qa016",
+    "qa_label": "QA016",
+    "qa_database": "multi_agent_platform_qa016",
+    "qa_env_file": "specs/016-my-feature/.env.qa016",
+    "artifact_root": ".data/qa016-artifacts",
+    "playwright_output_dir": "output/playwright/qa016_ui",
+    "manual_qa_user_guide": "specs/016-my-feature/qa016_user_guide.md"
+  },
+  "playwright": {
+    "flows": []
+  }
+}
+```
+
+The shared files live in `specs/_autopilot/shared/`:
+
+- `policy.base.yml`
+- `validation.base.yml`
+
+Per-spec files normally only set variables and Playwright flows.
+
 ## Eight Phases
 
 Autopilot runs:

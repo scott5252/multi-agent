@@ -1,121 +1,24 @@
 {
-  "schema_version": "1.0",
-  "feature": {
-    "name": "Agent And Workflow Test Bench",
-    "feature_directory": "specs/015-agent-workflow-test-bench",
-    "autopilot_directory": "specs/_autopilot/015-agent-workflow-test-bench",
-    "branch": "codex/015-agent-workflow-test-bench"
-  },
-  "autonomy": {
-    "auto_select_clarifications": true,
-    "minimum_confidence": 0.8,
-    "record_auto_choices_in_spec": true,
-    "stop_on": [
-      "constitution_conflict",
-      "tenant_isolation_uncertainty",
-      "secret_or_credential_uncertainty",
-      "destructive_data_change_outside_allowed_scope",
-      "approval_resume_ambiguity",
-      "real_external_side_effect_uncertainty",
-      "production_resource_reference"
-    ],
-    "ask_user_when": [
-      "a clarification changes tenant isolation or role boundaries",
-      "a clarification permits real provider calls outside mocked QA paths",
-      "a task would delete or rewrite data outside multi_agent_platform_qa015",
-      "a migration removes or rewrites existing non-QA data",
-      "a validation command needs a real credential or production endpoint"
-    ]
-  },
-  "analysis": {
-    "auto_remediate_severities": [
-      "CRITICAL",
-      "HIGH"
-    ],
-    "max_remediation_loops": 2,
-    "rerun_after_remediation": true,
-    "stop_if_remaining_severities": [
-      "CRITICAL"
-    ]
-  },
-  "implementation": {
-    "allow_subagents_when_user_requested": true,
-    "max_parallel_subagents": 4,
-    "parallel_file_conflicts": "stop",
-    "mark_tasks_complete": true,
-    "preserve_unrelated_user_changes": true,
-    "require_tests_before_implementation_when_tasks_define_tests": true
-  },
-  "safety": {
-    "env_file": ".env",
-    "env_backup_file": ".env.autopilot-backup",
+  "extends": "../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Agent And Workflow Test Bench",
+    "spec_number": "015",
+    "spec_slug": "agent-workflow-test-bench",
+    "feature_dir": "specs/015-agent-workflow-test-bench",
+    "autopilot_dir": "specs/_autopilot/015-agent-workflow-test-bench",
+    "branch": "codex/015-agent-workflow-test-bench",
+    "qa_id": "qa015",
+    "qa_label": "QA015",
+    "qa_database": "multi_agent_platform_qa015",
     "qa_env_file": "specs/015-agent-workflow-test-bench/.env.qa015",
-    "allowed_database_resets": [
-      "multi_agent_platform_qa015"
-    ],
-    "forbidden_database_resets": [
-      "multi_agent_platform",
-      "multi_agent_platform_dev",
-      "postgres",
-      "template0",
-      "template1"
-    ],
-    "allowed_destructive_command_ids": [
-      "reset-qa-db"
-    ],
-    "allowed_artifact_roots": [
-      ".data/qa015-artifacts",
-      "output/playwright/qa015_ui",
-      "/tmp/qa015-api.log",
-      "/tmp/qa015-worker.log"
-    ],
-    "forbid_real_secret_values": true,
-    "forbid_production_hosts": true,
-    "forbid_external_side_effects_by_default": true
+    "artifact_root": ".data/qa015-artifacts",
+    "playwright_output_dir": "output/playwright/qa015_ui",
+    "manual_qa_user_guide": "specs/015-agent-workflow-test-bench/qa015_user_guide.md"
   },
   "validation": {
-    "validation_file": "specs/_autopilot/015-agent-workflow-test-bench/validation.yml",
-    "run_qa_docs": true,
-    "run_api_checks": true,
-    "run_playwright": true,
-    "run_quality_gates": true,
-    "require_manual_qa_user_guide": true,
-    "manual_qa_user_guide": {
-      "path": "specs/015-agent-workflow-test-bench/qa015_user_guide.md",
-      "minimum_lines": 160,
-      "audience": "non-developer manual QA reviewers"
-    },
-    "required_commands": [
-      "backup-env",
-      "copy-qa-env",
-      "install-deps",
-      "start-postgres",
-      "reset-qa-db",
-      "migrate-db",
-      "health-live",
-      "health-ready",
-      "version",
-      "dependencies",
-      "manual-qa-user-guide-required",
-      "ruff-check",
-      "ruff-format-check",
-      "mypy",
-      "pytest-coverage"
-    ],
-    "required_processes": [
-      "api",
-      "worker"
-    ],
     "required_playwright_flows": [
       "agent-test-bench-ui-login",
       "agent-test-bench-ui-target"
     ]
-  },
-  "completion": {
-    "report_feature_directory": true,
-    "report_auto_clarifications": true,
-    "report_analysis_remediations": true,
-    "report_validation_results": true,
-    "report_manual_qa_user_guide_path": true
   }
 }
