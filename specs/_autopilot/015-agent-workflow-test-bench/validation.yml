@@ -1,5 +1,64 @@
 {
   "schema_version": "1.0",
+  "manual_qa_user_guide": {
+    "output_file": "specs/015-agent-workflow-test-bench/qa015_user_guide.md",
+    "audience": "non-developer manual QA reviewers",
+    "creation_instruction": "Create a detailed user guide that gives non-developers a plain-language overview of the Agent And Workflow Test Bench and step-by-step manual QA instructions. The guide must explain what the feature is for, how to prepare the local QA environment, how to sign in, which screens to visit, which form fields to use, what each action proves, what expected results look like, what screenshots or notes to collect, how to verify tenant isolation and redaction, and how to distinguish expected limitations from regressions.",
+    "minimum_lines": 160,
+    "required_sections": [
+      "# QA015 User Guide: Agent And Workflow Test Bench",
+      "## Detailed Overview",
+      "## Who Should Use This Guide",
+      "## Manual QA Prerequisites",
+      "## Step-by-Step Manual QA",
+      "## Expected Results",
+      "## Evidence To Capture",
+      "## Security And Redaction Checks",
+      "## Tenant Isolation Checks",
+      "## Troubleshooting"
+    ]
+  },
+  "setup_commands": [
+    {
+      "id": "backup-env",
+      "command": "test ! -f .env || cp .env .env.autopilot-backup",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "copy-qa-env",
+      "command": "test -f specs/015-agent-workflow-test-bench/.env.qa015 && cp specs/015-agent-workflow-test-bench/.env.qa015 .env",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "install-deps",
+      "command": "uv sync",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "start-postgres",
+      "command": "docker compose up -d postgres",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "reset-qa-db",
+      "command": "docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa015 && createdb -U postgres multi_agent_platform_qa015'",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "migrate-db",
+      "command": "uv run alembic upgrade head",
+      "expect_exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "create-artifact-root",
+      "command": "mkdir -p .data/qa015-artifacts output/playwright/qa015_ui",
+      "expect_exit_code": 0
+    }
+  ],
   "processes": [
     {
       "id": "api",
@@ -7,12 +66,32 @@
       "readiness_url": "http://127.0.0.1:8000/health/live",
       "timeout_seconds": 30,
       "log_file": "/tmp/qa015-api.log"
+    },
+    {
+      "id": "worker",
+      "command": "uv run python -m multi_agent_platform.workers.main",
+      "log_file": "/tmp/qa015-worker.log"
     }
   ],
   "commands": [
     {
       "id": "health-live",
       "command": "curl --fail --silent http://127.0.0.1:8000/health/live",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "health-ready",
+      "command": "curl --fail --silent http://127.0.0.1:8000/health/ready",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "version",
+      "command": "curl --fail --silent http://127.0.0.1:8000/version",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "dependencies",
+      "command": "curl --fail --silent http://127.0.0.1:8000/dependencies",
       "expect_exit_code": 0
     }
   ],
@@ -21,22 +100,61 @@
     "output_dir": "output/playwright/qa015_ui",
     "flows": [
       {
-        "id": "agent-test-bench-ui",
+        "id": "agent-test-bench-ui-login",
         "steps": [
-          { "goto": "/auth/local-login?redirect_to=/admin/agent-tests/ui" },
-          { "expect_text": "Local Login" },
-          { "screenshot": "01-local-login.png", "full_page": true }
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/agent-tests/ui"
+          },
+          {
+            "expect_text": "Local Login"
+          },
+          {
+            "screenshot": "01-local-login.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "agent-test-bench-ui-target",
+        "steps": [
+          {
+            "goto": "/admin/agent-tests/ui"
+          },
+          {
+            "screenshot": "02-agent-test-bench-target.png",
+            "full_page": true
+          }
         ]
       }
     ]
   },
   "quality_commands": [
-    { "id": "ruff-check", "command": "uv run ruff check ." },
-    { "id": "ruff-format-check", "command": "uv run ruff format --check ." },
-    { "id": "mypy", "command": "uv run mypy src" },
+    {
+      "id": "manual-qa-user-guide-required",
+      "command": "test -s specs/015-agent-workflow-test-bench/qa015_user_guide.md && test $(wc -l < specs/015-agent-workflow-test-bench/qa015_user_guide.md | tr -d ' ') -ge 160 && grep -q '^# QA015 User Guide: Agent And Workflow Test Bench' specs/015-agent-workflow-test-bench/qa015_user_guide.md && grep -q '^## Detailed Overview' specs/015-agent-workflow-test-bench/qa015_user_guide.md && grep -q '^## Step-by-Step Manual QA' specs/015-agent-workflow-test-bench/qa015_user_guide.md && grep -q '^## Expected Results' specs/015-agent-workflow-test-bench/qa015_user_guide.md && grep -q '^## Troubleshooting' specs/015-agent-workflow-test-bench/qa015_user_guide.md",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "ruff-check",
+      "command": "uv run ruff check .",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "ruff-format-check",
+      "command": "uv run ruff format --check .",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "mypy",
+      "command": "uv run mypy src",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
     {
       "id": "pytest-coverage",
-      "command": "uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90"
+      "command": "uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90",
+      "expect_exit_code": 0,
+      "timeout_seconds": 900
     }
   ]
 }
