@@ -1,0 +1,31 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+  <section class="builder-panel">
+    <p class="eyebrow">Test Bench</p>
+    <p>{{ redaction_notice }}</p>
+    <a class="button-link" href="{{ page.create_href }}{% if page.tenant_id %}?tenant_id={{ page.tenant_id }}{% endif %}">Create Suite</a>
+  </section>
+  <section class="registry-grid" aria-label="Agent test suites">
+    {% if page.suites %}
+      {% for suite in page.suites %}
+        <article class="registry-card">
+          <div class="card-top">
+            <span class="badge">{{ suite.target_type }}</span>
+            <span class="status-pill status-pill--{{ suite.status }}">{{ suite.status }}</span>
+          </div>
+          <h2>{{ suite.name }}</h2>
+          <p class="mono">{{ suite.target_id }}</p>
+          <p>Cases: {{ suite.case_count }} | Latest run: {{ suite.latest_run_status or "not run" }}</p>
+          <p>Safe mode: {{ suite.default_safe_mode }}</p>
+          <a class="button-link" href="/admin/agent-tests/ui/suites/{{ suite.suite_id }}">Open Suite</a>
+        </article>
+      {% endfor %}
+    {% else %}
+      <article class="builder-panel empty-state">
+        <h2>No agent test suites are visible</h2>
+        <p>Create a suite in tenant scope to start validating prompts, profiles, workflow drafts, subworkflows, or published workflows.</p>
+      </article>
+    {% endif %}
+  </section>
+{% endblock %}

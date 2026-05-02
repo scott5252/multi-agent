@@ -1,0 +1,9 @@
+{% if case.assertions %}
+  <ul>
+    {% for assertion in case.assertions %}
+      <li>{{ assertion.kind }} {{ assertion.path or "result" }} {{ assertion.comparator or "evaluator" }}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  No assertions
+{% endif %}

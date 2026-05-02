@@ -18,12 +18,25 @@ from multi_agent_platform.api.schemas.workflow_editor import (
     RequiredTestSummary,
 )
 from multi_agent_platform.api.schemas.workflow_registry import ValidationResultResponse
+from multi_agent_platform.testing.agent_bench.models import SuiteEvidenceSummary
 
 PUBLISH_GATE_READY = "ready"
 PUBLISH_GATE_BLOCKED = "blocked"
 PUBLISH_GATE_STALE = "stale"
 PUBLISH_GATE_UNAUTHORIZED = "unauthorized"
 PUBLISH_GATE_RULE_SET_VERSION = "workflow-builder-publish-gate-0.1"
+
+
+def required_test_summary_from_agent_bench(
+    evidence: SuiteEvidenceSummary,
+) -> RequiredTestSummary:
+    return RequiredTestSummary(
+        required_count=evidence.required_count,
+        passing_count=evidence.passing_count,
+        failing_count=evidence.failing_count,
+        missing_count=evidence.missing_count,
+        stale_count=evidence.stale_count,
+    )
 
 
 def validate_installed_skill_references(

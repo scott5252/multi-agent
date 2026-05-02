@@ -1,0 +1,6 @@
+{% if page.gate_status.required_count %}
+  {{ "ready" if page.gate_status.missing_count == 0 else "blocked" }}
+  ({{ page.gate_status.passing_count }}/{{ page.gate_status.required_count }} passing)
+{% else %}
+  No required suites configured
+{% endif %}

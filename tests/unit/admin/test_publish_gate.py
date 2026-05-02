@@ -6,6 +6,7 @@ from multi_agent_platform.admin.workflow_registry.publish_gate import (
     PUBLISH_GATE_BLOCKED,
     PUBLISH_GATE_READY,
     evaluate_publish_gate,
+    required_test_summary_from_agent_bench,
 )
 from multi_agent_platform.api.schemas.workflow_editor import (
     ReferenceReadinessSnapshot,
@@ -15,6 +16,7 @@ from multi_agent_platform.api.schemas.workflow_registry import (
     ValidationFindingResponse,
     ValidationResultResponse,
 )
+from multi_agent_platform.testing.agent_bench.models import SuiteEvidenceSummary
 
 
 def test_publish_gate_is_ready_for_current_passing_validation() -> None:
@@ -151,3 +153,13 @@ def test_publish_gate_reports_unauthorized_stale_and_reference_blocks() -> None:
     assert stale.status == "stale"
     assert blocked.status == "blocked"
     assert any(finding.reference_type == "skill" for finding in blocked.findings)
+
+
+def test_publish_gate_accepts_agent_bench_evidence_summary() -> None:
+    summary = required_test_summary_from_agent_bench(
+        SuiteEvidenceSummary(required_count=2, passing_count=1, missing_count=1)
+    )
+
+    assert summary.required_count == 2
+    assert summary.passing_count == 1
+    assert summary.missing_count == 1

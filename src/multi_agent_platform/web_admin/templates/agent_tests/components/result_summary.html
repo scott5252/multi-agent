@@ -1,0 +1,7 @@
+<div class="card-top">
+  <span class="status-pill status-pill--{{ page.run.status }}">{{ page.run.status }}</span>
+  <span class="badge">{{ page.run.safe_mode }}</span>
+</div>
+<h2>{{ page.run.pass_status }}</h2>
+<p>Latency: {{ page.run.latency_ms }} ms | Tokens: {{ page.run.usage_summary.total_tokens or 0 }}</p>
+{% if page.run.failure_summary %}<p>{{ page.run.failure_summary }}</p>{% endif %}

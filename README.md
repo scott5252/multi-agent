@@ -54,6 +54,10 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   `/admin/skill-registry/ui/installations` for declarative package
   publication, tenant installation, credential readiness, smoke-test evidence,
   binding eligibility, upgrades, quarantine, and safe audit summaries
+- agent and workflow test bench under `/admin/agent-tests/ui` and
+  `/admin/agent-tests` for tenant-scoped suites, fixture-backed cases, safe
+  mock or mocked-provider runs, redacted diagnostics, blocked side-effect
+  evidence, and publish gate readiness checks
 - Spec Kit Autopilot via `/speckit.autopilot` for file-backed Codex runs that
   execute preflight, specify, clarify-auto, plan, tasks, analyze-auto,
   implement, and API/browser validation from `specs/_autopilot/*`
@@ -77,9 +81,11 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
     `/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui`.
 11. Review skill packages at `/admin/skill-registry/ui/packages` and tenant
     installations at `/admin/skill-registry/ui/installations`.
-12. Dry-run the Spec Kit Autopilot example with
+12. Review agent and workflow test suites at `/admin/agent-tests/ui`, then run
+    safe mock or mocked-provider checks before publication.
+13. Dry-run the Spec Kit Autopilot example with
     `uv run python scripts/qa/run_spec_qa.py specs/_autopilot/example/validation.yml --dry-run`.
-13. Validate the repo with `./scripts/check.sh`.
+14. Validate the repo with `./scripts/check.sh`.
 
 ## Admin Console Shell
 
@@ -185,6 +191,31 @@ Catalog sync makes only active, healthy, tenant-visible, gateway-governed model
 entries selectable. Runtime workers and test bench executions use
 `ModelGateway` so latency, normalized errors, usage availability, retry/breaker
 signals, and safe audit summaries are captured consistently.
+
+## Agent And Workflow Test Bench
+
+Administrators configure tenant-scoped test suites at `/admin/agent-tests/ui`
+or through JSON APIs under `/admin/agent-tests`. Suites target prompt versions,
+agent runtime profile versions, workflow drafts, published subworkflows, or
+published workflows. Cases store safe fixture summaries, expected contract
+shapes, deterministic assertions, optional evaluator settings, model/tool
+modes, and pass thresholds.
+
+Runs support `mock_model`, `mock_tools`, `real_model_side_effects_disabled`,
+and `approved_real_probe` safe modes. QA and automated tests use deterministic
+mock or mocked-provider paths; unapproved real probes fail closed. Result pages
+show pass/fail status, step traces, provider/model metadata, prompt/profile and
+skill references, token usage, latency, contract validation, assertion
+diagnostics, blocked side effects, redacted transcript summaries, and artifact
+metadata without raw secrets or prompt bodies.
+
+Publish gate checks can require selected suites to have current passing
+evidence for the candidate target version. Tenant isolation prevents Globex
+admins from reading Acme suites, runs, fixtures, transcripts, target names, or
+artifact references. QA015 reviewer evidence lives in
+`specs/015-agent-workflow-test-bench/qa015.md`,
+`specs/015-agent-workflow-test-bench/qa015_ui.md`, and
+`specs/015-agent-workflow-test-bench/qa015_user_guide.md`.
 
 ## Reliability Scale Hardening
 
