@@ -54,6 +54,9 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   `/admin/skill-registry/ui/installations` for declarative package
   publication, tenant installation, credential readiness, smoke-test evidence,
   binding eligibility, upgrades, quarantine, and safe audit summaries
+- Spec Kit Autopilot via `/speckit.autopilot` for file-backed Codex runs that
+  execute preflight, specify, clarify-auto, plan, tasks, analyze-auto,
+  implement, and API/browser validation from `specs/_autopilot/*`
 
 ## Quickstart
 
@@ -74,7 +77,9 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
     `/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui`.
 11. Review skill packages at `/admin/skill-registry/ui/packages` and tenant
     installations at `/admin/skill-registry/ui/installations`.
-12. Validate the repo with `./scripts/check.sh`.
+12. Dry-run the Spec Kit Autopilot example with
+    `uv run python scripts/qa/run_spec_qa.py specs/_autopilot/example/validation.yml --dry-run`.
+13. Validate the repo with `./scripts/check.sh`.
 
 ## Admin Console Shell
 

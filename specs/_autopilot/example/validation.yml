@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "setup_commands": [
+    {
+      "id": "confirm-python",
+      "command": "python --version",
+      "expect_exit_code": 0
+    }
+  ],
+  "processes": [
+    {
+      "id": "api",
+      "command": "uv run uvicorn multi_agent_platform.api.main:app --host 127.0.0.1 --port 8000",
+      "readiness_url": "http://127.0.0.1:8000/health/live",
+      "timeout_seconds": 30,
+      "log_file": "/tmp/autopilot-example-api.log"
+    }
+  ],
+  "commands": [
+    {
+      "id": "health-live",
+      "command": "curl --fail --silent http://127.0.0.1:8000/health/live",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "version",
+      "command": "curl --fail --silent http://127.0.0.1:8000/version",
+      "expect_exit_code": 0
+    }
+  ],
+  "playwright": {
+    "base_url": "http://127.0.0.1:8000",
+    "output_dir": "output/playwright/autopilot-example",
+    "flows": [
+      {
+        "id": "local-login-smoke",
+        "steps": [
+          {
+            "goto": "/auth/local-login"
+          },
+          {
+            "expect_text": "Local Login"
+          },
+          {
+            "screenshot": "local-login.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  },
+  "quality_commands": [
+    {
+      "id": "ruff-check",
+      "command": "uv run ruff check ."
+    },
+    {
+      "id": "ruff-format-check",
+      "command": "uv run ruff format --check ."
+    },
+    {
+      "id": "mypy",
+      "command": "uv run mypy src"
+    },
+    {
+      "id": "pytest-coverage",
+      "command": "uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90"
+    }
+  ]
+}

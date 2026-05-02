@@ -1,0 +1,2 @@
+cp specs/_autopilot/example/policy.yml \
+  specs/_autopilot/015-agent-workflow-test-bench/policy.yml

@@ -1,0 +1,25 @@
+schema_version: "1.0"
+workflow:
+  id: "speckit-autopilot"
+  name: "Autonomous File-Backed SDD Cycle"
+  version: "1.0.0"
+  author: "multi-agent-project"
+  description: "Runs preflight, specify, clarify-auto, plan, tasks, analyze-auto, implement, and validation from a manifest"
+
+requires:
+  speckit_version: ">=0.8.0"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  manifest:
+    type: string
+    required: true
+    prompt: "Path to autopilot manifest or prompt file"
+
+steps:
+  - id: autopilot
+    command: speckit.autopilot
+    integration: codex
+    input:
+      args: "{{ inputs.manifest }}"
