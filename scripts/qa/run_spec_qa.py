@@ -196,8 +196,10 @@ def config_command_list(config: JsonObject, key: str) -> list[JsonObject]:
 def command_sections(config: JsonObject, include_quality: bool) -> list[JsonObject]:
     selected: list[JsonObject] = []
     selected.extend(config_command_list(config, "commands"))
+    selected.extend(config_command_list(config, "extra_commands"))
     if include_quality:
         selected.extend(config_command_list(config, "quality_commands"))
+        selected.extend(config_command_list(config, "extra_quality_commands"))
     return selected
 
 

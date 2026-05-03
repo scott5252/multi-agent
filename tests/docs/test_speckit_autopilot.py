@@ -15,6 +15,8 @@ def read(path: str) -> str:
 def test_autopilot_skill_command_and_workflow_exist() -> None:
     required = [
         ".agents/skills/speckit-autopilot/SKILL.md",
+        ".agents/skills/speckit-autopilot-setup/SKILL.md",
+        ".agents/skills/speckit-autopilot-setup/scripts/create_autopilot_spec.py",
         ".specify/templates/commands/autopilot.md",
         ".specify/workflows/speckit-autopilot/workflow.yml",
         "docs/speckit-autopilot.md",
@@ -129,6 +131,75 @@ def test_qa_runners_support_dry_run_from_validation_file() -> None:
     assert "start api" in ui_result.stdout
     assert "local-login-smoke" in ui_result.stdout
     assert "Playwright dry run completed" in ui_result.stdout
+
+
+def test_autopilot_setup_script_scaffolds_thin_spec_files(tmp_path: Path) -> None:
+    config_path = tmp_path / "spec-setup.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "spec_number": "099",
+                "title": "Example Review Console",
+                "prompts": {
+                    "specify": "/speckit.specify Build the example review console.",
+                    "plan": "/speckit.plan Plan the example review console.",
+                    "tasks": "/speckit.tasks Create implementation tasks.",
+                },
+                "playwright": {
+                    "path": "/admin/example-review/ui",
+                    "expected_text": "Example Review",
+                },
+                "extra_commands": [
+                    {
+                        "id": "example-review-health",
+                        "command": "curl --fail --silent http://127.0.0.1:8000/admin/example-review/ui",
+                        "expect_exit_code": 0,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/speckit-autopilot-setup/scripts/create_autopilot_spec.py",
+            "--config",
+            str(config_path),
+            "--repo-root",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    spec_dir = tmp_path / "specs/_autopilot/099-example-review-console"
+    assert spec_dir.exists()
+
+    for filename in (
+        "autopilot.yml",
+        "specify.md",
+        "plan.md",
+        "tasks.md",
+        "policy.yml",
+        "validation.yml",
+    ):
+        assert (spec_dir / filename).exists(), filename
+
+    policy = json.loads((spec_dir / "policy.yml").read_text(encoding="utf-8"))
+    validation = json.loads((spec_dir / "validation.yml").read_text(encoding="utf-8"))
+
+    assert policy["extends"] == "../shared/policy.base.yml"
+    assert validation["extends"] == "../shared/validation.base.yml"
+    assert validation["variables"]["qa_database"] == "multi_agent_platform_qa099"
+    assert (
+        validation["playwright"]["flows"][0]["id"] == "example-review-console-ui-login"
+    )
+    assert validation["extra_commands"][0]["id"] == "example-review-health"
 
 
 def test_spec_015_validation_resolves_shared_defaults() -> None:

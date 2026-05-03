@@ -73,6 +73,29 @@ The shared files live in `specs/_autopilot/shared/`:
 
 Per-spec files normally only set variables and Playwright flows.
 
+## Scaffold A New Spec
+
+Use the `speckit-autopilot-setup` skill when you want Codex to ask for the
+next spec's details and create the autopilot folder.
+
+The skill gathers:
+
+- spec number and title
+- optional slug
+- specify, plan, and tasks prompts
+- primary browser QA route and expected text, if the spec has UI
+- optional extra curl/API checks
+
+It then runs:
+
+```bash
+uv run python .agents/skills/speckit-autopilot-setup/scripts/create_autopilot_spec.py \
+  --config /tmp/spec-setup.json
+```
+
+The generated spec folder extends the shared policy and validation defaults, so
+future specs only carry the details that change.
+
 ## Eight Phases
 
 Autopilot runs:
