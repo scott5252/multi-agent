@@ -445,6 +445,116 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         classification=SurfaceClassification.AUTHENTICATED,
         required_permissions=("usage:export",),
     ),
+    "GET:/admin/memberships": ProtectedSurface(
+        surface_key="GET:/admin/memberships",
+        requested_action="render_membership_administration_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:read",),
+    ),
+    "POST:/admin/memberships/invitations": ProtectedSurface(
+        surface_key="POST:/admin/memberships/invitations",
+        requested_action="create_membership_invitation_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:invite",),
+    ),
+    "POST:/admin/memberships/role-grants": ProtectedSurface(
+        surface_key="POST:/admin/memberships/role-grants",
+        requested_action="create_membership_role_grant_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:grants",),
+    ),
+    "POST:/admin/memberships/role-grants/{role_grant_id}/revoke": ProtectedSurface(
+        surface_key="POST:/admin/memberships/role-grants/{role_grant_id}/revoke",
+        requested_action="revoke_membership_role_grant_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:grants",),
+    ),
+    (
+        "POST:/admin/memberships/principals/{principal_identity_id}/{principal_action}"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/memberships/principals/{principal_identity_id}/"
+            "{principal_action}"
+        ),
+        requested_action="update_membership_principal_status_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:write",),
+    ),
+    (
+        "POST:/admin/memberships/memberships/{tenant_membership_id}/{membership_status}"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/memberships/memberships/{tenant_membership_id}/"
+            "{membership_status}"
+        ),
+        requested_action="update_tenant_membership_status_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:write",),
+    ),
+    "GET:/admin/memberships/api/users": ProtectedSurface(
+        surface_key="GET:/admin/memberships/api/users",
+        requested_action="read_membership_administration_snapshot",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:read",),
+    ),
+    "POST:/admin/memberships/api/invitations": ProtectedSurface(
+        surface_key="POST:/admin/memberships/api/invitations",
+        requested_action="create_membership_invitation",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:invite",),
+    ),
+    "POST:/admin/memberships/api/principals/link": ProtectedSurface(
+        surface_key="POST:/admin/memberships/api/principals/link",
+        requested_action="link_membership_principal",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:write",),
+    ),
+    "POST:/admin/memberships/api/role-grants": ProtectedSurface(
+        surface_key="POST:/admin/memberships/api/role-grants",
+        requested_action="create_membership_role_grant",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:grants",),
+    ),
+    (
+        "POST:/admin/memberships/api/role-grants/{role_grant_id}/revoke"
+    ): ProtectedSurface(
+        surface_key=("POST:/admin/memberships/api/role-grants/{role_grant_id}/revoke"),
+        requested_action="revoke_membership_role_grant",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:grants",),
+    ),
+    (
+        "POST:/admin/memberships/api/principals/{principal_identity_id}/suspend"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/memberships/api/principals/{principal_identity_id}/suspend"
+        ),
+        requested_action="suspend_membership_principal",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:write",),
+    ),
+    (
+        "POST:/admin/memberships/api/principals/{principal_identity_id}/reactivate"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/memberships/api/principals/{principal_identity_id}/reactivate"
+        ),
+        requested_action="reactivate_membership_principal",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:write",),
+    ),
+    (
+        "POST:/admin/memberships/api/memberships/{tenant_membership_id}/"
+        "{membership_status}"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/memberships/api/memberships/{tenant_membership_id}/"
+            "{membership_status}"
+        ),
+        requested_action="update_tenant_membership_status",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("membership-admin:write",),
+    ),
     "GET:/admin/telegram": ProtectedSurface(
         surface_key="GET:/admin/telegram",
         requested_action="render_telegram_configuration_ui",

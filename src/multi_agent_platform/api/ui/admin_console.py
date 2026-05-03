@@ -525,6 +525,19 @@ def navigation_registry() -> tuple[NavigationItem, ...]:
             filter_profile="usage_analytics",
         ),
         NavigationItem(
+            item_id="membership_administration",
+            label="Membership Administration",
+            group="Model And Skill Config",
+            href="/admin/memberships",
+            route_surface_key="GET:/admin/memberships",
+            required_scope="either",
+            admin_area="membership_administration",
+            preserve_tenant_scope=True,
+            active_matchers=("/admin/memberships",),
+            order=25,
+            filter_profile="membership_administration",
+        ),
+        NavigationItem(
             item_id="telegram_configuration",
             label="Telegram Configuration",
             group="Model And Skill Config",
@@ -534,7 +547,7 @@ def navigation_registry() -> tuple[NavigationItem, ...]:
             admin_area="telegram_configuration",
             preserve_tenant_scope=True,
             active_matchers=("/admin/telegram",),
-            order=25,
+            order=26,
             filter_profile="telegram_configuration",
         ),
         NavigationItem(

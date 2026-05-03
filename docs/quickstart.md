@@ -427,6 +427,66 @@ Additional evidence:
 - [Spec 017 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/017-telegram-configuration-console/qa017_user_guide.md)
 - [Spec 017 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/017-telegram-configuration-console/testing-instructions.md)
 
+## Membership Administration Quickstart
+
+Use the QA018 environment when validating user and tenant membership
+administration:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/018-user-tenant-membership-administration/.env.qa018 .env
+uv sync
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa018 && createdb -U postgres multi_agent_platform_qa018'
+uv run alembic upgrade head
+```
+
+Open the browser UI:
+
+- [Membership Administration](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/memberships)
+
+Manual QA:
+
+- Sign in as `platform-admin` and confirm `/admin/memberships` renders the
+  platform-scope summary, invitation form, principals, role grants, tenant
+  memberships, invitations, access history, and membership audit sections.
+- Create and replay an Acme invitation and confirm the rendered row uses
+  masked email plus hash evidence.
+- Link or inspect an Auth0-backed principal identity and confirm passwords are
+  never requested or stored.
+- Create and revoke tenant role grants, then confirm tenant membership and
+  audit rows update safely.
+- Sign in as `tenant-admin-acme` and confirm Acme self-service works for
+  `tenant_user` and `tenant_admin` roles.
+- Confirm Acme tenant admins cannot assign `platform_admin` and cannot inspect
+  Globex membership data.
+- Confirm access history and membership audit rows show safe action, decision,
+  reason, summary, and trace evidence only.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/admin/memberships \
+  tests/unit/api/test_membership_schemas.py \
+  tests/unit/api/test_membership_ui_models.py \
+  tests/unit/auth/test_membership_policy.py \
+  tests/unit/db/test_membership_repository.py \
+  tests/integration/api/test_admin_memberships_api.py \
+  tests/integration/api/test_admin_memberships_ui.py \
+  tests/contract/test_membership_administration_contract.py \
+  tests/docs/test_membership_administration_docs.py \
+  tests/integration/db/test_membership_administration_migration.py \
+  tests/unit/auth/test_service.py
+```
+
+Additional evidence:
+
+- [Spec 018 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/018-user-tenant-membership-administration/qa018.md)
+- [Spec 018 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/018-user-tenant-membership-administration/qa018_ui.md)
+- [Spec 018 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/018-user-tenant-membership-administration/qa018_user_guide.md)
+- [Spec 018 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/018-user-tenant-membership-administration/testing-instructions.md)
+
 Target production audit debugging explicitly:
 
 ```bash

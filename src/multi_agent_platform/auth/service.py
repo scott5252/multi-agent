@@ -27,6 +27,7 @@ from multi_agent_platform.db.models.access_control import (
     AccessReasonCode,
     AuthProviderType,
     PrincipalIdentity,
+    PrincipalIdentityStatus,
     RoleCode,
 )
 from multi_agent_platform.db.models.delegated_credential import DelegatedCredentialLink
@@ -113,8 +114,23 @@ class AuthService:
                         display_name=local_principal,
                     )
                 )
+            if identity.status is PrincipalIdentityStatus.SUSPENDED:
+                raise AuthorizationError(
+                    status_code=403,
+                    reason_code=AccessReasonCode.INSUFFICIENT_ROLE,
+                    detail="principal identity is suspended",
+                )
+            persisted_roles = await self._persisted_role_codes(
+                identity,
+                tenant_id=principal.tenant_id,
+            )
             return principal.model_copy(
-                update={"principal_identity_id": identity.principal_identity_id}
+                update={
+                    "principal_identity_id": identity.principal_identity_id,
+                    "role_codes": tuple(
+                        sorted(set(principal.role_codes).union(persisted_roles))
+                    ),
+                }
             )
 
         token = self._bearer_token(request)
@@ -149,17 +165,15 @@ class AuthService:
                     email=claims.email,
                 )
             )
-        grants = await self.access_repository.active_role_grants_for_principal(
-            identity.principal_identity_id
-        )
-        role_codes = tuple(
-            sorted(
-                {
-                    grant.role_code.value
-                    for grant in grants
-                    if grant.tenant_id is None or grant.tenant_id == claims.tenant_id
-                }
+        if identity.status is PrincipalIdentityStatus.SUSPENDED:
+            raise AuthorizationError(
+                status_code=403,
+                reason_code=AccessReasonCode.INSUFFICIENT_ROLE,
+                detail="principal identity is suspended",
             )
+        role_codes = await self._persisted_role_codes(
+            identity,
+            tenant_id=claims.tenant_id,
         )
         return PrincipalContext(
             principal_identity_id=identity.principal_identity_id,
@@ -267,6 +281,25 @@ class AuthService:
         if header is None or not header.startswith("Bearer "):
             return None
         return header.removeprefix("Bearer ").strip()
+
+    async def _persisted_role_codes(
+        self,
+        identity: PrincipalIdentity,
+        *,
+        tenant_id: UUID | None,
+    ) -> tuple[str, ...]:
+        grants = await self.access_repository.active_role_grants_for_principal(
+            identity.principal_identity_id
+        )
+        return tuple(
+            sorted(
+                {
+                    grant.role_code.value
+                    for grant in grants
+                    if grant.tenant_id is None or grant.tenant_id == tenant_id
+                }
+            )
+        )
 
     def _target_tenant_id(
         self, request: Request, principal: PrincipalContext

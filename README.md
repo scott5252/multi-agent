@@ -54,6 +54,11 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   `/admin/skill-registry/ui/installations` for declarative package
   publication, tenant installation, credential readiness, smoke-test evidence,
   binding eligibility, upgrades, quarantine, and safe audit summaries
+- user and tenant membership administration under `/admin/memberships` and
+  `/admin/memberships/api` for platform-admin user management, tenant-admin
+  self-service, idempotent invitations, Auth0 subject linking, role grants,
+  principal suspension/reactivation, tenant membership status, access history,
+  and redaction-safe audit evidence
 - agent and workflow test bench under `/admin/agent-tests/ui` and
   `/admin/agent-tests` for tenant-scoped suites, fixture-backed cases, safe
   mock or mocked-provider runs, redacted diagnostics, blocked side-effect
@@ -83,9 +88,11 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
     installations at `/admin/skill-registry/ui/installations`.
 12. Review agent and workflow test suites at `/admin/agent-tests/ui`, then run
     safe mock or mocked-provider checks before publication.
-13. Dry-run the Spec Kit Autopilot example with
+13. Review membership administration at `/admin/memberships` as
+    `platform-admin` and as `tenant-admin-acme`.
+14. Dry-run the Spec Kit Autopilot example with
     `uv run python scripts/qa/run_spec_qa.py specs/_autopilot/example/validation.yml --dry-run`.
-14. Validate the repo with `./scripts/check.sh`.
+15. Validate the repo with `./scripts/check.sh`.
 
 ## Admin Console Shell
 
@@ -257,6 +264,30 @@ QA017 reviewer evidence lives in
 `specs/017-telegram-configuration-console/qa017.md`,
 `specs/017-telegram-configuration-console/qa017_ui.md`, and
 `specs/017-telegram-configuration-console/qa017_user_guide.md`.
+
+## Membership Administration
+
+Administrators review user and tenant membership state at
+`/admin/memberships` or through JSON APIs under `/admin/memberships/api`.
+Platform admins can list users across tenants, create idempotent invitations,
+link Auth0-backed principal identities, create or revoke platform and tenant
+role grants, suspend or reactivate principals, and inspect safe access history.
+
+Tenant admins can invite users to their own tenant, assign permitted
+`tenant_user` and `tenant_admin` roles, update tenant membership status, and
+view tenant-local user status. Cross-tenant operations and platform-role
+assignment attempts fail closed and write safe audit records.
+
+The platform stores principal metadata, invitation records, tenant membership
+state, role grants, access-decision history, and membership audit summaries. It
+does not store passwords. UI, API summaries, flash messages, screenshots, and
+audit metadata use masked emails, hashes, safe subject labels, role codes,
+status values, and trace ids.
+
+QA018 reviewer evidence lives in
+`specs/018-user-tenant-membership-administration/qa018.md`,
+`specs/018-user-tenant-membership-administration/qa018_ui.md`, and
+`specs/018-user-tenant-membership-administration/qa018_user_guide.md`.
 
 ## Reliability Scale Hardening
 

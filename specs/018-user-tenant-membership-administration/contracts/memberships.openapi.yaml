@@ -1,0 +1,157 @@
+openapi: 3.1.0
+info:
+  title: User And Tenant Membership Administration API
+  version: 0.1.0
+paths:
+  /admin/memberships/api/users:
+    get:
+      summary: List principals, memberships, role grants, invitations, and access history
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe membership administration snapshot
+        "403":
+          description: Unauthorized tenant or role boundary
+  /admin/memberships/api/invitations:
+    post:
+      summary: Create or replay an idempotent invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvitationCreateRequest"
+      responses:
+        "201":
+          description: Invitation created or replayed
+        "403":
+          description: Unauthorized tenant or role boundary
+  /admin/memberships/api/principals/link:
+    post:
+      summary: Link or provision an Auth0-backed principal identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrincipalLinkRequest"
+      responses:
+        "200":
+          description: Principal identity linked
+        "409":
+          description: Auth0 subject conflicts with a different principal
+  /admin/memberships/api/role-grants:
+    post:
+      summary: Create a platform or tenant role grant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleGrantCreateRequest"
+      responses:
+        "201":
+          description: Role grant created
+        "403":
+          description: Role is not eligible for the acting admin
+  /admin/memberships/api/role-grants/{role_grant_id}/revoke:
+    post:
+      summary: Revoke a role grant
+      parameters:
+        - name: role_grant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Role grant revoked
+        "404":
+          description: Role grant not found in authorized scope
+  /admin/memberships/api/principals/{principal_identity_id}/suspend:
+    post:
+      summary: Suspend a principal identity
+      parameters:
+        - name: principal_identity_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Principal suspended
+  /admin/memberships/api/principals/{principal_identity_id}/reactivate:
+    post:
+      summary: Reactivate a principal identity
+      parameters:
+        - name: principal_identity_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Principal reactivated
+components:
+  schemas:
+    InvitationCreateRequest:
+      type: object
+      required: [email]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        requested_roles:
+          type: array
+          items:
+            type: string
+            enum: [tenant_user, tenant_admin, platform_admin]
+        idempotency_key:
+          type: string
+    PrincipalLinkRequest:
+      type: object
+      required: [auth0_subject]
+      properties:
+        principal_identity_id:
+          type: string
+          format: uuid
+        auth0_subject:
+          type: string
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+    RoleGrantCreateRequest:
+      type: object
+      required: [principal_identity_id, scope_type, role_code]
+      properties:
+        principal_identity_id:
+          type: string
+          format: uuid
+        scope_type:
+          type: string
+          enum: [platform, tenant]
+        tenant_id:
+          type: string
+          format: uuid
+        role_code:
+          type: string
+          enum: [tenant_user, tenant_admin, platform_admin]
