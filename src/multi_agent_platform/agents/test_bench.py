@@ -45,3 +45,41 @@ async def run_profile_test_bench(
         messages=SAFE_TEST_BENCH_MESSAGES,
         context=context,
     )
+
+
+async def run_workflow_test_bench_gateway_probe(
+    *,
+    model_gateway: ModelGateway,
+    connection_id: UUID,
+    model_id: str,
+    test_bench_run_id: UUID,
+    tenant_id: UUID,
+    trace_id: str,
+    workflow_key: str,
+    workflow_version_ref: str,
+    agent_profile_version_id: UUID,
+    prompt_version_ids: tuple[UUID, ...],
+    prompt_reference_version_ids: tuple[UUID, ...],
+    model_routing_provenance: dict[str, object],
+) -> GatewayResult:
+    context = build_gateway_context_from_pins(
+        tenant_id=tenant_id,
+        test_bench_run_id=test_bench_run_id,
+        trace_id=trace_id,
+        idempotency_key=f"workflow-test-bench:{test_bench_run_id}",
+        agent_key=workflow_key,
+        agent_kind="workflow",
+        agent_profile_version_id=agent_profile_version_id,
+        prompt_version_ids=prompt_version_ids,
+        prompt_reference_version_ids=prompt_reference_version_ids,
+        model_routing_provenance={
+            **model_routing_provenance,
+            "workflow_version_ref": workflow_version_ref,
+        },
+    )
+    return await model_gateway.invoke(
+        connection_id=connection_id,
+        model_id=model_id,
+        messages=SAFE_TEST_BENCH_MESSAGES,
+        context=context,
+    )

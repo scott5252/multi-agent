@@ -313,6 +313,102 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         required_roles=("tenant_admin",),
         required_permissions=("tenant:admin", "skill-registry:bind"),
     ),
+    "GET:/admin/agent-tests/ui": ProtectedSurface(
+        surface_key="GET:/admin/agent-tests/ui",
+        requested_action="render_agent_test_bench_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:read",),
+    ),
+    "GET:/admin/agent-tests/ui/suites/new": ProtectedSurface(
+        surface_key="GET:/admin/agent-tests/ui/suites/new",
+        requested_action="render_agent_test_suite_create_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:manage",),
+    ),
+    "POST:/admin/agent-tests/ui/suites": ProtectedSurface(
+        surface_key="POST:/admin/agent-tests/ui/suites",
+        requested_action="create_agent_test_suite_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:manage",),
+    ),
+    "GET:/admin/agent-tests/ui/suites/{suite_id}": ProtectedSurface(
+        surface_key="GET:/admin/agent-tests/ui/suites/{suite_id}",
+        requested_action="render_agent_test_suite_detail_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:read",),
+    ),
+    "POST:/admin/agent-tests/ui/suites/{suite_id}/cases": ProtectedSurface(
+        surface_key="POST:/admin/agent-tests/ui/suites/{suite_id}/cases",
+        requested_action="create_agent_test_case_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:manage",),
+    ),
+    "POST:/admin/agent-tests/ui/suites/{suite_id}/runs": ProtectedSurface(
+        surface_key="POST:/admin/agent-tests/ui/suites/{suite_id}/runs",
+        requested_action="launch_agent_test_run_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:run",),
+    ),
+    "GET:/admin/agent-tests/ui/runs/{run_id}": ProtectedSurface(
+        surface_key="GET:/admin/agent-tests/ui/runs/{run_id}",
+        requested_action="render_agent_test_run_detail_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:read",),
+    ),
+    "GET:/admin/agent-tests/suites": ProtectedSurface(
+        surface_key="GET:/admin/agent-tests/suites",
+        requested_action="list_agent_test_suites",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:read",),
+    ),
+    "POST:/admin/agent-tests/suites": ProtectedSurface(
+        surface_key="POST:/admin/agent-tests/suites",
+        requested_action="create_agent_test_suite",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:manage",),
+    ),
+    "GET:/admin/agent-tests/suites/{suite_id}": ProtectedSurface(
+        surface_key="GET:/admin/agent-tests/suites/{suite_id}",
+        requested_action="read_agent_test_suite",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:read",),
+    ),
+    "PATCH:/admin/agent-tests/suites/{suite_id}": ProtectedSurface(
+        surface_key="PATCH:/admin/agent-tests/suites/{suite_id}",
+        requested_action="update_agent_test_suite",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:manage",),
+    ),
+    "POST:/admin/agent-tests/suites/{suite_id}/cases": ProtectedSurface(
+        surface_key="POST:/admin/agent-tests/suites/{suite_id}/cases",
+        requested_action="create_agent_test_case",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:manage",),
+    ),
+    "POST:/admin/agent-tests/suites/{suite_id}/runs": ProtectedSurface(
+        surface_key="POST:/admin/agent-tests/suites/{suite_id}/runs",
+        requested_action="launch_agent_test_run",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:run",),
+    ),
+    "GET:/admin/agent-tests/runs": ProtectedSurface(
+        surface_key="GET:/admin/agent-tests/runs",
+        requested_action="list_agent_test_runs",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:read",),
+    ),
+    "GET:/admin/agent-tests/runs/{run_id}": ProtectedSurface(
+        surface_key="GET:/admin/agent-tests/runs/{run_id}",
+        requested_action="read_agent_test_run",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:read",),
+    ),
+    "POST:/admin/agent-tests/publish-gates/evaluate": ProtectedSurface(
+        surface_key="POST:/admin/agent-tests/publish-gates/evaluate",
+        requested_action="evaluate_agent_test_publish_gate",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("agent-tests:gate",),
+    ),
     (
         "POST:/admin/support-overrides/{support_override_request_id}/approve"
     ): ProtectedSurface(

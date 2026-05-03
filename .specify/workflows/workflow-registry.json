@@ -8,6 +8,14 @@
       "source": "bundled",
       "installed_at": "2026-04-24T18:06:52.669122+00:00",
       "updated_at": "2026-04-24T18:06:52.669130+00:00"
+    },
+    "speckit-autopilot": {
+      "name": "Autonomous File-Backed SDD Cycle",
+      "version": "1.0.0",
+      "description": "Runs preflight, specify, clarify-auto, plan, tasks, analyze-auto, implement, and validation from a manifest",
+      "source": "local",
+      "installed_at": "2026-05-02T00:00:00-04:00",
+      "updated_at": "2026-05-02T00:00:00-04:00"
     }
   }
 }

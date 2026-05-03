@@ -1,0 +1,33 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+  <form class="builder-panel" method="post" action="/admin/agent-tests/ui/suites">
+    {% if tenant_id %}<input type="hidden" name="tenant_id" value="{{ tenant_id }}">{% endif %}
+    <label>Name <input name="name" value="QA015 Draft Workflow Guard" required></label>
+    <label>Description <textarea name="description">Guard a workflow draft before publication.</textarea></label>
+    <label>Target type
+      <select name="target_type">
+        <option value="workflow_draft">Workflow draft</option>
+        <option value="agent_profile_version">Agent profile version</option>
+        <option value="prompt_version">Prompt version</option>
+        <option value="published_subworkflow">Published subworkflow</option>
+        <option value="published_workflow">Published workflow</option>
+      </select>
+    </label>
+    <label>Target id <input name="target_id" value="qa015-draft-triage" required></label>
+    <label>Target version <input name="target_version" value="draft-rev-1"></label>
+    <label>Safe mode
+      <select name="default_safe_mode">
+        <option value="mock_model">Mock model</option>
+        <option value="mock_tools">Mock tools</option>
+        <option value="real_model_side_effects_disabled">Real model, side effects disabled</option>
+        <option value="approved_real_probe">Approved real probe</option>
+      </select>
+    </label>
+    <label>Model mode <input name="model_mode" value="mock"></label>
+    <label>Tool mode <input name="tool_mode" value="mock"></label>
+    <label>Pass threshold <input name="pass_threshold" value="1.0"></label>
+    <label><input type="checkbox" name="required_for_publish" value="1"> Required for publish</label>
+    <button type="submit">Create Suite</button>
+  </form>
+{% endblock %}

@@ -257,6 +257,70 @@ Manual QA:
 - [Prompt Runtime Profiles](/Users/scottcornell/src/my-projects/multi-agent/docs/prompt-runtime-profiles.md)
 - [Spec 012 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/012-prompt-runtime-profiles/qa012.md)
 
+## Agent And Workflow Test Bench Quickstart
+
+Use the QA015 environment when validating the admin test bench:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/015-agent-workflow-test-bench/.env.qa015 .env
+uv sync
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa015 && createdb -U postgres multi_agent_platform_qa015'
+uv run alembic upgrade head
+```
+
+Seed Acme and Globex tenants with the SQL block in
+`specs/015-agent-workflow-test-bench/qa015.md`, then start the API:
+
+```bash
+uv run uvicorn multi_agent_platform.api.main:app --reload
+```
+
+Open the browser UI:
+
+- [Agent Tests](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/agent-tests/ui?tenant_id=11111111-1111-1111-1111-111111111111)
+
+Manual QA:
+
+- Create `QA015 Draft Workflow Guard` for target `qa015-draft-triage` and
+  target version `draft-rev-1`.
+- Add a case with a fixture containing `qa015-fake-value` and confirm the raw
+  value is not rendered.
+- Run once with `mock_model` and once with
+  `real_model_side_effects_disabled`.
+- Confirm result diagnostics include pass/fail status, trace steps, provider
+  metadata, token usage, latency, contract validation, assertion outcomes,
+  blocked side effects, redaction summary, and artifact summary.
+- Confirm `approved_real_probe` rejects without approval metadata.
+- Confirm the publish gate is ready for `draft-rev-1` and blocked for a stale
+  target version.
+- Sign in as `tenant-admin-globex` and confirm Acme suite and run details are
+  denied.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/testing/agent_bench \
+  tests/unit/db/test_agent_tests_models.py \
+  tests/unit/db/test_agent_tests_repository.py \
+  tests/unit/api/test_agent_test_schemas.py \
+  tests/unit/auth/test_agent_test_policy.py \
+  tests/unit/admin/test_publish_gate.py \
+  tests/contract/test_agent_test_bench_contract.py \
+  tests/integration/runtime/test_agent_workflow_test_bench_gateway.py \
+  tests/integration/api/test_admin_agent_tests_api.py \
+  tests/docs/test_agent_test_bench_docs.py
+```
+
+Additional evidence:
+
+- [Spec 015 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/015-agent-workflow-test-bench/qa015.md)
+- [Spec 015 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/015-agent-workflow-test-bench/qa015_ui.md)
+- [Spec 015 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/015-agent-workflow-test-bench/qa015_user_guide.md)
+- [Spec 015 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/015-agent-workflow-test-bench/testing-instructions.md)
+
 Target production audit debugging explicitly:
 
 ```bash

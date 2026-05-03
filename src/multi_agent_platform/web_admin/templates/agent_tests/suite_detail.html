@@ -1,0 +1,74 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+  <section class="builder-panel">
+    <p class="eyebrow">Suite</p>
+    <p>{{ redaction_notice }}</p>
+    <dl class="detail-list">
+      <dt>Target</dt><dd>{{ page.suite.target_type }} / {{ page.suite.target_id }} / {{ page.suite.target_version or "current" }}</dd>
+      <dt>Safe mode</dt><dd>{{ page.suite.default_safe_mode }}</dd>
+      <dt>Publish gate</dt><dd>{% include "agent_tests/components/gate_status.html" %}</dd>
+    </dl>
+  </section>
+
+  <section class="builder-panel">
+    <h2>Run Suite</h2>
+    <form method="post" action="/admin/agent-tests/ui/suites/{{ page.suite.suite_id }}/runs">
+      <label>Safe mode
+        <select name="safe_mode">
+          <option value="mock_model">Mock model</option>
+          <option value="mock_tools">Mock tools</option>
+          <option value="real_model_side_effects_disabled">Real model, side effects disabled</option>
+          <option value="approved_real_probe">Approved real probe</option>
+        </select>
+      </label>
+      <label>Target version <input name="target_version" value="{{ page.suite.target_version or '' }}"></label>
+      <button type="submit">Run Tests</button>
+    </form>
+  </section>
+
+  <section class="builder-panel">
+    <h2>Add Case</h2>
+    <form method="post" action="/admin/agent-tests/ui/suites/{{ page.suite.suite_id }}/cases">
+      <label>Name <input name="name" value="Passing intake case" required></label>
+      <label>Fixture JSON <textarea name="fixture_json">{"request":"summarize intake","priority":"routine"}</textarea></label>
+      <label>Expected contract shape <textarea name="expected_contract_shape">{"status":{},"contract":{}}</textarea></label>
+      <label>Assertions JSON <textarea name="assertions_json">[{"kind":"deterministic","path":"status","comparator":"equals","expected_value":"passed"},{"kind":"deterministic","path":"contract.summary","comparator":"contains","expected_value":"intake"}]</textarea></label>
+      <button type="submit">Add Case</button>
+    </form>
+  </section>
+
+  <section class="table-section">
+    <h2>Cases</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Status</th><th>Assertions</th><th>Fixture</th></tr></thead>
+      <tbody>
+        {% for case in page.cases %}
+          <tr>
+            <td>{{ case.name }}</td>
+            <td>{{ case.status }}</td>
+            <td>{% include "agent_tests/components/assertions.html" %}</td>
+            <td>{{ case.fixture_summary.fields|join(", ") }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="table-section">
+    <h2>Runs</h2>
+    <table>
+      <thead><tr><th>Status</th><th>Safe mode</th><th>Usage</th><th>Open</th></tr></thead>
+      <tbody>
+        {% for run in page.runs %}
+          <tr>
+            <td>{{ run.status }}</td>
+            <td>{{ run.safe_mode }}</td>
+            <td>{{ run.usage_summary.total_tokens or 0 }} test tokens</td>
+            <td><a href="/admin/agent-tests/ui/runs/{{ run.run_id }}">Open run</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

@@ -499,6 +499,19 @@ def navigation_registry() -> tuple[NavigationItem, ...]:
             filter_profile="skill_registry_installations",
         ),
         NavigationItem(
+            item_id="agent_tests",
+            label="Agent Tests",
+            group="Model And Skill Config",
+            href="/admin/agent-tests/ui",
+            route_surface_key="GET:/admin/agent-tests/ui",
+            required_scope="either",
+            admin_area="agent_tests",
+            preserve_tenant_scope=True,
+            active_matchers=("/admin/agent-tests",),
+            order=24,
+            filter_profile="agent_tests",
+        ),
+        NavigationItem(
             item_id="model_providers",
             label="Model Providers",
             group="Model And Skill Config",
@@ -508,7 +521,7 @@ def navigation_registry() -> tuple[NavigationItem, ...]:
             admin_area="model_providers",
             preserve_tenant_scope=True,
             active_matchers=("/admin/model-providers",),
-            order=24,
+            order=25,
             filter_profile="model_providers",
         ),
         NavigationItem(

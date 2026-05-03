@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.75,
+    "stop_on": [
+      "constitution_conflict",
+      "tenant_isolation_uncertainty",
+      "secret_or_credential_uncertainty",
+      "destructive_data_change",
+      "approval_resume_ambiguity"
+    ]
+  },
+  "analysis": {
+    "auto_remediate_severities": [
+      "CRITICAL",
+      "HIGH"
+    ],
+    "max_remediation_loops": 2
+  },
+  "implementation": {
+    "allow_subagents_when_user_requested": true,
+    "mark_tasks_complete": true,
+    "parallel_file_conflicts": "stop"
+  },
+  "validation": {
+    "run_qa_docs": true,
+    "run_api_checks": true,
+    "run_playwright": true,
+    "run_quality_gates": true
+  }
+}

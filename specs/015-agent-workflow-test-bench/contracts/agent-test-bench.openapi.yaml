@@ -1,0 +1,209 @@
+openapi: 3.1.0
+info:
+  title: Agent And Workflow Test Bench Admin API
+  version: 0.1.0
+paths:
+  /admin/agent-tests/suites:
+    get:
+      summary: List test suites visible to the current admin principal
+      parameters:
+        - name: tenant_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: target_type
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Suite list
+    post:
+      summary: Create a tenant-scoped test suite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentTestSuiteCreate" }
+      responses:
+        "201":
+          description: Created suite
+  /admin/agent-tests/suites/{suite_id}:
+    get:
+      summary: Get suite detail
+      parameters:
+        - $ref: "#/components/parameters/SuiteId"
+      responses:
+        "200":
+          description: Suite detail
+    patch:
+      summary: Update suite metadata and defaults
+      parameters:
+        - $ref: "#/components/parameters/SuiteId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentTestSuiteUpdate" }
+      responses:
+        "200":
+          description: Updated suite
+  /admin/agent-tests/suites/{suite_id}/cases:
+    post:
+      summary: Create a test case within a suite
+      parameters:
+        - $ref: "#/components/parameters/SuiteId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentTestCaseCreate" }
+      responses:
+        "201":
+          description: Created case
+  /admin/agent-tests/suites/{suite_id}/runs:
+    post:
+      summary: Start a safe test run for a suite
+      parameters:
+        - $ref: "#/components/parameters/SuiteId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentTestRunCreate" }
+      responses:
+        "202":
+          description: Created run
+  /admin/agent-tests/runs:
+    get:
+      summary: List test runs visible to the current principal
+      parameters:
+        - name: tenant_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: suite_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Run list
+  /admin/agent-tests/runs/{run_id}:
+    get:
+      summary: Get run detail with redacted diagnostics
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Run detail
+  /admin/agent-tests/publish-gates/evaluate:
+    post:
+      summary: Evaluate required suite evidence for a workflow target
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PublishGateEvaluateRequest" }
+      responses:
+        "200":
+          description: Publish gate summary
+components:
+  parameters:
+    SuiteId:
+      name: suite_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    AgentTestSuiteCreate:
+      type: object
+      required: [tenant_id, name, target_type, target_id]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        target_type:
+          type: string
+          enum:
+            - prompt_version
+            - agent_profile_version
+            - workflow_draft
+            - published_subworkflow
+            - published_workflow
+        target_id: { type: string }
+        target_version: { type: string }
+        default_safe_mode:
+          type: string
+          enum:
+            - mock_model
+            - mock_tools
+            - real_model_side_effects_disabled
+            - approved_real_probe
+        model_mode: { type: string }
+        tool_mode: { type: string }
+        pass_threshold: { type: number, minimum: 0, maximum: 1 }
+        required_for_publish: { type: boolean }
+    AgentTestSuiteUpdate:
+      allOf:
+        - $ref: "#/components/schemas/AgentTestSuiteCreate"
+        - type: object
+          required: [revision]
+          properties:
+            revision: { type: integer, minimum: 1 }
+    AgentTestCaseCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        fixture: { type: object }
+        expected_contract_shape: { type: object }
+        assertions:
+          type: array
+          items: { $ref: "#/components/schemas/AgentTestAssertion" }
+        evaluator_prompt_ref: { type: string }
+        pass_threshold: { type: number, minimum: 0, maximum: 1 }
+    AgentTestAssertion:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [deterministic, evaluator]
+        path: { type: string }
+        comparator:
+          type: string
+          enum:
+            - equals
+            - contains
+            - matches_regex
+            - json_schema
+            - status_is
+            - latency_under_ms
+            - usage_under_tokens
+        expected_value: {}
+        expected_schema: { type: object }
+        threshold: { type: number }
+        severity: { type: string }
+    AgentTestRunCreate:
+      type: object
+      required: [safe_mode]
+      properties:
+        safe_mode:
+          type: string
+          enum:
+            - mock_model
+            - mock_tools
+            - real_model_side_effects_disabled
+            - approved_real_probe
+        target_version: { type: string }
+        idempotency_key: { type: string }
+        run_reason: { type: string }
+    PublishGateEvaluateRequest:
+      type: object
+      required: [tenant_id, target_type, target_id, target_version]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        target_type: { type: string }
+        target_id: { type: string }
+        target_version: { type: string }

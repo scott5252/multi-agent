@@ -1,0 +1,49 @@
+{
+  "extends": "../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Agent And Workflow Test Bench",
+    "spec_number": "015",
+    "spec_slug": "agent-workflow-test-bench",
+    "feature_dir": "specs/015-agent-workflow-test-bench",
+    "autopilot_dir": "specs/_autopilot/015-agent-workflow-test-bench",
+    "branch": "codex/015-agent-workflow-test-bench",
+    "qa_id": "qa015",
+    "qa_label": "QA015",
+    "qa_database": "multi_agent_platform_qa015",
+    "qa_env_file": "specs/015-agent-workflow-test-bench/.env.qa015",
+    "artifact_root": ".data/qa015-artifacts",
+    "playwright_output_dir": "output/playwright/qa015_ui",
+    "manual_qa_user_guide": "specs/015-agent-workflow-test-bench/qa015_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "agent-test-bench-ui-login",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/agent-tests/ui"
+          },
+          {
+            "expect_text": "Local Login"
+          },
+          {
+            "screenshot": "01-local-login.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "agent-test-bench-ui-target",
+        "steps": [
+          {
+            "goto": "/admin/agent-tests/ui"
+          },
+          {
+            "screenshot": "02-agent-test-bench-target.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

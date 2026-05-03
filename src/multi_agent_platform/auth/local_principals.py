@@ -61,9 +61,30 @@ SKILL_REGISTRY_TENANT_PERMISSIONS = (
     "skill-registry:bind",
     "skill-registry:audit",
 )
+AGENT_TEST_PLATFORM_PERMISSIONS = (
+    "platform:admin",
+    "agent-tests:manage",
+    "agent-tests:run",
+    "agent-tests:read",
+    "agent-tests:gate",
+)
+AGENT_TEST_TENANT_PERMISSIONS = (
+    "tenant:read",
+    "tenant:admin",
+    "agent-tests:manage",
+    "agent-tests:run",
+    "agent-tests:read",
+    "agent-tests:gate",
+)
 
 
 def skill_registry_permission_codes(*, platform: bool) -> tuple[str, ...]:
     if platform:
         return SKILL_REGISTRY_PLATFORM_PERMISSIONS
     return SKILL_REGISTRY_TENANT_PERMISSIONS
+
+
+def agent_test_permission_codes(*, platform: bool) -> tuple[str, ...]:
+    if platform:
+        return AGENT_TEST_PLATFORM_PERMISSIONS
+    return AGENT_TEST_TENANT_PERMISSIONS
