@@ -525,6 +525,19 @@ def navigation_registry() -> tuple[NavigationItem, ...]:
             filter_profile="usage_analytics",
         ),
         NavigationItem(
+            item_id="telegram_configuration",
+            label="Telegram Configuration",
+            group="Model And Skill Config",
+            href="/admin/telegram",
+            route_surface_key="GET:/admin/telegram",
+            required_scope="either",
+            admin_area="telegram_configuration",
+            preserve_tenant_scope=True,
+            active_matchers=("/admin/telegram",),
+            order=25,
+            filter_profile="telegram_configuration",
+        ),
+        NavigationItem(
             item_id="model_providers",
             label="Model Providers",
             group="Model And Skill Config",
@@ -534,7 +547,7 @@ def navigation_registry() -> tuple[NavigationItem, ...]:
             admin_area="model_providers",
             preserve_tenant_scope=True,
             active_matchers=("/admin/model-providers",),
-            order=25,
+            order=26,
             filter_profile="model_providers",
         ),
         NavigationItem(
@@ -818,6 +831,18 @@ def filter_profiles() -> dict[str, FilterProfile]:
                 "active": "Active",
                 "visibility": "Visibility",
                 "model_id": "Model",
+            },
+        ),
+        "telegram_configuration": FilterProfile(
+            admin_area="telegram_configuration",
+            filter_key="telegram-configuration",
+            destination_href="/admin/telegram",
+            allowed_criteria=("tenant_id", "enabled", "status", "category"),
+            labels={
+                "tenant_id": "Tenant",
+                "enabled": "Enabled",
+                "status": "Status",
+                "category": "Diagnostic category",
             },
         ),
         "run_inspection": FilterProfile(

@@ -21,6 +21,7 @@ def test_filter_profiles_cover_useful_admin_areas() -> None:
         "run_inspection",
         "reliability_breakers",
         "reliability_dead_letters",
+        "telegram_configuration",
     }
     assert profiles["run_inspection"].destination_href == "/admin/runs"
 

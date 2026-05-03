@@ -87,6 +87,21 @@ USAGE_ANALYTICS_TENANT_PERMISSIONS = (
     "usage:read",
     "usage:export",
 )
+TELEGRAM_CONFIG_PLATFORM_PERMISSIONS = (
+    "platform:admin",
+    "telegram-config:read",
+    "telegram-config:write",
+    "telegram-config:tokens",
+    "telegram-config:diagnostics",
+)
+TELEGRAM_CONFIG_TENANT_PERMISSIONS = (
+    "tenant:read",
+    "tenant:admin",
+    "telegram-config:read",
+    "telegram-config:write",
+    "telegram-config:tokens",
+    "telegram-config:diagnostics",
+)
 
 
 def skill_registry_permission_codes(*, platform: bool) -> tuple[str, ...]:
@@ -105,3 +120,9 @@ def usage_analytics_permission_codes(*, platform: bool) -> tuple[str, ...]:
     if platform:
         return USAGE_ANALYTICS_PLATFORM_PERMISSIONS
     return USAGE_ANALYTICS_TENANT_PERMISSIONS
+
+
+def telegram_config_permission_codes(*, platform: bool) -> tuple[str, ...]:
+    if platform:
+        return TELEGRAM_CONFIG_PLATFORM_PERMISSIONS
+    return TELEGRAM_CONFIG_TENANT_PERMISSIONS

@@ -375,6 +375,58 @@ Additional evidence:
 - [Spec 016 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/016-token-usage-cost-analytics/qa016_user_guide.md)
 - [Spec 016 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/016-token-usage-cost-analytics/testing-instructions.md)
 
+## Telegram Configuration Console Quickstart
+
+Use the QA017 environment when validating Telegram configuration:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/017-telegram-configuration-console/.env.qa017 .env
+uv sync
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa017 && createdb -U postgres multi_agent_platform_qa017'
+uv run alembic upgrade head
+```
+
+Open the browser UI:
+
+- [Telegram Configuration](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/telegram)
+
+Manual QA:
+
+- Sign in as `platform-admin` and confirm `/admin/telegram` renders provider
+  readiness, safe secret-reference labels, tenant controls, link-token
+  controls, masked identities, and diagnostics.
+- Sign in as `tenant-admin-acme` and confirm Acme tenant scope is accepted.
+- Sign in as `tenant-admin-globex` and confirm Acme Telegram configuration is
+  denied.
+- Confirm webhook validation records a local-only diagnostic and does not call
+  Telegram.
+- Confirm bot tokens, webhook secrets, private Telegram messages, raw prompts,
+  run results, and unauthorized tenant data are excluded.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/admin/telegram_config \
+  tests/unit/api/test_telegram_config_schemas.py \
+  tests/unit/auth/test_telegram_config_policy.py \
+  tests/unit/db/test_telegram_config_repository.py \
+  tests/contract/test_telegram_configuration_contract.py \
+  tests/integration/db/test_telegram_config_migration.py \
+  tests/integration/api/test_admin_telegram_api.py \
+  tests/integration/api/test_admin_telegram_ui.py \
+  tests/docs/test_telegram_configuration_docs.py
+```
+
+Additional evidence:
+
+- [Spec 017 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/017-telegram-configuration-console/qa017.md)
+- [Spec 017 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/017-telegram-configuration-console/qa017_ui.md)
+- [Spec 017 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/017-telegram-configuration-console/qa017_user_guide.md)
+- [Spec 017 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/017-telegram-configuration-console/testing-instructions.md)
+
 Target production audit debugging explicitly:
 
 ```bash

@@ -1,0 +1,62 @@
+{
+  "extends": "../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Telegram Configuration Console",
+    "spec_number": "017",
+    "spec_slug": "telegram-configuration-console",
+    "feature_dir": "specs/017-telegram-configuration-console",
+    "autopilot_dir": "specs/_autopilot/017-telegram-configuration-console",
+    "branch": "codex/017-telegram-configuration-console",
+    "qa_id": "qa017",
+    "qa_label": "QA017",
+    "qa_database": "multi_agent_platform_qa017",
+    "qa_env_file": "specs/017-telegram-configuration-console/.env.qa017",
+    "artifact_root": ".data/qa017-artifacts",
+    "playwright_output_dir": "output/playwright/qa017_ui",
+    "manual_qa_user_guide": "specs/017-telegram-configuration-console/qa017_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "telegram-configuration-console-ui-login",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/telegram"
+          },
+          {
+            "expect_text": "Local Login"
+          },
+          {
+            "screenshot": "01-local-login.png",
+            "full_page": true
+          },
+          {
+            "click": "article:has-text(\"platform-admin\") button"
+          },
+          {
+            "expect_text": "Telegram Configuration"
+          },
+          {
+            "screenshot": "02-telegram-configuration-console-target.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "telegram-configuration-console-ui-target",
+        "steps": [
+          {
+            "goto": "/admin/telegram"
+          },
+          {
+            "expect_text": "Telegram Configuration"
+          },
+          {
+            "screenshot": "03-telegram-configuration-console-direct-target.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

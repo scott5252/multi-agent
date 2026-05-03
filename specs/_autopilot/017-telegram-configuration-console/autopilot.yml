@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "feature": {
+    "name": "telegram-configuration-console",
+    "branch": "codex/017-telegram-configuration-console"
+  },
+  "prompt_files": [
+    "specify.md",
+    "plan.md",
+    "tasks.md"
+  ],
+  "policy_file": "policy.yml",
+  "validation_file": "validation.yml"
+}
