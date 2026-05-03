@@ -1,0 +1,25 @@
+{
+  "extends": "../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Token Usage And Cost Analytics",
+    "spec_number": "016",
+    "spec_slug": "token-usage-cost-analytics",
+    "feature_dir": "specs/016-token-usage-cost-analytics",
+    "autopilot_dir": "specs/_autopilot/016-token-usage-cost-analytics",
+    "branch": "codex/016-token-usage-cost-analytics",
+    "qa_id": "qa016",
+    "qa_label": "QA016",
+    "qa_database": "multi_agent_platform_qa016",
+    "qa_env_file": "specs/016-token-usage-cost-analytics/.env.qa016",
+    "artifact_root": ".data/qa016-artifacts",
+    "playwright_output_dir": "output/playwright/qa016_ui",
+    "manual_qa_user_guide": "specs/016-token-usage-cost-analytics/qa016_user_guide.md"
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "token-usage-cost-analytics-ui-login",
+      "token-usage-cost-analytics-ui-target"
+    ],
+    "required_extra_commands": []
+  }
+}

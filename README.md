@@ -217,6 +217,27 @@ artifact references. QA015 reviewer evidence lives in
 `specs/015-agent-workflow-test-bench/qa015_ui.md`, and
 `specs/015-agent-workflow-test-bench/qa015_user_guide.md`.
 
+## Token Usage And Cost Analytics
+
+Administrators review normalized model usage at `/admin/usage` or through JSON
+APIs under `/admin/usage/api`. ModelGateway-backed invocations create safe
+usage events with tenant, principal, workflow, run step, agent, sub-agent,
+provider, model, prompt version, execution mode, token counts, billable units,
+latency, pricing version, estimated cost, and estimated or confirmed status
+when those values are available.
+
+Platform admins can view and export all tenant usage. Tenant admins can view
+and export only their tenant. Exports create CSV reports from safe normalized
+columns and store artifact metadata through the configured storage provider.
+Usage records, dashboards, exports, and audit-safe summaries exclude raw
+prompts, completions, secrets, memory content, provider credentials, and
+unauthorized run content.
+
+QA016 reviewer evidence lives in
+`specs/016-token-usage-cost-analytics/qa016.md`,
+`specs/016-token-usage-cost-analytics/qa016_ui.md`, and
+`specs/016-token-usage-cost-analytics/qa016_user_guide.md`.
+
 ## Reliability Scale Hardening
 
 Operators can inspect and tune reliability state through

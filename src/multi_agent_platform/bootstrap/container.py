@@ -28,6 +28,7 @@ from multi_agent_platform.db.repositories.model_skill_config import (
     ModelSkillConfigRepository,
 )
 from multi_agent_platform.db.repositories.prompts import PromptRepository
+from multi_agent_platform.db.repositories.usage import UsageRepository
 from multi_agent_platform.db.session import create_engine
 from multi_agent_platform.model_providers.adapters import ProviderAdapterRegistry
 from multi_agent_platform.model_providers.allowlist import LocalEndpointAllowlist
@@ -51,6 +52,7 @@ from multi_agent_platform.secrets.providers.static import StaticSecretProvider
 from multi_agent_platform.storage.base import StorageProvider
 from multi_agent_platform.storage.providers.filesystem import FilesystemStorageProvider
 from multi_agent_platform.storage.providers.s3 import S3StorageProvider
+from multi_agent_platform.usage.service import UsageAnalyticsService
 
 
 def build_secret_provider(settings: Settings) -> SecretProvider:
@@ -176,6 +178,7 @@ def build_container(settings: Settings | None = None) -> Container:
         model_gateway_factory=lambda session: ModelGateway(
             repository=ModelProviderRepository(session),
             registry=_provider_adapter_registry(holder["container"]),
+            usage_recorder=UsageAnalyticsService(UsageRepository(session)),
         ),
         provider_secret_resolver_factory=lambda _session: ProviderSecretResolver(
             build_secret_provider(resolved_settings)

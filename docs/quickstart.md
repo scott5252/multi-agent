@@ -321,6 +321,60 @@ Additional evidence:
 - [Spec 015 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/015-agent-workflow-test-bench/qa015_user_guide.md)
 - [Spec 015 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/015-agent-workflow-test-bench/testing-instructions.md)
 
+## Token Usage And Cost Analytics Quickstart
+
+Use the QA016 environment when validating usage analytics:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/016-token-usage-cost-analytics/.env.qa016 .env
+uv sync
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa016 && createdb -U postgres multi_agent_platform_qa016'
+uv run alembic upgrade head
+```
+
+Open the browser UI:
+
+- [Usage Analytics](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/usage)
+
+Manual QA:
+
+- Sign in as `platform-admin` and confirm `/admin/usage` renders summary
+  cards, filters, rollups, event drilldown rows or a safe empty state, and CSV
+  export controls.
+- Sign in as `tenant-admin-acme` and confirm Acme tenant scope is accepted.
+- Sign in as `tenant-admin-globex` and confirm Acme tenant usage is denied.
+- Confirm exports include safe normalized usage columns only.
+- Confirm raw prompts, completions, secrets, memory content, provider
+  credentials, and unauthorized run content are excluded.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/model_providers/test_usage.py \
+  tests/unit/usage \
+  tests/unit/db/test_usage_models.py \
+  tests/unit/db/test_usage_repository.py \
+  tests/unit/auth/test_usage_policy.py \
+  tests/unit/api/test_usage_schemas.py \
+  tests/unit/api/test_usage_ui_models.py \
+  tests/contract/test_usage_analytics_contract.py \
+  tests/integration/db/test_usage_migration.py \
+  tests/integration/model_providers/test_gateway_usage_capture.py \
+  tests/integration/api/test_admin_usage_api.py \
+  tests/integration/api/test_admin_usage_ui.py \
+  tests/docs/test_usage_analytics_docs.py
+```
+
+Additional evidence:
+
+- [Spec 016 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/016-token-usage-cost-analytics/qa016.md)
+- [Spec 016 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/016-token-usage-cost-analytics/qa016_ui.md)
+- [Spec 016 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/016-token-usage-cost-analytics/qa016_user_guide.md)
+- [Spec 016 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/016-token-usage-cost-analytics/testing-instructions.md)
+
 Target production audit debugging explicitly:
 
 ```bash
