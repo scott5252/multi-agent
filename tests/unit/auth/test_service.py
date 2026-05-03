@@ -15,7 +15,13 @@ from multi_agent_platform.auth.service import AuthorizationError, AuthService
 from multi_agent_platform.config.settings import Settings
 from multi_agent_platform.db.models.access_control import (
     AccessReasonCode,
+    GrantSource,
     PrincipalIdentity,
+    PrincipalIdentityStatus,
+    RoleCode,
+    RoleGrant,
+    RoleGrantStatus,
+    RoleScopeType,
 )
 from multi_agent_platform.db.models.delegated_credential import DelegatedCredentialLink
 from multi_agent_platform.db.models.secret_reference import SecretReference
@@ -88,6 +94,59 @@ async def test_local_principal_authentication_creates_persisted_identity(
 
     assert principal.principal_identity_id is not None
     assert principal.principal_id == "tenant-admin-acme"
+
+
+async def test_local_principal_authentication_merges_persisted_role_grants(
+    session, settings
+) -> None:
+    service = build_auth_service(session, settings)
+    identity = await service.access_repository.upsert_principal(
+        PrincipalIdentity(
+            auth_provider="local_principal",
+            external_subject="tenant-user-acme",
+        )
+    )
+    await service.access_repository.upsert_role_grant(
+        RoleGrant(
+            principal_identity_id=identity.principal_identity_id,
+            scope_type=RoleScopeType.PLATFORM,
+            role_code=RoleCode.PLATFORM_ADMIN,
+            grant_source=GrantSource.ADMIN_ASSIGNMENT,
+            status=RoleGrantStatus.ACTIVE,
+        )
+    )
+    request = SimpleNamespace(
+        headers={settings.local_principal_header: "tenant-user-acme"},
+        state=SimpleNamespace(
+            scope_context=SimpleNamespace(trace_id="trace-1", request_id="req-1")
+        ),
+    )
+
+    principal = await service.authenticate_request(request)
+
+    assert "platform_admin" in principal.role_codes
+
+
+async def test_suspended_local_principal_is_denied_on_next_request(
+    session, settings
+) -> None:
+    service = build_auth_service(session, settings)
+    await service.access_repository.upsert_principal(
+        PrincipalIdentity(
+            auth_provider="local_principal",
+            external_subject="tenant-user-acme",
+            status=PrincipalIdentityStatus.SUSPENDED,
+        )
+    )
+    request = SimpleNamespace(
+        headers={settings.local_principal_header: "tenant-user-acme"},
+        state=SimpleNamespace(
+            scope_context=SimpleNamespace(trace_id="trace-1", request_id="req-1")
+        ),
+    )
+
+    with pytest.raises(AuthorizationError):
+        await service.authenticate_request(request)
 
 
 async def test_authorize_delegated_credential_enforces_tool_boundaries(

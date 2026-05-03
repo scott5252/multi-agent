@@ -1,0 +1,62 @@
+{
+  "extends": "../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "User And Tenant Membership Administration",
+    "spec_number": "018",
+    "spec_slug": "user-tenant-membership-administration",
+    "feature_dir": "specs/018-user-tenant-membership-administration",
+    "autopilot_dir": "specs/_autopilot/018-user-tenant-membership-administration",
+    "branch": "codex/018-user-tenant-membership-administration",
+    "qa_id": "qa018",
+    "qa_label": "QA018",
+    "qa_database": "multi_agent_platform_qa018",
+    "qa_env_file": "specs/018-user-tenant-membership-administration/.env.qa018",
+    "artifact_root": ".data/qa018-artifacts",
+    "playwright_output_dir": "output/playwright/qa018_ui",
+    "manual_qa_user_guide": "specs/018-user-tenant-membership-administration/qa018_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "user-tenant-membership-administration-ui-login",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/memberships"
+          },
+          {
+            "expect_text": "Local Login"
+          },
+          {
+            "screenshot": "01-local-login.png",
+            "full_page": true
+          },
+          {
+            "click": "article:has-text(\"platform-admin\") button"
+          },
+          {
+            "expect_text": "Membership Administration"
+          },
+          {
+            "screenshot": "02-user-tenant-membership-administration-target.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "user-tenant-membership-administration-ui-target",
+        "steps": [
+          {
+            "goto": "/admin/memberships"
+          },
+          {
+            "expect_text": "Membership Administration"
+          },
+          {
+            "screenshot": "03-user-tenant-membership-administration-direct-target.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

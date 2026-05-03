@@ -102,6 +102,23 @@ TELEGRAM_CONFIG_TENANT_PERMISSIONS = (
     "telegram-config:tokens",
     "telegram-config:diagnostics",
 )
+MEMBERSHIP_ADMIN_PLATFORM_PERMISSIONS = (
+    "platform:admin",
+    "membership-admin:read",
+    "membership-admin:invite",
+    "membership-admin:write",
+    "membership-admin:grants",
+    "membership-admin:audit",
+)
+MEMBERSHIP_ADMIN_TENANT_PERMISSIONS = (
+    "tenant:read",
+    "tenant:admin",
+    "membership-admin:read",
+    "membership-admin:invite",
+    "membership-admin:write",
+    "membership-admin:grants",
+    "membership-admin:audit",
+)
 
 
 def skill_registry_permission_codes(*, platform: bool) -> tuple[str, ...]:
@@ -126,3 +143,9 @@ def telegram_config_permission_codes(*, platform: bool) -> tuple[str, ...]:
     if platform:
         return TELEGRAM_CONFIG_PLATFORM_PERMISSIONS
     return TELEGRAM_CONFIG_TENANT_PERMISSIONS
+
+
+def membership_admin_permission_codes(*, platform: bool) -> tuple[str, ...]:
+    if platform:
+        return MEMBERSHIP_ADMIN_PLATFORM_PERMISSIONS
+    return MEMBERSHIP_ADMIN_TENANT_PERMISSIONS

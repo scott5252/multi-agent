@@ -212,6 +212,11 @@ from multi_agent_platform.db.models.usage import (
     UsageExportRequest,
     UsageReconciliationRecord,
 )
+from multi_agent_platform.db.models.user_management import (
+    MembershipAuditRecord,
+    TenantMembership,
+    UserInvitation,
+)
 from multi_agent_platform.db.models.workflow_registry import (
     RegistrySharingGrant,
     RegistrySharingGrantStatus,
@@ -272,6 +277,9 @@ def import_models() -> None:
         TelegramLinkedIdentitySummary,
         TelegramLinkTokenAudit,
         TelegramTenantConfiguration,
+        MembershipAuditRecord,
+        TenantMembership,
+        UserInvitation,
         UsageExportRequest,
         UsageReconciliationRecord,
         AgentHandoffTraceRecord,
@@ -575,6 +583,9 @@ __all__ = [
     "TelegramLinkedIdentitySummary",
     "TelegramLinkTokenAudit",
     "TelegramTenantConfiguration",
+    "MembershipAuditRecord",
+    "TenantMembership",
+    "UserInvitation",
     "RegistrySharingGrant",
     "RegistrySharingGrantStatus",
     "ValidationResult",
