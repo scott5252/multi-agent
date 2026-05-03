@@ -1,0 +1,1 @@
+Create tasks for preference data model, migration, repository, service, API schemas, admin/user UI forms, validation, runtime resolution dependency, audit events, redaction tests, tenant isolation tests, docs, and Daily Briefing QA fixtures.

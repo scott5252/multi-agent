@@ -1,0 +1,1 @@
+Add tests and implementation for resolving provider credentials in probe and gateway paths, secret-resolution failures, audit-safe summaries, no raw secret rendering, local/no-auth provider behavior, operations diagnostics, and docs.

@@ -14,12 +14,11 @@ It was prepared from:
 - the implemented Python package under `src/multi_agent_platform`
 - Alembic migrations, tests, templates, static assets, and project settings
 
-As of this review, specs `001` through `017` and `019` have implementation
-artifacts in source code. Spec `018-user-tenant-membership-administration`
-exists only as a placeholder directory with `.env.qa018`; it does not currently
-include a `spec.md`, `plan.md`, task list, migration, or dedicated user
-membership admin implementation. User and role administration capabilities
-therefore currently live in the auth/access admin surfaces from Spec `002`.
+As of this review, specs `001` through `019` have implementation artifacts in
+source code. Spec `018-user-tenant-membership-administration` adds the dedicated
+Membership Administration surface for invitations, principal linking,
+memberships, role grants, suspension/reactivation, access history, and safe
+membership audit records.
 
 ## What The System Does
 
@@ -65,6 +64,7 @@ flowchart LR
     f1n9["Admin Services"] --> f1n13["Model Provider Gateway Admin"]
     f1n9["Admin Services"] --> f1n14["Skill Registry"]
     f1n9["Admin Services"] --> f1n15["Test Bench"]
+    f1n9["Admin Services"] --> f1n28["Membership Administration"]
 
     f1n10["Runtime Orchestration"] --> f1n16["Worker Processes"]
     f1n16["Worker Processes"] --> f1n17["ModelGateway"]
@@ -97,6 +97,8 @@ are converted into typed, auditable records:
 - provider connection tests, catalog syncs, gateway operations, gateway
   attempts, and usage events
 - immutable memory versions and current-head projections
+- principal identities, invitations, tenant memberships, role grants, access
+  history, and membership audit records
 - channel requests, idempotency records, notification attempts, callbacks, and
   artifact grants
 - audit timelines, traces, capture gaps, exports, and inspection access events
@@ -145,7 +147,7 @@ operator visibility.
 | `015-agent-workflow-test-bench` | Test suites, cases, assertions, safe modes, run results, traces, publication evidence | `testing/agent_bench/`, `api/routers/admin_agent_tests.py`, `web_admin/templates/agent_tests/` | `0015_agent_workflow_test_bench.py` |
 | `016-token-usage-cost-analytics` | Usage capture from ModelGateway, rollups, pricing, CSV exports, usage UI | `usage/`, `api/routers/admin_usage.py`, `web_admin/templates/usage/` | `0016_token_usage_cost_analytics.py` |
 | `017-telegram-configuration-console` | Tenant Telegram enablement, link token audits, linked identity summaries, safe diagnostics | `admin/telegram_config/`, `api/routers/admin_telegram.py`, `web_admin/templates/telegram/` | `0017_telegram_configuration_console.py` |
-| `018-user-tenant-membership-administration` | Placeholder only in this workspace | No dedicated implementation beyond `002` role grants and access admin | No migration |
+| `018-user-tenant-membership-administration` | User and tenant membership administration, invitations, Auth0 principal linking, tenant memberships, role grant changes, principal suspension/reactivation, access history, safe membership audit | `admin/memberships/`, `api/routers/admin_memberships.py`, `api/schemas/memberships.py`, `api/ui/memberships.py`, `db/models/user_management.py`, `db/repositories/memberships.py`, `web_admin/templates/memberships/` | `0018_user_tenant_membership_administration.py` |
 | `019-operations-console-logs-performance` | Operations dashboard, dependency status, capacity, providers, usage, redacted operational logs, exports | `operations/`, `api/routers/admin_operations.py`, `web_admin/templates/operations/` | No new tables; reuses existing records and artifact storage |
 
 ## Repository Shape
@@ -227,6 +229,7 @@ Important router groups:
 - `/admin/skill-registry`
 - `/admin/agent-tests`
 - `/admin/usage`
+- `/admin/memberships`
 - `/admin/telegram`
 - `/admin/operations`
 - `/admin/runs`
@@ -318,6 +321,9 @@ Main concepts:
   permissions.
 - `require_authorized_principal` authenticates, authorizes, writes decision
   evidence, and attaches principal and scope data to request state.
+- Auth0 and local-principal authentication merge current persisted active role
+  grants and principal status on each protected request, so membership changes
+  are visible on the next authorized action.
 - `TenancyMiddleware` creates an initial `ScopeContext` from headers and adds
   `x-trace-id` to responses.
 - `tenancy/guards.py` contains helper checks for tenant and platform scope.
@@ -368,6 +374,101 @@ Main code:
 
 The shell fails closed when authorization, tenant scope, or audit persistence is
 not available. Saved filters are persisted in `admin_saved_filters`.
+
+## Membership Administration
+
+Membership Administration is the Spec `018` user and tenant administration
+surface. It gives platform admins a cross-tenant user administration view and
+tenant admins a tenant-scoped self-service view. Production authentication
+remains Auth0-backed, local-principal mode remains available for development
+and QA, and the platform does not accept or store passwords.
+
+```mermaid
+flowchart TD
+    m1["Platform Or Tenant Admin"] --> m2["/admin/memberships UI"]
+    m1["Platform Or Tenant Admin"] --> m3["/admin/memberships/api JSON API"]
+    m2["/admin/memberships UI"] --> m4["Admin Memberships Router"]
+    m3["/admin/memberships/api JSON API"] --> m4["Admin Memberships Router"]
+    m4["Admin Memberships Router"] --> m5["require_authorized_principal"]
+    m5["require_authorized_principal"] --> m6["Membership SURFACE_POLICIES"]
+    m4["Admin Memberships Router"] --> m7["MembershipAccessScope"]
+    m7["MembershipAccessScope"] --> m8["MembershipAdministrationService"]
+
+    m8["MembershipAdministrationService"] --> m9["Invite User"]
+    m8["MembershipAdministrationService"] --> m10["Link Auth0 Principal"]
+    m8["MembershipAdministrationService"] --> m11["Create Or Revoke Role Grant"]
+    m8["MembershipAdministrationService"] --> m12["Update Tenant Membership Status"]
+    m8["MembershipAdministrationService"] --> m13["Suspend Or Reactivate Principal"]
+    m8["MembershipAdministrationService"] --> m14["List Access History"]
+    m8["MembershipAdministrationService"] --> m15["Record Membership Audit"]
+
+    m9["Invite User"] --> m16["MembershipRepository"]
+    m10["Link Auth0 Principal"] --> m16["MembershipRepository"]
+    m11["Create Or Revoke Role Grant"] --> m16["MembershipRepository"]
+    m12["Update Tenant Membership Status"] --> m16["MembershipRepository"]
+    m13["Suspend Or Reactivate Principal"] --> m16["MembershipRepository"]
+    m14["List Access History"] --> m16["MembershipRepository"]
+    m15["Record Membership Audit"] --> m16["MembershipRepository"]
+
+    m16["MembershipRepository"] --> m17["principal_identities"]
+    m16["MembershipRepository"] --> m18["user_invitations"]
+    m16["MembershipRepository"] --> m19["tenant_memberships"]
+    m16["MembershipRepository"] --> m20["role_grants"]
+    m16["MembershipRepository"] --> m21["access_decision_records"]
+    m16["MembershipRepository"] --> m22["membership_audit_records"]
+```
+
+Platform admins can:
+
+- list principal identities, invitations, memberships, role grants, access
+  history, and membership audit records across tenants
+- create idempotent invitations
+- link or provision Auth0-backed principal identities
+- create and revoke platform and tenant role grants
+- suspend or reactivate principal identities
+- inspect safe access history
+
+Tenant admins can:
+
+- invite users only into their own tenant
+- create or revoke only tenant-scoped `tenant_user` and `tenant_admin` grants
+  for their own tenant
+- suspend, restore, or remove memberships in their own tenant
+- view tenant-scoped principals, invitations, memberships, role grants, access
+  history, and membership audit records
+
+Safety rules:
+
+- Cross-tenant access fails closed without confirming whether unauthorized data
+  exists.
+- Tenant admins cannot assign platform roles.
+- Invitation emails are normalized for idempotency, but UI/API/audit summaries
+  use masked email text and hashes.
+- Auth0 subjects are displayed as safe masked identifiers.
+- Principal suspension denies protected actions before role checks.
+- Role grant creation and revocation retain durable records; revoked grants are
+  marked revoked rather than deleted.
+
+Main code:
+
+- `admin/memberships/models.py`
+- `admin/memberships/redaction.py`
+- `admin/memberships/service.py`
+- `api/routers/admin_memberships.py`
+- `api/schemas/memberships.py`
+- `api/ui/memberships.py`
+- `db/models/user_management.py`
+- `db/repositories/memberships.py`
+- `web_admin/templates/memberships/index.html`
+
+Important tables:
+
+- `user_invitations`
+- `tenant_memberships`
+- `membership_audit_records`
+- `principal_identities` from auth/access
+- `role_grants` from auth/access
+- `access_decision_records` from auth/access
 
 ## Workflow Registry And Guided Builder
 
@@ -1235,6 +1336,49 @@ Alembic migrations currently present:
 - `0015_agent_workflow_test_bench.py`
 - `0016_token_usage_cost_analytics.py`
 - `0017_telegram_configuration_console.py`
+- `0018_user_tenant_membership_administration.py`
+
+## End-To-End Sequence: Membership Administration
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Admin as Platform Or Tenant Admin
+    participant UI as Membership UI Or API
+    participant Auth as Auth And Tenancy
+    participant Service as MembershipAdministrationService
+    participant Repo as MembershipRepository
+    participant DB as Database
+
+    Admin->>UI: Open /admin/memberships or call /admin/memberships/api
+    UI->>Auth: Authenticate and authorize membership surface
+    Auth->>DB: Merge principal status and active role grants
+    Auth->>DB: Write access decision record
+    Auth-->>UI: PrincipalContext with platform or tenant scope
+    UI->>Service: Build MembershipAccessScope
+    alt Invite user
+        Service->>Service: Normalize email and check role eligibility
+        Service->>Repo: create_or_replay_invitation
+        Repo->>DB: Insert or return pending user_invitations row
+        Service->>Repo: add_audit_record
+        Repo->>DB: Insert membership_audit_records row
+    else Link Auth0 principal
+        Service->>Service: Require platform admin
+        Service->>Repo: upsert_principal
+        Repo->>DB: Create or update principal_identities row
+        Service->>Repo: add_audit_record
+    else Create or revoke role grant
+        Service->>Service: Enforce platform/tenant role guardrails
+        Service->>Repo: create_role_grant or revoke_role_grant
+        Repo->>DB: Update role_grants and tenant_memberships as needed
+        Service->>Repo: add_audit_record
+    else Suspend, reactivate, or update membership
+        Service->>Repo: update principal or tenant membership status
+        Repo->>DB: Update principal_identities or tenant_memberships
+        Service->>Repo: add_audit_record
+    end
+    UI-->>Admin: Render masked emails, safe subject display, history, and audit summaries
+```
 
 ## End-To-End Sequence: Web Or API Run
 
@@ -1543,6 +1687,7 @@ sequenceDiagram
 | --- | --- |
 | Foundation | tenants, tenant limits, queue jobs, job leases, artifacts, secret references, health |
 | Auth/access | principals, role grants, support overrides, delegated credentials, access decisions |
+| Membership administration | user invitations, tenant memberships, membership audit records, membership UI/API snapshots, masked email and subject display, principal suspension/reactivation workflows |
 | Workflow registry | lineages, drafts, revisions, validations, published bundles, sharing grants |
 | Runtime orchestration | execution bundles, workflow runs, steps, leases, checkpoints, handoffs, side effects, approvals, lineage, timeline |
 | Memory | memory scopes, immutable versions, heads, memory audit, archive markers |
@@ -1598,9 +1743,10 @@ current behavior:
   current migrations.
 - The admin frontend is server-rendered Jinja2 plus small static JavaScript. No
   separate frontend build exists.
-- Spec `018` is not implemented as a dedicated user and membership admin
-  feature. Role grant and principal management are currently part of the
-  auth/access admin area.
+- Spec `018` is implemented as a dedicated Membership Administration surface.
+  It reuses auth/access `principal_identities`, `role_grants`, and
+  `access_decision_records`, and adds `user_invitations`,
+  `tenant_memberships`, and `membership_audit_records`.
 - Spec `011` has substantial implementation in `model_providers/`, the
   container, admin routes, and database models, but the task file still shows
   incomplete test and hardening tasks around provider probes, direct-call
@@ -1623,6 +1769,11 @@ current behavior:
 | --- | --- |
 | Agent | A role in a workflow that performs work using prompts, model routing, memory, and allowed skills/tools. |
 | Sub-agent | A nested or delegated agent role inside a workflow. Handoffs to sub-agents are explicit and contract-validated. |
+| Principal identity | Persisted user identity metadata for Auth0, local-principal, or system actors. Passwords are not stored. |
+| User invitation | Platform-scoped or tenant-scoped invitation with normalized operational email, masked display, requested roles, status, expiry, and idempotency metadata. |
+| Tenant membership | Relationship between a principal identity and a tenant, with active, suspended, or removed status. |
+| Role grant | Durable role assignment for platform scope or tenant scope. Revocation marks the grant revoked rather than deleting it. |
+| Membership audit record | Safe append-only summary of membership administration allows, denials, invitations, identity links, role changes, and status changes. |
 | Workflow lineage | The stable identity for a workflow across drafts and published versions. |
 | Workflow draft | A mutable authoring record for a workflow. |
 | Draft revision | An immutable snapshot of a workflow draft after a save. |

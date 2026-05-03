@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "feature": {
+    "name": "user-briefing-preferences-and-context",
+    "branch": "codex/023-user-briefing-preferences-and-context"
+  },
+  "prompt_files": [
+    "specify.md",
+    "plan.md",
+    "tasks.md"
+  ],
+  "policy_file": "policy.yml",
+  "validation_file": "validation.yml"
+}

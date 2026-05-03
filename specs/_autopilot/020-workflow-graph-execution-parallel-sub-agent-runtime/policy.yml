@@ -1,0 +1,22 @@
+{
+  "extends": "../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Workflow Graph Execution And Parallel Sub-Agent Runtime",
+    "spec_number": "020",
+    "spec_slug": "workflow-graph-execution-parallel-sub-agent-runtime",
+    "feature_dir": "specs/020-workflow-graph-execution-parallel-sub-agent-runtime",
+    "autopilot_dir": "specs/_autopilot/020-workflow-graph-execution-parallel-sub-agent-runtime",
+    "branch": "codex/020-workflow-graph-execution-parallel-sub-agent-runtime",
+    "qa_id": "qa020",
+    "qa_label": "QA020",
+    "qa_database": "multi_agent_platform_qa020",
+    "qa_env_file": "specs/020-workflow-graph-execution-parallel-sub-agent-runtime/.env.qa020",
+    "artifact_root": ".data/qa020-artifacts",
+    "playwright_output_dir": "output/playwright/qa020_ui",
+    "manual_qa_user_guide": "specs/020-workflow-graph-execution-parallel-sub-agent-runtime/qa020_user_guide.md"
+  },
+  "validation": {
+    "required_playwright_flows": [],
+    "required_extra_commands": []
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "extends": "../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Missing Feature 4 - User Briefing Preferences And Context",
+    "spec_number": "023",
+    "spec_slug": "user-briefing-preferences-and-context",
+    "feature_dir": "specs/023-user-briefing-preferences-and-context",
+    "autopilot_dir": "specs/_autopilot/023-user-briefing-preferences-and-context",
+    "branch": "codex/023-user-briefing-preferences-and-context",
+    "qa_id": "qa023",
+    "qa_label": "QA023",
+    "qa_database": "multi_agent_platform_qa023",
+    "qa_env_file": "specs/023-user-briefing-preferences-and-context/.env.qa023",
+    "artifact_root": ".data/qa023-artifacts",
+    "playwright_output_dir": "output/playwright/qa023_ui",
+    "manual_qa_user_guide": "specs/023-user-briefing-preferences-and-context/qa023_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "user-briefing-preferences-and-context-ui-login",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/briefing-preferences"
+          },
+          {
+            "expect_text": "Local Login"
+          },
+          {
+            "screenshot": "01-local-login.png",
+            "full_page": true
+          },
+          {
+            "click": "article:has-text(\"platform-admin\") button"
+          },
+          {
+            "expect_text": "Briefing Preferences"
+          },
+          {
+            "screenshot": "02-user-briefing-preferences-and-context-target.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "user-briefing-preferences-and-context-ui-target",
+        "steps": [
+          {
+            "goto": "/admin/briefing-preferences"
+          },
+          {
+            "expect_text": "Briefing Preferences"
+          },
+          {
+            "screenshot": "03-user-briefing-preferences-and-context-direct-target.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

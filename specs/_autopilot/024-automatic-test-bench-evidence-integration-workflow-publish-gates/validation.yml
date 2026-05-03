@@ -1,0 +1,62 @@
+{
+  "extends": "../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Missing Feature 5 - Automatic Test Bench Evidence Integration In Workflow Publish Gates",
+    "spec_number": "024",
+    "spec_slug": "automatic-test-bench-evidence-integration-workflow-publish-gates",
+    "feature_dir": "specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates",
+    "autopilot_dir": "specs/_autopilot/024-automatic-test-bench-evidence-integration-workflow-publish-gates",
+    "branch": "codex/024-automatic-test-bench-evidence-integration-workflow-publish-gates",
+    "qa_id": "qa024",
+    "qa_label": "QA024",
+    "qa_database": "multi_agent_platform_qa024",
+    "qa_env_file": "specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/.env.qa024",
+    "artifact_root": ".data/qa024-artifacts",
+    "playwright_output_dir": "output/playwright/qa024_ui",
+    "manual_qa_user_guide": "specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/qa024_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "automatic-test-bench-evidence-integration-workflow-publish-gates-ui-login",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/workflows/ui"
+          },
+          {
+            "expect_text": "Local Login"
+          },
+          {
+            "screenshot": "01-local-login.png",
+            "full_page": true
+          },
+          {
+            "click": "article:has-text(\"platform-admin\") button"
+          },
+          {
+            "expect_text": "Workflow Registry"
+          },
+          {
+            "screenshot": "02-automatic-test-bench-evidence-integration-workflow-publish-gates-target.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "automatic-test-bench-evidence-integration-workflow-publish-gates-ui-target",
+        "steps": [
+          {
+            "goto": "/admin/workflows/ui"
+          },
+          {
+            "expect_text": "Workflow Registry"
+          },
+          {
+            "screenshot": "03-automatic-test-bench-evidence-integration-workflow-publish-gates-direct-target.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

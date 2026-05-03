@@ -1,0 +1,1 @@
+Break into tasks for persistent link tokens, persistent identity links, command alias CRUD, runtime config enforcement, natural-language command routing, Bot API sendMessage client, delivery attempt records, notification integration, result formatting, idempotent Telegram update handling, revocation, rate limits, tenant isolation, tests, browser QA, and docs.

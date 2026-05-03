@@ -1,0 +1,2 @@
+Complete live model provider credential resolution for provider probes and runtime gateway calls. Provider connections must store safe secret reference ids, resolve them through the configured secret provider only at call time, never expose raw values, and pass resolved credentials into OpenAI or local OpenAI-compatible adapters. Failed or missing credentials must produce safe diagnostics and audit evidence.
+--background information: review the file test_example.md in the root directory to understand why specs 020 through 025 are being added to this solution.

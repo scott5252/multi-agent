@@ -1,0 +1,1 @@
+Create tasks for repository query integration, workflow validation service changes, publish gate response changes, UI required-test selectors, stale evidence tests, cross-tenant denial tests, migration/backfill docs, and browser QA.

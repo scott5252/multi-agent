@@ -1,0 +1,25 @@
+{
+  "extends": "../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Missing Feature 2 - Real Skill Tool Execution Connectors",
+    "spec_number": "021",
+    "spec_slug": "real-skill-tool-execution-connectors",
+    "feature_dir": "specs/021-real-skill-tool-execution-connectors",
+    "autopilot_dir": "specs/_autopilot/021-real-skill-tool-execution-connectors",
+    "branch": "codex/021-real-skill-tool-execution-connectors",
+    "qa_id": "qa021",
+    "qa_label": "QA021",
+    "qa_database": "multi_agent_platform_qa021",
+    "qa_env_file": "specs/021-real-skill-tool-execution-connectors/.env.qa021",
+    "artifact_root": ".data/qa021-artifacts",
+    "playwright_output_dir": "output/playwright/qa021_ui",
+    "manual_qa_user_guide": "specs/021-real-skill-tool-execution-connectors/qa021_user_guide.md"
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "real-skill-tool-execution-connectors-ui-login",
+      "real-skill-tool-execution-connectors-ui-target"
+    ],
+    "required_extra_commands": []
+  }
+}

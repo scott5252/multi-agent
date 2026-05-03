@@ -1,0 +1,25 @@
+{
+  "extends": "../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Missing Feature 4 - User Briefing Preferences And Context",
+    "spec_number": "023",
+    "spec_slug": "user-briefing-preferences-and-context",
+    "feature_dir": "specs/023-user-briefing-preferences-and-context",
+    "autopilot_dir": "specs/_autopilot/023-user-briefing-preferences-and-context",
+    "branch": "codex/023-user-briefing-preferences-and-context",
+    "qa_id": "qa023",
+    "qa_label": "QA023",
+    "qa_database": "multi_agent_platform_qa023",
+    "qa_env_file": "specs/023-user-briefing-preferences-and-context/.env.qa023",
+    "artifact_root": ".data/qa023-artifacts",
+    "playwright_output_dir": "output/playwright/qa023_ui",
+    "manual_qa_user_guide": "specs/023-user-briefing-preferences-and-context/qa023_user_guide.md"
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "user-briefing-preferences-and-context-ui-login",
+      "user-briefing-preferences-and-context-ui-target"
+    ],
+    "required_extra_commands": []
+  }
+}

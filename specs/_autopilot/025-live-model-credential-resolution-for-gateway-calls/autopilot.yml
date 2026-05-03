@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "feature": {
+    "name": "live-model-credential-resolution-for-gateway-calls",
+    "branch": "codex/025-live-model-credential-resolution-for-gateway-calls"
+  },
+  "prompt_files": [
+    "specify.md",
+    "plan.md",
+    "tasks.md"
+  ],
+  "policy_file": "policy.yml",
+  "validation_file": "validation.yml"
+}

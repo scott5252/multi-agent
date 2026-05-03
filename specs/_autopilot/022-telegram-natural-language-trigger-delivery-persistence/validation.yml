@@ -1,0 +1,62 @@
+{
+  "extends": "../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Missing Feature 3 - Telegram Natural-Language Trigger, Delivery, And Persistence",
+    "spec_number": "022",
+    "spec_slug": "telegram-natural-language-trigger-delivery-persistence",
+    "feature_dir": "specs/022-telegram-natural-language-trigger-delivery-persistence",
+    "autopilot_dir": "specs/_autopilot/022-telegram-natural-language-trigger-delivery-persistence",
+    "branch": "codex/022-telegram-natural-language-trigger-delivery-persistence",
+    "qa_id": "qa022",
+    "qa_label": "QA022",
+    "qa_database": "multi_agent_platform_qa022",
+    "qa_env_file": "specs/022-telegram-natural-language-trigger-delivery-persistence/.env.qa022",
+    "artifact_root": ".data/qa022-artifacts",
+    "playwright_output_dir": "output/playwright/qa022_ui",
+    "manual_qa_user_guide": "specs/022-telegram-natural-language-trigger-delivery-persistence/qa022_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "telegram-natural-language-trigger-delivery-persistence-ui-login",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/telegram"
+          },
+          {
+            "expect_text": "Local Login"
+          },
+          {
+            "screenshot": "01-local-login.png",
+            "full_page": true
+          },
+          {
+            "click": "article:has-text(\"platform-admin\") button"
+          },
+          {
+            "expect_text": "Telegram Command Aliases"
+          },
+          {
+            "screenshot": "02-telegram-natural-language-trigger-delivery-persistence-target.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "telegram-natural-language-trigger-delivery-persistence-ui-target",
+        "steps": [
+          {
+            "goto": "/admin/telegram"
+          },
+          {
+            "expect_text": "Telegram Command Aliases"
+          },
+          {
+            "screenshot": "03-telegram-natural-language-trigger-delivery-persistence-direct-target.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "extends": "../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Missing Feature 2 - Real Skill Tool Execution Connectors",
+    "spec_number": "021",
+    "spec_slug": "real-skill-tool-execution-connectors",
+    "feature_dir": "specs/021-real-skill-tool-execution-connectors",
+    "autopilot_dir": "specs/_autopilot/021-real-skill-tool-execution-connectors",
+    "branch": "codex/021-real-skill-tool-execution-connectors",
+    "qa_id": "qa021",
+    "qa_label": "QA021",
+    "qa_database": "multi_agent_platform_qa021",
+    "qa_env_file": "specs/021-real-skill-tool-execution-connectors/.env.qa021",
+    "artifact_root": ".data/qa021-artifacts",
+    "playwright_output_dir": "output/playwright/qa021_ui",
+    "manual_qa_user_guide": "specs/021-real-skill-tool-execution-connectors/qa021_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "real-skill-tool-execution-connectors-ui-login",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/skill-execution/ui/diagnostics"
+          },
+          {
+            "expect_text": "Local Login"
+          },
+          {
+            "screenshot": "01-local-login.png",
+            "full_page": true
+          },
+          {
+            "click": "article:has-text(\"platform-admin\") button"
+          },
+          {
+            "expect_text": "Skill Tool Diagnostics"
+          },
+          {
+            "screenshot": "02-real-skill-tool-execution-connectors-target.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "real-skill-tool-execution-connectors-ui-target",
+        "steps": [
+          {
+            "goto": "/admin/skill-execution/ui/diagnostics"
+          },
+          {
+            "expect_text": "Skill Tool Diagnostics"
+          },
+          {
+            "screenshot": "03-real-skill-tool-execution-connectors-direct-target.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

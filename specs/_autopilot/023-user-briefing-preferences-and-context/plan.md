@@ -1,0 +1,2 @@
+Plan this using existing auth principal context, tenancy guards, immutable memory policy, PostgreSQL repositories, admin shell, audit/redaction helpers, and channel runtime inputs. Define preference models, APIs, server-rendered UI, validation rules, memory or table ownership decision, safe summaries, import/export behavior, and runtime resolver hooks. Include migration and tenant isolation tests.
+--background information: review the file test_example.md in the root directory to understand why specs 020 through 025 are being added to this solution.

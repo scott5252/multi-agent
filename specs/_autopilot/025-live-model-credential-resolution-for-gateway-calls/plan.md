@@ -1,0 +1,2 @@
+Plan this using ProviderSecretResolver, secret provider abstractions, ModelProviderService, ModelGateway, provider probes, bootstrap container factories, audit/redaction helpers, and operations diagnostics. Define credential selection when multiple references exist, production guardrails, probe behavior, runtime behavior, and test-mode mocks.
+--background information: review the file test_example.md in the root directory to understand why specs 020 through 025 are being added to this solution.

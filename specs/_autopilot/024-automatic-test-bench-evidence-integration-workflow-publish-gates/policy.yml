@@ -1,0 +1,25 @@
+{
+  "extends": "../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Missing Feature 5 - Automatic Test Bench Evidence Integration In Workflow Publish Gates",
+    "spec_number": "024",
+    "spec_slug": "automatic-test-bench-evidence-integration-workflow-publish-gates",
+    "feature_dir": "specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates",
+    "autopilot_dir": "specs/_autopilot/024-automatic-test-bench-evidence-integration-workflow-publish-gates",
+    "branch": "codex/024-automatic-test-bench-evidence-integration-workflow-publish-gates",
+    "qa_id": "qa024",
+    "qa_label": "QA024",
+    "qa_database": "multi_agent_platform_qa024",
+    "qa_env_file": "specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/.env.qa024",
+    "artifact_root": ".data/qa024-artifacts",
+    "playwright_output_dir": "output/playwright/qa024_ui",
+    "manual_qa_user_guide": "specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/qa024_user_guide.md"
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "automatic-test-bench-evidence-integration-workflow-publish-gates-ui-login",
+      "automatic-test-bench-evidence-integration-workflow-publish-gates-ui-target"
+    ],
+    "required_extra_commands": []
+  }
+}

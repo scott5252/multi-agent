@@ -1,0 +1,21 @@
+{
+  "extends": "../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Missing Feature 6 - Live Model Credential Resolution For Gateway Calls",
+    "spec_number": "025",
+    "spec_slug": "live-model-credential-resolution-for-gateway-calls",
+    "feature_dir": "specs/025-live-model-credential-resolution-for-gateway-calls",
+    "autopilot_dir": "specs/_autopilot/025-live-model-credential-resolution-for-gateway-calls",
+    "branch": "codex/025-live-model-credential-resolution-for-gateway-calls",
+    "qa_id": "qa025",
+    "qa_label": "QA025",
+    "qa_database": "multi_agent_platform_qa025",
+    "qa_env_file": "specs/025-live-model-credential-resolution-for-gateway-calls/.env.qa025",
+    "artifact_root": ".data/qa025-artifacts",
+    "playwright_output_dir": "output/playwright/qa025_ui",
+    "manual_qa_user_guide": "specs/025-live-model-credential-resolution-for-gateway-calls/qa025_user_guide.md"
+  },
+  "playwright": {
+    "flows": []
+  }
+}
