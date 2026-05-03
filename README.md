@@ -238,6 +238,26 @@ QA016 reviewer evidence lives in
 `specs/016-token-usage-cost-analytics/qa016_ui.md`, and
 `specs/016-token-usage-cost-analytics/qa016_user_guide.md`.
 
+## Telegram Configuration Console
+
+Administrators review Telegram channel readiness at `/admin/telegram` or
+through JSON APIs under `/admin/telegram/api`. The console shows global
+provider readiness, tenant Telegram enablement, protected command readiness,
+one-time link-token controls, masked linked Telegram identities, and safe
+webhook and delivery diagnostics.
+
+Platform admins can inspect platform readiness and authorized tenant scopes.
+Tenant admins can inspect and mutate only their tenant. Local QA uses fake
+secret references and simulated webhook validation; it does not call Telegram
+or require a real bot token. Bot tokens, webhook secrets, private Telegram
+messages, raw prompts, workflow run results, and unauthorized tenant data are
+excluded from records, diagnostics, UI, and screenshot evidence.
+
+QA017 reviewer evidence lives in
+`specs/017-telegram-configuration-console/qa017.md`,
+`specs/017-telegram-configuration-console/qa017_ui.md`, and
+`specs/017-telegram-configuration-console/qa017_user_guide.md`.
+
 ## Reliability Scale Hardening
 
 Operators can inspect and tune reliability state through

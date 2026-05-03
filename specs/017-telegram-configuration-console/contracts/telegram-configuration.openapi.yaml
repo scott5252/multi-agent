@@ -1,0 +1,108 @@
+openapi: 3.1.0
+info:
+  title: Telegram Configuration Console API
+  version: 1.0.0
+paths:
+  /admin/telegram/api/readiness:
+    get:
+      summary: Read Telegram provider readiness
+      responses:
+        "200":
+          description: Safe readiness summary
+  /admin/telegram/api/config:
+    get:
+      summary: Read tenant Telegram configuration
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tenant configuration
+    post:
+      summary: Update tenant Telegram configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantTelegramConfigUpdate"
+      responses:
+        "200":
+          description: Updated tenant configuration
+        "409":
+          description: Stale revision conflict
+  /admin/telegram/api/webhook/validate:
+    post:
+      summary: Validate webhook readiness without external side effects
+      responses:
+        "200":
+          description: Safe diagnostic event
+  /admin/telegram/api/link-tokens:
+    post:
+      summary: Issue one-time Telegram link token
+      responses:
+        "201":
+          description: Link token shown once
+  /admin/telegram/api/link-tokens/{token_audit_id}/revoke:
+    post:
+      summary: Revoke a pending link token
+      parameters:
+        - name: token_audit_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Token audit row after revocation
+  /admin/telegram/api/identities:
+    get:
+      summary: List masked linked Telegram identities
+      responses:
+        "200":
+          description: Redacted identity summaries
+  /admin/telegram/api/identities/{identity_id}/revoke:
+    post:
+      summary: Revoke linked Telegram identity
+      parameters:
+        - name: identity_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Identity summary after revocation
+  /admin/telegram/api/diagnostics:
+    get:
+      summary: List safe Telegram diagnostics
+      responses:
+        "200":
+          description: Diagnostic event list
+components:
+  schemas:
+    TenantTelegramConfigUpdate:
+      type: object
+      required:
+        - tenant_id
+        - enabled
+        - revision_token
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        enabled:
+          type: boolean
+        protected_commands:
+          type: array
+          items:
+            type: string
+        status_note:
+          type: string
+        revision_token:
+          type: string

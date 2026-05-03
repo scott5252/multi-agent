@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
@@ -58,6 +59,14 @@ class TelegramLinkToken:
 
 @dataclass(slots=True, frozen=True)
 class TelegramIdentity:
+    tenant_id: UUID | None
+    platform_identity_id: str
+    telegram_user_id: int
+    telegram_chat_id: int
+
+
+@dataclass(slots=True, frozen=True)
+class TelegramIdentitySnapshot:
     tenant_id: UUID | None
     platform_identity_id: str
     telegram_user_id: int
@@ -457,6 +466,39 @@ class ChannelService:
             trace_id=trace_id,
         )
 
+    def revoke_telegram_link_token_by_hash(self, token_hash: str) -> bool:
+        for token in tuple(self._link_tokens):
+            if _fingerprint_value(token) == token_hash:
+                self._link_tokens.pop(token, None)
+                return True
+        return False
+
+    def telegram_identity_snapshots(
+        self, *, tenant_id: UUID | None
+    ) -> tuple[TelegramIdentitySnapshot, ...]:
+        return tuple(
+            TelegramIdentitySnapshot(
+                tenant_id=identity.tenant_id,
+                platform_identity_id=identity.platform_identity_id,
+                telegram_user_id=identity.telegram_user_id,
+                telegram_chat_id=identity.telegram_chat_id,
+            )
+            for identity in self._telegram_links.values()
+            if identity.tenant_id == tenant_id
+        )
+
+    def revoke_telegram_identity_by_fingerprints(
+        self, *, user_fingerprint: str, chat_fingerprint: str
+    ) -> bool:
+        for key, identity in tuple(self._telegram_links.items()):
+            if (
+                _fingerprint_value(identity.telegram_user_id) == user_fingerprint
+                and _fingerprint_value(identity.telegram_chat_id) == chat_fingerprint
+            ):
+                self._telegram_links.pop(key, None)
+                return True
+        return False
+
     def get_telegram_update(self, update_id: int) -> dict[str, object] | None:
         return self._telegram_updates.get(update_id)
 
@@ -600,3 +642,7 @@ def _workflow_uuid(workflow_id: str) -> UUID:
         return UUID(workflow_id)
     except ValueError:
         return uuid5(NAMESPACE_URL, workflow_id)
+
+
+def _fingerprint_value(value: object) -> str:
+    return hashlib.sha256(str(value).encode("utf-8")).hexdigest()

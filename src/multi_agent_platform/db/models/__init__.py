@@ -194,6 +194,12 @@ from multi_agent_platform.db.models.skill_registry import (
     SkillQuarantineDecision,
     SkillVersionLifecycleState,
 )
+from multi_agent_platform.db.models.telegram_config import (
+    TelegramDiagnosticEvent,
+    TelegramLinkedIdentitySummary,
+    TelegramLinkTokenAudit,
+    TelegramTenantConfiguration,
+)
 from multi_agent_platform.db.models.tenant import (
     Tenant,
     TenantLimitPolicy,
@@ -262,6 +268,10 @@ def import_models() -> None:
         LlmPricingVersion,
         LlmUsageEvent,
         LlmUsageRollup,
+        TelegramDiagnosticEvent,
+        TelegramLinkedIdentitySummary,
+        TelegramLinkTokenAudit,
+        TelegramTenantConfiguration,
         UsageExportRequest,
         UsageReconciliationRecord,
         AgentHandoffTraceRecord,
@@ -559,8 +569,12 @@ __all__ = [
     "TenantProfileVersionGrant",
     "TenantPromptVersionGrant",
     "TenantStatus",
+    "TelegramDiagnosticEvent",
     "TelegramIdentityLinkRecord",
     "TelegramIdentityLinkStatus",
+    "TelegramLinkedIdentitySummary",
+    "TelegramLinkTokenAudit",
+    "TelegramTenantConfiguration",
     "RegistrySharingGrant",
     "RegistrySharingGrantStatus",
     "ValidationResult",

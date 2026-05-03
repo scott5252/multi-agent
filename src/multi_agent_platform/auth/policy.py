@@ -445,6 +445,108 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         classification=SurfaceClassification.AUTHENTICATED,
         required_permissions=("usage:export",),
     ),
+    "GET:/admin/telegram": ProtectedSurface(
+        surface_key="GET:/admin/telegram",
+        requested_action="render_telegram_configuration_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:read",),
+    ),
+    "POST:/admin/telegram/config": ProtectedSurface(
+        surface_key="POST:/admin/telegram/config",
+        requested_action="update_telegram_configuration_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:write",),
+    ),
+    "POST:/admin/telegram/webhook/validate": ProtectedSurface(
+        surface_key="POST:/admin/telegram/webhook/validate",
+        requested_action="validate_telegram_webhook_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:diagnostics",),
+    ),
+    "POST:/admin/telegram/link-tokens": ProtectedSurface(
+        surface_key="POST:/admin/telegram/link-tokens",
+        requested_action="issue_telegram_link_token_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:tokens",),
+    ),
+    "POST:/admin/telegram/link-tokens/{token_audit_id}/revoke": ProtectedSurface(
+        surface_key="POST:/admin/telegram/link-tokens/{token_audit_id}/revoke",
+        requested_action="revoke_telegram_link_token_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:tokens",),
+    ),
+    "POST:/admin/telegram/identities/{identity_id}/revoke": ProtectedSurface(
+        surface_key="POST:/admin/telegram/identities/{identity_id}/revoke",
+        requested_action="revoke_telegram_identity_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:tokens",),
+    ),
+    "GET:/admin/telegram/api/readiness": ProtectedSurface(
+        surface_key="GET:/admin/telegram/api/readiness",
+        requested_action="read_telegram_readiness",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:read",),
+    ),
+    "GET:/admin/telegram/api/config": ProtectedSurface(
+        surface_key="GET:/admin/telegram/api/config",
+        requested_action="read_telegram_tenant_config",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:read",),
+    ),
+    "POST:/admin/telegram/api/config": ProtectedSurface(
+        surface_key="POST:/admin/telegram/api/config",
+        requested_action="update_telegram_tenant_config",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:write",),
+    ),
+    "POST:/admin/telegram/api/webhook/validate": ProtectedSurface(
+        surface_key="POST:/admin/telegram/api/webhook/validate",
+        requested_action="validate_telegram_webhook",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:diagnostics",),
+    ),
+    "GET:/admin/telegram/api/diagnostics": ProtectedSurface(
+        surface_key="GET:/admin/telegram/api/diagnostics",
+        requested_action="read_telegram_diagnostics",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:diagnostics",),
+    ),
+    "GET:/admin/telegram/api/snapshot": ProtectedSurface(
+        surface_key="GET:/admin/telegram/api/snapshot",
+        requested_action="read_telegram_console_snapshot",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:read",),
+    ),
+    "GET:/admin/telegram/api/identities": ProtectedSurface(
+        surface_key="GET:/admin/telegram/api/identities",
+        requested_action="read_telegram_identities",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:read",),
+    ),
+    "POST:/admin/telegram/api/identities/{identity_id}/revoke": ProtectedSurface(
+        surface_key="POST:/admin/telegram/api/identities/{identity_id}/revoke",
+        requested_action="revoke_telegram_identity",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:tokens",),
+    ),
+    "GET:/admin/telegram/api/link-tokens": ProtectedSurface(
+        surface_key="GET:/admin/telegram/api/link-tokens",
+        requested_action="read_telegram_link_tokens",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:tokens",),
+    ),
+    "POST:/admin/telegram/api/link-tokens": ProtectedSurface(
+        surface_key="POST:/admin/telegram/api/link-tokens",
+        requested_action="issue_telegram_link_token",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:tokens",),
+    ),
+    ("POST:/admin/telegram/api/link-tokens/{token_audit_id}/revoke"): ProtectedSurface(
+        surface_key="POST:/admin/telegram/api/link-tokens/{token_audit_id}/revoke",
+        requested_action="revoke_telegram_link_token",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:tokens",),
+    ),
     (
         "POST:/admin/support-overrides/{support_override_request_id}/approve"
     ): ProtectedSurface(
