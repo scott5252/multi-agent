@@ -18,7 +18,7 @@ from multi_agent_platform.auth.principal import PrincipalContext
 AdminScopeValue = Literal["platform", "tenant"]
 RequiredScopeValue = Literal["platform", "tenant", "either"]
 
-ADMIN_ROLE_CODES = frozenset({"tenant_admin", "platform_admin"})
+ADMIN_ROLE_CODES = frozenset({"tenant_admin", "platform_admin", "auditor"})
 SENSITIVE_TEXT_MARKERS = (
     "secret",
     "token",
@@ -216,6 +216,10 @@ def is_platform_admin(principal: PrincipalContext) -> bool:
     return "platform_admin" in principal.role_codes
 
 
+def is_auditor(principal: PrincipalContext) -> bool:
+    return "auditor" in principal.role_codes
+
+
 def sanitize_text(
     value: object,
     *,
@@ -328,7 +332,7 @@ def resolve_admin_scope(
     if tenant_id in (None, ""):
         if principal.tenant_id is not None and "tenant_admin" in principal.role_codes:
             return AdminScope.tenant(principal.tenant_id)
-        if is_platform_admin(principal):
+        if is_platform_admin(principal) or is_auditor(principal):
             return AdminScope.platform()
         raise AdminConsoleAccessError(
             "no authorized admin scope is available",
@@ -362,7 +366,7 @@ def principal_can_use_scope(principal: PrincipalContext, scope: AdminScope) -> b
     if not is_admin_principal(principal):
         return False
     if scope.scope_type == "platform":
-        return is_platform_admin(principal)
+        return is_platform_admin(principal) or is_auditor(principal)
     if is_platform_admin(principal):
         return True
     return (
@@ -378,7 +382,7 @@ def available_scope_options(
     current_path: str,
 ) -> tuple[AdminScopeOption, ...]:
     options: list[AdminScopeOption] = []
-    if is_platform_admin(principal):
+    if is_platform_admin(principal) or is_auditor(principal):
         platform = AdminScope.platform()
         options.append(
             AdminScopeOption(
@@ -601,6 +605,19 @@ def navigation_registry() -> tuple[NavigationItem, ...]:
             active_matchers=("/admin/runs",),
             order=30,
             filter_profile="run_inspection",
+        ),
+        NavigationItem(
+            item_id="operations_console",
+            label="Operations Console",
+            group="Operations",
+            href="/admin/operations",
+            route_surface_key="GET:/admin/operations",
+            required_scope="platform",
+            admin_area="operations",
+            preserve_tenant_scope=False,
+            active_matchers=("/admin/operations",),
+            order=35,
+            filter_profile="operations",
         ),
         NavigationItem(
             item_id="reliability_dashboard",
@@ -879,6 +896,29 @@ def filter_profiles() -> dict[str, FilterProfile]:
                 "failure_category": "Failure",
                 "agent": "Agent",
                 "tool": "Tool",
+            },
+        ),
+        "operations": FilterProfile(
+            admin_area="operations",
+            filter_key="operations-console",
+            destination_href="/admin/operations",
+            allowed_criteria=(
+                "trace_id",
+                "tenant_id",
+                "run_id",
+                "component",
+                "severity",
+                "status",
+                "dependency",
+            ),
+            labels={
+                "trace_id": "Trace",
+                "tenant_id": "Tenant",
+                "run_id": "Run",
+                "component": "Component",
+                "severity": "Severity",
+                "status": "Status",
+                "dependency": "Dependency",
             },
         ),
         "reliability_breakers": FilterProfile(

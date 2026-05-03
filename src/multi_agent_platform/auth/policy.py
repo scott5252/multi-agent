@@ -555,6 +555,36 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         classification=SurfaceClassification.AUTHENTICATED,
         required_permissions=("membership-admin:write",),
     ),
+    "GET:/admin/operations": ProtectedSurface(
+        surface_key="GET:/admin/operations",
+        requested_action="render_operations_console_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("operations:read",),
+    ),
+    "POST:/admin/operations/logs/export": ProtectedSurface(
+        surface_key="POST:/admin/operations/logs/export",
+        requested_action="export_operations_logs_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("operations:export",),
+    ),
+    "GET:/admin/operations/api/dashboard": ProtectedSurface(
+        surface_key="GET:/admin/operations/api/dashboard",
+        requested_action="read_operations_dashboard",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("operations:read",),
+    ),
+    "GET:/admin/operations/api/logs": ProtectedSurface(
+        surface_key="GET:/admin/operations/api/logs",
+        requested_action="query_operations_logs",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("operations:logs",),
+    ),
+    "POST:/admin/operations/api/logs/export": ProtectedSurface(
+        surface_key="POST:/admin/operations/api/logs/export",
+        requested_action="export_operations_logs",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("operations:export",),
+    ),
     "GET:/admin/telegram": ProtectedSurface(
         surface_key="GET:/admin/telegram",
         requested_action="render_telegram_configuration_ui",

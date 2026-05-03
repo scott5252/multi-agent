@@ -1,0 +1,197 @@
+openapi: 3.1.0
+info:
+  title: Operations Console Logs And Performance API
+  version: 0.1.0
+paths:
+  /admin/operations/api/dashboard:
+    get:
+      summary: Read operations dashboard snapshot
+      operationId: readOperationsDashboard
+      parameters:
+        - $ref: '#/components/parameters/TraceId'
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/RunId'
+        - $ref: '#/components/parameters/Component'
+        - $ref: '#/components/parameters/Severity'
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/Dependency'
+        - $ref: '#/components/parameters/Start'
+        - $ref: '#/components/parameters/End'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Dashboard snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsDashboard'
+        '403':
+          description: Unauthorized operations access
+  /admin/operations/api/logs:
+    get:
+      summary: Query redacted operational logs
+      operationId: queryOperationalLogs
+      parameters:
+        - $ref: '#/components/parameters/TraceId'
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/RunId'
+        - $ref: '#/components/parameters/Component'
+        - $ref: '#/components/parameters/Severity'
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/Dependency'
+        - $ref: '#/components/parameters/Start'
+        - $ref: '#/components/parameters/End'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Redacted operational logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsLogResponse'
+        '403':
+          description: Unauthorized operations access
+  /admin/operations/api/logs/export:
+    post:
+      summary: Export redacted operational logs
+      operationId: exportOperationalLogs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationsExportRequest'
+      responses:
+        '201':
+          description: Export artifact metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsExportResponse'
+        '403':
+          description: Unauthorized export
+components:
+  parameters:
+    TraceId:
+      name: trace_id
+      in: query
+      schema: { type: string, maxLength: 128 }
+    TenantId:
+      name: tenant_id
+      in: query
+      schema: { type: string, format: uuid }
+    RunId:
+      name: run_id
+      in: query
+      schema: { type: string, format: uuid }
+    Component:
+      name: component
+      in: query
+      schema: { type: string, maxLength: 64 }
+    Severity:
+      name: severity
+      in: query
+      schema: { type: string, maxLength: 64 }
+    Status:
+      name: status
+      in: query
+      schema: { type: string, maxLength: 64 }
+    Dependency:
+      name: dependency
+      in: query
+      schema: { type: string, maxLength: 128 }
+    Start:
+      name: start
+      in: query
+      schema: { type: string, format: date-time }
+    End:
+      name: end
+      in: query
+      schema: { type: string, format: date-time }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+  schemas:
+    OperationsDashboard:
+      type: object
+      required: [generated_at, health_status, status_cards, dependencies, logs]
+      properties:
+        generated_at: { type: string, format: date-time }
+        health_status: { type: string }
+        status_cards:
+          type: array
+          items: { $ref: '#/components/schemas/StatusCard' }
+        dependencies:
+          type: array
+          items: { $ref: '#/components/schemas/DependencyStatus' }
+        logs:
+          type: array
+          items: { $ref: '#/components/schemas/OperationalLogEvent' }
+    StatusCard:
+      type: object
+      required: [label, value, status, summary]
+      properties:
+        label: { type: string }
+        value: { type: string }
+        status: { type: string }
+        summary: { type: string }
+        href: { type: string }
+    DependencyStatus:
+      type: object
+      required: [name, required, status]
+      properties:
+        name: { type: string }
+        required: { type: boolean }
+        status: { type: string }
+        detail: { type: string }
+    OperationalLogEvent:
+      type: object
+      required: [event_id, source, occurred_at, component, severity, status, summary]
+      properties:
+        event_id: { type: string }
+        source: { type: string }
+        occurred_at: { type: string, format: date-time }
+        tenant_id: { type: string, format: uuid }
+        trace_id: { type: string }
+        run_id: { type: string, format: uuid }
+        component: { type: string }
+        severity: { type: string }
+        status: { type: string }
+        dependency: { type: string }
+        summary: { type: string }
+        links:
+          type: array
+          items: { $ref: '#/components/schemas/OperationsLink' }
+    OperationsLink:
+      type: object
+      required: [label, href]
+      properties:
+        label: { type: string }
+        href: { type: string }
+    OperationsLogResponse:
+      type: object
+      required: [items, filters]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/OperationalLogEvent' }
+        filters:
+          type: object
+          additionalProperties: { type: string }
+    OperationsExportRequest:
+      type: object
+      properties:
+        filters:
+          type: object
+          additionalProperties: true
+    OperationsExportResponse:
+      type: object
+      required: [export_id, artifact_uri, artifact_sha256, artifact_size_bytes, row_count]
+      properties:
+        export_id: { type: string, format: uuid }
+        artifact_uri: { type: string }
+        artifact_sha256: { type: string }
+        artifact_size_bytes: { type: integer }
+        row_count: { type: integer }
+        audit_event_id: { type: string, format: uuid }

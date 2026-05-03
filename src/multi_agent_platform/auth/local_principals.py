@@ -119,6 +119,17 @@ MEMBERSHIP_ADMIN_TENANT_PERMISSIONS = (
     "membership-admin:grants",
     "membership-admin:audit",
 )
+OPERATIONS_PLATFORM_PERMISSIONS = (
+    "platform:admin",
+    "operations:read",
+    "operations:logs",
+    "operations:export",
+)
+OPERATIONS_AUDITOR_PERMISSIONS = (
+    "operations:read",
+    "operations:logs",
+    "operations:export",
+)
 
 
 def skill_registry_permission_codes(*, platform: bool) -> tuple[str, ...]:
@@ -149,3 +160,9 @@ def membership_admin_permission_codes(*, platform: bool) -> tuple[str, ...]:
     if platform:
         return MEMBERSHIP_ADMIN_PLATFORM_PERMISSIONS
     return MEMBERSHIP_ADMIN_TENANT_PERMISSIONS
+
+
+def operations_permission_codes(*, auditor: bool = False) -> tuple[str, ...]:
+    if auditor:
+        return OPERATIONS_AUDITOR_PERMISSIONS
+    return OPERATIONS_PLATFORM_PERMISSIONS
