@@ -1,0 +1,25 @@
+{
+  "extends": "../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Operations Console Logs And Performance",
+    "spec_number": "019",
+    "spec_slug": "operations-console-logs-performance",
+    "feature_dir": "specs/019-operations-console-logs-performance",
+    "autopilot_dir": "specs/_autopilot/019-operations-console-logs-performance",
+    "branch": "codex/019-operations-console-logs-performance",
+    "qa_id": "qa019",
+    "qa_label": "QA019",
+    "qa_database": "multi_agent_platform_qa019",
+    "qa_env_file": "specs/019-operations-console-logs-performance/.env.qa019",
+    "artifact_root": ".data/qa019-artifacts",
+    "playwright_output_dir": "output/playwright/qa019_ui",
+    "manual_qa_user_guide": "specs/019-operations-console-logs-performance/qa019_user_guide.md"
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "operations-console-logs-performance-ui-login",
+      "operations-console-logs-performance-ui-target"
+    ],
+    "required_extra_commands": []
+  }
+}

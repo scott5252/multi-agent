@@ -102,6 +102,17 @@ TELEGRAM_CONFIG_TENANT_PERMISSIONS = (
     "telegram-config:tokens",
     "telegram-config:diagnostics",
 )
+OPERATIONS_PLATFORM_PERMISSIONS = (
+    "platform:admin",
+    "operations:read",
+    "operations:logs",
+    "operations:export",
+)
+OPERATIONS_AUDITOR_PERMISSIONS = (
+    "operations:read",
+    "operations:logs",
+    "operations:export",
+)
 
 
 def skill_registry_permission_codes(*, platform: bool) -> tuple[str, ...]:
@@ -126,3 +137,9 @@ def telegram_config_permission_codes(*, platform: bool) -> tuple[str, ...]:
     if platform:
         return TELEGRAM_CONFIG_PLATFORM_PERMISSIONS
     return TELEGRAM_CONFIG_TENANT_PERMISSIONS
+
+
+def operations_permission_codes(*, auditor: bool = False) -> tuple[str, ...]:
+    if auditor:
+        return OPERATIONS_AUDITOR_PERMISSIONS
+    return OPERATIONS_PLATFORM_PERMISSIONS

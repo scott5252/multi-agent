@@ -1,0 +1,160 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+      <p class="admin-muted">{{ redaction_notice }}</p>
+
+      <form class="filter-strip" method="get">
+        <label>Trace <input name="trace_id" value="{{ page.filters.trace_id or '' }}" /></label>
+        <label>Tenant <input name="tenant_id" value="{{ page.filters.tenant_id or '' }}" /></label>
+        <label>Run <input name="run_id" value="{{ page.filters.run_id or '' }}" /></label>
+        <label>Component <input name="component" value="{{ page.filters.component or '' }}" /></label>
+        <label>Severity <input name="severity" value="{{ page.filters.severity or '' }}" /></label>
+        <label>Status <input name="status" value="{{ page.filters.status or '' }}" /></label>
+        <label>Dependency <input name="dependency" value="{{ page.filters.dependency or '' }}" /></label>
+        <label>Limit <input name="limit" type="number" min="1" max="500" value="{{ page.filters.limit }}" /></label>
+        <button type="submit">Filter</button>
+      </form>
+
+      <section class="summary-grid">
+        {% for card in page.dashboard.status_cards %}
+        <article>
+          <strong>{{ card.value }}</strong>
+          <span>{{ card.label }}</span>
+          <small class="admin-muted">{{ card.summary }}</small>
+          {% if card.href %}
+          <a href="{{ card.href }}">Open</a>
+          {% endif %}
+        </article>
+        {% endfor %}
+      </section>
+
+      {% if page.can_export %}
+      <form method="post" action="{{ page.export_action }}" class="provider-actions">
+        <input type="hidden" name="trace_id" value="{{ page.filters.trace_id or '' }}" />
+        <input type="hidden" name="tenant_id" value="{{ page.filters.tenant_id or '' }}" />
+        <input type="hidden" name="run_id" value="{{ page.filters.run_id or '' }}" />
+        <input type="hidden" name="component" value="{{ page.filters.component or '' }}" />
+        <input type="hidden" name="severity" value="{{ page.filters.severity or '' }}" />
+        <input type="hidden" name="status" value="{{ page.filters.status or '' }}" />
+        <input type="hidden" name="dependency" value="{{ page.filters.dependency or '' }}" />
+        <input type="hidden" name="limit" value="{{ page.filters.limit }}" />
+        <button type="submit">Export Redacted CSV</button>
+      </form>
+      {% endif %}
+
+      <section class="table-section">
+        <h2>Dependencies</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Required</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for dependency in page.dashboard.dependencies %}
+            <tr>
+              <td>{{ dependency.name }}</td>
+              <td><span class="status-pill">{{ dependency.status }}</span></td>
+              <td>{{ "yes" if dependency.required else "no" }}</td>
+              <td>{{ dependency.detail or "Ready" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="table-section">
+        <h2>Capacity</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Runnable</th>
+              <th>Delayed</th>
+              <th>Leases</th>
+              <th>Retries</th>
+              <th>Dead letters</th>
+              <th>DB wait p95</th>
+              <th>Breakers</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ page.dashboard.capacity.runnable_depth }}</td>
+              <td>{{ page.dashboard.capacity.delayed_depth }}</td>
+              <td>{{ page.dashboard.capacity.active_leases }}</td>
+              <td>{{ page.dashboard.capacity.retry_backlog }}</td>
+              <td>{{ page.dashboard.capacity.dead_letter_count }}</td>
+              <td>{{ page.dashboard.capacity.db_pool_wait_p95_ms }} ms</td>
+              <td>{{ page.dashboard.capacity.open_breaker_count }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="table-section">
+        <h2>Model Providers</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Health</th>
+              <th>Models</th>
+              <th>Last test</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for provider in page.dashboard.providers %}
+            <tr>
+              <td><a href="{{ provider.href }}">{{ provider.display_name }}</a></td>
+              <td>{{ provider.provider_type }}</td>
+              <td><span class="status-pill">{{ provider.health_state }}</span></td>
+              <td>{{ provider.model_count }}</td>
+              <td>{{ provider.last_test_outcome or "not tested" }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5">No model provider connections are visible.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="table-section">
+        <h2>Redacted Operational Logs</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Component</th>
+              <th>Status</th>
+              <th>Severity</th>
+              <th>Trace</th>
+              <th>Dependency</th>
+              <th>Summary</th>
+              <th>Links</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for event in page.dashboard.logs %}
+            <tr>
+              <td>{{ event.occurred_at }}</td>
+              <td>{{ event.component }}</td>
+              <td><span class="status-pill">{{ event.status }}</span></td>
+              <td>{{ event.severity }}</td>
+              <td>{{ event.trace_id or "none" }}</td>
+              <td>{{ event.dependency or "none" }}</td>
+              <td>{{ event.summary }}</td>
+              <td>
+                {% for link in event.links %}
+                <a href="{{ link.href }}">{{ link.label }}</a>{% if not loop.last %} {% endif %}
+                {% endfor %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+{% endblock %}

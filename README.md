@@ -58,6 +58,10 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   `/admin/agent-tests` for tenant-scoped suites, fixture-backed cases, safe
   mock or mocked-provider runs, redacted diagnostics, blocked side-effect
   evidence, and publish gate readiness checks
+- operations console under `/admin/operations` and `/admin/operations/api` for
+  platform-admin and auditor review of health, dependency readiness, capacity,
+  provider and channel status, reliability pressure, throughput, redacted
+  operational logs, bounded filtering, and CSV export evidence
 - Spec Kit Autopilot via `/speckit.autopilot` for file-backed Codex runs that
   execute preflight, specify, clarify-auto, plan, tasks, analyze-auto,
   implement, and API/browser validation from `specs/_autopilot/*`
@@ -83,9 +87,11 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
     installations at `/admin/skill-registry/ui/installations`.
 12. Review agent and workflow test suites at `/admin/agent-tests/ui`, then run
     safe mock or mocked-provider checks before publication.
-13. Dry-run the Spec Kit Autopilot example with
+13. Review platform operational status at `/admin/operations` as
+    `platform-admin` or `auditor`.
+14. Dry-run the Spec Kit Autopilot example with
     `uv run python scripts/qa/run_spec_qa.py specs/_autopilot/example/validation.yml --dry-run`.
-14. Validate the repo with `./scripts/check.sh`.
+15. Validate the repo with `./scripts/check.sh`.
 
 ## Admin Console Shell
 
@@ -257,6 +263,31 @@ QA017 reviewer evidence lives in
 `specs/017-telegram-configuration-console/qa017.md`,
 `specs/017-telegram-configuration-console/qa017_ui.md`, and
 `specs/017-telegram-configuration-console/qa017_user_guide.md`.
+
+## Operations Console
+
+Platform admins and auditors review platform operational status at
+`/admin/operations` or through JSON APIs under `/admin/operations/api`. The
+console aggregates persisted safe metadata for system health, dependency
+readiness, worker capacity, queue pressure, database pool pressure,
+object-storage status, model-provider health, Telegram/channel readiness,
+reliability breaker state, retry and dead-letter state, request latency, run
+lifecycle throughput, model latency, token throughput, error rate, and
+operational logs.
+
+Operational logs can be filtered by trace id, tenant id, run id, component,
+severity, status, dependency, and time range. Platform admins and auditors with
+explicit operations export permission can create CSV export artifacts through
+the configured storage provider. Tenant admins are denied in v1, even if a
+local QA principal accidentally includes operations permission codes.
+
+The Operations Console does not read raw log files. UI, JSON APIs, CSV exports,
+screenshots, and audit-safe summaries exclude raw prompts, model responses,
+channel messages, secrets, credentials, memory content, raw payloads, stack
+traces, and unauthorized tenant data. QA019 reviewer evidence lives in
+`specs/019-operations-console-logs-performance/qa019.md`,
+`specs/019-operations-console-logs-performance/qa019_ui.md`, and
+`specs/019-operations-console-logs-performance/qa019_user_guide.md`.
 
 ## Reliability Scale Hardening
 

@@ -427,6 +427,63 @@ Additional evidence:
 - [Spec 017 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/017-telegram-configuration-console/qa017_user_guide.md)
 - [Spec 017 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/017-telegram-configuration-console/testing-instructions.md)
 
+## Operations Console Quickstart
+
+Use the QA019 environment when validating the Operations Console:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/019-operations-console-logs-performance/.env.qa019 .env
+uv sync
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa019 && createdb -U postgres multi_agent_platform_qa019'
+uv run alembic upgrade head
+docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa019 -c "INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING;"
+```
+
+Open the browser UI:
+
+- [Operations Console](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/operations)
+
+Manual QA:
+
+- Sign in as `platform-admin` and confirm `/admin/operations` renders health,
+  dependency readiness, capacity, provider and channel status, reliability
+  pressure, latency, throughput, token usage, error rate, operational logs, and
+  CSV export controls.
+- Sign in as `auditor` and confirm redacted operational logs and dashboard
+  data are available with explicit operations permissions.
+- Sign in as `tenant-admin-acme` and confirm `/admin/operations` and
+  `/admin/operations/api` are denied in v1.
+- Confirm filters cover trace id, tenant id, run id, component, severity,
+  status, dependency, and time range.
+- Confirm UI, JSON APIs, CSV export artifacts, screenshots, and audit-safe
+  summaries exclude raw prompts, model responses, channel messages, secrets,
+  credentials, memory content, raw payloads, stack traces, and unauthorized
+  tenant data.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/operations \
+  tests/unit/api/test_operations_schemas.py \
+  tests/unit/api/test_operations_ui_models.py \
+  tests/unit/auth/test_operations_policy.py \
+  tests/contract/test_operations_console_contract.py \
+  tests/integration/api/test_admin_operations_api.py \
+  tests/integration/api/test_admin_operations_ui.py \
+  tests/performance/operations/test_log_filtering.py \
+  tests/docs/test_operations_console_docs.py
+```
+
+Additional evidence:
+
+- [Spec 019 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/019-operations-console-logs-performance/qa019.md)
+- [Spec 019 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/019-operations-console-logs-performance/qa019_ui.md)
+- [Spec 019 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/019-operations-console-logs-performance/qa019_user_guide.md)
+- [Spec 019 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/019-operations-console-logs-performance/testing-instructions.md)
+
 Target production audit debugging explicitly:
 
 ```bash
