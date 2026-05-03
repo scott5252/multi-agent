@@ -1,0 +1,275 @@
+openapi: 3.1.0
+info:
+  title: Token Usage And Cost Analytics Admin API
+  version: 0.1.0
+paths:
+  /admin/usage/api/summary:
+    get:
+      summary: Return tenant-authorized usage summary and rollups
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: provider_key
+          in: query
+          schema:
+            type: string
+        - name: model_id
+          in: query
+          schema:
+            type: string
+        - name: workflow_lineage_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: agent_key
+          in: query
+          schema:
+            type: string
+        - name: sub_agent_key
+          in: query
+          schema:
+            type: string
+        - name: prompt_version_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: execution_mode
+          in: query
+          schema:
+            type: string
+        - name: principal_id
+          in: query
+          schema:
+            type: string
+        - name: group_by
+          in: query
+          schema:
+            type: string
+            enum:
+              - hour
+              - day
+              - tenant
+              - provider
+              - model
+              - workflow
+              - agent
+              - sub_agent
+              - prompt
+              - execution_mode
+              - principal
+      responses:
+        "200":
+          description: Authorized usage summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageSummaryResponse"
+        "403":
+          description: Usage access denied and audited
+  /admin/usage/api/events:
+    get:
+      summary: Return tenant-authorized usage event drilldown rows
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: provider_key
+          in: query
+          schema:
+            type: string
+        - name: model_id
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+      responses:
+        "200":
+          description: Authorized usage event rows
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageEventsResponse"
+        "403":
+          description: Usage access denied and audited
+  /admin/usage/api/exports:
+    post:
+      summary: Create an audited CSV export request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsageExportCreateRequest"
+      responses:
+        "201":
+          description: Export metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageExportResponse"
+        "403":
+          description: Export access denied and audited
+components:
+  schemas:
+    UsageSummaryResponse:
+      type: object
+      required:
+        - total_events
+        - total_tokens
+        - estimated_cost_micros
+        - currency
+        - estimated_event_count
+        - confirmed_event_count
+        - rollups
+      properties:
+        total_events:
+          type: integer
+        total_tokens:
+          type: integer
+        estimated_cost_micros:
+          type: integer
+        currency:
+          type: string
+        estimated_event_count:
+          type: integer
+        confirmed_event_count:
+          type: integer
+        rollups:
+          type: array
+          items:
+            $ref: "#/components/schemas/UsageRollup"
+    UsageRollup:
+      type: object
+      required:
+        - label
+        - event_count
+        - total_tokens
+        - estimated_cost_micros
+      properties:
+        label:
+          type: string
+        event_count:
+          type: integer
+        total_tokens:
+          type: integer
+        estimated_cost_micros:
+          type: integer
+    UsageEventsResponse:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/UsageEvent"
+    UsageEvent:
+      type: object
+      required:
+        - llm_usage_event_id
+        - tenant_id
+        - provider_key
+        - model_id
+        - execution_mode
+        - total_tokens
+        - usage_status
+        - recorded_at
+      properties:
+        llm_usage_event_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        principal_id:
+          type: string
+        provider_key:
+          type: string
+        model_id:
+          type: string
+        workflow_run_id:
+          type: string
+          format: uuid
+        workflow_run_step_id:
+          type: string
+          format: uuid
+        agent_key:
+          type: string
+        sub_agent_key:
+          type: string
+        prompt_version_id:
+          type: string
+          format: uuid
+        execution_mode:
+          type: string
+        total_tokens:
+          type: integer
+        estimated_cost_micros:
+          type: integer
+        usage_status:
+          type: string
+        recorded_at:
+          type: string
+          format: date-time
+    UsageExportCreateRequest:
+      type: object
+      required:
+        - filters
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        filters:
+          type: object
+          additionalProperties: true
+    UsageExportResponse:
+      type: object
+      required:
+        - usage_export_request_id
+        - status
+        - row_count
+      properties:
+        usage_export_request_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        row_count:
+          type: integer
+        artifact_uri:
+          type: string
+        created_at:
+          type: string
+          format: date-time

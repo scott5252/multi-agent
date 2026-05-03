@@ -76,6 +76,17 @@ AGENT_TEST_TENANT_PERMISSIONS = (
     "agent-tests:read",
     "agent-tests:gate",
 )
+USAGE_ANALYTICS_PLATFORM_PERMISSIONS = (
+    "platform:admin",
+    "usage:read",
+    "usage:export",
+)
+USAGE_ANALYTICS_TENANT_PERMISSIONS = (
+    "tenant:read",
+    "tenant:admin",
+    "usage:read",
+    "usage:export",
+)
 
 
 def skill_registry_permission_codes(*, platform: bool) -> tuple[str, ...]:
@@ -88,3 +99,9 @@ def agent_test_permission_codes(*, platform: bool) -> tuple[str, ...]:
     if platform:
         return AGENT_TEST_PLATFORM_PERMISSIONS
     return AGENT_TEST_TENANT_PERMISSIONS
+
+
+def usage_analytics_permission_codes(*, platform: bool) -> tuple[str, ...]:
+    if platform:
+        return USAGE_ANALYTICS_PLATFORM_PERMISSIONS
+    return USAGE_ANALYTICS_TENANT_PERMISSIONS

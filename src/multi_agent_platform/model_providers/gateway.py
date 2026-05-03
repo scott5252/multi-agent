@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Protocol
 from uuid import UUID
 
 from multi_agent_platform.db.repositories.model_providers import ModelProviderRepository
@@ -24,9 +25,11 @@ class ModelGateway:
         *,
         repository: ModelProviderRepository,
         registry: ProviderAdapterRegistry,
+        usage_recorder: GatewayUsageRecorder | None = None,
     ) -> None:
         self._repository = repository
         self._registry = registry
+        self._usage_recorder = usage_recorder
 
     async def invoke(
         self,
@@ -86,6 +89,16 @@ class ModelGateway:
                     connection_id=connection.provider_connection_id,
                     model_id=model_id,
                 ),
+                old_attempt_id=old_attempt.gateway_invocation_attempt_id
+                if old_attempt is not None
+                else None,
+            )
+            await self._record_usage_event(
+                context=context,
+                connection_id=connection.provider_connection_id,
+                provider_type=connection.provider_type,
+                model_id=model_id,
+                result=result,
                 old_attempt_id=old_attempt.gateway_invocation_attempt_id
                 if old_attempt is not None
                 else None,
@@ -223,6 +236,16 @@ class ModelGateway:
                 if old_attempt is not None
                 else None,
             )
+        await self._record_usage_event(
+            context=context,
+            connection_id=connection.provider_connection_id,
+            provider_type=connection.provider_type,
+            model_id=model_id,
+            result=result,
+            old_attempt_id=old_attempt.gateway_invocation_attempt_id
+            if old_attempt is not None
+            else None,
+        )
         return result
 
     async def _record_operation_attempt(
@@ -275,6 +298,46 @@ class ModelGateway:
             breaker_decision_summary=breaker_summary,
             duplicate_suppressed=False,
         )
+
+    async def _record_usage_event(
+        self,
+        *,
+        context: GatewayInvocationContext,
+        connection_id: UUID,
+        provider_type: ProviderType,
+        model_id: str,
+        result: GatewayResult,
+        old_attempt_id: UUID | None,
+    ) -> None:
+        if self._usage_recorder is None:
+            return
+        try:
+            await self._usage_recorder.record_gateway_result(
+                context=context,
+                provider_key=provider_type,
+                model_id=model_id,
+                result=result,
+                provider_connection_id=connection_id,
+                source_gateway_attempt_id=old_attempt_id,
+            )
+        except Exception:
+            # Gateway response delivery remains authoritative; usage capture failures
+            # are observable through tests/logs and must not leak request content.
+            return
+
+
+class GatewayUsageRecorder(Protocol):
+    async def record_gateway_result(
+        self,
+        *,
+        context: GatewayInvocationContext,
+        provider_key: ProviderType,
+        model_id: str,
+        result: GatewayResult,
+        provider_connection_id: UUID | None = None,
+        source_gateway_attempt_id: UUID | None = None,
+    ) -> object:
+        raise NotImplementedError
 
 
 def provider_type_for_catalog_key(provider_key: str) -> ProviderType:

@@ -55,6 +55,13 @@ class UsageAvailability(StrEnum):
     MALFORMED = "malformed"
 
 
+class UsageValueStatus(StrEnum):
+    CONFIRMED = "confirmed"
+    ESTIMATED = "estimated"
+    UNAVAILABLE = "unavailable"
+    NOT_APPLICABLE = "not_applicable"
+
+
 class SyncAction(StrEnum):
     CREATED = "created"
     UPDATED = "updated"
@@ -161,8 +168,63 @@ class GatewayUsage(BaseModel):
     availability: UsageAvailability = UsageAvailability.UNAVAILABLE
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
+    cached_tokens: int | None = Field(default=None, ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
     total_tokens: int | None = Field(default=None, ge=0)
+    provider_billable_units: int | None = Field(default=None, ge=0)
     provider_model_id: str | None = None
+    input_token_status: UsageValueStatus = UsageValueStatus.UNAVAILABLE
+    output_token_status: UsageValueStatus = UsageValueStatus.UNAVAILABLE
+    cached_token_status: UsageValueStatus = UsageValueStatus.NOT_APPLICABLE
+    reasoning_token_status: UsageValueStatus = UsageValueStatus.NOT_APPLICABLE
+    total_token_status: UsageValueStatus = UsageValueStatus.UNAVAILABLE
+    billable_unit_status: UsageValueStatus = UsageValueStatus.UNAVAILABLE
+
+    @model_validator(mode="after")
+    def infer_statuses(self) -> GatewayUsage:
+        if self.availability is UsageAvailability.UNAVAILABLE and any(
+            value is not None
+            for value in (
+                self.input_tokens,
+                self.output_tokens,
+                self.cached_tokens,
+                self.reasoning_tokens,
+                self.total_tokens,
+                self.provider_billable_units,
+            )
+        ):
+            self.availability = UsageAvailability.AVAILABLE
+        if (
+            self.input_tokens is not None
+            and self.input_token_status is UsageValueStatus.UNAVAILABLE
+        ):
+            self.input_token_status = UsageValueStatus.CONFIRMED
+        if (
+            self.output_tokens is not None
+            and self.output_token_status is UsageValueStatus.UNAVAILABLE
+        ):
+            self.output_token_status = UsageValueStatus.CONFIRMED
+        if (
+            self.cached_tokens is not None
+            and self.cached_token_status is UsageValueStatus.NOT_APPLICABLE
+        ):
+            self.cached_token_status = UsageValueStatus.CONFIRMED
+        if (
+            self.reasoning_tokens is not None
+            and self.reasoning_token_status is UsageValueStatus.NOT_APPLICABLE
+        ):
+            self.reasoning_token_status = UsageValueStatus.CONFIRMED
+        if (
+            self.total_tokens is not None
+            and self.total_token_status is UsageValueStatus.UNAVAILABLE
+        ):
+            self.total_token_status = UsageValueStatus.CONFIRMED
+        if (
+            self.provider_billable_units is not None
+            and self.billable_unit_status is UsageValueStatus.UNAVAILABLE
+        ):
+            self.billable_unit_status = UsageValueStatus.CONFIRMED
+        return self
 
 
 class GatewayResult(BaseModel):
@@ -178,17 +240,22 @@ class GatewayResult(BaseModel):
 class GatewayInvocationContext:
     tenant_id: UUID | None
     trace_id: str | None = None
+    initiating_principal_id: str | None = None
     workflow_run_id: UUID | None = None
     workflow_run_step_id: UUID | None = None
+    workflow_lineage_id: UUID | None = None
+    workflow_version_id: UUID | None = None
     test_bench_run_id: UUID | None = None
     workflow_validation_id: UUID | None = None
     idempotency_key: str | None = None
     operation_identity: str | None = None
     agent_key: str | None = None
+    sub_agent_key: str | None = None
     agent_kind: str | None = None
     agent_profile_version_id: UUID | None = None
     prompt_version_ids: tuple[UUID, ...] = ()
     prompt_reference_version_ids: tuple[UUID, ...] = ()
+    execution_mode: str = "production"
     model_routing_provenance: dict[str, object] = field(default_factory=dict)
     profile_provenance: dict[str, object] = field(default_factory=dict)
     memory_policy_context: dict[str, object] = field(default_factory=dict)
@@ -199,11 +266,18 @@ class GatewayInvocationContext:
     def safe_summary(self) -> dict[str, object]:
         return {
             "tenant_id": str(self.tenant_id) if self.tenant_id else None,
+            "initiating_principal_id": self.initiating_principal_id,
             "workflow_run_id": str(self.workflow_run_id)
             if self.workflow_run_id
             else None,
             "workflow_run_step_id": str(self.workflow_run_step_id)
             if self.workflow_run_step_id
+            else None,
+            "workflow_lineage_id": str(self.workflow_lineage_id)
+            if self.workflow_lineage_id
+            else None,
+            "workflow_version_id": str(self.workflow_version_id)
+            if self.workflow_version_id
             else None,
             "test_bench_run_id": str(self.test_bench_run_id)
             if self.test_bench_run_id
@@ -215,6 +289,7 @@ class GatewayInvocationContext:
             "idempotency_key": self.idempotency_key,
             "operation_identity": self.operation_identity,
             "agent_key": self.agent_key,
+            "sub_agent_key": self.sub_agent_key,
             "agent_kind": self.agent_kind,
             "agent_profile_version_id": str(self.agent_profile_version_id)
             if self.agent_profile_version_id
@@ -225,6 +300,7 @@ class GatewayInvocationContext:
             ],
             "model_routing_provenance": dict(self.model_routing_provenance),
             "profile_provenance": dict(self.profile_provenance),
+            "execution_mode": self.execution_mode,
             "memory_policy_context_keys": sorted(self.memory_policy_context),
             "tool_policy_expectation_keys": sorted(self.tool_policy_expectations),
             "output_contract_metadata_keys": sorted(self.output_contract_metadata),

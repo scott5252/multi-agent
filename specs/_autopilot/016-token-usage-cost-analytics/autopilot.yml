@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "feature": {
+    "name": "token-usage-cost-analytics",
+    "branch": "codex/016-token-usage-cost-analytics"
+  },
+  "prompt_files": [
+    "specify.md",
+    "plan.md",
+    "tasks.md"
+  ],
+  "policy_file": "policy.yml",
+  "validation_file": "validation.yml"
+}

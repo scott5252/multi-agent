@@ -199,6 +199,13 @@ from multi_agent_platform.db.models.tenant import (
     TenantLimitPolicy,
     TenantStatus,
 )
+from multi_agent_platform.db.models.usage import (
+    LlmPricingVersion,
+    LlmUsageEvent,
+    LlmUsageRollup,
+    UsageExportRequest,
+    UsageReconciliationRecord,
+)
 from multi_agent_platform.db.models.workflow_registry import (
     RegistrySharingGrant,
     RegistrySharingGrantStatus,
@@ -252,6 +259,11 @@ def import_models() -> None:
         AgentTestStatus,
         AgentTestSuite,
         AgentTestTargetType,
+        LlmPricingVersion,
+        LlmUsageEvent,
+        LlmUsageRollup,
+        UsageExportRequest,
+        UsageReconciliationRecord,
         AgentHandoffTraceRecord,
         AuditRuntimeTraceRecord,
         AuditTimelineEventRecord,
@@ -440,6 +452,11 @@ __all__ = [
     "AgentTestStatus",
     "AgentTestSuite",
     "AgentTestTargetType",
+    "LlmPricingVersion",
+    "LlmUsageEvent",
+    "LlmUsageRollup",
+    "UsageExportRequest",
+    "UsageReconciliationRecord",
     "CatalogSyncRecord",
     "CatalogSyncOperation",
     "ConnectionHealthSnapshot",

@@ -409,6 +409,42 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         classification=SurfaceClassification.AUTHENTICATED,
         required_permissions=("agent-tests:gate",),
     ),
+    "GET:/admin/usage": ProtectedSurface(
+        surface_key="GET:/admin/usage",
+        requested_action="render_usage_analytics_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("usage:read",),
+    ),
+    "POST:/admin/usage/exports": ProtectedSurface(
+        surface_key="POST:/admin/usage/exports",
+        requested_action="create_usage_export_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("usage:export",),
+    ),
+    "GET:/admin/usage/exports/{usage_export_request_id}": ProtectedSurface(
+        surface_key="GET:/admin/usage/exports/{usage_export_request_id}",
+        requested_action="render_usage_export_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("usage:export",),
+    ),
+    "GET:/admin/usage/api/summary": ProtectedSurface(
+        surface_key="GET:/admin/usage/api/summary",
+        requested_action="read_usage_summary",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("usage:read",),
+    ),
+    "GET:/admin/usage/api/events": ProtectedSurface(
+        surface_key="GET:/admin/usage/api/events",
+        requested_action="read_usage_events",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("usage:read",),
+    ),
+    "POST:/admin/usage/api/exports": ProtectedSurface(
+        surface_key="POST:/admin/usage/api/exports",
+        requested_action="create_usage_export",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("usage:export",),
+    ),
     (
         "POST:/admin/support-overrides/{support_override_request_id}/approve"
     ): ProtectedSurface(

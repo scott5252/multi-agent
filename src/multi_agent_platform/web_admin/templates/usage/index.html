@@ -1,0 +1,104 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+      <header class="workflow-header">
+        <h1>{{ page.title }}</h1>
+      </header>
+      <p class="admin-muted">{{ redaction_notice }}</p>
+      <form class="filter-strip" method="get">
+        {% if page.filters.tenant_id %}
+        <input type="hidden" name="tenant_id" value="{{ page.filters.tenant_id }}" />
+        {% endif %}
+        <label>Provider <input name="provider_key" value="{{ page.filters.provider_key or '' }}" /></label>
+        <label>Model <input name="model_id" value="{{ page.filters.model_id or '' }}" /></label>
+        <label>Group <select name="group_by">
+          {% for value in ["day", "hour", "tenant", "provider", "model", "workflow", "agent", "sub_agent", "prompt", "execution_mode", "principal"] %}
+          <option value="{{ value }}" {% if page.filters.group_by == value %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select></label>
+        <button type="submit">Filter</button>
+      </form>
+      <section class="summary-grid">
+        <article>
+          <strong>{{ page.totals.total_events }}</strong>
+          <span>Events</span>
+        </article>
+        <article>
+          <strong>{{ page.totals.total_tokens }}</strong>
+          <span>Total tokens</span>
+        </article>
+        <article>
+          <strong>{{ page.estimated_cost_display }}</strong>
+          <span>Estimated cost</span>
+        </article>
+        <article>
+          <strong>{{ page.totals.confirmed_event_count }}</strong>
+          <span>Confirmed</span>
+        </article>
+      </section>
+      <form method="post" action="{{ page.export_action }}" class="provider-actions">
+        {% if page.filters.tenant_id %}
+        <input type="hidden" name="tenant_id" value="{{ page.filters.tenant_id }}" />
+        {% endif %}
+        <input type="hidden" name="provider_key" value="{{ page.filters.provider_key or '' }}" />
+        <input type="hidden" name="model_id" value="{{ page.filters.model_id or '' }}" />
+        <input type="hidden" name="group_by" value="{{ page.filters.group_by }}" />
+        <button type="submit">Export CSV</button>
+      </form>
+      <section class="table-section">
+        <h2>Rollups</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th>Events</th>
+              <th>Tokens</th>
+              <th>Cost micros</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rollup in page.rollups %}
+            <tr>
+              <td>{{ rollup.label }}</td>
+              <td>{{ rollup.event_count }}</td>
+              <td>{{ rollup.total_tokens }}</td>
+              <td>{{ rollup.estimated_cost_micros }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+      <section class="table-section">
+        <h2>Events</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Recorded</th>
+              <th>Tenant</th>
+              <th>Principal</th>
+              <th>Provider</th>
+              <th>Model</th>
+              <th>Agent</th>
+              <th>Tokens</th>
+              <th>Cost micros</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for event in page.events %}
+            <tr>
+              <td>{{ event.recorded_at }}</td>
+              <td>{{ event.tenant_id }}</td>
+              <td>{{ event.principal_id or "system" }}</td>
+              <td>{{ event.provider_key }}</td>
+              <td>{{ event.model_id }}</td>
+              <td>{{ event.agent_key or "none" }}</td>
+              <td>{{ event.total_tokens or 0 }}</td>
+              <td>{{ event.estimated_cost_micros or 0 }}</td>
+              <td><span class="status-pill">{{ event.usage_status.value }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+{% endblock %}
