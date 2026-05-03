@@ -70,6 +70,10 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 - Spec Kit Autopilot via `/speckit.autopilot` for file-backed Codex runs that
   execute preflight, specify, clarify-auto, plan, tasks, analyze-auto,
   implement, and API/browser validation from `specs/_autopilot/*`
+- workflow graph execution in the runtime worker for published bundle graphs,
+  including deterministic role/sub-agent nodes, parallel ready-wave fan-out,
+  join policies, resume-safe persisted steps, tenant-compatible bundle loading,
+  and redaction-safe graph evidence
 
 ## Quickstart
 
@@ -98,7 +102,9 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
     `platform-admin` or `auditor`.
 15. Dry-run the Spec Kit Autopilot example with
     `uv run python scripts/qa/run_spec_qa.py specs/_autopilot/example/validation.yml --dry-run`.
-16. Validate the repo with `./scripts/check.sh`.
+16. Validate workflow graph execution with
+    `uv run pytest --no-cov tests/integration/runtime/test_workflow_graph_execution.py`.
+17. Validate the repo with `./scripts/check.sh`.
 
 ## Admin Console Shell
 

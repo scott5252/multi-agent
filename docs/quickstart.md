@@ -172,6 +172,27 @@ uv run pytest \
   tests/performance/runtime/test_runtime_latency.py
 ```
 
+Target workflow graph execution explicitly:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/runtime/orchestration/test_graph_execution.py \
+  tests/unit/runtime/orchestration/test_graph_roles.py \
+  tests/unit/runtime/orchestration/test_graph_redaction.py \
+  tests/contract/test_workflow_graph_execution_contract.py \
+  tests/docs/test_workflow_graph_execution_docs.py \
+  tests/integration/runtime/test_workflow_graph_execution.py \
+  tests/integration/workers/test_orchestration_worker.py \
+  tests/performance/runtime/test_workflow_graph_execution_performance.py
+```
+
+Manual workflow graph execution QA:
+
+- [Spec 020 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/020-workflow-graph-execution-parallel-sub-agent-runtime/qa020.md)
+- [Spec 020 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/020-workflow-graph-execution-parallel-sub-agent-runtime/qa020_ui.md)
+- [Spec 020 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/020-workflow-graph-execution-parallel-sub-agent-runtime/qa020_user_guide.md)
+- [Spec 020 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/020-workflow-graph-execution-parallel-sub-agent-runtime/testing-instructions.md)
+
 Target immutable memory explicitly:
 
 ```bash

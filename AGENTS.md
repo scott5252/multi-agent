@@ -211,5 +211,5 @@ async patterns for PostgreSQL access.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/018-user-tenant-membership-administration/plan.md`
+`specs/020-workflow-graph-execution-parallel-sub-agent-runtime/plan.md`
 <!-- SPECKIT END -->

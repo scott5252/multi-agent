@@ -12,6 +12,10 @@ from multi_agent_platform.db.repositories.runtime_orchestration import (
     RuntimeOrchestrationRepository,
 )
 from multi_agent_platform.reliability.models import RecoveryOutcome
+from multi_agent_platform.runtime.orchestration.graph_execution import (
+    GraphExecutionService,
+    GraphExecutionStatus,
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -19,6 +23,9 @@ class OrchestrationWorkerResult:
     claimed: bool
     workflow_run_id: str | None = None
     recovery_outcome: RecoveryOutcome | None = None
+    graph_status: GraphExecutionStatus | None = None
+    executed_node_count: int = 0
+    wave_count: int = 0
 
 
 class OrchestrationWorker:
@@ -50,8 +57,15 @@ class OrchestrationWorker:
                 trace_id=self.worker_id,
             )
         )
+        graph_result = await GraphExecutionService(self.repository).execute_claimed_run(
+            workflow_run_id=lease.workflow_run_id,
+            worker_id=self.worker_id,
+        )
         return OrchestrationWorkerResult(
             claimed=True,
             workflow_run_id=str(lease.workflow_run_id),
             recovery_outcome=RecoveryOutcome.RESUMED,
+            graph_status=graph_result.status,
+            executed_node_count=len(graph_result.executed_node_keys),
+            wave_count=graph_result.wave_count,
         )
