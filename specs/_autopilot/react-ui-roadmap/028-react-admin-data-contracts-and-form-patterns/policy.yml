@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 028 - React Admin Data Contracts And Form Patterns",
+    "spec_number": "028",
+    "spec_slug": "react-admin-data-contracts-and-form-patterns",
+    "feature_dir": "specs/028-react-admin-data-contracts-and-form-patterns",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/028-react-admin-data-contracts-and-form-patterns",
+    "branch": "codex/028-react-admin-data-contracts-and-form-patterns",
+    "qa_id": "qa028",
+    "qa_label": "QA028",
+    "qa_database": "multi_agent_platform_qa028",
+    "qa_env_file": "specs/028-react-admin-data-contracts-and-form-patterns/.env.qa028",
+    "artifact_root": ".data/qa028-artifacts",
+    "playwright_output_dir": "output/playwright/qa028_ui",
+    "manual_qa_user_guide": "specs/028-react-admin-data-contracts-and-form-patterns/qa028_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa028-react-ui-smoke"
+    ]
+  }
+}

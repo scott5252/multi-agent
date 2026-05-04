@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 034 - React User And Tenant Membership Administration",
+    "spec_number": "034",
+    "spec_slug": "react-user-and-tenant-membership-administration",
+    "feature_dir": "specs/034-react-user-and-tenant-membership-administration",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/034-react-user-and-tenant-membership-administration",
+    "branch": "codex/034-react-user-and-tenant-membership-administration",
+    "qa_id": "qa034",
+    "qa_label": "QA034",
+    "qa_database": "multi_agent_platform_qa034",
+    "qa_env_file": "specs/034-react-user-and-tenant-membership-administration/.env.qa034",
+    "artifact_root": ".data/qa034-artifacts",
+    "playwright_output_dir": "output/playwright/qa034_ui",
+    "manual_qa_user_guide": "specs/034-react-user-and-tenant-membership-administration/qa034_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa034-react-ui-smoke"
+    ]
+  }
+}

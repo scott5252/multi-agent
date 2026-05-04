@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 036 - React Channel, Telegram, And Briefing Preferences",
+    "spec_number": "036",
+    "spec_slug": "react-channel-telegram-and-briefing-preferences",
+    "feature_dir": "specs/036-react-channel-telegram-and-briefing-preferences",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/036-react-channel-telegram-and-briefing-preferences",
+    "branch": "codex/036-react-channel-telegram-and-briefing-preferences",
+    "qa_id": "qa036",
+    "qa_label": "QA036",
+    "qa_database": "multi_agent_platform_qa036",
+    "qa_env_file": "specs/036-react-channel-telegram-and-briefing-preferences/.env.qa036",
+    "artifact_root": ".data/qa036-artifacts",
+    "playwright_output_dir": "output/playwright/qa036_ui",
+    "manual_qa_user_guide": "specs/036-react-channel-telegram-and-briefing-preferences/qa036_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa036-react-ui-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app/channels"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Telegram"
+          },
+          {
+            "screenshot": "qa036-react-ui-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,76 @@
+# Spec 030 - React Workflow Builder: Clarify
+
+Roadmap source: `react_ui.md`
+
+## Deterministic Targets
+
+- Feature directory: `specs/030-react-workflow-builder`
+- Git branch: `codex/030-react-workflow-builder`
+- QA id: `qa030`
+- QA database: `multi_agent_platform_qa030`
+
+## Global Prompt Prefix
+
+Use the current multi-agent platform repository context. Preserve the
+constitution, specs 001 through 025, existing FastAPI backend services,
+PostgreSQL storage model, Auth0 production authentication, local-principal
+test mode, tenant isolation, audit fail-closed behavior, redaction rules,
+runtime version pinning, secret hygiene, object-storage boundaries, QA docs,
+Playwright evidence, and at least 90 percent relevant coverage. This includes
+graph execution and join policies, governed tool execution, Telegram alias and
+delivery idempotency, Daily Briefing preference privacy, repository-backed test
+evidence publish gates, and live model credential resolution.
+
+The UI target is a modern React.js + TypeScript + Vite admin experience for
+non-technical platform and tenant administrators. React must improve clarity,
+guided workflows, responsiveness, accessibility, empty/error/loading states,
+safe confirmations, progressive disclosure, and cross-linking. Do not duplicate
+security or domain business rules in the browser. Existing domain services and
+explicit JSON/API contracts remain authoritative.
+
+Keep each feature independently testable, additive, and reversible. Existing
+Jinja admin routes may remain available as fallbacks until the migration parity
+spec retires them. Any route that handles protected data must fail closed if
+authorization, tenant scoping, or audit persistence cannot be proven.
+
+Every `/speckit.specify` output must make dual-auth-mode validation a
+mandatory acceptance criterion: the feature must be testable with Auth0-backed
+production-style principals and with `AUTH_MODE=local_principal`. Every
+`/speckit.tasks` output must include explicit test tasks for both modes, using
+backend route tests for Auth0 claim/principal resolution and browser
+Playwright flows for local-principal login unless a safer feature-specific
+validation path is documented.
+
+## Clarify Prompt
+
+Run clarification for the React Workflow Builder. Focus on graph editing
+authority, advanced JSON inspector visibility, draft autosave versus explicit
+save, validation refresh timing, publish gate flow, large workflow size,
+field-help style, and whether JavaScript is now required for primary authoring.
+Recommended defaults: semantic saves remain explicit backend submissions,
+graph layout annotations are non-authoritative, graph execution semantics come
+from backend validation, advanced JSON is read-only and
+collapsed, validation can refresh on demand and after saves, publish gate is a
+guided review, support 100-node workflows, and React is required for the new
+builder while old Jinja editor remains fallback during migration.
+
+## Autonomous Clarification
+
+Use the recommended defaults in the roadmap and established repo patterns for low-risk answers. Record every auto-selected answer in spec.md with `(autopilot)`. Stop for security, tenant, audit, credential, destructive data, production resource, external side-effect, or irreversible migration ambiguity.
+
+## Roadmap Execution Notes
+
+- Create one Spec Kit feature at a time. Do not run all specs in parallel.
+- After each implementation, run its generated QA guide and Playwright UI
+  walkthrough before starting the next spec.
+- Keep the React UI additive until Spec 037 proves parity.
+- Treat dual-auth-mode coverage as mandatory for every implementation spec:
+  each feature must prove Auth0-backed principal behavior and
+  `AUTH_MODE=local_principal` behavior for its React routes and protected
+  actions.
+- Prefer backend-owned JSON contracts and generated TypeScript types over
+  hand-maintained browser models.
+- Prefer explicit user journeys and guided actions over exposing raw IDs,
+  JSON, and domain jargon as the primary interface.
+- Treat security, tenant isolation, audit, and redaction uncertainty as a stop
+  condition, not a styling issue.

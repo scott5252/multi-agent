@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 033 - React Agent And Workflow Test Bench",
+    "spec_number": "033",
+    "spec_slug": "react-agent-and-workflow-test-bench",
+    "feature_dir": "specs/033-react-agent-and-workflow-test-bench",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/033-react-agent-and-workflow-test-bench",
+    "branch": "codex/033-react-agent-and-workflow-test-bench",
+    "qa_id": "qa033",
+    "qa_label": "QA033",
+    "qa_database": "multi_agent_platform_qa033",
+    "qa_env_file": "specs/033-react-agent-and-workflow-test-bench/.env.qa033",
+    "artifact_root": ".data/qa033-artifacts",
+    "playwright_output_dir": "output/playwright/qa033_ui",
+    "manual_qa_user_guide": "specs/033-react-agent-and-workflow-test-bench/qa033_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa033-react-ui-smoke"
+    ]
+  }
+}

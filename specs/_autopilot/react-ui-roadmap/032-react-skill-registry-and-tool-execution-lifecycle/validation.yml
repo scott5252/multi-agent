@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 032 - React Skill Registry And Tool Execution Lifecycle",
+    "spec_number": "032",
+    "spec_slug": "react-skill-registry-and-tool-execution-lifecycle",
+    "feature_dir": "specs/032-react-skill-registry-and-tool-execution-lifecycle",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/032-react-skill-registry-and-tool-execution-lifecycle",
+    "branch": "codex/032-react-skill-registry-and-tool-execution-lifecycle",
+    "qa_id": "qa032",
+    "qa_label": "QA032",
+    "qa_database": "multi_agent_platform_qa032",
+    "qa_env_file": "specs/032-react-skill-registry-and-tool-execution-lifecycle/.env.qa032",
+    "artifact_root": ".data/qa032-artifacts",
+    "playwright_output_dir": "output/playwright/qa032_ui",
+    "manual_qa_user_guide": "specs/032-react-skill-registry-and-tool-execution-lifecycle/qa032_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa032-react-ui-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app/skills"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Skill"
+          },
+          {
+            "screenshot": "qa032-react-ui-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

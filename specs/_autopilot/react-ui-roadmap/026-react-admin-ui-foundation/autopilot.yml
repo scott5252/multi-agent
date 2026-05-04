@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.1",
+  "roadmap_file": "react_ui.md",
+  "spec_number": "026",
+  "feature": {
+    "name": "react-admin-ui-foundation",
+    "title": "React Admin UI Foundation",
+    "feature_directory": "specs/026-react-admin-ui-foundation",
+    "branch": "codex/026-react-admin-ui-foundation"
+  },
+  "phase_prompt_files": {
+    "specify": "specify.md",
+    "clarify": "clarify.md",
+    "plan": "plan.md",
+    "tasks": "tasks.md",
+    "analyze": "analyze.md",
+    "implement": "implement.md"
+  },
+  "prompt_files": [
+    "specify.md",
+    "plan.md",
+    "tasks.md"
+  ],
+  "policy_file": "policy.yml",
+  "validation_file": "validation.yml"
+}

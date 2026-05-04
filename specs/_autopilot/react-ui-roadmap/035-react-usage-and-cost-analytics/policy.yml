@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 035 - React Usage And Cost Analytics",
+    "spec_number": "035",
+    "spec_slug": "react-usage-and-cost-analytics",
+    "feature_dir": "specs/035-react-usage-and-cost-analytics",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/035-react-usage-and-cost-analytics",
+    "branch": "codex/035-react-usage-and-cost-analytics",
+    "qa_id": "qa035",
+    "qa_label": "QA035",
+    "qa_database": "multi_agent_platform_qa035",
+    "qa_env_file": "specs/035-react-usage-and-cost-analytics/.env.qa035",
+    "artifact_root": ".data/qa035-artifacts",
+    "playwright_output_dir": "output/playwright/qa035_ui",
+    "manual_qa_user_guide": "specs/035-react-usage-and-cost-analytics/qa035_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa035-react-ui-smoke"
+    ]
+  }
+}

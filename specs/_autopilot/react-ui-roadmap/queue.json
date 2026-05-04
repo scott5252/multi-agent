@@ -1,0 +1,248 @@
+{
+  "schema_version": "1.0",
+  "roadmap_file": "react_ui.md",
+  "spec_range": "026..037",
+  "next_spec": "026",
+  "specs": [
+    {
+      "number": "026",
+      "title": "React Admin UI Foundation",
+      "slug": "react-admin-ui-foundation",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/026-react-admin-ui-foundation",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/026-react-admin-ui-foundation/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/026-react-admin-ui-foundation/validation.yml",
+      "feature_dir": "specs/026-react-admin-ui-foundation",
+      "branch": "codex/026-react-admin-ui-foundation",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "027",
+      "title": "Modern Admin Shell And Design System",
+      "slug": "modern-admin-shell-and-design-system",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/027-modern-admin-shell-and-design-system",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/027-modern-admin-shell-and-design-system/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/027-modern-admin-shell-and-design-system/validation.yml",
+      "feature_dir": "specs/027-modern-admin-shell-and-design-system",
+      "branch": "codex/027-modern-admin-shell-and-design-system",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "028",
+      "title": "React Admin Data Contracts And Form Patterns",
+      "slug": "react-admin-data-contracts-and-form-patterns",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/028-react-admin-data-contracts-and-form-patterns",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/028-react-admin-data-contracts-and-form-patterns/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/028-react-admin-data-contracts-and-form-patterns/validation.yml",
+      "feature_dir": "specs/028-react-admin-data-contracts-and-form-patterns",
+      "branch": "codex/028-react-admin-data-contracts-and-form-patterns",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "029",
+      "title": "Operations, Reliability, And Run Debug Workbench",
+      "slug": "operations-reliability-and-run-debug-workbench",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/029-operations-reliability-and-run-debug-workbench",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/029-operations-reliability-and-run-debug-workbench/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/029-operations-reliability-and-run-debug-workbench/validation.yml",
+      "feature_dir": "specs/029-operations-reliability-and-run-debug-workbench",
+      "branch": "codex/029-operations-reliability-and-run-debug-workbench",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "030",
+      "title": "React Workflow Builder",
+      "slug": "react-workflow-builder",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/030-react-workflow-builder",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/030-react-workflow-builder/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/030-react-workflow-builder/validation.yml",
+      "feature_dir": "specs/030-react-workflow-builder",
+      "branch": "codex/030-react-workflow-builder",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "031",
+      "title": "Model, Prompt, Profile, And Provider Governance",
+      "slug": "model-prompt-profile-and-provider-governance",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/031-model-prompt-profile-and-provider-governance",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/031-model-prompt-profile-and-provider-governance/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/031-model-prompt-profile-and-provider-governance/validation.yml",
+      "feature_dir": "specs/031-model-prompt-profile-and-provider-governance",
+      "branch": "codex/031-model-prompt-profile-and-provider-governance",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "032",
+      "title": "React Skill Registry And Tool Execution Lifecycle",
+      "slug": "react-skill-registry-and-tool-execution-lifecycle",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/032-react-skill-registry-and-tool-execution-lifecycle",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/032-react-skill-registry-and-tool-execution-lifecycle/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/032-react-skill-registry-and-tool-execution-lifecycle/validation.yml",
+      "feature_dir": "specs/032-react-skill-registry-and-tool-execution-lifecycle",
+      "branch": "codex/032-react-skill-registry-and-tool-execution-lifecycle",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "033",
+      "title": "React Agent And Workflow Test Bench",
+      "slug": "react-agent-and-workflow-test-bench",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/033-react-agent-and-workflow-test-bench",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/033-react-agent-and-workflow-test-bench/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/033-react-agent-and-workflow-test-bench/validation.yml",
+      "feature_dir": "specs/033-react-agent-and-workflow-test-bench",
+      "branch": "codex/033-react-agent-and-workflow-test-bench",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "034",
+      "title": "React User And Tenant Membership Administration",
+      "slug": "react-user-and-tenant-membership-administration",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/034-react-user-and-tenant-membership-administration",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/034-react-user-and-tenant-membership-administration/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/034-react-user-and-tenant-membership-administration/validation.yml",
+      "feature_dir": "specs/034-react-user-and-tenant-membership-administration",
+      "branch": "codex/034-react-user-and-tenant-membership-administration",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "035",
+      "title": "React Usage And Cost Analytics",
+      "slug": "react-usage-and-cost-analytics",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/035-react-usage-and-cost-analytics",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/035-react-usage-and-cost-analytics/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/035-react-usage-and-cost-analytics/validation.yml",
+      "feature_dir": "specs/035-react-usage-and-cost-analytics",
+      "branch": "codex/035-react-usage-and-cost-analytics",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "036",
+      "title": "React Channel, Telegram, And Briefing Preferences",
+      "slug": "react-channel-telegram-and-briefing-preferences",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/036-react-channel-telegram-and-briefing-preferences",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/036-react-channel-telegram-and-briefing-preferences/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/036-react-channel-telegram-and-briefing-preferences/validation.yml",
+      "feature_dir": "specs/036-react-channel-telegram-and-briefing-preferences",
+      "branch": "codex/036-react-channel-telegram-and-briefing-preferences",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "037",
+      "title": "React Admin Migration Hardening And Jinja Retirement",
+      "slug": "react-admin-migration-hardening-and-jinja-retirement",
+      "autopilot_dir": "specs/_autopilot/react-ui-roadmap/037-react-admin-migration-hardening-and-jinja-retirement",
+      "autopilot_file": "specs/_autopilot/react-ui-roadmap/037-react-admin-migration-hardening-and-jinja-retirement/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui-roadmap/037-react-admin-migration-hardening-and-jinja-retirement/validation.yml",
+      "feature_dir": "specs/037-react-admin-migration-hardening-and-jinja-retirement",
+      "branch": "codex/037-react-admin-migration-hardening-and-jinja-retirement",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    }
+  ]
+}

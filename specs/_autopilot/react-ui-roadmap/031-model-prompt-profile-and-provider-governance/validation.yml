@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 031 - Model, Prompt, Profile, And Provider Governance",
+    "spec_number": "031",
+    "spec_slug": "model-prompt-profile-and-provider-governance",
+    "feature_dir": "specs/031-model-prompt-profile-and-provider-governance",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/031-model-prompt-profile-and-provider-governance",
+    "branch": "codex/031-model-prompt-profile-and-provider-governance",
+    "qa_id": "qa031",
+    "qa_label": "QA031",
+    "qa_database": "multi_agent_platform_qa031",
+    "qa_env_file": "specs/031-model-prompt-profile-and-provider-governance/.env.qa031",
+    "artifact_root": ".data/qa031-artifacts",
+    "playwright_output_dir": "output/playwright/qa031_ui",
+    "manual_qa_user_guide": "specs/031-model-prompt-profile-and-provider-governance/qa031_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa031-react-ui-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app/governance"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Governance"
+          },
+          {
+            "screenshot": "qa031-react-ui-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

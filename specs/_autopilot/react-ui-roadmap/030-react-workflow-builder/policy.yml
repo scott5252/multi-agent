@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 030 - React Workflow Builder",
+    "spec_number": "030",
+    "spec_slug": "react-workflow-builder",
+    "feature_dir": "specs/030-react-workflow-builder",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/030-react-workflow-builder",
+    "branch": "codex/030-react-workflow-builder",
+    "qa_id": "qa030",
+    "qa_label": "QA030",
+    "qa_database": "multi_agent_platform_qa030",
+    "qa_env_file": "specs/030-react-workflow-builder/.env.qa030",
+    "artifact_root": ".data/qa030-artifacts",
+    "playwright_output_dir": "output/playwright/qa030_ui",
+    "manual_qa_user_guide": "specs/030-react-workflow-builder/qa030_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa030-react-ui-smoke"
+    ]
+  }
+}

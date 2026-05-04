@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 032 - React Skill Registry And Tool Execution Lifecycle",
+    "spec_number": "032",
+    "spec_slug": "react-skill-registry-and-tool-execution-lifecycle",
+    "feature_dir": "specs/032-react-skill-registry-and-tool-execution-lifecycle",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/032-react-skill-registry-and-tool-execution-lifecycle",
+    "branch": "codex/032-react-skill-registry-and-tool-execution-lifecycle",
+    "qa_id": "qa032",
+    "qa_label": "QA032",
+    "qa_database": "multi_agent_platform_qa032",
+    "qa_env_file": "specs/032-react-skill-registry-and-tool-execution-lifecycle/.env.qa032",
+    "artifact_root": ".data/qa032-artifacts",
+    "playwright_output_dir": "output/playwright/qa032_ui",
+    "manual_qa_user_guide": "specs/032-react-skill-registry-and-tool-execution-lifecycle/qa032_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa032-react-ui-smoke"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 027 - Modern Admin Shell And Design System",
+    "spec_number": "027",
+    "spec_slug": "modern-admin-shell-and-design-system",
+    "feature_dir": "specs/027-modern-admin-shell-and-design-system",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/027-modern-admin-shell-and-design-system",
+    "branch": "codex/027-modern-admin-shell-and-design-system",
+    "qa_id": "qa027",
+    "qa_label": "QA027",
+    "qa_database": "multi_agent_platform_qa027",
+    "qa_env_file": "specs/027-modern-admin-shell-and-design-system/.env.qa027",
+    "artifact_root": ".data/qa027-artifacts",
+    "playwright_output_dir": "output/playwright/qa027_ui",
+    "manual_qa_user_guide": "specs/027-modern-admin-shell-and-design-system/qa027_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa027-react-ui-smoke"
+    ]
+  }
+}

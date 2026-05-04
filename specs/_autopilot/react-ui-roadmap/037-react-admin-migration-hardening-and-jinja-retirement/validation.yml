@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 037 - React Admin Migration Hardening And Jinja Retirement",
+    "spec_number": "037",
+    "spec_slug": "react-admin-migration-hardening-and-jinja-retirement",
+    "feature_dir": "specs/037-react-admin-migration-hardening-and-jinja-retirement",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/037-react-admin-migration-hardening-and-jinja-retirement",
+    "branch": "codex/037-react-admin-migration-hardening-and-jinja-retirement",
+    "qa_id": "qa037",
+    "qa_label": "QA037",
+    "qa_database": "multi_agent_platform_qa037",
+    "qa_env_file": "specs/037-react-admin-migration-hardening-and-jinja-retirement/.env.qa037",
+    "artifact_root": ".data/qa037-artifacts",
+    "playwright_output_dir": "output/playwright/qa037_ui",
+    "manual_qa_user_guide": "specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa037-react-ui-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Admin"
+          },
+          {
+            "screenshot": "qa037-react-ui-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

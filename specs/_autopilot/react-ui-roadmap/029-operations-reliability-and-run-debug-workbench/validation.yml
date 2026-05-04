@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 029 - Operations, Reliability, And Run Debug Workbench",
+    "spec_number": "029",
+    "spec_slug": "operations-reliability-and-run-debug-workbench",
+    "feature_dir": "specs/029-operations-reliability-and-run-debug-workbench",
+    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/029-operations-reliability-and-run-debug-workbench",
+    "branch": "codex/029-operations-reliability-and-run-debug-workbench",
+    "qa_id": "qa029",
+    "qa_label": "QA029",
+    "qa_database": "multi_agent_platform_qa029",
+    "qa_env_file": "specs/029-operations-reliability-and-run-debug-workbench/.env.qa029",
+    "artifact_root": ".data/qa029-artifacts",
+    "playwright_output_dir": "output/playwright/qa029_ui",
+    "manual_qa_user_guide": "specs/029-operations-reliability-and-run-debug-workbench/qa029_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa029-react-ui-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app/operations"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Operations"
+          },
+          {
+            "screenshot": "qa029-react-ui-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}
