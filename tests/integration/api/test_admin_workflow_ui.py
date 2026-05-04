@@ -215,6 +215,10 @@ def test_editor_and_version_pages_render_validation_and_publish_details(
             f"/admin/workflows/drafts/{draft_id}/validate",
             headers={"X-Local-Principal": "platform-admin"},
         )
+        publish_gate = client.get(
+            f"/admin/workflows/drafts/{draft_id}/publish-gate/ui",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
         published = client.post(
             f"/admin/workflows/drafts/{draft_id}/publish",
             headers={"X-Local-Principal": "platform-admin"},
@@ -244,6 +248,9 @@ def test_editor_and_version_pages_render_validation_and_publish_details(
     assert version.status_code == 200
     assert "Compiled Bundle Digest" in version.text
     assert "v1" in version.text
+    assert publish_gate.status_code == 200
+    assert "Required Test Evidence" in publish_gate.text
+    assert "0 passing" in publish_gate.text
 
 
 def test_create_form_posts_platform_draft(tmp_path, monkeypatch) -> None:

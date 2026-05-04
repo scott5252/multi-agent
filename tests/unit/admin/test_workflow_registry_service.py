@@ -25,11 +25,14 @@ from multi_agent_platform.api.schemas.workflow_registry import (
 )
 from multi_agent_platform.audit.service import AuditService
 from multi_agent_platform.auth.local_principals import LocalPrincipalCatalog
+from multi_agent_platform.db.models.tenant import Tenant
+from multi_agent_platform.db.repositories.agent_tests import AgentTestRepository
 from multi_agent_platform.db.repositories.artifact import ArtifactRepository
 from multi_agent_platform.db.repositories.audit import AuditRepository
 from multi_agent_platform.db.repositories.workflow_registry import (
     WorkflowRegistryRepository,
 )
+from multi_agent_platform.testing.agent_bench.service import AgentTestBenchService
 
 
 def build_service(
@@ -42,6 +45,48 @@ def build_service(
         storage_provider=filesystem_storage_provider,
         artifact_prefix=settings.workflow_registry_artifact_prefix,
     )
+
+
+def _principal(settings, catalog_key: str):
+    return (
+        LocalPrincipalCatalog(settings.local_principal_catalog_json)
+        .as_principal_context(
+            catalog_key,
+            trace_id=f"trace-{catalog_key}",
+            request_id=f"req-{catalog_key}",
+        )
+        .model_copy(update={"principal_identity_id": uuid4()})
+    )
+
+
+async def _create_required_suite(
+    session,
+    *,
+    tenant_id,
+    target_id: str,
+    actor_principal_id: str,
+    target_version: str | None = None,
+    name: str = "QA024 Required Suite",
+):
+    service = AgentTestBenchService(AgentTestRepository(session))
+    suite = await service.create_suite(
+        tenant_id=tenant_id,
+        name=name,
+        description="Repository-backed workflow publish evidence.",
+        target_type="workflow_draft",
+        target_id=target_id,
+        target_version=target_version,
+        actor_principal_id=actor_principal_id,
+        required_for_publish=False,
+    )
+    await service.create_case(
+        suite_id=suite.agent_test_suite_id,
+        tenant_id=tenant_id,
+        name="Current revision smoke",
+        actor_principal_id=actor_principal_id,
+        fixture={"request": "qa024"},
+    )
+    return service, suite
 
 
 async def test_create_and_save_workflow_draft(
@@ -104,13 +149,6 @@ async def test_builder_service_flows_cover_lookups_revisions_gate_and_copy(
         update={
             "workflow_key": "builder-service-flow",
             "display_name": "Builder Service Flow",
-            "test_requirements": [
-                BuilderTestSuiteRequirement(
-                    requirement_key="smoke",
-                    suite_id="workflow-smoke",
-                    latest_result_status="passed",
-                )
-            ],
         }
     )
     created = await service.create_draft(
@@ -416,6 +454,270 @@ async def test_publish_requires_current_validation_and_creates_successor_seed(
     assert published.compiled_bundle_digest is not None
     assert successor.created_from_version_id == published.workflow_version_bundle_id
     assert successor.workflow_lineage_id == created.workflow_lineage_id
+
+
+async def test_required_test_manual_status_does_not_bypass_repository_evidence(
+    session,
+    settings,
+    filesystem_storage_provider,
+    seeded_tenant,
+    sample_workflow_document,
+) -> None:
+    principal = _principal(settings, "tenant-admin-acme")
+    service = build_service(session, settings, filesystem_storage_provider)
+    document = sample_workflow_document.model_copy(
+        update={
+            "workflow_key": "manual-status-bypass",
+            "display_name": "Manual Status Bypass",
+            "test_requirements": [
+                BuilderTestSuiteRequirement(
+                    requirement_key="smoke",
+                    suite_id=str(uuid4()),
+                    latest_result_status="passed",
+                )
+            ],
+        }
+    )
+    created = await service.create_draft(
+        principal=principal,
+        payload=WorkflowDraftCreateRequest(
+            scope_type="tenant",
+            tenant_id=seeded_tenant.tenant_id,
+            workflow_kind="main_workflow",
+            slug="manual-status-bypass",
+            display_name="Manual Status Bypass",
+            document=document,
+        ),
+    )
+
+    validation = await service.validate_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+    )
+    gate = await service.evaluate_publish_gate(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=PublishGateRequest(
+            validation_result_id=str(validation.validation_result_id)
+        ),
+    )
+
+    assert validation.status == "failed"
+    assert validation.required_test_summary["missing_count"] == 1
+    assert gate.status == "blocked"
+    assert gate.required_test_summary.missing_count == 1
+    assert any(
+        finding.code == "reference.required_test.not_passing"
+        for finding in validation.findings
+    )
+
+
+async def test_required_test_current_passing_evidence_allows_publish(
+    session,
+    settings,
+    filesystem_storage_provider,
+    seeded_tenant,
+    sample_workflow_document,
+) -> None:
+    principal = _principal(settings, "tenant-admin-acme")
+    service = build_service(session, settings, filesystem_storage_provider)
+    created = await service.create_draft(
+        principal=principal,
+        payload=WorkflowDraftCreateRequest(
+            scope_type="tenant",
+            tenant_id=seeded_tenant.tenant_id,
+            workflow_kind="main_workflow",
+            slug="current-evidence",
+            display_name="Current Evidence",
+            document=sample_workflow_document.model_copy(
+                update={
+                    "workflow_key": "current-evidence",
+                    "display_name": "Current Evidence",
+                }
+            ),
+        ),
+    )
+    agent_service, suite = await _create_required_suite(
+        session,
+        tenant_id=seeded_tenant.tenant_id,
+        target_id=str(created.workflow_draft_id),
+        actor_principal_id=principal.principal_id,
+    )
+    document = sample_workflow_document.model_copy(
+        update={
+            "workflow_key": "current-evidence",
+            "display_name": "Current Evidence",
+            "test_requirements": [
+                BuilderTestSuiteRequirement(
+                    requirement_key="smoke",
+                    suite_id=str(suite.agent_test_suite_id),
+                    latest_result_status="missing",
+                )
+            ],
+        }
+    )
+    saved = await service.save_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=WorkflowDraftSaveRequest(
+            base_revision_number=created.current_revision_number,
+            display_name="Current Evidence",
+            document=document,
+            change_summary="Require repository evidence",
+        ),
+    )
+    run = await agent_service.launch_run(
+        suite_id=suite.agent_test_suite_id,
+        tenant_id=seeded_tenant.tenant_id,
+        actor_principal_id=principal.principal_id,
+        safe_mode="mock_model",
+        target_version=str(saved.latest_revision.workflow_draft_revision_id),
+        idempotency_key="qa024-current-evidence",
+        trace_id=principal.trace_id,
+    )
+
+    validation = await service.validate_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+    )
+    assert validation.status == "passed", (
+        validation.findings,
+        validation.reference_readiness,
+        validation.required_test_summary,
+    )
+    fetched_validation = await service.repository.get_validation_result(
+        validation.validation_result_id
+    )
+    assert fetched_validation is not None
+    await session.refresh(fetched_validation)
+    assert fetched_validation.blocking_issue_count == 0
+    published = await service.publish_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=PublishDraftRequest(
+            validation_result_id=validation.validation_result_id,
+        ),
+    )
+
+    assert run.status.value == "passed"
+    assert validation.status == "passed"
+    assert published.summary_json["required_test_evidence"]["passing_count"] == 1
+
+
+async def test_required_test_stale_wrong_target_and_cross_tenant_evidence_block(
+    session,
+    settings,
+    filesystem_storage_provider,
+    seeded_tenant,
+    sample_workflow_document,
+) -> None:
+    principal = _principal(settings, "tenant-admin-acme")
+    service = build_service(session, settings, filesystem_storage_provider)
+    created = await service.create_draft(
+        principal=principal,
+        payload=WorkflowDraftCreateRequest(
+            scope_type="tenant",
+            tenant_id=seeded_tenant.tenant_id,
+            workflow_kind="main_workflow",
+            slug="stale-evidence",
+            display_name="Stale Evidence",
+            document=sample_workflow_document.model_copy(
+                update={
+                    "workflow_key": "stale-evidence",
+                    "display_name": "Stale Evidence",
+                }
+            ),
+        ),
+    )
+    agent_service, stale_suite = await _create_required_suite(
+        session,
+        tenant_id=seeded_tenant.tenant_id,
+        target_id=str(created.workflow_draft_id),
+        actor_principal_id=principal.principal_id,
+        name="QA024 Stale Suite",
+    )
+    wrong_target_service, wrong_target_suite = await _create_required_suite(
+        session,
+        tenant_id=seeded_tenant.tenant_id,
+        target_id=str(uuid4()),
+        actor_principal_id=principal.principal_id,
+        name="QA024 Wrong Target Suite",
+    )
+    _ = wrong_target_service
+    foreign_tenant = Tenant(slug="globex", display_name="Globex")
+    session.add(foreign_tenant)
+    await session.flush()
+    foreign_service, foreign_suite = await _create_required_suite(
+        session,
+        tenant_id=foreign_tenant.tenant_id,
+        target_id=str(created.workflow_draft_id),
+        actor_principal_id=principal.principal_id,
+        name="QA024 Foreign Suite",
+    )
+    _ = foreign_service
+    document = sample_workflow_document.model_copy(
+        update={
+            "workflow_key": "stale-evidence",
+            "display_name": "Stale Evidence",
+            "test_requirements": [
+                BuilderTestSuiteRequirement(
+                    requirement_key="stale",
+                    suite_id=str(stale_suite.agent_test_suite_id),
+                ),
+                BuilderTestSuiteRequirement(
+                    requirement_key="wrong-target",
+                    suite_id=str(wrong_target_suite.agent_test_suite_id),
+                ),
+                BuilderTestSuiteRequirement(
+                    requirement_key="foreign",
+                    suite_id=str(foreign_suite.agent_test_suite_id),
+                ),
+            ],
+        }
+    )
+    saved = await service.save_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=WorkflowDraftSaveRequest(
+            base_revision_number=created.current_revision_number,
+            display_name="Stale Evidence",
+            document=document,
+            change_summary="Require stale evidence checks",
+        ),
+    )
+    await agent_service.launch_run(
+        suite_id=stale_suite.agent_test_suite_id,
+        tenant_id=seeded_tenant.tenant_id,
+        actor_principal_id=principal.principal_id,
+        safe_mode="mock_model",
+        target_version="older-revision",
+        idempotency_key="qa024-stale-evidence",
+        trace_id=principal.trace_id,
+    )
+
+    validation = await service.validate_draft(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+    )
+    gate = await service.evaluate_publish_gate(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=PublishGateRequest(
+            validation_result_id=str(validation.validation_result_id)
+        ),
+    )
+
+    assert saved.current_revision_number == 2
+    assert validation.status == "failed"
+    assert gate.required_test_summary.stale_count == 2
+    assert gate.required_test_summary.missing_count == 1
+    safe_summaries = " ".join(
+        snapshot.safe_summary or ""
+        for snapshot in gate.reference_readiness
+        if snapshot.reference_type == "test_suite"
+    )
+    assert "Globex" not in safe_summaries
+    assert "QA024 Foreign Suite" not in safe_summaries
 
 
 async def test_publish_rejects_superseded_validation_results(

@@ -10,6 +10,7 @@ from multi_agent_platform.admin.workflow_registry.graph_preview import (
 from multi_agent_platform.admin.workflow_registry.reference_validation import (
     validate_reference_readiness,
 )
+from multi_agent_platform.api.schemas.workflow_editor import RequiredTestSummary
 from multi_agent_platform.api.schemas.workflow_registry import WorkflowDraftDocument
 from multi_agent_platform.model_providers.gateway import ModelGateway
 from multi_agent_platform.model_providers.models import GatewayResult
@@ -278,6 +279,8 @@ def validate_authoring_document(
     reference_snapshots, reference_findings, _ = validate_reference_readiness(
         document,
         visible_subworkflow_version_ids=visible_subworkflow_ids,
+        required_test_snapshots=[],
+        required_test_summary=RequiredTestSummary(),
     )
     findings.extend(reference_findings)
     findings.extend(validate_graph_policy(document))

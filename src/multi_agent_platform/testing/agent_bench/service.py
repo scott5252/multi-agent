@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from enum import Enum
 from uuid import UUID, uuid4
 
 from multi_agent_platform.db.models.agent_tests import (
@@ -19,6 +20,8 @@ from multi_agent_platform.db.models.agent_tests import (
 from multi_agent_platform.db.repositories.agent_tests import AgentTestRepository
 from multi_agent_platform.testing.agent_bench.models import (
     AgentBenchSafeMode,
+    RequiredSuiteEvidenceRequest,
+    SuiteEvidenceItem,
     SuiteEvidenceSummary,
 )
 from multi_agent_platform.testing.agent_bench.redaction import safe_fixture_summary
@@ -326,6 +329,155 @@ class AgentTestBenchService:
                 summary.passing_run_ids.append(str(run.agent_test_run_id))
         return summary
 
+    async def evidence_summary_for_required_suites(
+        self,
+        *,
+        tenant_id: UUID,
+        target_type: str,
+        target_id: str,
+        target_version: str | None,
+        requirements: list[RequiredSuiteEvidenceRequest],
+    ) -> SuiteEvidenceSummary:
+        summary = SuiteEvidenceSummary(required_count=len(requirements))
+        for requirement in requirements:
+            item = await self._required_suite_evidence_item(
+                tenant_id=tenant_id,
+                target_type=target_type,
+                target_id=target_id,
+                target_version=target_version,
+                requirement=requirement,
+            )
+            _add_evidence_item(summary, item)
+        return summary
+
+    async def _required_suite_evidence_item(
+        self,
+        *,
+        tenant_id: UUID,
+        target_type: str,
+        target_id: str,
+        target_version: str | None,
+        requirement: RequiredSuiteEvidenceRequest,
+    ) -> SuiteEvidenceItem:
+        try:
+            suite_id = UUID(requirement.suite_id)
+        except ValueError:
+            return _evidence_item(
+                requirement=requirement,
+                status="missing",
+                target_type=target_type,
+                target_id=target_id,
+                target_version=target_version,
+                safe_summary=(
+                    "Required test evidence is unavailable for the current "
+                    "workflow revision."
+                ),
+            )
+
+        suite = await self.repository.get_suite_for_tenant(
+            suite_id=suite_id,
+            tenant_id=tenant_id,
+        )
+        if (
+            suite is None
+            or _status_value(suite.status) == AgentTestStatus.ARCHIVED.value
+        ):
+            return _evidence_item(
+                requirement=requirement,
+                status="missing",
+                target_type=target_type,
+                target_id=target_id,
+                target_version=target_version,
+                safe_summary=(
+                    "Required test evidence is unavailable for the current "
+                    "workflow revision."
+                ),
+            )
+
+        if suite.target_type.value != target_type or suite.target_id != target_id:
+            return _evidence_item(
+                requirement=requirement,
+                status="stale",
+                target_type=target_type,
+                target_id=target_id,
+                target_version=target_version,
+                safe_summary=(
+                    "Required test suite evidence targets a different workflow."
+                ),
+            )
+
+        latest_current_run = await self.repository.latest_run_for_suite(
+            suite_id=suite_id,
+            tenant_id=tenant_id,
+            target_type=target_type,
+            target_id=target_id,
+            target_version=target_version,
+            match_target_version=True,
+        )
+        if latest_current_run is not None:
+            if (
+                _status_value(latest_current_run.status)
+                == AgentTestRunStatus.PASSED.value
+            ):
+                return _evidence_item(
+                    requirement=requirement,
+                    status="passed",
+                    target_type=target_type,
+                    target_id=target_id,
+                    target_version=target_version,
+                    evidence_run_id=str(latest_current_run.agent_test_run_id),
+                    evidence_target_version=latest_current_run.target_version,
+                    safe_summary=(
+                        "Required test evidence is passing for the current "
+                        "workflow revision."
+                    ),
+                    blocking=False,
+                )
+            return _evidence_item(
+                requirement=requirement,
+                status="failed",
+                target_type=target_type,
+                target_id=target_id,
+                target_version=target_version,
+                evidence_run_id=str(latest_current_run.agent_test_run_id),
+                evidence_target_version=latest_current_run.target_version,
+                safe_summary=(
+                    "Required test evidence exists for the current workflow "
+                    "revision but is not passing."
+                ),
+            )
+
+        latest_target_run = await self.repository.latest_run_for_suite(
+            suite_id=suite_id,
+            tenant_id=tenant_id,
+            target_type=target_type,
+            target_id=target_id,
+        )
+        if latest_target_run is not None:
+            return _evidence_item(
+                requirement=requirement,
+                status="stale",
+                target_type=target_type,
+                target_id=target_id,
+                target_version=target_version,
+                evidence_run_id=str(latest_target_run.agent_test_run_id),
+                evidence_target_version=latest_target_run.target_version,
+                safe_summary=(
+                    "A test run exists, but not for the current workflow revision."
+                ),
+            )
+
+        return _evidence_item(
+            requirement=requirement,
+            status="missing",
+            target_type=target_type,
+            target_id=target_id,
+            target_version=target_version,
+            safe_summary=(
+                "Required test evidence is missing for the current workflow revision."
+            ),
+        )
+
 
 def _optional_float(value: object) -> float | None:
     if value is None:
@@ -337,3 +489,60 @@ def _float_or_default(value: object, default: float) -> float:
     if value is None:
         return default
     return float(str(value))
+
+
+def _status_value(value: object) -> str:
+    if isinstance(value, Enum):
+        return str(value.value)
+    text = str(value)
+    if "." in text:
+        text = text.rsplit(".", maxsplit=1)[-1]
+    return text.lower()
+
+
+def _evidence_item(
+    *,
+    requirement: RequiredSuiteEvidenceRequest,
+    status: str,
+    target_type: str,
+    target_id: str,
+    target_version: str | None,
+    safe_summary: str,
+    blocking: bool = True,
+    evidence_run_id: str | None = None,
+    evidence_target_version: str | None = None,
+) -> SuiteEvidenceItem:
+    return SuiteEvidenceItem(
+        requirement_key=requirement.requirement_key,
+        suite_id=requirement.suite_id,
+        status=status,
+        blocking=blocking,
+        target_type=target_type,
+        target_id=target_id,
+        target_version=target_version,
+        evidence_run_id=evidence_run_id,
+        evidence_target_version=evidence_target_version,
+        safe_summary=safe_summary,
+        freshness_policy=requirement.freshness_policy,
+        field_path=requirement.field_path,
+    )
+
+
+def _add_evidence_item(
+    summary: SuiteEvidenceSummary,
+    item: SuiteEvidenceItem,
+) -> None:
+    summary.evidence.append(item)
+    summary.required_suite_ids.append(item.suite_id)
+    if item.status == "passed":
+        summary.passing_count += 1
+        if item.evidence_run_id is not None:
+            summary.passing_run_ids.append(item.evidence_run_id)
+    elif item.status == "failed":
+        summary.failing_count += 1
+    elif item.status == "stale":
+        summary.stale_count += 1
+        if item.evidence_run_id is not None:
+            summary.stale_run_ids.append(item.evidence_run_id)
+    else:
+        summary.missing_count += 1

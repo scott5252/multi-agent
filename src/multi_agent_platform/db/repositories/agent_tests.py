@@ -222,3 +222,34 @@ class AgentTestRepository:
         if target_version is not None:
             stmt = stmt.where(AgentTestRun.target_version == target_version)
         return (await self.session.execute(stmt.limit(1))).scalar_one_or_none()
+
+    async def latest_run_for_suite(
+        self,
+        *,
+        suite_id: UUID,
+        tenant_id: UUID,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        target_version: str | None = None,
+        match_target_version: bool = False,
+    ) -> AgentTestRun | None:
+        stmt = (
+            select(AgentTestRun)
+            .where(
+                AgentTestRun.agent_test_suite_id == suite_id,
+                AgentTestRun.tenant_id == tenant_id,
+            )
+            .order_by(AgentTestRun.created_at.desc())
+        )
+        if target_type is not None:
+            stmt = stmt.where(
+                AgentTestRun.target_type == AgentTestTargetType(target_type)
+            )
+        if target_id is not None:
+            stmt = stmt.where(AgentTestRun.target_id == target_id)
+        if match_target_version:
+            if target_version is None:
+                stmt = stmt.where(AgentTestRun.target_version.is_(None))
+            else:
+                stmt = stmt.where(AgentTestRun.target_version == target_version)
+        return (await self.session.execute(stmt.limit(1))).scalar_one_or_none()

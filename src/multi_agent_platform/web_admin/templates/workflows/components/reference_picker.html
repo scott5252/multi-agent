@@ -15,6 +15,9 @@
                 {% if option.detail_url %}
                   <a href="{{ option.detail_url }}">Open</a>
                 {% endif %}
+                {% if option.description %}
+                  <small>{{ option.description }}</small>
+                {% endif %}
               </li>
             {% endfor %}
           </ul>

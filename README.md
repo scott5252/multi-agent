@@ -250,6 +250,19 @@ artifact references. QA015 reviewer evidence lives in
 `specs/015-agent-workflow-test-bench/qa015_ui.md`, and
 `specs/015-agent-workflow-test-bench/qa015_user_guide.md`.
 
+Workflow publish gates now re-check required suite readiness against persisted
+Agent Test Bench runs instead of trusting manual workflow document result
+fields. A required suite must have same-tenant, same-target, current-revision,
+passing evidence before validation, gate evaluation, or final publication can
+succeed. Missing, failing, stale, wrong-target, platform-scope, and
+cross-tenant evidence fail closed with safe summaries and without exposing raw
+fixtures, transcripts, secrets, or denied tenant details. QA024 reviewer
+evidence lives in
+`specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/qa024.md`,
+`specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/qa024_ui.md`,
+and
+`specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/qa024_user_guide.md`.
+
 ## Token Usage And Cost Analytics
 
 Administrators review normalized model usage at `/admin/usage` or through JSON

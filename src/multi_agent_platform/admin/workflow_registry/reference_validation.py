@@ -59,6 +59,8 @@ def validate_reference_readiness(
     document: WorkflowDraftDocument,
     *,
     visible_subworkflow_version_ids: set[str] | None = None,
+    required_test_snapshots: Iterable[ReferenceReadinessSnapshot] | None = None,
+    required_test_summary: RequiredTestSummary | None = None,
 ) -> tuple[
     list[ReferenceReadinessSnapshot], list[dict[str, object]], RequiredTestSummary
 ]:
@@ -193,29 +195,66 @@ def validate_reference_readiness(
                 )
             )
 
-    test_summary = summarize_required_tests(
-        result_statuses=(
-            requirement.latest_result_status
-            for requirement in document.test_requirements
+    if required_test_summary is not None:
+        test_summary = required_test_summary
+        snapshots.extend(required_test_snapshots or [])
+        tests_ready = (
+            test_summary.required_count > 0
+            and test_summary.passing_count >= test_summary.required_count
         )
-    )
-    for index, requirement in enumerate(document.test_requirements):
-        if requirement.latest_result_status not in {"passed", "passing"}:
+        for index, snapshot in enumerate(required_test_snapshots or []):
+            if tests_ready or (
+                not snapshot.blocking and snapshot.status in {"passed", "passing"}
+            ):
+                continue
+            field_path = str(
+                snapshot.pin_payload.get(
+                    "field_path",
+                    f"test_requirements[{index}].suite_id",
+                )
+            )
             findings.append(
                 _blocking(
                     category="required_test",
                     code="reference.required_test.not_passing",
-                    field_path=f"test_requirements[{index}].latest_result_status",
+                    field_path=field_path,
                     message=(
                         "Required workflow test evidence is missing, stale, or failing."
                     ),
                     remediation=(
-                        "Run the required suite and attach a passing current result."
+                        "Run the required suite against the current draft revision "
+                        "and rerun validation."
                     ),
                     reference_type="test_suite",
-                    reference_id=requirement.requirement_key,
+                    reference_id=snapshot.reference_key,
                 )
             )
+    else:
+        test_summary = summarize_required_tests(
+            result_statuses=(
+                requirement.latest_result_status
+                for requirement in document.test_requirements
+            )
+        )
+        for index, requirement in enumerate(document.test_requirements):
+            if requirement.latest_result_status not in {"passed", "passing"}:
+                findings.append(
+                    _blocking(
+                        category="required_test",
+                        code="reference.required_test.not_passing",
+                        field_path=f"test_requirements[{index}].latest_result_status",
+                        message=(
+                            "Required workflow test evidence is missing, stale, "
+                            "or failing."
+                        ),
+                        remediation=(
+                            "Run the required suite and attach a passing current "
+                            "result."
+                        ),
+                        reference_type="test_suite",
+                        reference_id=requirement.requirement_key,
+                    )
+                )
     return snapshots, findings, test_summary
 
 
@@ -343,6 +382,10 @@ def _lookup_groups(
                 scope_type=scope_type,
                 tenant_id=tenant_id,
                 status=requirement.latest_result_status,
+                description=(
+                    requirement.safe_summary
+                    or "Repository-backed evidence is checked during validation."
+                ),
             )
             for requirement in document.test_requirements
         ]
@@ -388,6 +431,7 @@ def _option(
     tenant_id: str | None,
     status: str,
     detail_url: str | None = None,
+    description: str | None = None,
 ) -> EditorLookupOption:
     return EditorLookupOption(
         option_id=f"{lookup_kind}:{value}",
@@ -398,6 +442,7 @@ def _option(
         tenant_id=tenant_id,
         status=status,
         detail_url=detail_url,
+        description=description,
     )
 
 

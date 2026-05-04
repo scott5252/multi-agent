@@ -23,6 +23,7 @@ from multi_agent_platform.admin.workflow_registry.observability import (
 from multi_agent_platform.admin.workflow_registry.publish_gate import (
     PUBLISH_GATE_READY,
     evaluate_publish_gate,
+    required_test_summary_from_agent_bench,
 )
 from multi_agent_platform.admin.workflow_registry.reference_validation import (
     build_editor_lookup_response,
@@ -39,6 +40,8 @@ from multi_agent_platform.api.schemas.workflow_editor import (
     GraphPreviewResponse,
     PublishGateRequest,
     PublishGateResponse,
+    ReferenceReadinessSnapshot,
+    RequiredTestSummary,
     WorkflowEditorMetadataResponse,
 )
 from multi_agent_platform.api.schemas.workflow_registry import (
@@ -76,6 +79,7 @@ from multi_agent_platform.db.models.workflow_registry import (
     WorkflowVersionBundle,
     WorkflowVersionStatus,
 )
+from multi_agent_platform.db.repositories.agent_tests import AgentTestRepository
 from multi_agent_platform.db.repositories.artifact import ArtifactRepository
 from multi_agent_platform.db.repositories.workflow_registry import (
     WorkflowDraftRecord,
@@ -97,6 +101,11 @@ from multi_agent_platform.tenancy.guards import (
     can_view_workflow_scope,
     require_workflow_scope_access,
 )
+from multi_agent_platform.testing.agent_bench.models import (
+    RequiredSuiteEvidenceRequest,
+    SuiteEvidenceItem,
+)
+from multi_agent_platform.testing.agent_bench.service import AgentTestBenchService
 
 
 class WorkflowRegistryError(RuntimeError):
@@ -126,7 +135,10 @@ class ArtifactPersistenceError(WorkflowRegistryError):
 def _enum_value(value: object) -> str:
     if isinstance(value, Enum):
         return str(value.value)
-    return str(value)
+    text = str(value)
+    if "." in text:
+        text = text.rsplit(".", maxsplit=1)[-1]
+    return text.lower()
 
 
 def _normalize_registry_scope_filter(scope_filter: str) -> str:
@@ -170,6 +182,15 @@ def _iter_registry_search_values(value: object) -> Iterator[str]:
             yield from _iter_registry_search_values(item)
         return
     yield str(value)
+
+
+def _validation_result_passed(validation_result: ValidationResult) -> bool:
+    status = _enum_value(validation_result.status)
+    if status == ValidationResultStatus.SUPERSEDED.value:
+        return False
+    if status == ValidationResultStatus.PASSED.value:
+        return True
+    return validation_result.blocking_issue_count == 0
 
 
 def _canonical_document_json(
@@ -262,8 +283,8 @@ class WorkflowRegistryService:
                         "ready"
                         if draft_record is not None
                         and draft_record.latest_validation is not None
-                        and draft_record.latest_validation.status
-                        == ValidationResultStatus.PASSED
+                        and _enum_value(draft_record.latest_validation.status)
+                        == ValidationResultStatus.PASSED.value
                         else "not_evaluated"
                     ),
                     updated_at=draft.updated_at,
@@ -483,10 +504,19 @@ class WorkflowRegistryService:
             available_subworkflow_version_ids=available_subworkflow_ids,
             previous_contract_schemas=previous_contract_schemas,
         )
-        reference_readiness, _, required_test_summary = validate_reference_readiness(
-            document,
-            visible_subworkflow_version_ids=available_subworkflow_ids,
+        (
+            required_test_snapshots,
+            required_test_summary,
+        ) = await self._required_test_readiness(record=record, document=document)
+        reference_readiness, reference_findings, required_test_summary = (
+            validate_reference_readiness(
+                document,
+                visible_subworkflow_version_ids=available_subworkflow_ids,
+                required_test_snapshots=required_test_snapshots,
+                required_test_summary=required_test_summary,
+            )
         )
+        findings.extend(reference_findings)
         graph_preview = build_graph_preview(document, findings=findings)
         await self.repository.supersede_validation_results_for_revision(
             record.revision.workflow_draft_revision_id
@@ -581,7 +611,7 @@ class WorkflowRegistryService:
             latest_validation is None
             or latest_validation.validation_result_id
             != validation_result.validation_result_id
-            or validation_result.status != ValidationResultStatus.PASSED
+            or not _validation_result_passed(validation_result)
         ):
             raise PublishConflictError(
                 "validation result is stale or failed publish readiness"
@@ -594,9 +624,15 @@ class WorkflowRegistryService:
             principal=principal,
             document=document,
         )
+        (
+            required_test_snapshots,
+            required_test_summary,
+        ) = await self._required_test_readiness(record=record, document=document)
         reference_readiness, _, required_test_summary = validate_reference_readiness(
             document,
             visible_subworkflow_version_ids=available_subworkflow_ids,
+            required_test_snapshots=required_test_snapshots,
+            required_test_summary=required_test_summary,
         )
         gate = evaluate_publish_gate(
             workflow_draft_id=str(record.draft.workflow_draft_id),
@@ -1042,9 +1078,15 @@ class WorkflowRegistryService:
             principal=principal,
             document=document,
         )
+        (
+            required_test_snapshots,
+            required_test_summary,
+        ) = await self._required_test_readiness(record=record, document=document)
         reference_readiness, _, required_test_summary = validate_reference_readiness(
             document,
             visible_subworkflow_version_ids=visible_subworkflows,
+            required_test_snapshots=required_test_snapshots,
+            required_test_summary=required_test_summary,
         )
         gate = evaluate_publish_gate(
             workflow_draft_id=str(record.draft.workflow_draft_id),
@@ -1071,6 +1113,115 @@ class WorkflowRegistryService:
             },
         )
         return gate
+
+    async def _required_test_readiness(
+        self,
+        *,
+        record: WorkflowDraftRecord,
+        document: WorkflowDraftDocument,
+    ) -> tuple[list[ReferenceReadinessSnapshot], RequiredTestSummary]:
+        if not document.test_requirements:
+            return [], RequiredTestSummary()
+
+        target_type = "workflow_draft"
+        target_id = str(record.draft.workflow_draft_id)
+        target_version = str(record.revision.workflow_draft_revision_id)
+        if record.lineage.tenant_id is None:
+            return self._tenant_unavailable_required_test_readiness(
+                document=document,
+                target_type=target_type,
+                target_id=target_id,
+                target_version=target_version,
+            )
+
+        requirements = [
+            RequiredSuiteEvidenceRequest(
+                requirement_key=requirement.requirement_key,
+                suite_id=requirement.suite_id,
+                target_type=target_type,
+                freshness_policy=requirement.freshness_policy,
+                field_path=f"test_requirements[{index}].suite_id",
+            )
+            for index, requirement in enumerate(document.test_requirements)
+        ]
+        evidence = await AgentTestBenchService(
+            AgentTestRepository(self.repository.session)
+        ).evidence_summary_for_required_suites(
+            tenant_id=record.lineage.tenant_id,
+            target_type=target_type,
+            target_id=target_id,
+            target_version=target_version,
+            requirements=requirements,
+        )
+        return (
+            [self._required_test_snapshot(item) for item in evidence.evidence],
+            required_test_summary_from_agent_bench(evidence),
+        )
+
+    def _tenant_unavailable_required_test_readiness(
+        self,
+        *,
+        document: WorkflowDraftDocument,
+        target_type: str,
+        target_id: str,
+        target_version: str,
+    ) -> tuple[list[ReferenceReadinessSnapshot], RequiredTestSummary]:
+        snapshots = [
+            ReferenceReadinessSnapshot(
+                reference_type="test_suite",
+                reference_key=requirement.requirement_key,
+                status="unavailable",
+                blocking=True,
+                safe_summary=(
+                    "Required test evidence requires a tenant-scoped workflow."
+                ),
+                pin_payload={
+                    "requirement_key": requirement.requirement_key,
+                    "suite_id": requirement.suite_id,
+                    "target_type": target_type,
+                    "target_id": target_id,
+                    "target_version": target_version,
+                    "status": "unavailable",
+                    "freshness_policy": requirement.freshness_policy,
+                    "field_path": f"test_requirements[{index}].suite_id",
+                },
+            )
+            for index, requirement in enumerate(document.test_requirements)
+        ]
+        return (
+            snapshots,
+            RequiredTestSummary(
+                required_count=len(document.test_requirements),
+                missing_count=len(document.test_requirements),
+            ),
+        )
+
+    def _required_test_snapshot(
+        self,
+        evidence: SuiteEvidenceItem,
+    ) -> ReferenceReadinessSnapshot:
+        pin_payload = {
+            "requirement_key": evidence.requirement_key,
+            "suite_id": evidence.suite_id,
+            "target_type": evidence.target_type,
+            "target_id": evidence.target_id,
+            "target_version": evidence.target_version,
+            "status": evidence.status,
+            "freshness_policy": evidence.freshness_policy,
+            "field_path": evidence.field_path,
+        }
+        if evidence.evidence_run_id is not None:
+            pin_payload["run_id"] = evidence.evidence_run_id
+        if evidence.evidence_target_version is not None:
+            pin_payload["evidence_target_version"] = evidence.evidence_target_version
+        return ReferenceReadinessSnapshot(
+            reference_type="test_suite",
+            reference_key=evidence.requirement_key,
+            status=evidence.status,
+            blocking=evidence.blocking,
+            safe_summary=evidence.safe_summary,
+            pin_payload=pin_payload,
+        )
 
     async def _resolve_create_target(
         self,

@@ -393,6 +393,68 @@ Additional evidence:
 - [Spec 015 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/015-agent-workflow-test-bench/qa015_user_guide.md)
 - [Spec 015 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/015-agent-workflow-test-bench/testing-instructions.md)
 
+## Workflow Publish Required Test Evidence Quickstart
+
+Use the QA024 environment when validating repository-backed required suite
+evidence in workflow publish gates:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/.env.qa024 .env
+uv sync
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa024 && createdb -U postgres multi_agent_platform_qa024'
+uv run alembic upgrade head
+```
+
+Seed Acme and Globex tenants with the SQL block in
+`specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/qa024.md`,
+then start the API:
+
+```bash
+uv run uvicorn multi_agent_platform.api.main:app --reload
+```
+
+Open the browser UI:
+
+- [Workflow Registry](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui)
+- [Agent Tests](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/agent-tests/ui)
+
+Manual QA:
+
+- Sign in as `tenant-admin-acme`.
+- Create a tenant workflow draft and record the current draft revision.
+- Create an Agent Test Suite for the same workflow draft target and current
+  revision.
+- Run the suite with deterministic mock evidence and confirm it passes.
+- Add that suite as a required test in the workflow draft.
+- Validate the draft and open the publish gate.
+- Confirm `Required Test Evidence` shows the suite as passing and publish is
+  enabled.
+- Change the draft without rerunning the suite and confirm the gate reports
+  stale evidence.
+- Reference missing, failing, wrong-target, and Globex suite evidence and
+  confirm the gate blocks with safe summaries.
+- Confirm manual `latest_result_status` values do not bypass the repository
+  evidence requirement.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/admin/test_publish_gate.py \
+  tests/unit/admin/test_workflow_builder_references.py \
+  tests/unit/admin/test_workflow_registry_service.py \
+  tests/integration/api/test_admin_workflow_ui.py
+```
+
+Additional evidence:
+
+- [Spec 024 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/qa024.md)
+- [Spec 024 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/qa024_ui.md)
+- [Spec 024 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/qa024_user_guide.md)
+- [Spec 024 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/testing-instructions.md)
+
 ## Token Usage And Cost Analytics Quickstart
 
 Use the QA016 environment when validating usage analytics:

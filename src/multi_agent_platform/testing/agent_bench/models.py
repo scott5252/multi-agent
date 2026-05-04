@@ -123,6 +123,29 @@ class SandboxRunResult(BaseModel):
     steps: list[SandboxStepResult] = Field(default_factory=list)
 
 
+class RequiredSuiteEvidenceRequest(BaseModel):
+    requirement_key: str
+    suite_id: str
+    target_type: str = "workflow_draft"
+    freshness_policy: str = "latest_revision"
+    field_path: str | None = None
+
+
+class SuiteEvidenceItem(BaseModel):
+    requirement_key: str
+    suite_id: str
+    status: str
+    blocking: bool = True
+    target_type: str
+    target_id: str
+    target_version: str | None = None
+    evidence_run_id: str | None = None
+    evidence_target_version: str | None = None
+    safe_summary: str
+    freshness_policy: str = "latest_revision"
+    field_path: str | None = None
+
+
 class SuiteEvidenceSummary(BaseModel):
     required_count: int = 0
     passing_count: int = 0
@@ -132,6 +155,7 @@ class SuiteEvidenceSummary(BaseModel):
     required_suite_ids: list[str] = Field(default_factory=list)
     passing_run_ids: list[str] = Field(default_factory=list)
     stale_run_ids: list[str] = Field(default_factory=list)
+    evidence: list[SuiteEvidenceItem] = Field(default_factory=list)
 
     @property
     def ready(self) -> bool:

@@ -163,3 +163,34 @@ def test_publish_gate_accepts_agent_bench_evidence_summary() -> None:
     assert summary.required_count == 2
     assert summary.passing_count == 1
     assert summary.missing_count == 1
+
+
+def test_publish_gate_pins_required_test_snapshots() -> None:
+    validation_id = uuid4()
+    gate = evaluate_publish_gate(
+        workflow_draft_id=str(uuid4()),
+        workflow_draft_revision_id=str(uuid4()),
+        document_sha256="e" * 64,
+        validation=ValidationResultResponse(
+            validation_result_id=validation_id,
+            status="passed",
+            blocking_issue_count=0,
+            advisory_issue_count=0,
+        ),
+        reference_readiness=[
+            ReferenceReadinessSnapshot(
+                reference_type="test_suite",
+                reference_key="smoke",
+                status="passed",
+                blocking=False,
+                pin_payload={"suite_id": "suite-1", "status": "passed"},
+            )
+        ],
+        required_test_summary=RequiredTestSummary(required_count=1, passing_count=1),
+        current_validation_result_id=str(validation_id),
+    )
+
+    assert gate.status == PUBLISH_GATE_READY
+    assert gate.pin_summary["required_test_evidence"] == [
+        {"suite_id": "suite-1", "status": "passed"}
+    ]

@@ -14,6 +14,14 @@
     <h2>Readiness</h2>
     <p><strong>Blocking issues:</strong> {{ page.gate.blocking_issue_count }}</p>
     <p><strong>Advisory issues:</strong> {{ page.gate.advisory_issue_count }}</p>
+    <p>
+      <strong>Required tests:</strong>
+      {{ page.gate.required_test_summary.passing_count }} passing /
+      {{ page.gate.required_test_summary.required_count }} required,
+      {{ page.gate.required_test_summary.missing_count }} missing,
+      {{ page.gate.required_test_summary.failing_count }} failing,
+      {{ page.gate.required_test_summary.stale_count }} stale
+    </p>
     <p class="mono">Digest: {{ page.gate.digest }}</p>
     <p class="mono">Gate: {{ page.gate.publish_gate_id }}</p>
   </section>
@@ -35,6 +43,24 @@
   </section>
 
   <section class="builder-panel">
+    <h2>Required Test Evidence</h2>
+    {% set test_snapshots = page.gate.reference_readiness | selectattr("reference_type", "equalto", "test_suite") | list %}
+    {% if test_snapshots %}
+      <ul class="validation-findings">
+        {% for snapshot in test_snapshots %}
+          <li>
+            <strong>{{ snapshot.reference_key }}</strong>
+            <span class="status-pill status-pill--{{ snapshot.status }}">{{ snapshot.status }}</span>
+            {{ snapshot.safe_summary or "Required test evidence summary is available." }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No required test suites are declared by this draft.</p>
+    {% endif %}
+  </section>
+
+  <section class="builder-panel">
     <h2>Reference Pins</h2>
     {% for snapshot in page.gate.reference_readiness %}
       <p>
@@ -52,7 +78,7 @@
     <input type="hidden" name="publish_gate_id" value="{{ page.gate.publish_gate_id }}">
     <label class="field-row">
       <span>Publish Reason</span>
-      <input name="reason" value="QA013 publish check">
+      <input name="reason" value="Workflow publish check">
     </label>
     <button type="submit" {% if page.gate.status != "ready" %}disabled{% endif %}>Confirm Publish</button>
   </form>
