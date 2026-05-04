@@ -1,0 +1,136 @@
+openapi: 3.1.0
+info:
+  title: Skill Execution Gateway
+  version: 0.1.0
+paths:
+  /admin/skill-execution/api/diagnostics:
+    get:
+      summary: List skill tool diagnostics
+      operationId: listSkillToolDiagnostics
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Connector diagnostic records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SkillToolDiagnosticRecord"
+  /admin/skill-execution/api/diagnostics/run:
+    post:
+      summary: Run mock diagnostics for read-only skill tools
+      operationId: runSkillToolDiagnostics
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenant_id:
+                  type: string
+                tool_names:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Safe diagnostic execution results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SkillToolExecutionResult"
+components:
+  schemas:
+    SkillToolDiagnosticRecord:
+      type: object
+      required: [tool_name, display_name, mode, readiness, requires_credential, allowed_domains]
+      properties:
+        tool_name:
+          type: string
+        display_name:
+          type: string
+        mode:
+          type: string
+          enum: [mock, live_probe]
+        readiness:
+          type: string
+          enum: [ready, blocked, not_configured]
+        latest_status:
+          type: string
+          enum: [succeeded, denied, failed]
+        latest_summary:
+          type: string
+        latest_denial:
+          type: string
+        requires_credential:
+          type: boolean
+        allowed_domains:
+          type: array
+          items:
+            type: string
+    SkillToolExecutionResult:
+      type: object
+      required: [status, tool_name, execution_mode, output, request_summary, response_summary, policy_decisions]
+      properties:
+        status:
+          type: string
+          enum: [succeeded, denied, failed]
+        tool_name:
+          type: string
+        execution_mode:
+          type: string
+          enum: [mock, live_probe]
+        output:
+          type: object
+          additionalProperties: true
+        request_summary:
+          type: string
+        response_summary:
+          type: string
+        policy_decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolPolicyDecision"
+        credential_summary:
+          type: object
+          additionalProperties: true
+        artifact_refs:
+          type: array
+          items:
+            type: string
+        latency_ms:
+          type: integer
+          minimum: 0
+        error_code:
+          type: string
+        error_message:
+          type: string
+    ToolPolicyDecision:
+      type: object
+      required: [check, allowed, reason]
+      properties:
+        check:
+          type: string
+        allowed:
+          type: boolean
+        reason:
+          type: string
+        policy_ref:
+          type: string

@@ -193,6 +193,23 @@ Manual workflow graph execution QA:
 - [Spec 020 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/020-workflow-graph-execution-parallel-sub-agent-runtime/qa020_user_guide.md)
 - [Spec 020 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/020-workflow-graph-execution-parallel-sub-agent-runtime/testing-instructions.md)
 
+Target skill tool execution explicitly:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/skill_execution \
+  tests/unit/runtime/test_runtime_skill_tools.py \
+  tests/contract/test_skill_execution_gateway_contract.py \
+  tests/integration/api/test_admin_skill_execution_ui.py
+```
+
+Manual skill tool execution QA:
+
+- [Spec 021 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/021-real-skill-tool-execution-connectors/qa021.md)
+- [Spec 021 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/021-real-skill-tool-execution-connectors/qa021_ui.md)
+- [Spec 021 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/021-real-skill-tool-execution-connectors/qa021_user_guide.md)
+- Admin diagnostics route: `/admin/skill-execution/ui/diagnostics`
+
 Target immutable memory explicitly:
 
 ```bash

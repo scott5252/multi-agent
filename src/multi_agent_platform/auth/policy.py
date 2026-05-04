@@ -313,6 +313,24 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         required_roles=("tenant_admin",),
         required_permissions=("tenant:admin", "skill-registry:bind"),
     ),
+    "GET:/admin/skill-execution/ui/diagnostics": ProtectedSurface(
+        surface_key="GET:/admin/skill-execution/ui/diagnostics",
+        requested_action="render_skill_tool_diagnostics",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("skill-execution:read",),
+    ),
+    "GET:/admin/skill-execution/api/diagnostics": ProtectedSurface(
+        surface_key="GET:/admin/skill-execution/api/diagnostics",
+        requested_action="list_skill_tool_diagnostics",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("skill-execution:read",),
+    ),
+    "POST:/admin/skill-execution/api/diagnostics/run": ProtectedSurface(
+        surface_key="POST:/admin/skill-execution/api/diagnostics/run",
+        requested_action="run_skill_tool_diagnostics",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("skill-execution:read",),
+    ),
     "GET:/admin/agent-tests/ui": ProtectedSurface(
         surface_key="GET:/admin/agent-tests/ui",
         requested_action="render_agent_test_bench_ui",

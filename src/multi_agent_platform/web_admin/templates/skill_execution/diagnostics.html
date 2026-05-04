@@ -1,0 +1,63 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+  <section class="admin-section">
+    <div class="admin-section-header">
+      <h2>Daily Briefing Tool Readiness</h2>
+    </div>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th scope="col">Tool</th>
+          <th scope="col">Mode</th>
+          <th scope="col">Readiness</th>
+          <th scope="col">Credential</th>
+          <th scope="col">Allowed Domains</th>
+          <th scope="col">Latest Safe Summary</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in records %}
+          <tr>
+            <th scope="row">{{ record.display_name }}</th>
+            <td>{{ record.mode.value }}</td>
+            <td>{{ record.readiness.value }}</td>
+            <td>{% if record.requires_credential %}[redacted reference available]{% else %}not required{% endif %}</td>
+            <td>{{ record.allowed_domains | join(", ") }}</td>
+            <td>{{ record.latest_summary or record.latest_denial or "not run" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="admin-section">
+    <div class="admin-section-header">
+      <h2>Policy Decisions</h2>
+    </div>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th scope="col">Tool</th>
+          <th scope="col">Status</th>
+          <th scope="col">Checks</th>
+          <th scope="col">Request Summary</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in results %}
+          <tr>
+            <th scope="row">{{ result.tool_name }}</th>
+            <td>{{ result.status.value }}</td>
+            <td>
+              {% for decision in result.policy_decisions %}
+                <span class="status-pill">{{ decision.check }}: {% if decision.allowed %}allowed{% else %}denied{% endif %}</span>
+              {% endfor %}
+            </td>
+            <td>{{ result.request_summary }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

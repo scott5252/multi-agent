@@ -57,3 +57,30 @@ installation versions; existing bindings never float automatically.
 - Runtime adapter: `multi_agent_platform.runtime.skill_registry`.
 - Policy adapter:
   `multi_agent_platform.admin.skill_registry.eligibility`.
+
+## Runtime Tool Execution
+
+Spec 021 adds a governed SkillExecutionGateway for read-only Daily Briefing
+tools. Runtime graph role nodes use the gateway instead of calling connector
+adapters directly. The gateway checks installed package/version metadata, tool
+allow policy, outbound domains, side-effect defaults, execution mode, tenant
+credential metadata, and redaction before any adapter is invoked.
+
+First-party mock adapters are available for:
+
+- `google_calendar.events.read`
+- `gmail.messages.read`
+- `news.search`
+- `weather.forecast.read`
+- `commute.lookup`
+
+Local QA uses deterministic mock fixtures and safe delegated credential
+metadata. Live probes are staging-only and require an explicit live-probe mode,
+non-local environment, matching tenant credential metadata, and outbound
+allowlist policy. Raw external provider payloads and raw secret values are not
+stored inline; diagnostics show only redacted request and response summaries.
+
+Operators can review connector readiness at
+`/admin/skill-execution/ui/diagnostics`. The JSON diagnostics endpoints are
+`/admin/skill-execution/api/diagnostics` and
+`/admin/skill-execution/api/diagnostics/run`.

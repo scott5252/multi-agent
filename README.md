@@ -54,6 +54,10 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   `/admin/skill-registry/ui/installations` for declarative package
   publication, tenant installation, credential readiness, smoke-test evidence,
   binding eligibility, upgrades, quarantine, and safe audit summaries
+- governed skill tool execution diagnostics under
+  `/admin/skill-execution/ui/diagnostics` for Daily Briefing calendar, Gmail,
+  news, weather, and commute mock adapters with policy decisions and redacted
+  summaries
 - user and tenant membership administration under `/admin/memberships` and
   `/admin/memberships/api` for platform-admin user management, tenant-admin
   self-service, idempotent invitations, Auth0 subject linking, role grants,
@@ -94,17 +98,19 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
     `/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui`.
 11. Review skill packages at `/admin/skill-registry/ui/packages` and tenant
     installations at `/admin/skill-registry/ui/installations`.
-12. Review agent and workflow test suites at `/admin/agent-tests/ui`, then run
+12. Review skill tool diagnostics at
+    `/admin/skill-execution/ui/diagnostics`.
+13. Review agent and workflow test suites at `/admin/agent-tests/ui`, then run
     safe mock or mocked-provider checks before publication.
-13. Review membership administration at `/admin/memberships` as
+14. Review membership administration at `/admin/memberships` as
     `platform-admin` and as `tenant-admin-acme`.
-14. Review platform operational status at `/admin/operations` as
+15. Review platform operational status at `/admin/operations` as
     `platform-admin` or `auditor`.
-15. Dry-run the Spec Kit Autopilot example with
+16. Dry-run the Spec Kit Autopilot example with
     `uv run python scripts/qa/run_spec_qa.py specs/_autopilot/example/validation.yml --dry-run`.
-16. Validate workflow graph execution with
+17. Validate workflow graph execution with
     `uv run pytest --no-cov tests/integration/runtime/test_workflow_graph_execution.py`.
-17. Validate the repo with `./scripts/check.sh`.
+18. Validate the repo with `./scripts/check.sh`.
 
 ## Admin Console Shell
 
