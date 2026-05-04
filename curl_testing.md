@@ -28,6 +28,7 @@ export BASE_URL="http://127.0.0.1:8000"
 export ACME_TENANT_ID="11111111-1111-1111-1111-111111111111"
 export GLOBEX_TENANT_ID="22222222-2222-2222-2222-222222222222"
 export PLATFORM_HEADER="X-Local-Principal: platform-admin"
+export PLATFORM_APPROVER_HEADER="X-Local-Principal: platform-approver"
 export ACME_HEADER="X-Local-Principal: tenant-admin-acme"
 export GLOBEX_HEADER="X-Local-Principal: tenant-admin-globex"
 export AUDITOR_HEADER="X-Local-Principal: auditor"
@@ -132,7 +133,7 @@ commands reuse.
 ### 2.1 POST /admin/memberships/api/principals/link
 
 ```bash
-curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
+curl -sS -X POST -H "$PLATFORM_APPROVER_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/memberships/api/principals/link" \
   -d '{"auth0_subject":"auth0|curl-reviewer","email":"Reviewer@Example.com","display_name":"Curl Reviewer"}' \
   | tee /tmp/curl-principal-link.json
@@ -148,7 +149,7 @@ Expected `200`:
 ### 2.2 POST /admin/memberships/api/invitations
 
 ```bash
-curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/memberships/api/invitations" \
   -d '{"tenant_id":"'"$ACME_TENANT_ID"'","email":"Reviewer@Example.com","requested_roles":["tenant_user"],"idempotency_key":"curl-invite-reviewer"}' \
   | tee /tmp/curl-invitation.json
@@ -164,7 +165,7 @@ Expected `201`:
 ### 2.3 POST /admin/memberships/api/invitations replay
 
 ```bash
-curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/memberships/api/invitations" \
   -d '{"tenant_id":"'"$ACME_TENANT_ID"'","email":" reviewer@example.COM ","requested_roles":["tenant_user"],"idempotency_key":"curl-invite-reviewer"}'
 ```
@@ -190,7 +191,7 @@ Expected `200`:
 ### 2.5 POST /admin/memberships/api/role-grants
 
 ```bash
-curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/memberships/api/role-grants" \
   -d '{"principal_identity_id":"'"$PRINCIPAL_ID"'","scope_type":"tenant","tenant_id":"'"$ACME_TENANT_ID"'","role_code":"tenant_admin"}' \
   | tee /tmp/curl-membership-role-grant.json
@@ -249,7 +250,7 @@ running this command.
 
 ```bash
 curl -sS -X POST -H "$PLATFORM_HEADER" \
-  "$BASE_URL/admin/memberships/api/memberships/$TENANT_MEMBERSHIP_ID/suspended"
+  "$BASE_URL/admin/memberships/api/memberships/$TENANT_MEMBERSHIP_ID/suspended?tenant_id=$ACME_TENANT_ID"
 ```
 
 Expected `200`:
@@ -303,7 +304,7 @@ Expected `201`:
 ### 2.13 POST /admin/support-overrides/{support_override_request_id}/approve
 
 ```bash
-curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
+curl -sS -X POST -H "$PLATFORM_APPROVER_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/support-overrides/$SUPPORT_OVERRIDE_ID/approve" \
   -d '{"expires_in_hours":2}'
 ```
@@ -316,18 +317,15 @@ Expected `200`:
 
 ### 2.14 GET /admin/filters/{admin_area}/{filter_id}/restore
 
-This JSON endpoint restores an existing saved filter. Create the filter from
-the admin shell first, then set `FILTER_ID`.
+This admin shell endpoint restores an existing saved filter and redirects to
+the filtered destination. Create the filter from the admin shell first, then set
+`FILTER_ID`.
 
 ```bash
 curl -sS -H "$ACME_HEADER" "$BASE_URL/admin/filters/workflows/$FILTER_ID/restore"
 ```
 
-Expected `200`:
-
-```json
-{"redirect_url":"/admin/workflows/ui?scope_filter=tenant"}
-```
+Expected `303` redirect to `/admin/workflows/ui?tenant_id=...&status=draft`.
 
 ## 3. Workflow Registry And Builder APIs
 
@@ -560,16 +558,19 @@ Expected `200`:
 
 ### 3.15 POST /admin/workflows/versions/{workflow_version_bundle_id}/sharing-grants
 
+Tenant-scoped workflow versions cannot be shared; sharing grants are only valid
+for platform-scoped versions.
+
 ```bash
 curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/workflows/versions/$WORKFLOW_VERSION_BUNDLE_ID/sharing-grants" \
   -d '{"grantee_tenant_id":"'"$GLOBEX_TENANT_ID"'"}'
 ```
 
-Expected `201`:
+Expected `403`:
 
 ```json
-{"registry_sharing_grant_id":"66666666-aaaa-aaaa-aaaa-666666666666","workflow_version_bundle_id":"55555555-aaaa-aaaa-aaaa-555555555555","grantee_tenant_id":"22222222-2222-2222-2222-222222222222","status":"active"}
+{"detail":"only platform-scoped versions can be shared"}
 ```
 
 ### 3.16 Workflow stale save scenario
@@ -1145,7 +1146,7 @@ curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   -d '{"reason":"Initial curl publication"}' \
   | tee /tmp/curl-prompt-publish.json
 export PROMPT_VERSION_ID="$(jq -r '.prompt_version_id' /tmp/curl-prompt-publish.json)"
-export PROMPT_ID="$(jq -r '.prompt_id' /tmp/curl-prompt-publish.json)"
+export PROMPT_ID="$(jq -r '.prompt_lineage_id' /tmp/curl-prompt-publish.json)"
 ```
 
 Expected `201`:
@@ -1156,16 +1157,19 @@ Expected `201`:
 
 ### 7.8 POST /admin/prompt-runtime/api/prompts/versions/{prompt_version_id}/grants
 
+Tenant-scoped prompt versions cannot be granted to other tenants; grants are
+only valid for platform-scoped prompt versions.
+
 ```bash
-curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/prompt-runtime/api/prompts/versions/$PROMPT_VERSION_ID/grants" \
-  -d '{"tenant_id":"'"$GLOBEX_TENANT_ID"'","reason":"Share curl prompt"}'
+  -d '{"tenant_ids":["'"$GLOBEX_TENANT_ID"'"],"reason":"Share curl prompt"}'
 ```
 
-Expected `201`:
+Expected `409`:
 
 ```json
-{"prompt_version_id":"22222222-cccc-cccc-cccc-222222222222","tenant_id":"22222222-2222-2222-2222-222222222222","status":"active"}
+{"detail":{"code":"grant_not_allowed"}}
 ```
 
 ### 7.9 Prompt version cleanup note
@@ -1245,16 +1249,19 @@ Expected `201`:
 
 ### 7.15 POST /admin/prompt-runtime/api/profiles/versions/{agent_profile_version_id}/grants
 
+Tenant-scoped agent profile versions cannot be granted to other tenants; grants
+are only valid for platform-scoped profile versions.
+
 ```bash
-curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/prompt-runtime/api/profiles/versions/$AGENT_PROFILE_VERSION_ID/grants" \
-  -d '{"tenant_id":"'"$GLOBEX_TENANT_ID"'","reason":"Share curl profile"}'
+  -d '{"tenant_ids":["'"$GLOBEX_TENANT_ID"'"],"reason":"Share curl profile"}'
 ```
 
-Expected `201`:
+Expected `409`:
 
 ```json
-{"agent_profile_version_id":"55555555-cccc-cccc-cccc-555555555555","tenant_id":"22222222-2222-2222-2222-222222222222","status":"active"}
+{"detail":{"code":"grant_not_allowed"}}
 ```
 
 ### 7.16 POST /admin/prompt-runtime/api/resolve-profile
@@ -1583,9 +1590,10 @@ Expected `200`:
 ### 9.2 POST /admin/skill-registry/packages/{slug}/versions/validate
 
 ```bash
+export CALENDAR_SKILL_MANIFEST='{"schema_version":"1.0","slug":"calendar-assistant","semantic_version":"1.2.3","description":"Calendar assistant for safe scheduling operations.","entrypoint":{"type":"approved_tool_ref","approved_integration_ref":"tool:calendar:v1"},"tools":[{"tool_id":"calendar.list","approved_integration_ref":"tool:calendar:v1","display_name":"List calendars","description":"Lists calendar metadata.","action_categories":["read"],"side_effect_profile":"read_only","safe_usage":"Use for tenant-scoped calendar listing."}],"action_categories":["read"],"network_requirements":[{"tool_id":"calendar.list","action_category":"read","allowed_schemes":["https"],"allowed_domain_patterns":["calendar.example.com"],"allowed_ports":[443],"required":true,"safe_description":"Calendar API endpoint."}],"credential_requirements":[{"requirement_key":"calendar-oauth","credential_kind":"delegated_credential","tool_id":"calendar.list","action_category":"read","required":true,"delegated_credential_scopes":["calendar.readonly"],"safe_description":"Delegated calendar read access."}],"runtime_permissions":[{"permission_key":"calendar-read","permission_type":"tool_access","tool_id":"calendar.list","action_category":"read","side_effect_level":"read_only","required":true,"safe_description":"Read calendar metadata."}],"test_fixtures":[{"fixture_key":"list-calendars","tool_id":"calendar.list","action_category":"read","fixture_kind":"policy_preview","safe_input_summary":"Policy-only calendar list probe.","fixture_digest":"sha256:fixture","requires_credentials":true,"expected_outcome":"passed","timeout_seconds":10}],"compatibility":{"platform_min_version":"0.1.0"},"safe_documentation":{"summary":"Safe operator documentation.","documentation_digest":"sha256:docs","redaction_classification":"safe","support_contacts":["ops@example.com"]},"artifact_digests":{"package":"sha256:artifact","documentation":"sha256:docs"}}'
 curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/skill-registry/packages/calendar-assistant/versions/validate" \
-  -d '{"manifest":{"slug":"calendar-assistant","semantic_version":"1.2.3","display_name":"Calendar Assistant","description":"Calendar assistant skill","credential_requirements":[{"requirement_key":"calendar-oauth","credential_kind":"delegated_credential"}],"tools":[{"tool_id":"calendar.events.list","action_category":"read","integration_ref":"tool:calendar:v1"}]},"approved_integration_refs":["tool:calendar:v1"]}'
+  -d '{"manifest":'"$CALENDAR_SKILL_MANIFEST"',"approved_integration_refs":["tool:calendar:v1"]}'
 ```
 
 Expected `200`:
@@ -1599,7 +1607,7 @@ Expected `200`:
 ```bash
 curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/skill-registry/packages/calendar-assistant/versions" \
-  -d '{"manifest":{"slug":"calendar-assistant","semantic_version":"1.2.3","display_name":"Calendar Assistant","description":"Calendar assistant skill","credential_requirements":[{"requirement_key":"calendar-oauth","credential_kind":"delegated_credential"}],"tools":[{"tool_id":"calendar.events.list","action_category":"read","integration_ref":"tool:calendar:v1"}]},"approved_integration_refs":["tool:calendar:v1"],"artifact_digest":"sha256:artifact"}'
+  -d '{"manifest":'"$CALENDAR_SKILL_MANIFEST"',"approved_integration_refs":["tool:calendar:v1"],"artifact_digest":"sha256:artifact"}'
 ```
 
 Expected `200`:
@@ -1723,6 +1731,7 @@ curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
   -d '{"tenant_id":"'"$ACME_TENANT_ID"'","name":"Curl Draft Workflow Guard","target_type":"workflow_draft","target_id":"curl-triage-flow","target_version":"draft-rev-1","required_for_publish":true}' \
   | tee /tmp/curl-agent-suite.json
 export AGENT_SUITE_ID="$(jq -r '.suite_id' /tmp/curl-agent-suite.json)"
+export AGENT_SUITE_REVISION="$(jq -r '.revision' /tmp/curl-agent-suite.json)"
 ```
 
 Expected `201`:
@@ -1748,7 +1757,9 @@ Expected `200`:
 ```bash
 curl -sS -X PATCH -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/agent-tests/suites/$AGENT_SUITE_ID" \
-  -d '{"name":"Curl Draft Workflow Guard Updated","required_for_publish":true}'
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","name":"Curl Draft Workflow Guard Updated","target_type":"workflow_draft","target_id":"curl-triage-flow","target_version":"draft-rev-1","required_for_publish":true,"revision":'"$AGENT_SUITE_REVISION"'}' \
+  | tee /tmp/curl-agent-suite-updated.json
+export AGENT_SUITE_REVISION="$(jq -r '.revision' /tmp/curl-agent-suite-updated.json)"
 ```
 
 Expected `200`:
@@ -1792,7 +1803,7 @@ Expected `202`:
 ### 10.7 GET /admin/agent-tests/runs
 
 ```bash
-curl -sS -H "$ACME_HEADER" "$BASE_URL/admin/agent-tests/runs?tenant_id=$ACME_TENANT_ID"
+curl -sS -H "$ACME_HEADER" "$BASE_URL/admin/agent-tests/runs?suite_id=$AGENT_SUITE_ID"
 ```
 
 Expected `200`:
@@ -2202,10 +2213,10 @@ curl -sS -i -X POST -H "$JSON_HEADER" "$BASE_URL/channels/telegram/webhook/wrong
   -d '{"update_id":999,"message":{"chat":{"id":1},"from":{"id":2},"text":"/status"}}'
 ```
 
-Expected `403`:
+Expected `200`:
 
 ```json
-{"detail":"invalid telegram webhook secret"}
+{"ok":true,"messages":["ignored"]}
 ```
 
 ## 14. Operations Console APIs
@@ -2476,7 +2487,7 @@ Expected `200`:
 ```bash
 curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/runs/$RUNTIME_RUN_ID/exports" \
-  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","lineage_scope":"single_run","recipient_scope":"tenant_auditor","included_sections":["timeline","bundle"],"excluded_sections":[]}'
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","lineage_scope":"single_run","recipient_scope":"tenant_auditor","included_sections":["timeline","bundle"],"excluded_sections":[],"reason":"curl audit evidence validation"}'
 ```
 
 Expected `202`:

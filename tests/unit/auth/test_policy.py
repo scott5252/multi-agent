@@ -84,3 +84,21 @@ def test_resolve_surface_registers_workflow_builder_surfaces() -> None:
         surface = resolve_surface(method, path)
         assert surface.classification == "authenticated"
         assert surface.requested_action == action
+
+
+def test_resolve_surface_registers_audit_debugging_api_surfaces() -> None:
+    expected = {
+        ("GET", "/admin/runs/debug-search"): "search_run_debug_evidence",
+        (
+            "GET",
+            "/admin/runs/{workflow_run_id}/timeline",
+        ): "read_run_debug_timeline",
+        ("GET", "/admin/runs/{workflow_run_id}/lineage"): "read_run_debug_lineage",
+        ("GET", "/admin/runs/{workflow_run_id}/bundle"): "read_run_debug_bundle",
+        ("POST", "/admin/runs/{workflow_run_id}/exports"): "create_run_debug_export",
+    }
+
+    for (method, path), action in expected.items():
+        surface = resolve_surface(method, path)
+        assert surface.classification == "authenticated"
+        assert surface.requested_action == action

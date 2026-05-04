@@ -346,9 +346,12 @@ class AuditDebuggingRepository:
             DebugEvidenceExportRecord.requested_by == requested_by,
             DebugEvidenceExportRecord.lineage_scope == lineage_scope,
             DebugEvidenceExportRecord.recipient_scope == recipient_scope,
-            DebugEvidenceExportRecord.included_sections == included_sections,
         )
-        return (await self.session.execute(stmt)).scalar_one_or_none()
+        records = list((await self.session.execute(stmt)).scalars().all())
+        for record in records:
+            if list(record.included_sections) == included_sections:
+                return record
+        return None
 
     async def update_export_status(
         self,

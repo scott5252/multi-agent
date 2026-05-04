@@ -349,7 +349,7 @@ async def test_provider_connection(
         connection_id=connection_id,
     )
     await session.commit()
-    return ProviderTestResponse.model_validate(result)
+    return ProviderTestResponse.model_validate(result.model_dump())
 
 
 @router.post("/{connection_id}/sync-catalog", response_model=CatalogSyncResponse)

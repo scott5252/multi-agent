@@ -1,0 +1,4 @@
+interface:
+  display_name: "Multi-Agent Curl Test"
+  short_description: "Run the full local curl API walkthrough"
+  default_prompt: "Use $multi-agent-curl-test to recreate the curl QA database, run the API, execute curl_testing.md, and summarize pass/fail results."

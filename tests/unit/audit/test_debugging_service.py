@@ -125,6 +125,16 @@ async def test_debugging_service_assembles_timeline_replay_bundle_search_and_exp
         excluded_sections=["raw_payloads"],
     )
     assert export.status == "requested"
+    replayed_export = await service.create_export(
+        principal=principal,
+        tenant_id=tenant_id,
+        workflow_run_id=run_id,
+        lineage_scope="authorized_children",
+        recipient_scope="tenant_auditor",
+        included_sections=["timeline", "trace"],
+        excluded_sections=["raw_payloads"],
+    )
+    assert replayed_export.debug_evidence_export_id == export.debug_evidence_export_id
 
 
 async def test_debugging_service_denies_cross_tenant_and_audits_attempt(

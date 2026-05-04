@@ -1290,6 +1290,31 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_run_replay_ui",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/admin/runs/debug-search": ProtectedSurface(
+        surface_key="GET:/admin/runs/debug-search",
+        requested_action="search_run_debug_evidence",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/runs/{workflow_run_id}/timeline": ProtectedSurface(
+        surface_key="GET:/admin/runs/{workflow_run_id}/timeline",
+        requested_action="read_run_debug_timeline",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/runs/{workflow_run_id}/lineage": ProtectedSurface(
+        surface_key="GET:/admin/runs/{workflow_run_id}/lineage",
+        requested_action="read_run_debug_lineage",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/runs/{workflow_run_id}/bundle": ProtectedSurface(
+        surface_key="GET:/admin/runs/{workflow_run_id}/bundle",
+        requested_action="read_run_debug_bundle",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/runs/{workflow_run_id}/exports": ProtectedSurface(
+        surface_key="POST:/admin/runs/{workflow_run_id}/exports",
+        requested_action="create_run_debug_export",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
     "GET:/admin/reliability/ui/": ProtectedSurface(
         surface_key="GET:/admin/reliability/ui/",
         requested_action="render_reliability_dashboard_ui",
