@@ -84,3 +84,7 @@ class TelegramProviderReadiness:
 
 class TelegramConfigStaleRevisionError(ValueError):
     """Raised when a mutable Telegram config form uses an old revision token."""
+
+
+def normalize_alias_text(value: str) -> str:
+    return " ".join(value.strip().casefold().split())

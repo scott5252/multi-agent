@@ -615,6 +615,12 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         classification=SurfaceClassification.AUTHENTICATED,
         required_permissions=("telegram-config:write",),
     ),
+    "POST:/admin/telegram/aliases": ProtectedSurface(
+        surface_key="POST:/admin/telegram/aliases",
+        requested_action="upsert_telegram_alias_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:write",),
+    ),
     "POST:/admin/telegram/webhook/validate": ProtectedSurface(
         surface_key="POST:/admin/telegram/webhook/validate",
         requested_action="validate_telegram_webhook_ui",
@@ -654,6 +660,18 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
     "POST:/admin/telegram/api/config": ProtectedSurface(
         surface_key="POST:/admin/telegram/api/config",
         requested_action="update_telegram_tenant_config",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:write",),
+    ),
+    "GET:/admin/telegram/api/aliases": ProtectedSurface(
+        surface_key="GET:/admin/telegram/api/aliases",
+        requested_action="read_telegram_aliases",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("telegram-config:read",),
+    ),
+    "POST:/admin/telegram/api/aliases": ProtectedSurface(
+        surface_key="POST:/admin/telegram/api/aliases",
+        requested_action="upsert_telegram_alias",
         classification=SurfaceClassification.AUTHENTICATED,
         required_permissions=("telegram-config:write",),
     ),

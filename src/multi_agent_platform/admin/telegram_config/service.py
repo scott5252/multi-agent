@@ -10,6 +10,7 @@ from multi_agent_platform.admin.telegram_config.models import (
     TelegramDiagnosticCategory,
     TelegramDiagnosticStatus,
     TelegramProviderReadiness,
+    normalize_alias_text,
 )
 from multi_agent_platform.admin.telegram_config.redaction import (
     fingerprint_prefix,
@@ -23,6 +24,7 @@ from multi_agent_platform.channels.models import ChannelActor, ChannelType
 from multi_agent_platform.channels.service import ChannelService
 from multi_agent_platform.config.settings import AppEnvironment, Settings
 from multi_agent_platform.db.models.telegram_config import (
+    TelegramCommandAlias,
     TelegramDiagnosticEvent,
     TelegramLinkedIdentitySummary,
     TelegramLinkTokenAudit,
@@ -127,6 +129,51 @@ class TelegramConfigurationService:
             },
         )
         return record
+
+    async def list_aliases(
+        self, access_scope: TelegramAccessScope
+    ) -> tuple[TelegramCommandAlias, ...]:
+        tenant_id = access_scope.require_tenant()
+        return tuple(await self.repository.list_aliases(tenant_id=tenant_id))
+
+    async def upsert_alias(
+        self,
+        *,
+        access_scope: TelegramAccessScope,
+        alias_text: str,
+        published_workflow_version_id: UUID,
+        description: str | None,
+        protected: bool,
+        enabled: bool,
+        revision_token: str | None,
+    ) -> TelegramCommandAlias:
+        tenant_id = access_scope.require_tenant()
+        alias = await self.repository.upsert_alias(
+            tenant_id=tenant_id,
+            alias_text=alias_text,
+            published_workflow_version_id=published_workflow_version_id,
+            description=description,
+            protected=protected,
+            enabled=enabled,
+            expected_revision_token=revision_token,
+            principal_id=access_scope.principal_id,
+        )
+        await self.repository.add_diagnostic(
+            tenant_id=tenant_id,
+            principal_id=access_scope.principal_id,
+            category=TelegramDiagnosticCategory.READINESS,
+            status=TelegramDiagnosticStatus.OK
+            if alias.enabled
+            else TelegramDiagnosticStatus.WARNING,
+            summary="Telegram command alias updated.",
+            trace_id=self._trace_id(access_scope),
+            redacted_metadata={
+                "alias": normalize_alias_text(alias.alias_text),
+                "enabled": alias.enabled,
+                "protected": alias.protected,
+            },
+        )
+        return alias
 
     async def validate_webhook(
         self, access_scope: TelegramAccessScope

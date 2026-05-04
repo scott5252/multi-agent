@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
@@ -41,6 +41,60 @@ class ChannelRepository:
         self.session.add(record)
         await self.session.flush()
         return record
+
+    async def upsert_telegram_identity_link(
+        self,
+        *,
+        tenant_id: UUID,
+        platform_identity_id: str,
+        telegram_user_id: int,
+        telegram_chat_id: int,
+        link_token_hash: str,
+        now: datetime,
+        expires_at: datetime | None = None,
+    ) -> TelegramIdentityLinkRecord:
+        stmt = select(TelegramIdentityLinkRecord).where(
+            TelegramIdentityLinkRecord.tenant_id == tenant_id,
+            TelegramIdentityLinkRecord.telegram_user_id == str(telegram_user_id),
+            TelegramIdentityLinkRecord.telegram_chat_id == str(telegram_chat_id),
+        )
+        record = (await self.session.execute(stmt)).scalar_one_or_none()
+        if record is None:
+            record = TelegramIdentityLinkRecord(
+                tenant_id=tenant_id,
+                platform_identity_id=platform_identity_id,
+                telegram_user_id=str(telegram_user_id),
+                telegram_chat_id=str(telegram_chat_id),
+                link_token_hash=link_token_hash,
+                status="linked",
+                created_at=now,
+                expires_at=expires_at or now + timedelta(days=3650),
+                linked_at=now,
+            )
+            self.session.add(record)
+        else:
+            record.platform_identity_id = platform_identity_id
+            record.link_token_hash = link_token_hash
+            record.status = "linked"
+            record.expires_at = expires_at or record.expires_at
+            record.linked_at = now
+            record.revoked_at = None
+        await self.session.flush()
+        return record
+
+    async def get_active_telegram_identity(
+        self, *, telegram_user_id: int, telegram_chat_id: int
+    ) -> TelegramIdentityLinkRecord | None:
+        stmt = select(TelegramIdentityLinkRecord).where(
+            TelegramIdentityLinkRecord.telegram_user_id == str(telegram_user_id),
+            TelegramIdentityLinkRecord.telegram_chat_id == str(telegram_chat_id),
+            TelegramIdentityLinkRecord.status == "linked",
+            TelegramIdentityLinkRecord.revoked_at.is_(None),
+        )
+        records = list((await self.session.execute(stmt)).scalars().all())
+        if len(records) != 1:
+            return None
+        return records[0]
 
     async def get_pending_telegram_link(
         self, *, token_hash: str, now: datetime
@@ -118,6 +172,19 @@ class ChannelRepository:
         self.session.add(record)
         await self.session.flush()
         return record
+
+    async def list_delivery_attempts(
+        self, *, tenant_id: UUID | None, run_id: UUID
+    ) -> list[NotificationDeliveryAttemptRecord]:
+        stmt = (
+            select(NotificationDeliveryAttemptRecord)
+            .where(
+                NotificationDeliveryAttemptRecord.tenant_id == tenant_id,
+                NotificationDeliveryAttemptRecord.run_id == run_id,
+            )
+            .order_by(NotificationDeliveryAttemptRecord.created_at.asc())
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
 
     async def add_callback_registration(
         self, record: ApiCallbackRegistrationRecord

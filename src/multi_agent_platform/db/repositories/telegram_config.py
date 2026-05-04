@@ -13,13 +13,16 @@ from multi_agent_platform.admin.telegram_config.models import (
     TelegramDiagnosticStatus,
     TelegramIdentityStatus,
     TelegramLinkTokenStatus,
+    normalize_alias_text,
 )
 from multi_agent_platform.admin.telegram_config.redaction import sanitize_text
 from multi_agent_platform.db.models.telegram_config import (
+    TelegramCommandAlias,
     TelegramDiagnosticEvent,
     TelegramLinkedIdentitySummary,
     TelegramLinkTokenAudit,
     TelegramTenantConfiguration,
+    TelegramUpdateReceipt,
 )
 
 
@@ -77,6 +80,91 @@ class TelegramConfigRepository:
         await self.session.flush()
         return record
 
+    async def list_aliases(
+        self, *, tenant_id: UUID, limit: int = 100
+    ) -> list[TelegramCommandAlias]:
+        stmt = (
+            select(TelegramCommandAlias)
+            .where(TelegramCommandAlias.tenant_id == tenant_id)
+            .order_by(TelegramCommandAlias.alias_normalized.asc())
+            .limit(limit)
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def get_alias(
+        self, *, tenant_id: UUID, alias_id: UUID
+    ) -> TelegramCommandAlias | None:
+        stmt = select(TelegramCommandAlias).where(
+            TelegramCommandAlias.tenant_id == tenant_id,
+            TelegramCommandAlias.telegram_command_alias_id == alias_id,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def find_enabled_alias(
+        self, *, tenant_id: UUID, alias_text: str
+    ) -> TelegramCommandAlias | None:
+        normalized = normalize_alias_text(alias_text)
+        if not normalized:
+            return None
+        stmt = select(TelegramCommandAlias).where(
+            TelegramCommandAlias.tenant_id == tenant_id,
+            TelegramCommandAlias.alias_normalized == normalized,
+            TelegramCommandAlias.enabled.is_(True),
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def upsert_alias(
+        self,
+        *,
+        tenant_id: UUID,
+        alias_text: str,
+        published_workflow_version_id: UUID,
+        description: str | None,
+        protected: bool,
+        enabled: bool,
+        expected_revision_token: str | None,
+        principal_id: str,
+    ) -> TelegramCommandAlias:
+        normalized = normalize_alias_text(alias_text)
+        if not normalized:
+            raise ValueError("alias text is required")
+        if len(normalized) > 120:
+            raise ValueError("alias text is too long")
+        stmt = select(TelegramCommandAlias).where(
+            TelegramCommandAlias.tenant_id == tenant_id,
+            TelegramCommandAlias.alias_normalized == normalized,
+        )
+        record = (await self.session.execute(stmt)).scalar_one_or_none()
+        if record is None:
+            record = TelegramCommandAlias(
+                tenant_id=tenant_id,
+                alias_text=alias_text.strip(),
+                alias_normalized=normalized,
+                published_workflow_version_id=published_workflow_version_id,
+                description=sanitize_text(description, max_length=500) or None,
+                protected=protected,
+                enabled=enabled,
+                revision_token=uuid4().hex,
+                created_by_principal_id=principal_id,
+                updated_by_principal_id=principal_id,
+            )
+            self.session.add(record)
+        else:
+            if (
+                expected_revision_token
+                and record.revision_token != expected_revision_token
+            ):
+                raise TelegramConfigStaleRevisionError("stale Telegram alias revision")
+            record.alias_text = alias_text.strip()
+            record.published_workflow_version_id = published_workflow_version_id
+            record.description = sanitize_text(description, max_length=500) or None
+            record.protected = protected
+            record.enabled = enabled
+            record.revision_token = uuid4().hex
+            record.updated_by_principal_id = principal_id
+        await self.session.flush()
+        return record
+
     async def add_token_audit(
         self,
         *,
@@ -129,6 +217,31 @@ class TelegramConfigRepository:
             record.revoked_at = datetime.now(UTC)
             record.revoked_by_principal_id = principal_id
             await self.session.flush()
+        return record
+
+    async def consume_token_audit_by_fingerprint(
+        self, *, token_fingerprint: str, now: datetime
+    ) -> TelegramLinkTokenAudit | None:
+        stmt = select(TelegramLinkTokenAudit).where(
+            TelegramLinkTokenAudit.token_fingerprint == token_fingerprint
+        )
+        record = (await self.session.execute(stmt)).scalar_one_or_none()
+        if record is None:
+            return None
+        expires_at = record.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        if record.status == TelegramLinkTokenStatus.ISSUED.value and (
+            expires_at <= now
+        ):
+            record.status = TelegramLinkTokenStatus.EXPIRED.value
+            await self.session.flush()
+            return None
+        if record.status != TelegramLinkTokenStatus.ISSUED.value:
+            return None
+        record.status = TelegramLinkTokenStatus.CONSUMED.value
+        record.consumed_at = now
+        await self.session.flush()
         return record
 
     async def upsert_identity_summary(
@@ -202,6 +315,22 @@ class TelegramConfigRepository:
         await self.session.flush()
         return record
 
+    async def get_identity_summary_by_fingerprints(
+        self,
+        *,
+        tenant_id: UUID,
+        telegram_user_fingerprint: str,
+        telegram_chat_fingerprint: str,
+    ) -> TelegramLinkedIdentitySummary | None:
+        stmt = select(TelegramLinkedIdentitySummary).where(
+            TelegramLinkedIdentitySummary.tenant_id == tenant_id,
+            TelegramLinkedIdentitySummary.telegram_user_fingerprint
+            == telegram_user_fingerprint,
+            TelegramLinkedIdentitySummary.telegram_chat_fingerprint
+            == telegram_chat_fingerprint,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
     async def add_diagnostic(
         self,
         *,
@@ -237,3 +366,43 @@ class TelegramConfigRepository:
             stmt = stmt.where(TelegramDiagnosticEvent.tenant_id == tenant_id)
         stmt = stmt.order_by(TelegramDiagnosticEvent.created_at.desc()).limit(limit)
         return list((await self.session.execute(stmt)).scalars().all())
+
+    async def get_update_receipt(
+        self, telegram_update_id: int
+    ) -> TelegramUpdateReceipt | None:
+        stmt = select(TelegramUpdateReceipt).where(
+            TelegramUpdateReceipt.telegram_update_id == telegram_update_id
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def add_update_receipt(
+        self,
+        *,
+        telegram_update_id: int,
+        tenant_id: UUID | None,
+        platform_identity_id: str | None,
+        telegram_chat_fingerprint: str | None,
+        action_type: str,
+        response_payload: dict[str, object],
+        run_id: UUID | None,
+        delivery_attempt_id: UUID | None,
+        trace_id: str,
+    ) -> TelegramUpdateReceipt:
+        existing = await self.get_update_receipt(telegram_update_id)
+        if existing is not None:
+            return existing
+        record = TelegramUpdateReceipt(
+            telegram_update_id=telegram_update_id,
+            tenant_id=tenant_id,
+            platform_identity_id=platform_identity_id,
+            telegram_chat_fingerprint=telegram_chat_fingerprint,
+            action_type=action_type,
+            response_payload=response_payload,
+            run_id=run_id,
+            delivery_attempt_id=delivery_attempt_id,
+            trace_id=trace_id,
+            received_at=datetime.now(UTC),
+        )
+        self.session.add(record)
+        await self.session.flush()
+        return record

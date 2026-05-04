@@ -207,3 +207,51 @@ def test_telegram_api_issues_token_syncs_masked_identity_and_diagnostics(
     assert "123***789" in identities.text
     assert diagnostic.json()["redacted_metadata"]["external_call_performed"] is False
     assert diagnostics.json()["items"]
+
+
+def test_telegram_api_manages_command_aliases_with_tenant_isolation(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _configure_env(monkeypatch, tmp_path)
+    app = create_app()
+    workflow_version_id = "22222222-2222-2222-2222-222222222222"
+
+    with TestClient(app) as client:
+        created = client.post(
+            "/admin/telegram/api/aliases",
+            headers=ACME_HEADERS,
+            json={
+                "tenant_id": ACME_TENANT_ID,
+                "alias_text": "Morning briefing",
+                "published_workflow_version_id": workflow_version_id,
+                "description": "Daily Intelligence Briefing",
+                "protected": True,
+                "enabled": True,
+            },
+        )
+        listed = client.get(
+            f"/admin/telegram/api/aliases?tenant_id={ACME_TENANT_ID}",
+            headers=ACME_HEADERS,
+        )
+        stale = client.post(
+            "/admin/telegram/api/aliases",
+            headers=ACME_HEADERS,
+            json={
+                "tenant_id": ACME_TENANT_ID,
+                "alias_text": "Morning briefing",
+                "published_workflow_version_id": workflow_version_id,
+                "enabled": False,
+                "revision_token": "stale",
+            },
+        )
+        denied = client.get(
+            f"/admin/telegram/api/aliases?tenant_id={ACME_TENANT_ID}",
+            headers=GLOBEX_HEADERS,
+        )
+
+    assert created.status_code == 200
+    assert created.json()["alias_normalized"] == "morning briefing"
+    assert listed.json()["items"][0]["alias_text"] == "Morning briefing"
+    assert stale.status_code == 409
+    assert denied.status_code == 403

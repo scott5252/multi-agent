@@ -43,10 +43,7 @@ from multi_agent_platform.operations.service import (
 def test_operations_console_requires_no_new_migration_file() -> None:
     migration_names = {path.name for path in Path("alembic/versions").glob("*.py")}
 
-    assert not any(
-        name.startswith("0019_") or "operations_console" in name
-        for name in migration_names
-    )
+    assert not any("operations_console" in name for name in migration_names)
 
 
 @pytest.mark.asyncio

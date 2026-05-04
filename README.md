@@ -20,6 +20,8 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 - user interaction channel APIs under `/runs`
 - Web UI run list/detail pages under `/runs`
 - Telegram webhook commands under `/channels/telegram/webhook/{secret}`
+- Telegram tenant command aliases under `/admin/telegram` for natural-language
+  triggers such as `Morning briefing`
 - browser-friendly local QA login under `/auth/local-login`
 - durable lineage, draft, revision, validation-result, published-version, and
   sharing-grant persistence
@@ -110,7 +112,9 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
     `uv run python scripts/qa/run_spec_qa.py specs/_autopilot/example/validation.yml --dry-run`.
 17. Validate workflow graph execution with
     `uv run pytest --no-cov tests/integration/runtime/test_workflow_graph_execution.py`.
-18. Validate the repo with `./scripts/check.sh`.
+18. Validate Telegram alias delivery with
+    `uv run pytest --no-cov tests/contract/test_telegram_alias_delivery_contract.py tests/integration/api/test_telegram_webhook.py`.
+19. Validate the repo with `./scripts/check.sh`.
 
 ## Admin Console Shell
 
@@ -177,6 +181,10 @@ same lifecycle states: `queued`, `running`, `waiting-for-input`, `completed`,
 - Telegram: `/link`, `/run`, `/status`, `/approve`, `/reject`, `/resume`,
   `/cancel`, `/result`, `/artifacts`, and `/subscribe` after one-time platform
   identity linking.
+- Telegram command aliases: tenant admins configure normalized natural-language
+  triggers such as `Morning briefing` in `/admin/telegram`; linked Telegram
+  users can send the alias to start the pinned published workflow and receive
+  the safe result through the configured Bot API client.
 
 Duplicate-prone actions require idempotency keys. The initiating user is
 automatically subscribed to terminal notifications, additional authorized users

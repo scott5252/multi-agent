@@ -182,6 +182,7 @@ class NotificationDeliveryAttemptRecord(Base):
     event_type: Mapped[str] = mapped_column(String(64))
     payload_fingerprint: Mapped[str] = mapped_column(String(64))
     delivery_status: Mapped[str] = mapped_column(String(32))
+    destination_fingerprint: Mapped[str | None] = mapped_column(String(128))
     provider_message_id: Mapped[str | None] = mapped_column(String(128))
     failure_category: Mapped[str | None] = mapped_column(String(64))
     attempt_number: Mapped[int] = mapped_column(Integer, default=1)

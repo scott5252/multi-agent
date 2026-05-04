@@ -49,6 +49,7 @@ def configure_channel_env(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{database_path}")
     monkeypatch.setenv("FILESYSTEM_STORAGE_ROOT", str(tmp_path / "artifacts"))
     monkeypatch.setenv("TELEGRAM_WEBHOOK_SECRET", "local-dev-secret")
+    monkeypatch.setenv("TELEGRAM_PROVIDER_TOKEN_REF", "env:QA022_TELEGRAM_TOKEN")
     monkeypatch.setenv(
         "LOCAL_PRINCIPAL_CATALOG_JSON",
         json.dumps(
@@ -59,7 +60,14 @@ def configure_channel_env(monkeypatch, tmp_path: Path) -> None:
                     "tenant_id": str(ACME_TENANT_ID),
                     "org_id": "org-acme",
                     "role_codes": ["tenant_user", "tenant_admin"],
-                    "permission_codes": ["tenant:read", "tenant:admin"],
+                    "permission_codes": [
+                        "tenant:read",
+                        "tenant:admin",
+                        "telegram-config:read",
+                        "telegram-config:write",
+                        "telegram-config:tokens",
+                        "telegram-config:diagnostics",
+                    ],
                 },
                 "tenant-admin-globex": {
                     "catalog_key": "tenant-admin-globex",
@@ -67,7 +75,14 @@ def configure_channel_env(monkeypatch, tmp_path: Path) -> None:
                     "tenant_id": str(GLOBEX_TENANT_ID),
                     "org_id": "org-globex",
                     "role_codes": ["tenant_user", "tenant_admin"],
-                    "permission_codes": ["tenant:read", "tenant:admin"],
+                    "permission_codes": [
+                        "tenant:read",
+                        "tenant:admin",
+                        "telegram-config:read",
+                        "telegram-config:write",
+                        "telegram-config:tokens",
+                        "telegram-config:diagnostics",
+                    ],
                 },
             }
         ),

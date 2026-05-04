@@ -73,6 +73,10 @@ async def test_telegram_service_link_token_and_identity_are_redacted(
         telegram_chat_id=987654321,
     )
     identities = await service.list_identities(scope)
+    revoked_identity = await service.revoke_identity(
+        access_scope=scope,
+        identity_id=identities[0].telegram_linked_identity_summary_id,
+    )
     revoked = await service.revoke_link_token(
         access_scope=scope,
         token_audit_id=issued.audit.telegram_link_token_audit_id,
@@ -81,7 +85,48 @@ async def test_telegram_service_link_token_and_identity_are_redacted(
     assert identity.platform_identity_id == "tenant-admin"
     assert issued.raw_token not in issued.audit.token_fingerprint
     assert identities[0].telegram_user_display == "123***789"
+    assert revoked_identity is not None
+    assert revoked_identity.command_ready is False
     assert revoked is not None
+
+
+async def test_telegram_service_aliases_and_access_diagnostics(
+    session,
+    seeded_tenant,
+    settings,
+) -> None:
+    service = _service(session, settings)
+    tenant_scope = TelegramAccessScope(
+        scope_type=TelegramConfigScopeType.TENANT,
+        tenant_id=seeded_tenant.tenant_id,
+        principal_id="tenant-admin",
+    )
+    platform_scope = TelegramAccessScope(
+        scope_type=TelegramConfigScopeType.PLATFORM,
+        tenant_id=None,
+        principal_id="platform-admin",
+    )
+
+    alias = await service.upsert_alias(
+        access_scope=tenant_scope,
+        alias_text="Morning briefing",
+        published_workflow_version_id=seeded_tenant.tenant_id,
+        description="Daily Intelligence Briefing",
+        protected=True,
+        enabled=True,
+        revision_token=None,
+    )
+    aliases = await service.list_aliases(tenant_scope)
+    denied = await service.record_access_denied(
+        principal_id="intruder",
+        trace_id="trace-denied",
+        metadata={"token": "raw-token-value", "tenant": str(seeded_tenant.tenant_id)},
+    )
+
+    assert await service.tenant_config(platform_scope) is None
+    assert aliases == (alias,)
+    assert denied.status == TelegramDiagnosticStatus.DENIED.value
+    assert service.token_fingerprint_display("plain-token") != "plain-token"
 
 
 def test_telegram_service_production_requires_safe_webhook_reference() -> None:

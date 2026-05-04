@@ -11,6 +11,7 @@ from multi_agent_platform.db.models.channels import (
     ChannelIdempotencyRecord,
     ChannelSessionRecord,
     ChannelTimelineEventRecord,
+    NotificationDeliveryAttemptRecord,
     TelegramIdentityLinkRecord,
 )
 from multi_agent_platform.db.repositories.channels import ChannelRepository
@@ -93,3 +94,53 @@ async def test_channel_repository_stores_core_records(session: AsyncSession) -> 
         idempotency_key="idem-1",
     )
     assert len(await repository.list_timeline(tenant_id=tenant_id, run_id=run_id)) == 1
+
+
+@pytest.mark.asyncio
+async def test_channel_repository_persists_telegram_identity_and_delivery_attempt(
+    session: AsyncSession,
+) -> None:
+    repository = ChannelRepository(session)
+    now = datetime.now(UTC)
+    tenant_id = uuid4()
+    run_id = uuid4()
+    identity = await repository.upsert_telegram_identity_link(
+        tenant_id=tenant_id,
+        platform_identity_id="tenant-admin",
+        telegram_user_id=987654321,
+        telegram_chat_id=123456789,
+        link_token_hash="hash",
+        now=now,
+    )
+    attempt = await repository.add_delivery_attempt(
+        NotificationDeliveryAttemptRecord(
+            tenant_id=tenant_id,
+            notification_subscription_id=uuid4(),
+            run_id=run_id,
+            channel_type="telegram",
+            event_type="terminal",
+            payload_fingerprint="payload-hash",
+            delivery_status="delivered",
+            destination_fingerprint="chat-hash",
+            provider_message_id="mock-1",
+            failure_category=None,
+            attempt_number=1,
+            next_retry_at=None,
+            trace_id="trace-delivery",
+            created_at=now,
+            delivered_at=now,
+        )
+    )
+
+    assert identity.status == "linked"
+    assert (
+        await repository.get_active_telegram_identity(
+            telegram_user_id=987654321,
+            telegram_chat_id=123456789,
+        )
+        == identity
+    )
+    assert await repository.list_delivery_attempts(
+        tenant_id=tenant_id,
+        run_id=run_id,
+    ) == [attempt]

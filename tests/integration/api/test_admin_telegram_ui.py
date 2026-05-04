@@ -50,6 +50,7 @@ def test_telegram_ui_renders_console_and_mutates_config(
 
     assert page.status_code == 200
     assert "Telegram Configuration" in page.text
+    assert "Telegram Command Aliases" in page.text
     assert "Bot tokens" in page.text
     assert "local-dev-secret" not in page.text
     assert updated.status_code == 303
@@ -71,3 +72,31 @@ def test_telegram_ui_issues_link_token_once(tmp_path, monkeypatch) -> None:
     assert issued.status_code == 200
     assert "One-Time Link Token" in issued.text
     assert "Future views show only a fingerprint" in issued.text
+
+
+def test_telegram_ui_creates_alias(tmp_path, monkeypatch) -> None:
+    _configure_env(monkeypatch, tmp_path)
+    app = create_app()
+
+    with TestClient(app) as client:
+        created = client.post(
+            "/admin/telegram/aliases",
+            headers=ACME_HEADERS,
+            data={
+                "tenant_id": ACME_TENANT_ID,
+                "alias_text": "Morning briefing",
+                "published_workflow_version_id": "22222222-2222-2222-2222-222222222222",
+                "description": "Daily Intelligence Briefing",
+                "protected": "true",
+                "enabled": "true",
+            },
+            follow_redirects=False,
+        )
+        page = client.get(
+            f"/admin/telegram?tenant_id={ACME_TENANT_ID}",
+            headers=ACME_HEADERS,
+        )
+
+    assert created.status_code == 303
+    assert "Morning briefing" in page.text
+    assert "22222222-2222-2222-2222-222222222222" in page.text

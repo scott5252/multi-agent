@@ -8,7 +8,12 @@ from typing import Any
 from urllib.parse import urljoin
 
 from autopilot_config import JsonObject, load_config, repo_root_from
-from run_spec_qa import start_processes, stop_processes
+from run_spec_qa import (
+    config_command_list,
+    run_command,
+    start_processes,
+    stop_processes,
+)
 
 
 def absolutize(base_url: str, target: str) -> str:
@@ -152,6 +157,15 @@ def main() -> int:
 
     if args.dry_run:
         if args.start_processes:
+            for command_spec in config_command_list(config, "setup_commands"):
+                if not isinstance(command_spec, dict):
+                    raise SystemExit("each setup command entry must be an object")
+                run_command(
+                    command_spec,
+                    cwd=repo_root,
+                    base_env=os.environ.copy(),
+                    dry_run=True,
+                )
             start_processes(
                 config,
                 cwd=repo_root,
@@ -179,6 +193,15 @@ def main() -> int:
     processes = []
     try:
         if args.start_processes:
+            for command_spec in config_command_list(config, "setup_commands"):
+                if not isinstance(command_spec, dict):
+                    raise SystemExit("each setup command entry must be an object")
+                run_command(
+                    command_spec,
+                    cwd=repo_root,
+                    base_env=os.environ.copy(),
+                    dry_run=False,
+                )
             processes = start_processes(
                 config,
                 cwd=repo_root,

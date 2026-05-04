@@ -24,6 +24,9 @@ from multi_agent_platform.admin.telegram_config.service import (
 from multi_agent_platform.api.deps import ContainerDep, get_session
 from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.telegram_config import (
+    TelegramCommandAliasListResponse,
+    TelegramCommandAliasResponse,
+    TelegramCommandAliasUpsertRequest,
     TelegramConsoleSnapshotResponse,
     TelegramDiagnosticResponse,
     TelegramDiagnosticsResponse,
@@ -51,6 +54,7 @@ from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.channels.service import ChannelService
 from multi_agent_platform.db.models.telegram_config import (
+    TelegramCommandAlias,
     TelegramDiagnosticEvent,
     TelegramLinkedIdentitySummary,
     TelegramLinkTokenAudit,
@@ -141,6 +145,46 @@ async def validate_telegram_webhook_api(
     service = _service(session=session, container=container)
     diagnostic = await service.validate_webhook(_access_scope(principal, tenant_id))
     return _diagnostic_response(diagnostic)
+
+
+@router.get("/api/aliases", response_model=TelegramCommandAliasListResponse)
+async def telegram_aliases_api(
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: UUID | None = None,
+) -> TelegramCommandAliasListResponse:
+    service = _service(session=session, container=container)
+    aliases = await service.list_aliases(_tenant_access_scope(principal, tenant_id))
+    return TelegramCommandAliasListResponse(
+        items=tuple(_alias_response(item) for item in aliases)
+    )
+
+
+@router.post("/api/aliases", response_model=TelegramCommandAliasResponse)
+async def upsert_telegram_alias_api(
+    payload: TelegramCommandAliasUpsertRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> TelegramCommandAliasResponse:
+    service = _service(session=session, container=container)
+    scope = _tenant_access_scope(principal, payload.tenant_id)
+    try:
+        alias = await service.upsert_alias(
+            access_scope=scope,
+            alias_text=payload.alias_text,
+            published_workflow_version_id=payload.published_workflow_version_id,
+            description=payload.description,
+            protected=payload.protected,
+            enabled=payload.enabled,
+            revision_token=payload.revision_token,
+        )
+    except TelegramConfigStaleRevisionError as exc:
+        raise HTTPException(status_code=409, detail="stale revision") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _alias_response(alias)
 
 
 @router.get("/api/diagnostics", response_model=TelegramDiagnosticsResponse)
@@ -263,6 +307,7 @@ async def telegram_snapshot_api(
         else None
     )
     config = await service.tenant_config(tenant_scope) if tenant_scope else None
+    aliases = await service.list_aliases(tenant_scope) if tenant_scope else ()
     tokens = await service.list_link_tokens(tenant_scope) if tenant_scope else ()
     identities = await service.list_identities(tenant_scope) if tenant_scope else ()
     diagnostics = await service.list_diagnostics(scope)
@@ -270,6 +315,7 @@ async def telegram_snapshot_api(
     return TelegramConsoleSnapshotResponse(
         readiness=_readiness_response(service),
         tenant_config=_config_response(config, readiness) if config else None,
+        aliases=tuple(_alias_response(item) for item in aliases),
         token_audits=tuple(_token_response(item) for item in tokens),
         identities=tuple(_identity_response(item) for item in identities),
         diagnostics=tuple(_diagnostic_response(item) for item in diagnostics),
@@ -392,6 +438,73 @@ async def validate_telegram_webhook_page(
     )
 
 
+@router.post("/aliases", response_class=HTMLResponse, include_in_schema=False)
+async def upsert_telegram_alias_page(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[UUID | None, Form()] = None,
+    alias_text: Annotated[str, Form()] = "",
+    published_workflow_version_id: Annotated[UUID | None, Form()] = None,
+    description: Annotated[str | None, Form()] = None,
+    protected: Annotated[bool, Form()] = True,
+    enabled: Annotated[bool, Form()] = True,
+    revision_token: Annotated[str | None, Form()] = None,
+) -> Response:
+    if published_workflow_version_id is None:
+        raise HTTPException(
+            status_code=422, detail="published workflow version required"
+        )
+    service = _service(session=session, container=container)
+    scope = _tenant_access_scope(principal, tenant_id)
+    try:
+        await service.upsert_alias(
+            access_scope=scope,
+            alias_text=alias_text,
+            published_workflow_version_id=published_workflow_version_id,
+            description=description,
+            protected=protected,
+            enabled=enabled,
+            revision_token=revision_token,
+        )
+    except TelegramConfigStaleRevisionError:
+        page = await _page_for_scope(service, scope, conflict=True)
+        shell = await _shell(
+            request=request,
+            principal=principal,
+            session=session,
+            common_state=build_common_state(
+                CommonStateType.VALIDATION_ERROR,
+                title="Stale Telegram alias",
+                summary=(
+                    "The current alias changed. Review current values before "
+                    "saving again."
+                ),
+                trace_id=principal.trace_id,
+            ),
+        )
+        return cast(
+            HTMLResponse,
+            container.workflow_ui_templates.TemplateResponse(
+                request,
+                "telegram/index.html",
+                {
+                    "shell": shell,
+                    "principal": principal,
+                    "page": page,
+                    "protected_commands": PROTECTED_TELEGRAM_COMMANDS,
+                    "redaction_notice": redaction_notice(),
+                },
+                status_code=status.HTTP_409_CONFLICT,
+            ),
+        )
+    return RedirectResponse(
+        f"/admin/telegram?tenant_id={scope.tenant_id}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
 @router.post("/link-tokens", response_class=HTMLResponse, include_in_schema=False)
 async def issue_telegram_link_token_page(
     request: Request,
@@ -483,12 +596,14 @@ async def _page_for_scope(
     tenant_scope = scope if scope.tenant_id is not None else None
     readiness = service.provider_readiness()
     config = await service.tenant_config(tenant_scope) if tenant_scope else None
+    aliases = await service.list_aliases(tenant_scope) if tenant_scope else ()
     tokens = await service.list_link_tokens(tenant_scope) if tenant_scope else ()
     identities = await service.list_identities(tenant_scope) if tenant_scope else ()
     diagnostics = await service.list_diagnostics(scope)
     return TelegramConfigurationPage(
         readiness=_readiness_from_model(readiness),
         tenant_config=_config_response(config, readiness) if config else None,
+        aliases=tuple(_alias_response(item) for item in aliases),
         token_audits=tuple(_token_response(item) for item in tokens),
         identities=tuple(_identity_response(item) for item in identities),
         diagnostics=tuple(_diagnostic_response(item) for item in diagnostics),
@@ -582,6 +697,23 @@ def _config_response(
         created_at=config.created_at,
         updated_at=config.updated_at,
         command_ready=ready,
+    )
+
+
+def _alias_response(record: TelegramCommandAlias) -> TelegramCommandAliasResponse:
+    return TelegramCommandAliasResponse(
+        telegram_command_alias_id=record.telegram_command_alias_id,
+        tenant_id=record.tenant_id,
+        alias_text=record.alias_text,
+        alias_normalized=record.alias_normalized,
+        published_workflow_version_id=record.published_workflow_version_id,
+        description=record.description,
+        protected=record.protected,
+        enabled=record.enabled,
+        revision_token=record.revision_token,
+        updated_by_principal_id=record.updated_by_principal_id,
+        created_at=record.created_at,
+        updated_at=record.updated_at,
     )
 
 

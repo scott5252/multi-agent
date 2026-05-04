@@ -549,6 +549,37 @@ class ChannelService:
             )
         return result
 
+    def complete_run_with_result(
+        self,
+        *,
+        run_id: UUID,
+        summary: str,
+        structured_result: dict[str, object] | None = None,
+        partial_failure: bool = False,
+    ) -> RunResult:
+        run = self._runs[run_id]
+        state = (
+            UserVisibleRunState.FAILED
+            if partial_failure
+            else UserVisibleRunState.COMPLETED
+        )
+        self._terminal(run, state, summary)
+        availability = (
+            ResultAvailability.FAILED
+            if partial_failure
+            else ResultAvailability.AVAILABLE
+        )
+        result = RunResult(
+            run_id=run.run_id,
+            availability=availability,
+            state=run.state,
+            summary=summary,
+            structured_result=structured_result or {"message": summary},
+            trace_id=run.trace_id,
+        )
+        run.result = result
+        return result
+
     def _status_view(self, run: ChannelRun, actor: ChannelActor) -> RunStatusView:
         key_prefix = f"{actor.platform_identity_id}:"
         subscribed = any(key.startswith(key_prefix) for key in run.subscriptions)

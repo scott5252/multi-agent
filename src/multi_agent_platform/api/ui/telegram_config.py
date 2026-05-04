@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 from multi_agent_platform.api.schemas.telegram_config import (
+    TelegramCommandAliasResponse,
     TelegramDiagnosticResponse,
     TelegramIdentitySummaryResponse,
     TelegramLinkTokenAuditResponse,
@@ -15,6 +16,7 @@ class TelegramConfigurationPage(BaseModel):
     title: str = "Telegram Configuration"
     readiness: TelegramReadinessResponse
     tenant_config: TenantTelegramConfigResponse | None
+    aliases: tuple[TelegramCommandAliasResponse, ...] = ()
     token_audits: tuple[TelegramLinkTokenAuditResponse, ...]
     identities: tuple[TelegramIdentitySummaryResponse, ...]
     diagnostics: tuple[TelegramDiagnosticResponse, ...]

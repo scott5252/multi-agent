@@ -241,4 +241,5 @@ def test_spec_015_validation_resolves_shared_defaults() -> None:
 
     assert ui_result.returncode == 0, ui_result.stderr
     assert "agent-test-bench-ui-login" in ui_result.stdout
-    assert "output/playwright/qa015_ui" not in ui_result.stdout
+    assert "seed-local-tenants" in ui_result.stdout
+    assert "output/playwright/qa015_ui" in ui_result.stdout

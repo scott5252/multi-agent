@@ -31,7 +31,7 @@
             "full_page": true
           },
           {
-            "click": "article:has-text(\"platform-admin\") button"
+            "click": "article:has-text(\"tenant-admin-acme\") button"
           },
           {
             "expect_text": "Telegram Command Aliases"

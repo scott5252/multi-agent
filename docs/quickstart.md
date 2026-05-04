@@ -116,6 +116,40 @@ Telegram, create a link token with `POST /channels/telegram/link-token`, send
 `/link TOKEN` to `/channels/telegram/webhook/{secret}`, then use protected
 commands such as `/run`, `/status`, `/result`, and `/artifacts`.
 
+## Telegram Alias Delivery Quickstart
+
+Tenant admins can manage natural-language Telegram command aliases from
+`/admin/telegram`. Use the `Telegram Command Aliases` section to create a
+trigger such as `Morning briefing`, point it at a published workflow version,
+and keep protected aliases restricted to linked platform identities.
+
+After a Telegram user links with `/link TOKEN`, they can send `Morning briefing`
+to `/channels/telegram/webhook/{secret}`. The webhook normalizes the text,
+matches the enabled tenant alias, starts the pinned workflow with an
+idempotency key derived from the Telegram update, persists the update receipt,
+formats the terminal result safely, and records the mocked or real Bot API
+delivery attempt.
+
+Target the feature explicitly:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/channels/test_telegram_delivery.py \
+  tests/unit/db/test_telegram_config_repository.py \
+  tests/unit/db/test_channel_models.py \
+  tests/contract/test_telegram_alias_delivery_contract.py \
+  tests/integration/api/test_admin_telegram_api.py \
+  tests/integration/api/test_admin_telegram_ui.py \
+  tests/integration/api/test_telegram_webhook.py
+```
+
+Manual QA for this flow:
+
+- [Spec 022 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/022-telegram-natural-language-trigger-delivery-persistence/qa022.md)
+- [Spec 022 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/022-telegram-natural-language-trigger-delivery-persistence/qa022_ui.md)
+- [Spec 022 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/022-telegram-natural-language-trigger-delivery-persistence/qa022_user_guide.md)
+- [Spec 022 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/022-telegram-natural-language-trigger-delivery-persistence/testing-instructions.md)
+
 ## Workflow Studio Quickstart
 
 1. Open [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui).

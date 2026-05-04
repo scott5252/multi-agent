@@ -50,6 +50,43 @@
       </section>
 
       <section class="table-section">
+        <h2>Telegram Command Aliases</h2>
+        <form method="post" action="/admin/telegram/aliases" class="filter-strip">
+          <input type="hidden" name="tenant_id" value="{{ page.tenant_config.tenant_id }}" />
+          <label>Alias <input name="alias_text" value="Morning briefing" /></label>
+          <label>Published workflow version <input name="published_workflow_version_id" value="22222222-2222-2222-2222-222222222222" /></label>
+          <label>Description <input name="description" value="Daily Intelligence Briefing" /></label>
+          <input type="hidden" name="protected" value="false" />
+          <label>Protected <input type="checkbox" name="protected" value="true" checked /></label>
+          <input type="hidden" name="enabled" value="false" />
+          <label>Enabled <input type="checkbox" name="enabled" value="true" checked /></label>
+          <button type="submit">Save alias</button>
+        </form>
+        <table>
+          <thead>
+            <tr>
+              <th>Alias</th>
+              <th>Workflow version</th>
+              <th>Protected</th>
+              <th>Status</th>
+              <th>Revision</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for alias in page.aliases %}
+            <tr>
+              <td>{{ alias.alias_text }}</td>
+              <td>{{ alias.published_workflow_version_id }}</td>
+              <td>{{ "Linked identities required" if alias.protected else "Open" }}</td>
+              <td><span class="status-pill">{{ "enabled" if alias.enabled else "disabled" }}</span></td>
+              <td>{{ alias.revision_token[:12] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="table-section">
         <h2>Validation And Tokens</h2>
         <div class="provider-actions">
           <form method="post" action="/admin/telegram/webhook/validate">

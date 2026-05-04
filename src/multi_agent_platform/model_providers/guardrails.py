@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 ALLOWED_PROVIDER_TRANSPORT_MODULES = {
+    "src/multi_agent_platform/channels/telegram_delivery.py",
     "src/multi_agent_platform/model_providers/openai_adapter.py",
     "src/multi_agent_platform/model_providers/local_adapter.py",
     "src/multi_agent_platform/model_providers/adapters.py",

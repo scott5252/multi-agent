@@ -56,6 +56,35 @@ class TenantTelegramConfigUpdateRequest(BaseModel):
         return values
 
 
+class TelegramCommandAliasResponse(BaseModel):
+    telegram_command_alias_id: UUID
+    tenant_id: UUID
+    alias_text: str
+    alias_normalized: str
+    published_workflow_version_id: UUID
+    description: str | None = None
+    protected: bool
+    enabled: bool
+    revision_token: str
+    updated_by_principal_id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class TelegramCommandAliasUpsertRequest(BaseModel):
+    tenant_id: UUID | None = None
+    alias_text: str = Field(min_length=1, max_length=120)
+    published_workflow_version_id: UUID
+    description: str | None = Field(default=None, max_length=500)
+    protected: bool = True
+    enabled: bool = True
+    revision_token: str | None = None
+
+
+class TelegramCommandAliasListResponse(BaseModel):
+    items: tuple[TelegramCommandAliasResponse, ...]
+
+
 class TelegramDiagnosticResponse(BaseModel):
     telegram_diagnostic_event_id: UUID
     tenant_id: UUID | None
@@ -114,6 +143,7 @@ class TelegramIdentityListResponse(BaseModel):
 class TelegramConsoleSnapshotResponse(BaseModel):
     readiness: TelegramReadinessResponse
     tenant_config: TenantTelegramConfigResponse | None
+    aliases: tuple[TelegramCommandAliasResponse, ...] = ()
     token_audits: tuple[TelegramLinkTokenAuditResponse, ...]
     identities: tuple[TelegramIdentitySummaryResponse, ...]
     diagnostics: tuple[TelegramDiagnosticResponse, ...]
