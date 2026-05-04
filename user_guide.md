@@ -6,8 +6,8 @@ production-like installation. It is written for administrators and operators who
 do not write code every day, but it stays precise about the current system so
 that setup decisions are repeatable.
 
-This document reflects the repository state reviewed on May 3, 2026. It covers
-feature specifications 001 through 019 and the current code structure under
+This document reflects the repository state reviewed on May 4, 2026. It covers
+feature specifications 001 through 025 and the current code structure under
 `src/multi_agent_platform`. Spec 018 currently has only a QA environment stub in
 this checkout, so tenant and user administration guidance in this guide is based
 on the implemented authentication, authorization, role grant, tenant, and admin
@@ -35,8 +35,9 @@ The fastest path to a working system is:
 6. Seed at least one tenant row.
 7. Start the API server.
 8. Open the admin console through the local login screen.
-9. Configure model providers, prompts, agent profiles, skills, workflows, tests,
-   channels, and operational monitoring.
+9. Configure model providers, prompts, agent profiles, skill diagnostics,
+   workflows, briefing preferences, tests, channels, and operational
+   monitoring.
 
 The platform is meant to be administered through the browser first. APIs are
 available for automation, but most setup steps can be completed through the
@@ -48,33 +49,46 @@ Most management areas use PostgreSQL through SQLAlchemy repositories after
 migrations run. This includes tenants, role grants, workflow drafts and
 published bundles, prompt library records, agent runtime profiles, model
 provider definitions, test bench suites and runs, usage analytics, Telegram
-configuration records, audit/debug records, reliability records, and operations
-console projections.
+configuration and alias records, briefing preference profiles and revisions,
+audit/debug records, reliability records, and operations console projections.
 
 Some areas are intentionally lighter in the current code:
 
 - The `/runtime/runs` API is backed by a process-local runtime service in the
-  public API facade. Durable runtime database models, repositories, and worker
-  code exist, but a run started only through that facade should not be treated as
-  persisted across API restarts unless your deployment wires it to the DB-backed
-  runtime path.
-- The `/runs` Web API and Web UI channel service stores run state, idempotency
-  records, Telegram link tokens, linked identities, and rate windows in memory.
-  Restarting the API clears those channel-session records, although the
-  Telegram admin console records safe configuration and diagnostic summaries in
-  PostgreSQL.
+  public API facade. Durable runtime database models, repositories, graph
+  execution, and worker code exist, but a run started only through that facade
+  should not be treated as persisted across API restarts unless your deployment
+  wires it to the DB-backed runtime path. Runs claimed by the orchestration
+  worker can load a pinned published workflow bundle, execute graph nodes in
+  dependency order, schedule independent role nodes in parallel waves, persist
+  run steps and timeline evidence, and resume without duplicating succeeded
+  steps.
+- The `/runs` Web API and Web UI channel service still has process-local pieces
+  for some user-channel run state and rate windows. Telegram command aliases,
+  link token audits, linked identity records, webhook update receipts, and
+  delivery attempts are PostgreSQL-backed, so Telegram linking, duplicate update
+  replay, alias routing evidence, and final delivery diagnostics survive API
+  restarts after migrations are applied.
 - The current skill registry admin router uses an in-memory service for package
   and installation state even though skill registry database models and
   repository patterns exist. Complete package publication, tenant grant,
   installation, credential readiness, smoke-test, and eligibility-preview flows
   in one API session unless your deployment replaces the in-memory service with
   persistent storage.
+- The SkillExecutionGateway provides governed read-only Daily Intelligence
+  Briefing tool execution for calendar events, Gmail messages, news search,
+  weather forecasts, and commute lookup. Local QA and diagnostics use
+  deterministic mock fixtures. Approved live probes require non-local
+  environment policy, tenant-scoped installation readiness, credential metadata,
+  and outbound allow decisions.
 - The model provider gateway can call OpenAI and local OpenAI-compatible chat
-  completion endpoints. Provider connection records store credential secret
-  reference ids, and secret resolvers exist, but the current provider test path
-  does not automatically resolve those credentials into live probes. Treat local
-  and mocked probes as ready out of the box; for live OpenAI runtime calls,
-  verify your deployment passes a resolved credential to the gateway.
+  completion endpoints. Provider connection records store ordered safe
+  credential secret reference ids. Provider probes and runtime gateway attempts
+  resolve the first configured reference through the configured secret provider
+  at call time, never at save time. OpenAI calls fail closed when a credential
+  reference is missing or cannot be resolved. Local OpenAI-compatible providers
+  may run without credentials only when the endpoint passes the configured local
+  allowlist.
 
 These notes are not warnings to avoid the system. They are the boundaries to
 know when moving from local evaluation to a production deployment.
@@ -128,6 +142,28 @@ areas:
 - Spec 019, operations console logs and performance: health, capacity, provider
   and channel status, reliability pressure, redacted logs, bounded filters, and
   CSV operational exports.
+- Spec 020, workflow graph execution and parallel sub-agent runtime: pinned
+  bundle graph loading, dependency scheduling, parallel scout waves, join
+  policies, durable run-step evidence, checkpoint/resume safety, and safe final
+  outputs.
+- Spec 021, real skill tool execution connectors: SkillExecutionGateway,
+  read-only Daily Briefing adapters, tool/outbound/credential policy decisions,
+  mock diagnostics, live-probe gating, and redacted request/response summaries.
+- Spec 022, Telegram natural-language trigger delivery persistence: tenant
+  command aliases, persistent link tokens and identities, webhook idempotency,
+  alias-triggered workflow runs, mocked-safe Bot API delivery, and delivery
+  attempts.
+- Spec 023, user briefing preferences and context: tenant/principal Daily
+  Briefing preference profiles, immutable revisions, safe admin summaries,
+  import/export, and runtime preference resolution.
+- Spec 024, automatic test bench evidence integration in workflow publish
+  gates: repository-backed required-test evidence, current draft-revision
+  matching, stale/missing/failing blockers, safe publish gate summaries, and
+  legacy manual status compatibility without trust.
+- Spec 025, live model credential resolution for gateway calls: call-time
+  ProviderSecretResolver use in probes and runtime, OpenAI fail-closed
+  credential behavior, local no-auth allowlist behavior, and redaction-safe
+  diagnostics.
 
 ## 1. Overview
 
@@ -145,13 +181,19 @@ The system has several major capabilities:
 - Workflow registry and workflow builder pages for creating draft workflows,
   validating graphs and references, reviewing revisions, and publishing
   immutable workflow bundles.
+- Published workflow graph execution for role nodes, sub-agent nodes, joins,
+  approvals, terminal nodes, parallel fanout, partial failures, and durable
+  checkpoint/resume evidence.
 - Durable orchestration models for workflow runs, steps, worker leases,
   checkpoints, handoffs, approvals, side-effect intents, audit events, and
   retention metadata.
 - Immutable memory models for append-only memory scopes, version lineage,
   current head projections, read/write audit records, archive markers, and
   runtime references.
-- User interaction channels for Web UI, Web API, and Telegram command access.
+- User interaction channels for Web UI, Web API, Telegram command access, and
+  tenant-scoped Telegram aliases such as `Morning briefing`.
+- Daily Intelligence Briefing preference profiles that personalize on-demand
+  and future scheduled briefing workflows while preserving safe admin views.
 - Model and skill routing configuration with tenant, workflow, agent, and step
   precedence.
 - Model provider gateway management for OpenAI and local OpenAI-compatible
@@ -161,8 +203,11 @@ The system has several major capabilities:
 - Skill registry lifecycle pages for package publication, tenant availability,
   tenant installation, credential readiness, smoke-test evidence, and binding
   eligibility.
+- Governed skill tool execution for approved read-only Daily Briefing
+  connectors with policy checks, redacted summaries, and diagnostics.
 - Agent and workflow test bench for safe mock, mocked-tool, and approved probe
-  test runs.
+  test runs, including repository-backed required evidence for workflow publish
+  gates.
 - Production audit/debugging surfaces for run search, timeline, replay, lineage,
   bundle snapshots, export evidence, and redaction-safe investigation.
 - Reliability controls for admission, quotas, retries, circuit breakers,
@@ -186,10 +231,16 @@ A complete local setup has:
 - Optionally, a worker process running in a second terminal.
 - A model provider configured, either local or OpenAI.
 - At least one prompt version and one agent runtime profile.
+- Optional Daily Intelligence Briefing preference profiles for tenant users.
 - At least one workflow draft that validates and publishes.
+- Current passing test-bench evidence for any workflow draft that declares
+  required suites.
 - Optional skill packages and tenant installations.
+- Optional Skill Tool Diagnostics showing all Daily Briefing tools ready in
+  mock mode.
 - Optional test bench suite with passing evidence.
-- Optional Telegram configuration and identity link.
+- Optional Telegram configuration, command aliases, identity link, and delivery
+  attempts.
 - Audit, usage, and operations pages available for troubleshooting.
 
 ### Install The Project
@@ -294,9 +345,14 @@ Important browser pages:
 - `/admin/prompt-runtime/profiles` - agent and sub-agent runtime profiles.
 - `/admin/skill-registry/ui/packages` - skill package lifecycle.
 - `/admin/skill-registry/ui/installations` - tenant skill installations.
+- `/admin/skill-execution/ui/diagnostics` - governed Daily Briefing tool
+  diagnostics.
 - `/admin/agent-tests/ui` - agent and workflow test bench.
 - `/admin/usage` - token usage and cost analytics.
-- `/admin/telegram` - Telegram configuration console.
+- `/admin/telegram` - Telegram configuration, aliases, identities, link tokens,
+  diagnostics, and delivery evidence.
+- `/admin/briefing-preferences` - Daily Intelligence Briefing user
+  preferences and safe summaries.
 - `/admin/operations` - operations console for health and redacted logs.
 - `/admin/reliability/ui/` - reliability and queue controls.
 - `/admin/runs` - production run inspection and debug search.
@@ -388,6 +444,7 @@ export LOCAL_PRINCIPAL_CATALOG_JSON='{
       "skill-registry:publish",
       "skill-registry:quarantine",
       "skill-registry:audit",
+      "skill-execution:read",
       "agent-tests:manage",
       "agent-tests:run",
       "agent-tests:read",
@@ -398,6 +455,10 @@ export LOCAL_PRINCIPAL_CATALOG_JSON='{
       "telegram-config:write",
       "telegram-config:tokens",
       "telegram-config:diagnostics",
+      "briefing-preferences:read",
+      "briefing-preferences:write",
+      "briefing-preferences:export",
+      "briefing-preferences:resolve",
       "operations:read",
       "operations:logs",
       "operations:export"
@@ -415,6 +476,7 @@ export LOCAL_PRINCIPAL_CATALOG_JSON='{
       "skill-registry:install",
       "skill-registry:bind",
       "skill-registry:audit",
+      "skill-execution:read",
       "agent-tests:manage",
       "agent-tests:run",
       "agent-tests:read",
@@ -424,7 +486,11 @@ export LOCAL_PRINCIPAL_CATALOG_JSON='{
       "telegram-config:read",
       "telegram-config:write",
       "telegram-config:tokens",
-      "telegram-config:diagnostics"
+      "telegram-config:diagnostics",
+      "briefing-preferences:read",
+      "briefing-preferences:write",
+      "briefing-preferences:export",
+      "briefing-preferences:resolve"
     ]
   },
   "auditor": {
@@ -617,6 +683,12 @@ safe labels like `env:` or `secret-manager/` in production for readiness
 validation, so deployments that also resolve those labels should provide a
 resolver or convention that maps the label to the real secret value.
 
+Model provider records must store only safe credential secret reference ids.
+Provider probes and runtime gateway calls select the first configured reference
+in stored order and resolve it immediately before the adapter call. Blank,
+duplicate, or raw-secret-looking entries such as direct `sk-` keys, bearer
+tokens, passwords, and pasted API keys are rejected by provider validation.
+
 ### OpenAI Provider Setup
 
 OpenAI providers are configured at `/admin/model-providers`. Sign in as a
@@ -641,11 +713,13 @@ Recommended fields:
   that your resolver maps the label before live calls.
 - Active: enable only after the connection is reviewed.
 
-Important current-state note: provider records store credential references, but
-the current provider test path does not automatically resolve and inject a live
-OpenAI credential. Local and mocked probes work directly. Before relying on live
-OpenAI calls in production, verify that your runtime integration resolves the
-secret reference and passes the credential to `ModelGateway.invoke`.
+OpenAI provider probes and runtime calls require a resolvable credential
+reference. If the first configured reference is missing, empty, or cannot be
+resolved by the configured secret provider, the probe or gateway attempt fails
+before any provider call with the safe category `secret_reference_invalid`.
+Diagnostics show the provider, model, connection id, trace id, and reference id;
+they do not show authorization headers, prompt bodies, completion bodies, or the
+raw credential value.
 
 ### Local Model Setup
 
@@ -690,6 +764,11 @@ If the curl command fails, fix the local model server before changing platform
 settings. If the curl command works but the platform rejects the provider URL,
 check `MODEL_PROVIDER_LOCAL_ALLOWED_HOSTS`, `MODEL_PROVIDER_LOCAL_ALLOWED_PORTS`,
 and `MODEL_PROVIDER_LOCAL_ALLOWED_CIDRS`.
+
+Local OpenAI-compatible providers may omit credentials only when the base URL
+passes the local endpoint allowlist. If a credential reference is configured,
+the gateway resolves it at call time and passes it only to the adapter request
+for that physical attempt.
 
 ### Model Routing
 
@@ -761,6 +840,43 @@ from separate prompts, models, skills, or test requirements. Avoid making every
 step a sub-agent; each additional profile increases routing, testing, and
 operational complexity.
 
+### Daily Briefing Preferences
+
+Daily Intelligence Briefing preferences live at `/admin/briefing-preferences`.
+They store one active profile per tenant/principal, with immutable revisions and
+a current head projection for fast runtime lookup.
+
+Useful API endpoints are:
+
+- `/admin/briefing-preferences/api/profile`
+- `/admin/briefing-preferences/api/summaries`
+- `/admin/briefing-preferences/api/export`
+- `/admin/briefing-preferences/api/import`
+- `/admin/briefing-preferences/api/resolve`
+
+User-editable fields include:
+
+- Location label and IANA timezone.
+- News topics.
+- VIP sender hints.
+- Workday start and end time in `HH:MM`.
+- Commute mode.
+- Default calendar and email account references.
+- Output style.
+- Optional scheduled briefing toggle and scheduled time.
+
+Calendar and email fields must be references such as
+`delegated:calendar:primary`, `delegated:gmail:primary`, or another approved
+secret/delegated reference. Do not enter OAuth tokens, API keys, passwords, raw
+account identifiers, or customer-private credential values. Admin summaries show
+readiness, counts, masked/fingerprinted values, revision metadata, and
+timestamps rather than raw VIP senders or full account references.
+
+When Telegram or another channel starts a Daily Intelligence Briefing run, the
+runtime resolver can attach the latest preference revision and content digest to
+the run input. Updates affect future runs only; already-started runs keep the
+preference context pinned at creation time.
+
 ### Workflow Setup From Start To Finish
 
 Use `/admin/workflows/ui` for the guided browser flow.
@@ -791,9 +907,22 @@ Use `/admin/workflows/ui` for the guided browser flow.
 
 Workflow validation is intentionally strict. It checks graph structure,
 reference visibility, exact skill versions, secret-like text markers, approval
-scope, join strategies, and publish gate evidence. Skill references should use
-specific immutable versions rather than floating labels such as `latest`,
-`main`, or `dev`.
+scope, join strategies, and publish gate evidence. Required test evidence is
+loaded from the Agent Test Bench repository for the same tenant, workflow draft,
+and current draft revision. Legacy `latest_result_status` fields remain
+parseable compatibility metadata, but they should not be treated as release
+evidence unless repository-backed current passing test runs also exist. Skill
+references should use specific immutable versions rather than floating labels
+such as `latest`, `main`, or `dev`.
+
+When a published workflow run is claimed by the durable worker, the graph
+executor loads the pinned bundle document and runs graph nodes in dependency
+order. Independent role nodes can run in the same parallel wave. The Daily
+Intelligence Briefing flagship graph starts with an orchestrator, fans out to
+four scout sub-agents, joins their safe summaries, runs a focus recommender, and
+then runs synthesis to produce the final briefing. Join policies include
+`all_success`, `quorum`, `first_success`, and `manual_resolution`; manual
+resolution pauses the run with durable approval and timeline evidence.
 
 ### Skills
 
@@ -844,6 +973,36 @@ Current-state reminder: complete skill package and tenant installation flows in
 one API session unless your deployment has replaced the in-memory service with a
 persistent registry service.
 
+### Skill Tool Execution
+
+Runtime nodes should call approved tools through the SkillExecutionGateway, not
+by importing adapters directly. The gateway accepts a typed request with tenant,
+actor, workflow run, role node, skill package version, tool name, execution
+mode, and output contract metadata. It checks installation/version eligibility,
+model-skill tool policy, outbound allowlist policy, side-effect policy,
+credential metadata, and credential tenant ownership before adapter invocation.
+
+The first built-in read-only tools are for the Daily Intelligence Briefing:
+
+- `google_calendar.events.read`
+- `gmail.messages.read`
+- `news.search`
+- `weather.forecast.read`
+- `commute.lookup`
+
+Open `/admin/skill-execution/ui/diagnostics` to run safe mock diagnostics. The
+page should show all five tool families, mode `mock`, readiness, redacted
+credential status, allowed domains, latest safe summaries, and policy decisions.
+The API endpoints are `/admin/skill-execution/api/diagnostics` and
+`/admin/skill-execution/api/diagnostics/run`.
+
+Local QA does not call Google, Gmail, news, weather, traffic, or maps services.
+Approved live probes are staging-style checks and require non-local environment
+policy, tenant-scoped skill installation readiness, delegated credential or
+secret-reference metadata, and outbound allow decisions. Write-capable or
+side-effecting tool requests are blocked by default unless a future explicit
+policy allows the exact operation.
+
 ## 4. Test Bench
 
 The agent and workflow test bench lives at `/admin/agent-tests/ui`. It lets
@@ -892,15 +1051,32 @@ bodies, full private transcripts, and unauthorized tenant data.
 ### Publish Gate Use
 
 Publish gates can require current passing test evidence before a workflow,
-prompt profile, or related target is published. If a publish gate blocks, open
-the test bench run detail and confirm:
+prompt profile, or related target is published. Workflow publish gates read
+required-suite evidence from the Agent Test Bench repository; admins should not
+copy status values into workflow JSON to satisfy the gate. For workflow drafts,
+current evidence means the same tenant, the same workflow draft id, the same
+current draft revision id, a matching target type, and a passing run.
+
+If a publish gate blocks, open the test bench run detail and confirm:
 
 - The suite target matches the current candidate.
-- The latest run is current, not stale.
+- The latest run is current, not stale, queued, running, failed, blocked, or
+  tied to an older revision.
 - The run passed the configured threshold.
 - Fixture summaries are valid and safe.
 - Contract assertions match the current workflow or profile output.
 - Any approved real probe includes a valid approved probe reference.
+- The publish gate's required-test summary shows the expected required,
+  passing, missing, failing, and stale counts.
+
+In the workflow publish gate UI, this appears as the required-test or Required
+Test Evidence summary. A blocked summary should disable publish confirmation
+and provide safe remediation text.
+
+Publication performs a fresh evidence lookup after validation so a workflow
+cannot publish with stale validation JSON. Cross-tenant suite references fail
+closed and must not reveal the other tenant's suite name, run id, fixtures,
+transcripts, prompts, secrets, or artifacts.
 
 ### Test Bench Troubleshooting
 
@@ -980,13 +1156,19 @@ When reviewing a run, look for:
 
 - The published workflow bundle id.
 - The execution bundle pin.
+- The graph load event and graph schema/version.
 - Step status transitions.
+- Parallel execution wave markers.
+- Role kind, agent key, sub-agent key, and node key metadata.
 - Approval gate status.
+- Join policy decisions and partial failure summaries.
 - Side-effect intent status.
 - Handoff envelopes.
+- Checkpoint references and resume markers.
 - Worker lease acquisition and renewal.
 - Retry and breaker summaries.
 - Model gateway attempts.
+- Skill tool execution summaries.
 - Usage event ids.
 - Export events.
 - Redaction markers.
@@ -1015,11 +1197,15 @@ If provider setup fails:
 - Confirm the provider is active.
 - Confirm the tenant can see the provider.
 - Confirm the model id is listed in the connection catalog.
+- Confirm OpenAI providers have at least one safe credential reference.
+- Confirm the first configured credential reference resolves through the
+  configured secret provider.
 - Confirm local provider base URL uses an allowed scheme, host, port, and CIDR.
 - Confirm OpenAI custom base URLs use HTTPS.
 - Confirm no URL userinfo or secret-like query parameters are present.
 - Confirm timeout settings are within configured min and max values.
-- Confirm credential resolution is wired in your runtime for live OpenAI calls.
+- Confirm failures show safe categories such as `secret_reference_invalid`
+  without raw headers, prompt bodies, completion bodies, or credential values.
 
 If token usage does not appear, check whether the call went through
 `ModelGateway.record_gateway_result` and whether a tenant id was present. Usage
@@ -1040,9 +1226,44 @@ If workflow validation fails:
 - Remove secret-like values from workflow definitions.
 - Confirm approval gates use supported scopes.
 - Confirm join policies use supported strategies.
+- Confirm required test suites have current same-tenant passing repository
+  evidence for the current draft revision.
 
 If publish is blocked, open the publish gate page and review missing test,
 validation, reference, skill, prompt, profile, or provider readiness evidence.
+Manual `latest_result_status` values in older workflow documents may still be
+visible, but they are not enough by themselves; rerun the required suite against
+the current draft revision and validate again.
+
+### Skill Tool Debugging
+
+Use `/admin/skill-execution/ui/diagnostics` when Daily Briefing tools do not
+appear ready or a role node reports a tool denial. Check:
+
+- The requested tool name is one of the installed and supported tools.
+- The tenant has the skill installation and exact version required by the
+  workflow/profile.
+- Tool policy allows the operation.
+- Outbound policy allows the provider domain.
+- Credential metadata exists and belongs to the same tenant.
+- Execution mode is allowed for the environment.
+- The request is read-only or explicitly allowed by policy.
+- Summaries contain redaction markers rather than raw provider payloads.
+
+### Briefing Preference Debugging
+
+Use `/admin/briefing-preferences` when a Daily Intelligence Briefing is missing
+personal context. Check:
+
+- The profile exists for the linked tenant/principal.
+- Timezone is a valid IANA value.
+- Workday and scheduled times use `HH:MM`.
+- Calendar and email fields are safe references, not raw credentials.
+- Admin summaries mask VIP senders and account references.
+- The runtime resolver returns a revision id and content digest for future run
+  input pinning.
+- Cross-tenant reads fail closed and do not reveal whether another tenant's raw
+  profile exists.
 
 ### Auth Debugging
 
@@ -1065,16 +1286,24 @@ For Web API and Web UI run channels:
 - Check `/runs/{run_id}/status`.
 - Check `/runs/{run_id}/timeline`.
 - Remember that current channel run state is process-local.
-- Restarting the API clears in-memory channel runs and Telegram link tokens.
+- Restarting the API can clear process-local Web UI/API run state. Telegram
+  alias records, link token audits, linked identities, update receipts, and
+  delivery attempts are persisted after migrations run.
 
 For Telegram:
 
 - Confirm tenant Telegram config is enabled.
 - Confirm `TELEGRAM_WEBHOOK_SECRET` matches the webhook path.
 - Confirm provider readiness in `/admin/telegram`.
+- Confirm the alias is enabled, tenant scoped, and normalized as expected.
+- Confirm protected aliases require an active linked identity.
 - Confirm link token has not expired.
 - Confirm the Telegram identity is linked to the right tenant principal.
 - Confirm the user uses protected commands only after `/link`.
+- Confirm duplicate webhook updates replay from the update receipt instead of
+  creating a second run.
+- Confirm final delivery attempts show safe destination fingerprints, retry
+  status, and provider correlation references.
 - Use local webhook validation only as a local diagnostic, not as proof that
   Telegram accepted a real public webhook.
 
@@ -1218,6 +1447,30 @@ The recommended flow is to create a one-time link token from the platform, send
 `/link TOKEN` through Telegram, then use protected commands. Link tokens expire
 based on `TELEGRAM_LINK_TOKEN_TTL_SECONDS`.
 
+Tenants can also configure natural-language aliases in `/admin/telegram`. An
+alias is a tenant-scoped exact match after trimming, case folding, and whitespace
+normalization. For example, `Morning briefing` and `/briefing` can both point to
+a published Daily Intelligence Briefing workflow version. Protected aliases
+require an active linked Telegram identity before they start a run.
+
+When a linked user sends an enabled alias, the webhook checks tenant Telegram
+readiness, provider readiness, linked identity status, alias policy, and update
+idempotency. Duplicate Telegram updates replay the stored safe response instead
+of creating duplicate runs. When an alias-triggered run reaches a final state,
+the Telegram delivery boundary formats either the final result or a concise
+partial-failure note and sends it back to the originating chat. Delivery
+attempts store safe destination fingerprints, provider correlation references,
+retry metadata, trace ids, and redacted status only.
+
+### Briefing Preferences
+
+The Daily Intelligence Briefing preference resolver can be used by Telegram,
+Web API, or future scheduler triggers. It resolves the latest profile by
+tenant/principal, returns private runtime context plus safe metadata, and emits
+audit evidence for resolved, missing, and denied outcomes. Missing profiles
+should produce a typed setup-needed result rather than letting an orchestrator
+guess location, timezone, accounts, or output style.
+
 ### Callbacks And Webhooks To Other Systems
 
 External systems can register callbacks for workflow run events through the Web
@@ -1245,6 +1498,9 @@ Model providers are configured through the gateway. Skills and tools are
 configured through the governed skill registry and model-skill configuration.
 Outbound domains, credential requirements, and allowed tools should be
 deny-by-default and granted only to the tenants and workflows that require them.
+Model credentials resolve through safe secret references at probe and runtime
+call time. Tool calls go through SkillExecutionGateway policy checks and return
+contract-shaped safe outputs.
 
 ## 8. Environment Variables
 
@@ -1656,8 +1912,10 @@ Stores the secret reference for the Telegram bot token. In production, this must
 start with `env:` or `secret-manager/` when provided. Example:
 `TELEGRAM_PROVIDER_TOKEN_REF=env:TELEGRAM_BOT_TOKEN` is treated as a safe
 production label by Telegram readiness checks; if your deployment resolves that
-token inside the platform, make sure the resolver maps the label to the real
-secret value.
+token inside the platform for webhook registration or final-result delivery,
+make sure the resolver maps the label to the real secret value. Runtime and
+diagnostic records should store only the safe reference, fingerprints, provider
+correlation ids, and status categories.
 
 #### `TELEGRAM_LINK_TOKEN_TTL_SECONDS`
 
@@ -1735,18 +1993,24 @@ flowchart TD
     FastAPI --> PromptProfiles["Prompt Library\nAgent Runtime Profiles"]
     FastAPI --> ModelConfig["Model and Skill Routing"]
     FastAPI --> SkillRegistry["Skill Registry\nPackages and Installations"]
+    FastAPI --> SkillExecution["Skill Execution Gateway\nRead-Only Connectors"]
     FastAPI --> RuntimeAPI["Runtime and Channel Run APIs"]
     FastAPI --> TestBench["Agent Workflow Test Bench"]
     FastAPI --> Usage["Usage and Cost Analytics"]
     FastAPI --> Ops["Operations, Audit, Reliability"]
     FastAPI --> Memory["Immutable Memory"]
+    FastAPI --> BriefingPrefs["Briefing Preferences\nProfiles and Revisions"]
 
     RuntimeAPI --> Worker["Worker Process"]
-    Worker --> LangGraph["LangGraph Runtime\nCheckpoints"]
+    Worker --> GraphExecutor["Published Bundle\nGraph Executor"]
+    GraphExecutor --> LangGraph["LangGraph Runtime\nCheckpoints"]
+    GraphExecutor --> SkillExecution
     Worker --> ModelGateway["Model Gateway"]
     TestBench --> ModelGateway
+    ModelGateway --> SecretResolver["Provider Secret Resolver"]
     ModelGateway --> OpenAI["OpenAI Provider"]
     ModelGateway --> LocalModel["Local OpenAI-Compatible Provider"]
+    SecretResolver --> Secrets["Secret Provider\nstatic, env, or manager"]
 
     FastAPI --> DB["PostgreSQL"]
     Worker --> DB
@@ -1754,6 +2018,7 @@ flowchart TD
     Usage --> DB
     Ops --> DB
     Memory --> DB
+    BriefingPrefs --> DB
 
     FastAPI --> Storage["Artifact Storage\nFilesystem or S3"]
     Worker --> Storage
@@ -1777,15 +2042,21 @@ Component responsibilities:
 - Workflow registry stores drafts, revisions, validation results, published
   bundles, and sharing grants.
 - Runtime and workers coordinate workflow execution, leases, approvals,
-  handoffs, side effects, checkpoints, and run timelines.
+  graph scheduling, parallel sub-agent waves, joins, handoffs, side effects,
+  checkpoints, and run timelines.
 - Model gateway centralizes provider invocation, normalized errors, latency,
-  retry/breaker metadata, and usage capture.
+  retry/breaker metadata, usage capture, and call-time credential resolution.
 - Prompt and profile management governs immutable prompt versions and agent or
   sub-agent runtime profiles.
 - Skill registry governs tool availability, package publication, tenant
   installation, credentials, smoke tests, and binding eligibility.
+- Skill execution gateway runs approved read-only connectors through policy,
+  credential metadata, outbound checks, and redacted summaries.
 - Test bench provides safe evidence before prompts, agents, sub-agents, or
-  workflows are published or used.
+  workflows are published or used, and workflow publish gates query that
+  repository-backed evidence directly.
+- Briefing preferences store tenant/principal Daily Briefing context with
+  immutable revisions and safe runtime resolution.
 - Operations, audit, usage, and reliability surfaces support troubleshooting,
   compliance, and cost control.
 
@@ -1800,8 +2071,10 @@ sequenceDiagram
     participant Auth as Auth Service
     participant Runtime as Runtime Service
     participant Worker
+    participant Graph as Graph Executor
     participant Registry as Workflow Registry
     participant Gateway as Model Gateway
+    participant Secrets as Provider Secret Resolver
     participant LLM as OpenAI or Local Model
     participant Usage as Usage Analytics
     participant Audit as Audit and Timeline
@@ -1815,13 +2088,17 @@ sequenceDiagram
     Runtime->>Audit: Record run accepted event
     Runtime-->>User: Return run id and trace id
     Worker->>Runtime: Claim eligible run or step
-    Worker->>Registry: Resolve prompt, profile, model, skill references
-    Worker->>Gateway: Invoke selected provider/model
+    Worker->>Graph: Load pinned bundle graph
+    Graph->>Registry: Resolve prompt, profile, model, skill, and test pins
+    Graph->>Graph: Schedule ready nodes and joins
+    Graph->>Gateway: Invoke selected provider/model for a role node
+    Gateway->>Secrets: Resolve first safe credential reference
+    Secrets-->>Gateway: Call-time credential or safe failure
     Gateway->>LLM: Chat completion request
     LLM-->>Gateway: Completion and usage metadata
     Gateway->>Usage: Record token and cost event
-    Gateway-->>Worker: Normalized model result
-    Worker->>Runtime: Store step result and timeline event
+    Gateway-->>Graph: Normalized model result
+    Graph->>Runtime: Store step result, checkpoint, handoff, timeline event
     Runtime->>Audit: Record status, side-effect, approval, and trace evidence
     User->>Web: Poll status, timeline, or result
     Web->>Runtime: Read run state
@@ -1838,9 +2115,11 @@ sequenceDiagram
     participant Webhook as Platform Telegram Webhook
     participant Channel as Channel Service
     participant Auth as Linked Identity
+    participant Prefs as Briefing Preferences
     participant Runtime as Runtime Service
     participant Worker
     participant Gateway as Model Gateway
+    participant Delivery as Bot API Delivery
     participant Admin as Telegram Admin Console
 
     Person->>Telegram: /link one-time-token
@@ -1848,22 +2127,25 @@ sequenceDiagram
     Webhook->>Channel: Validate webhook secret and token
     Channel->>Auth: Link Telegram identity to platform principal
     Channel-->>Person: Link confirmed
-    Person->>Telegram: /run workflow_id request text
+    Admin->>Channel: Save Morning briefing alias to published workflow version
+    Person->>Telegram: Morning briefing
     Telegram->>Webhook: Webhook update
-    Webhook->>Channel: Parse command
+    Webhook->>Channel: Normalize text and replay idempotency receipt if duplicate
     Channel->>Auth: Resolve linked identity and tenant
-    Channel->>Runtime: Start run with Telegram channel metadata
+    Channel->>Prefs: Resolve latest tenant/principal preference revision
+    Prefs-->>Channel: Runtime context or safe missing-profile result
+    Channel->>Runtime: Start alias run with Telegram and preference metadata
     Runtime-->>Channel: Run id
     Channel-->>Person: Run accepted with run id
     Worker->>Runtime: Claim run
     Worker->>Gateway: Invoke configured model
     Gateway-->>Worker: Result
     Worker->>Runtime: Complete run
-    Person->>Telegram: /result run_id
-    Telegram->>Webhook: Webhook update
-    Webhook->>Channel: Fetch result for linked principal
-    Channel-->>Person: Redacted result or status
-    Admin->>Channel: Review readiness, identities, link tokens, diagnostics
+    Runtime-->>Channel: Final result or partial-failure summary
+    Channel->>Delivery: Send safe final text to originating chat
+    Delivery-->>Telegram: sendMessage through Bot API boundary
+    Channel->>Admin: Persist delivery attempt, fingerprints, diagnostics
+    Admin->>Channel: Review aliases, readiness, identities, receipts, delivery attempts
 ```
 
 #### Human Approval Gate
@@ -2041,6 +2323,7 @@ erDiagram
         string provider_type
         string display_name
         string base_url
+        json credential_secret_reference_ids
         string visibility
         string health_state
         bool active
@@ -2102,8 +2385,14 @@ erDiagram
     AGENT_TEST_SUITES ||--o{ AGENT_TEST_RUNS : executes
     AGENT_TEST_RUNS ||--o{ AGENT_TEST_RUN_STEPS : records
     TENANTS ||--o{ TELEGRAM_TENANT_CONFIGS : configures
+    TELEGRAM_TENANT_CONFIGS ||--o{ TELEGRAM_COMMAND_ALIASES : routes
     TELEGRAM_TENANT_CONFIGS ||--o{ TELEGRAM_LINK_TOKEN_AUDITS : issues
     TELEGRAM_TENANT_CONFIGS ||--o{ TELEGRAM_IDENTITY_LINKS : links
+    TELEGRAM_TENANT_CONFIGS ||--o{ TELEGRAM_UPDATE_RECEIPTS : deduplicates
+    TELEGRAM_TENANT_CONFIGS ||--o{ TELEGRAM_DELIVERY_ATTEMPTS : sends
+    TENANTS ||--o{ BRIEFING_PREFERENCE_PROFILES : owns
+    BRIEFING_PREFERENCE_PROFILES ||--o{ BRIEFING_PREFERENCE_REVISIONS : versions
+    BRIEFING_PREFERENCE_PROFILES ||--o{ BRIEFING_PREFERENCE_AUDIT_EVENTS : audited_by
     TENANTS ||--o{ CHANNEL_SESSIONS : owns
     CHANNEL_SESSIONS ||--o{ NOTIFICATION_SUBSCRIPTIONS : subscribes
 
@@ -2147,12 +2436,50 @@ erDiagram
         bool enabled
         string readiness_state
     }
+    TELEGRAM_COMMAND_ALIASES {
+        uuid alias_id PK
+        uuid tenant_id FK
+        string alias_text
+        string normalized_alias_key
+        uuid workflow_version_bundle_id
+        bool protected
+        bool enabled
+    }
     TELEGRAM_IDENTITY_LINKS {
         uuid identity_id PK
         uuid tenant_id FK
         string telegram_user_hash
         string principal_ref
         string status
+    }
+    TELEGRAM_UPDATE_RECEIPTS {
+        uuid receipt_id PK
+        uuid tenant_id FK
+        string update_id
+        string response_fingerprint
+        string status
+    }
+    TELEGRAM_DELIVERY_ATTEMPTS {
+        uuid delivery_attempt_id PK
+        uuid tenant_id FK
+        uuid workflow_run_id FK
+        string destination_fingerprint
+        string delivery_status
+        int attempt_number
+    }
+    BRIEFING_PREFERENCE_PROFILES {
+        uuid profile_id PK
+        uuid tenant_id FK
+        string principal_ref
+        uuid current_revision_id FK
+        string readiness_state
+    }
+    BRIEFING_PREFERENCE_REVISIONS {
+        uuid revision_id PK
+        uuid profile_id FK
+        int revision_sequence
+        string content_digest
+        timestamp created_at
     }
 ```
 
@@ -2229,10 +2556,10 @@ An Acme user should be able to:
 
 1. Open Telegram.
 2. Link their Telegram account to their platform identity.
-3. Start a workflow from Telegram.
+3. Start a published workflow from a tenant alias such as `Morning briefing`.
 4. Check status.
 5. Approve a waiting workflow step.
-6. Fetch the final result.
+6. Receive the final result in the same Telegram chat.
 
 #### Step 1: Create A Telegram Bot
 
@@ -2313,15 +2640,29 @@ Review provider readiness. The console should show whether the global provider
 token reference and webhook secret are configured. Local webhook validation is a
 diagnostic only; it does not prove Telegram has accepted a public webhook.
 
-#### Step 5: Enable Tenant Telegram Configuration
+#### Step 5: Enable Tenant Telegram Configuration And Alias
 
 In `/admin/telegram`, enable Telegram for Acme. Configure command availability
 according to your policy. Protected commands such as `/run`, `/status`,
-`/result`, and approvals should require a linked identity.
+`/result`, and approvals should require a linked identity. Protected aliases
+should also require a linked identity.
 
 If using the API, use the `/admin/telegram/api/config` endpoint with platform or
 tenant admin credentials. Keep tenant id explicit so you do not accidentally
 configure the wrong tenant.
+
+Create an alias for the published briefing workflow:
+
+- Alias text: `Morning briefing`.
+- Optional command alias: `/briefing`.
+- Workflow version: the published workflow version/bundle id to run.
+- Protected: enabled.
+- Enabled: enabled.
+
+The admin page shows `Telegram Command Aliases`. The API endpoint is
+`/admin/telegram/api/aliases`. Alias matching is exact after trimming,
+whitespace normalization, and case folding, so `morning   briefing` routes like
+`Morning briefing`, but fuzzy intent matching is not part of this flow.
 
 #### Step 6: Configure The Public Webhook
 
@@ -2351,18 +2692,42 @@ The user sends this in Telegram:
 ```
 
 After success, the platform stores a masked/safe identity summary and audit
-record. The admin console should show the linked identity without exposing raw
-private Telegram message contents.
+record in PostgreSQL. The raw token is shown only when issued; refreshed admin
+views should show only a fingerprint. The admin console should show the linked
+identity without exposing raw private Telegram message contents.
 
-#### Step 8: Run A Workflow From Telegram
+#### Step 8: Save Briefing Preferences
 
-The user can now send:
+For Daily Intelligence Briefing, open `/admin/briefing-preferences` as the Acme
+user and save a profile before testing the alias. At minimum, configure:
+
+- Location and timezone.
+- News topics and VIP sender hints.
+- Workday hours and commute mode.
+- Calendar and email account references.
+- Output style.
+
+The runtime resolver attaches the latest preference revision to future briefing
+runs. Admin summaries should show masked values and counts rather than raw VIP
+senders or full account references.
+
+#### Step 9: Run A Telegram Alias
+
+The user can now send either configured alias:
 
 ```text
-/run published-demo-workflow summarize the weekly sales notes
+Morning briefing
 ```
 
-The platform replies with a run id. The user can check:
+or:
+
+```text
+/briefing
+```
+
+The platform replies with a run id after it checks the webhook secret, update
+idempotency, tenant Telegram readiness, alias status, linked identity, and
+preference resolver context. The user can check:
 
 ```text
 /status RUN_ID
@@ -2381,23 +2746,31 @@ After completion:
 /artifacts RUN_ID
 ```
 
-#### Step 9: Troubleshoot Telegram
+For alias-triggered runs, the platform also attempts to deliver the final
+briefing or a concise partial-failure note to the originating chat through the
+Telegram Bot API boundary. Local QA uses a mocked Bot API client but still
+persists safe delivery-attempt evidence.
+
+#### Step 10: Troubleshoot Telegram
 
 If `/link` fails:
 
 - Confirm the token has not expired.
 - Confirm the token was generated for the correct tenant and principal.
-- Confirm the API process has not restarted if you are using the current
-  in-memory channel link-token flow.
+- Confirm the token has not already been consumed or revoked.
 - Confirm the webhook secret in the URL matches `TELEGRAM_WEBHOOK_SECRET`.
 
-If `/run` fails:
+If an alias such as `Morning briefing` fails:
 
 - Confirm the user linked first.
 - Confirm the tenant Telegram config is enabled.
-- Confirm the workflow id is valid and visible to the tenant.
+- Confirm the alias is enabled, protected as intended, and points to a valid
+  published workflow version visible to the tenant.
 - Confirm the user's platform identity has permission to start that workflow.
+- Confirm the briefing preference profile exists if the workflow requires it.
 - Confirm current channel rate limits are not blocking requests.
+- Confirm duplicate Telegram update ids replay the prior response rather than
+  creating new runs.
 
 If the bot does not receive messages:
 
@@ -2411,18 +2784,21 @@ If the bot does not receive messages:
 If results or artifacts are missing:
 
 - Confirm the run completed.
+- Confirm a Telegram delivery attempt exists for alias-triggered final output.
 - Confirm artifact storage is configured and writable.
 - Confirm artifact URL TTL has not expired.
 - Confirm the requesting Telegram identity belongs to the same tenant and is
   authorized for the run.
 
-#### Step 10: Operate Safely
+#### Step 11: Operate Safely
 
 Rotate the Telegram bot token if it is exposed. Rotate the webhook secret if a
 public URL leaks. Review linked identities regularly and revoke stale links from
-the Telegram admin console.
+the Telegram admin console. Disable aliases that should no longer start
+workflows, and review delivery attempts for repeated retrying or failed states.
 
 For production, pair Telegram setup with Auth0 identities, tenant role grants,
-callback signing secrets, artifact TTL limits, audit exports, and operations
-console monitoring. Telegram should be treated as another channel into the same
-tenant-scoped workflow system, not as a separate trust boundary.
+callback signing secrets, artifact TTL limits, briefing preference governance,
+audit exports, and operations console monitoring. Telegram should be treated as
+another channel into the same tenant-scoped workflow system, not as a separate
+trust boundary.

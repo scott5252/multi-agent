@@ -1,12 +1,13 @@
 # React UI Spec Kit Roadmap
 
 Created: 2026-05-03
+Last updated: 2026-05-04
 
 This document captures a Spec Kit roadmap for replacing the current
 server-rendered admin UI with a modern React.js, TypeScript, and Vite
 experience while preserving the existing FastAPI, Auth0/local-principal,
 tenant-isolation, audit, redaction, PostgreSQL, runtime, and QA discipline
-defined by specs 001 through 019.
+defined by specs 001 through 025.
 
 Use this as a prompt source. For each proposed spec, run the commands in order:
 
@@ -24,7 +25,10 @@ SQLAlchemy 2.x, Alembic, Auth0 JWT validation, deterministic local-principal
 test mode, LangChain/LangGraph durable runtime services, audit/debugging,
 reliability controls, model gateway services, skill registry services,
 prompt/profile services, tenant membership administration, Telegram/channel
-administration, usage analytics, and operations dashboards.
+administration, usage analytics, operations dashboards, workflow graph
+execution, governed skill tool execution, Daily Intelligence Briefing
+preferences, repository-backed workflow publish evidence, and live model
+credential resolution.
 
 ### Spec Inventory Reviewed
 
@@ -50,6 +54,12 @@ administration, usage analytics, and operations dashboards.
 | 017 | Telegram configuration console: platform/tenant settings, safe secret references, webhook validation, link tokens, identities, diagnostics, and redaction. |
 | 018 | User and tenant membership administration: invitations, principals, role grants, tenant memberships, status changes, access history, and audit. |
 | 019 | Operations console: health, dependencies, capacity, provider/channel status, reliability state, latency, throughput, redacted logs, links, and exports. |
+| 020 | Workflow graph execution and parallel sub-agent runtime: published-bundle graph execution, dependency scheduling, parallel fan-out, join policies, per-node run steps, checkpoints, handoffs, approvals, timeline events, partial failures, and Daily Intelligence Briefing orchestration. |
+| 021 | Real skill tool execution connectors: governed SkillExecutionGateway, first-party read-only calendar, Gmail, news, weather, and commute adapters, model-skill and outbound policy enforcement, credential-reference hygiene, redacted summaries, and diagnostics. |
+| 022 | Telegram natural-language trigger delivery persistence: tenant aliases, protected alias identity checks, persistent link tokens and identity links, webhook idempotency, Daily Briefing alias routing, Bot API delivery boundary, and delivery attempt evidence. |
+| 023 | User briefing preferences and context: tenant/principal Daily Intelligence Briefing preference profiles, immutable revisions, safe admin summaries, import/export, runtime resolver, and private-value redaction. |
+| 024 | Automatic test-bench evidence integration in workflow publish gates: validation and publication query authoritative test-bench evidence, block missing/stale/failing/cross-tenant evidence, and render safe remediation counts. |
+| 025 | Live model credential resolution for gateway calls: provider probes and ModelGateway calls resolve safe credential references at call time through secret providers, fail closed for invalid references, and record only safe diagnostics. |
 
 ### Current Web Admin UI Reviewed
 
@@ -64,7 +74,8 @@ Important current UI mechanics:
 - `src/multi_agent_platform/api/main.py` mounts `/admin/static` and includes
   admin routers for shell, workflows, model skill config, skill registry, agent
   tests, usage, memberships, Telegram, operations, model providers, prompt
-  runtime, run inspection, reliability, and channel run UI.
+  runtime, run inspection, reliability, channel run UI, briefing preferences,
+  skill tool diagnostics, and workflow publish-gate evidence.
 - `web_admin/templates/admin_shell/base.html` supplies the shell frame, sidebar,
   topbar, scope selector, breadcrumbs, flash messages, common states, saved
   filters, and page actions.
@@ -75,7 +86,8 @@ Important current UI mechanics:
   the admin shell and domain pages.
 - Domain templates are mostly dense forms and tables. The workflow builder,
   operations console, memberships page, skill registry, provider pages, prompt
-  pages, usage dashboards, run inspection pages, and reliability pages all
+  pages, usage dashboards, Telegram configuration, briefing preferences, run
+  inspection pages, reliability pages, and diagnostic/publish-gate views all
   extend the same shell but duplicate many filter, table, action, and status
   patterns.
 - JavaScript is deliberately small today: field help modals, dirty-form
@@ -95,8 +107,9 @@ Constraints the React UI must preserve:
 - Denied or unaudited protected actions fail closed.
 - UI and API responses must not expose secrets, raw prompts, raw completions,
   raw memory content, private channel messages, raw provider responses, raw
-  stack traces, raw package payloads, raw credential values, or cross-tenant
-  details.
+  stack traces, raw package payloads, raw credential values, raw tool payloads,
+  raw test transcripts, private briefing preference values, full Telegram
+  identifiers, link tokens, or cross-tenant details.
 - PostgreSQL remains the transactional source of truth; object storage remains
   the large-artifact store.
 - Existing domain services remain authoritative. React should consume explicit
@@ -130,18 +143,18 @@ validated independently.
 
 | Proposed spec | Name | Depends on | Purpose |
 |---------------|------|------------|---------|
-| 020 | React Admin UI Foundation | 001, 002, 010 | Add Vite/React/TypeScript app infrastructure, static serving, dev proxy, auth/session bridge, generated types, tests, and parity guardrails. |
-| 021 | Modern Admin Shell And Design System | 020 | Replace the shared shell experience with a modern, accessible React shell and reusable UI components. |
-| 022 | React Admin Data Contracts And Form Patterns | 020, 021 | Standardize page envelopes, problem details, safe action results, filters, forms, validation, concurrency, and audit-aware mutations. |
-| 023 | Operations, Reliability, And Run Debug Workbench | 022, 008, 009, 019 | Give operators an intuitive triage workspace across health, logs, reliability, run timelines, and replay links. |
-| 024 | React Workflow Builder | 022, 003, 013, 015 | Create the modern graph-and-form workflow authoring experience. |
-| 025 | Model, Prompt, Profile, And Provider Governance | 022, 007, 011, 012 | Modernize provider setup, prompt/profile management, model routing preview, policy history, and provenance. |
-| 026 | React Skill Registry And Installation Lifecycle | 022, 014, 014-v2 | Modernize platform package publication and tenant installation/configuration workflows. |
-| 027 | React Agent And Workflow Test Bench | 022, 015 | Modernize suite authoring, safe run launch, results, diagnostics, and publish-gate evidence. |
-| 028 | React User And Tenant Membership Administration | 022, 018 | Modernize invitations, user directory, role grants, memberships, status changes, and access history. |
-| 029 | React Usage And Cost Analytics | 022, 016 | Modernize usage dashboards, cost summaries, rollups, drilldowns, and exports. |
-| 030 | React Channel And Telegram Administration | 022, 006, 017 | Modernize Telegram configuration, channel readiness, identity links, diagnostics, and user run status surfaces. |
-| 031 | React Admin Migration Hardening And Jinja Retirement | 020-030 | Validate parity, performance, accessibility, security, docs, feature flags, redirects, and legacy template retirement. |
+| 026 | React Admin UI Foundation | 001, 002, 010 | Add Vite/React/TypeScript app infrastructure, static serving, dev proxy, auth/session bridge, generated types, tests, and parity guardrails. |
+| 027 | Modern Admin Shell And Design System | 026 | Replace the shared shell experience with a modern, accessible React shell and reusable UI components. |
+| 028 | React Admin Data Contracts And Form Patterns | 026, 027 | Standardize page envelopes, problem details, safe action results, filters, forms, validation, concurrency, idempotency, evidence summaries, and audit-aware mutations. |
+| 029 | Operations, Reliability, And Run Debug Workbench | 028, 008, 009, 019, 020, 021, 022, 025 | Give operators an intuitive triage workspace across health, logs, reliability, graph runs, tool calls, Telegram deliveries, gateway attempts, and replay links. |
+| 030 | React Workflow Builder | 028, 003, 013, 015, 020, 024 | Create the modern graph-and-form workflow authoring experience with execution-aware graph semantics and repository-backed test evidence gates. |
+| 031 | Model, Prompt, Profile, And Provider Governance | 028, 007, 011, 012, 025 | Modernize provider setup, live credential reference readiness, prompt/profile management, model routing preview, policy history, and provenance. |
+| 032 | React Skill Registry And Tool Execution Lifecycle | 028, 014, 014-v2, 021 | Modernize package publication, tenant installation/configuration, connector readiness, governed tool diagnostics, and policy evidence. |
+| 033 | React Agent And Workflow Test Bench | 028, 015, 020, 024, 025 | Modernize suite authoring, safe run launch, results, diagnostics, publish-gate evidence, and gateway-backed execution evidence. |
+| 034 | React User And Tenant Membership Administration | 028, 018 | Modernize invitations, user directory, role grants, memberships, status changes, and access history. |
+| 035 | React Usage And Cost Analytics | 028, 016, 020, 021, 025 | Modernize usage dashboards, cost summaries, gateway/graph/tool attribution, rollups, drilldowns, and exports. |
+| 036 | React Channel, Telegram, And Briefing Preferences | 028, 006, 017, 022, 023 | Modernize Telegram configuration, natural-language aliases, delivery diagnostics, identity links, user run status surfaces, and Daily Briefing preference profiles. |
+| 037 | React Admin Migration Hardening And Jinja Retirement | 026-036 | Validate parity, performance, accessibility, security, docs, feature flags, redirects, and legacy template retirement. |
 
 ## Global Prompt Prefix
 
@@ -149,11 +162,14 @@ Prepend or keep in mind for every prompt below:
 
 ```text
 Use the current multi-agent platform repository context. Preserve the
-constitution, specs 001 through 019, existing FastAPI backend services,
+constitution, specs 001 through 025, existing FastAPI backend services,
 PostgreSQL storage model, Auth0 production authentication, local-principal
 test mode, tenant isolation, audit fail-closed behavior, redaction rules,
 runtime version pinning, secret hygiene, object-storage boundaries, QA docs,
-Playwright evidence, and at least 90 percent relevant coverage.
+Playwright evidence, and at least 90 percent relevant coverage. This includes
+graph execution and join policies, governed tool execution, Telegram alias and
+delivery idempotency, Daily Briefing preference privacy, repository-backed test
+evidence publish gates, and live model credential resolution.
 
 The UI target is a modern React.js + TypeScript + Vite admin experience for
 non-technical platform and tenant administrators. React must improve clarity,
@@ -176,7 +192,7 @@ Playwright flows for local-principal login unless a safer feature-specific
 validation path is documented.
 ```
 
-## Spec 020 - React Admin UI Foundation
+## Spec 026 - React Admin UI Foundation
 
 ### Specify Prompt
 
@@ -262,7 +278,7 @@ UI walkthrough, environment notes, PR notes, and evidence paths. Stop if any
 auth, tenant, or audit behavior is ambiguous.
 ```
 
-## Spec 021 - Modern Admin Shell And Design System
+## Spec 027 - Modern Admin Shell And Design System
 
 ### Specify Prompt
 
@@ -284,7 +300,8 @@ domain-page rewrites.
 Run clarification for the modern shell and design system. Focus on navigation
 grouping, mobile behavior, global search scope, saved-filter presentation,
 theme/accessibility requirements, icon library policy, design token ownership,
-and how React shell links coexist with Jinja fallback links. Recommended
+new Daily Intelligence Briefing/runtime diagnostics destinations, and how React
+shell links coexist with Jinja fallback links. Recommended
 defaults: keep the existing Python navigation registry authoritative, expose a
 safe navigation JSON contract, use a left navigation plus compact mobile drawer,
 show tenant/platform scope persistently, use saved filters as chips and a
@@ -340,7 +357,7 @@ backend contract tests for navigation/scope endpoints, Playwright screenshots,
 and required QA/documentation validation.
 ```
 
-## Spec 022 - React Admin Data Contracts And Form Patterns
+## Spec 028 - React Admin Data Contracts And Form Patterns
 
 ### Specify Prompt
 
@@ -360,12 +377,13 @@ of backend services.
 Run clarification for shared data/form patterns. Focus on the standard page
 envelope, error/problem format, mutation result format, CSRF/action token
 strategy, stale revision token behavior, filter persistence, export status,
-pagination/sorting, polling versus SSE, and how unsafe fields are redacted
-before reaching React. Recommended defaults: use a safe AdminPageEnvelope,
-RFC-style problem details with safe reason categories, backend-issued action
-tokens where needed, existing revision tokens for optimistic concurrency,
-server-owned allowed filter criteria, cursor or bounded page pagination, and
-no raw unsafe payloads in JSON responses.
+pagination/sorting, polling versus SSE, idempotency receipts, evidence
+summaries, delivery attempts, runtime/gateway summaries, and how unsafe fields
+are redacted before reaching React. Recommended defaults: use a safe
+AdminPageEnvelope, RFC-style problem details with safe reason categories,
+backend-issued action tokens where needed, existing revision tokens for
+optimistic concurrency, server-owned allowed filter criteria, cursor or bounded
+page pagination, and no raw unsafe payloads in JSON responses.
 ```
 
 ### Plan Prompt
@@ -374,7 +392,9 @@ no raw unsafe payloads in JSON responses.
 Plan shared admin data contracts and form patterns. Add backend schemas and
 helpers for page envelopes, safe problem details, action results, filter
 profiles, pagination, sorting, export snapshots, stale conflict details,
-field-level validation, confirmation requirements, and audit reference ids.
+field-level validation, idempotent replay metadata, evidence snapshots,
+delivery summaries, runtime/gateway status summaries, confirmation
+requirements, and audit reference ids.
 Add frontend hooks/components for query loading, mutation submission,
 validation mapping, form dirty-state protection, stale conflict recovery,
 filter chips, table state, export progress, and safe toasts. Integrate with
@@ -412,7 +432,7 @@ tests, stale conflict tests, and Playwright sample flows. Update developer docs
 so later specs know how to create React admin pages.
 ```
 
-## Spec 023 - Operations, Reliability, And Run Debug Workbench
+## Spec 029 - Operations, Reliability, And Run Debug Workbench
 
 ### Specify Prompt
 
@@ -420,11 +440,14 @@ so later specs know how to create React admin pages.
 Create a feature specification for a React operations, reliability, and run
 debug workbench. Platform operators need one intuitive workspace to understand
 health, dependencies, capacity, queue pressure, database pool pressure, model
-provider health, Telegram/channel status, reliability breaker state, retries,
-dead letters, latency, throughput, error rate, redacted logs, run timelines,
-lineage, replay links, and safe exports. Tenant admins may see only explicitly
-authorized tenant-scoped views. The experience must guide non-technical admins
-from symptom to likely cause without raw data exposure.
+provider health, Telegram/channel status, workflow graph execution state,
+parallel branches, join decisions, per-node run steps, governed tool calls,
+connector readiness, Telegram alias routing and delivery attempts, ModelGateway
+operations, live credential diagnostic categories, reliability breaker state,
+retries, dead letters, latency, throughput, error rate, redacted logs, run
+timelines, lineage, replay links, and safe exports. Tenant admins may see only
+explicitly authorized tenant-scoped views. The experience must guide
+non-technical admins from symptom to likely cause without raw data exposure.
 ```
 
 ### Clarify Prompt
@@ -436,20 +459,23 @@ log filtering, cross-links to run/reliability/provider/usage pages, export
 workflow, and how degraded dependencies appear. Recommended defaults:
 platform-admin and auditor full access, tenant admin limited only where
 existing policies allow, default last 60 minutes, manual refresh plus safe
-short polling for health panels, filters matching Spec 019, and degraded cards
-instead of hidden sections.
+short polling for health panels, filters matching Specs 019 through 025 where
+applicable, and degraded cards instead of hidden sections.
 ```
 
 ### Plan Prompt
 
 ```text
 Plan the React operations workbench on top of existing operations, audit,
-reliability, model provider, Telegram, usage, and run inspection services.
+reliability, model provider, Telegram, usage, run inspection, graph runtime,
+skill execution, delivery persistence, and gateway credential services.
 Create safe JSON endpoints or adapt existing ones for dashboard summary,
 dependency panels, capacity, latency/throughput rollups, redacted log search,
-run timeline summaries, reliability controls, dead letters, export requests,
-and authorized cross-links. Plan React dashboards with compact cards, trend
-visuals, filter drawer, log table, timeline drawer, and recovery guidance.
+run timeline summaries, graph node summaries, join decisions, tool execution
+summaries, delivery attempts, gateway attempt summaries, reliability controls,
+dead letters, export requests, and authorized cross-links. Plan React
+dashboards with compact cards, trend visuals, filter drawer, log table,
+timeline drawer, and recovery guidance.
 Include performance targets for large log result sets, redaction tests,
 authorization tests, and Playwright evidence.
 ```
@@ -459,19 +485,22 @@ authorization tests, and Playwright evidence.
 ```text
 Generate tasks for the operations workbench. Include endpoint/view-model
 contracts, React route/page components, health cards, charts or trend panels,
-filter state, log table, run timeline drawer, reliability/dead-letter panels,
-export flow, authorized links, degraded/empty/denied states, platform and
-tenant-scope tests, performance tests, redaction tests, Playwright screenshots,
-docs, QA guide, and PR notes.
+filter state, log table, run timeline drawer, graph/run-step panels, tool
+execution summaries, Telegram delivery panels, gateway attempt panels,
+reliability/dead-letter panels, export flow, authorized links, degraded/empty/
+denied states, platform and tenant-scope tests, performance tests, redaction
+tests, Playwright screenshots, docs, QA guide, and PR notes.
 ```
 
 ### Analyze Prompt
 
 ```text
 Analyze operations workbench artifacts for missing Spec 019 filter coverage,
-unsafe logs or stack traces, tenant leakage, export audit gaps, lack of
-performance constraints, hidden degraded states, missing links back to existing
-debug pages, and untested platform-admin/auditor/tenant-admin differences.
+missing Specs 020-025 runtime surfaces, unsafe logs, tool payloads, provider
+responses, Telegram identifiers, or stack traces, tenant leakage, export audit
+gaps, lack of performance constraints, hidden degraded states, missing links
+back to existing debug pages, and untested platform-admin/auditor/tenant-admin
+differences.
 ```
 
 ### Implement Prompt
@@ -484,7 +513,7 @@ bounded log results, Playwright platform/auditor flows, redaction checks, and
 QA document validation.
 ```
 
-## Spec 024 - React Workflow Builder
+## Spec 030 - React Workflow Builder
 
 ### Specify Prompt
 
@@ -494,10 +523,12 @@ tenant admins must be able to create, edit, validate, review, and publish
 workflow drafts through guided forms and an interactive graph-oriented view
 without editing raw JSON. The UI must cover metadata, roles, sub-agent roles,
 prompt/profile references, model routing readiness, skill installation
-requirements, contracts, nodes, edges, join policies, approval gates, reusable
-subworkflows, required test suites, validation findings, draft revisions, and
-publish gate decisions. It must be intuitive for non-technical admins while
-preserving exact backend validation and immutable publishing.
+requirements, contracts, nodes, edges, parallel fan-out, join policies,
+approval gates, reusable subworkflows, Daily Intelligence Briefing graph
+patterns, required test suites, repository-backed evidence status, validation
+findings, draft revisions, and publish gate decisions. It must be intuitive for
+non-technical admins while preserving exact backend validation and immutable
+publishing.
 ```
 
 ### Clarify Prompt
@@ -508,7 +539,8 @@ authority, advanced JSON inspector visibility, draft autosave versus explicit
 save, validation refresh timing, publish gate flow, large workflow size,
 field-help style, and whether JavaScript is now required for primary authoring.
 Recommended defaults: semantic saves remain explicit backend submissions,
-graph layout annotations are non-authoritative, advanced JSON is read-only and
+graph layout annotations are non-authoritative, graph execution semantics come
+from backend validation, advanced JSON is read-only and
 collapsed, validation can refresh on demand and after saves, publish gate is a
 guided review, support 100-node workflows, and React is required for the new
 builder while old Jinja editor remains fallback during migration.
@@ -518,14 +550,16 @@ builder while old Jinja editor remains fallback during migration.
 
 ```text
 Plan the React Workflow Builder using existing workflow registry services,
-schemas, editor metadata, graph preview, validation, reference readiness,
-publish gate, revision history, prompt/profile/model/skill/test bench
-integrations, and audit helpers. Research a proven React graph library for the
+schemas, editor metadata, graph preview, validation, graph execution contracts,
+join policy rules, reference readiness, publish gate, revision history,
+prompt/profile/model/skill/test bench integrations, and audit helpers. Research
+a proven React graph library for the
 interactive graph while keeping backend document validation authoritative.
 Plan JSON contracts for editor bootstrap, lookups, document patches or full
 document saves, validation results, publish readiness, revisions, and safe
-field help. Include accessibility, keyboard graph navigation alternatives,
-large workflow performance, stale revision recovery, tenant isolation, and
+field help. Include repository-backed required-test evidence from Spec 024,
+accessibility, keyboard graph navigation alternatives, large workflow
+performance, stale revision and stale evidence recovery, tenant isolation, and
 Playwright reviewer flows.
 ```
 
@@ -534,21 +568,23 @@ Playwright reviewer flows.
 ```text
 Generate tasks for the React Workflow Builder. Include backend editor contract
 tasks, React route/page tasks, graph canvas, section forms, reference pickers,
-validation panel, publish gate, revision history, field help, dirty-state and
-stale-conflict recovery, read-only JSON inspector, tests for each user story,
-graph accessibility tests, tenant isolation/redaction tests, Playwright
-workflow create/edit/validate/publish flows, docs, QA walkthrough, README or
-quickstart updates, and PR notes.
+join policy controls, validation panel, repository-backed evidence panel,
+publish gate, revision history, field help, dirty-state and stale-conflict
+recovery, read-only JSON inspector, tests for each user story, graph
+accessibility tests, tenant isolation/redaction tests, Playwright workflow
+create/edit/validate/publish flows, docs, QA walkthrough, README or quickstart
+updates, and PR notes.
 ```
 
 ### Analyze Prompt
 
 ```text
-Analyze workflow builder artifacts for mismatches with Specs 003 and 013,
-missing publish blockers, graph state becoming authoritative without backend
-validation, unsafe prompt/profile/provider/skill details, stale revision gaps,
-missing required test-suite evidence, inaccessible graph-only workflows,
-large-workflow performance gaps, and missing Playwright screenshots.
+Analyze workflow builder artifacts for mismatches with Specs 003, 013, 020,
+and 024, missing publish blockers, graph state becoming authoritative without
+backend validation, unsafe prompt/profile/provider/skill/tool details, stale
+revision or stale evidence gaps, missing required test-suite evidence,
+inaccessible graph-only workflows, large-workflow performance gaps, and missing
+Playwright screenshots.
 ```
 
 ### Implement Prompt
@@ -557,11 +593,11 @@ large-workflow performance gaps, and missing Playwright screenshots.
 Implement the React Workflow Builder tasks. Preserve existing workflow storage,
 services, published bundle model, and Jinja fallback route. Verify create,
 edit, validation, publish gate, stale conflict, revision review, tenant scope,
-and redaction flows. Run backend, frontend, graph/component, Playwright, and
-QA-doc validation commands.
+join policy handling, required-test evidence handling, and redaction flows. Run
+backend, frontend, graph/component, Playwright, and QA-doc validation commands.
 ```
 
-## Spec 025 - Model, Prompt, Profile, And Provider Governance
+## Spec 031 - Model, Prompt, Profile, And Provider Governance
 
 ### Specify Prompt
 
@@ -571,9 +607,11 @@ provider governance. Non-technical admins need a coherent experience for
 configuring model providers, testing safe connections, reviewing provider
 health, managing prompt versions, previewing safe prompt renders, configuring
 agent runtime profiles, previewing model/skill routing decisions, reviewing
-policy history, and understanding run provenance. The UI must hide raw
-secrets, raw prompts where unsafe, raw completions, provider tokens, and
-unauthorized tenant data while preserving all existing backend controls.
+policy history, configuring credential secret references, understanding live
+credential resolution diagnostics, and understanding run provenance. The UI
+must hide raw secrets, raw prompts where unsafe, raw completions, provider
+tokens, resolved credential values, and unauthorized tenant data while
+preserving all existing backend controls.
 ```
 
 ### Clarify Prompt
@@ -582,25 +620,27 @@ unauthorized tenant data while preserving all existing backend controls.
 Run clarification for model/prompt/profile/provider governance. Focus on how
 to group the domains, what the default admin journey is, safe prompt preview
 limits, provider probe refresh behavior, routing preview inputs, history
-filtering, tenant visibility, and direct SDK guardrail evidence. Recommended
-defaults: organize around Setup, Prompts, Profiles, Routing, Providers, and
-Provenance; provider mutations are platform-admin only; tenant admins see only
-authorized catalog/profile/prompt grants; safe previews use existing fixture
-safety; probes are explicit actions; routing previews are read-only policy
-evaluations.
+filtering, credential reference validation, local OpenAI-compatible no-auth
+allowlist behavior, tenant visibility, and direct SDK guardrail evidence.
+Recommended defaults: organize around Setup, Prompts, Profiles, Routing,
+Providers, and Provenance; provider mutations are platform-admin only; tenant
+admins see only authorized catalog/profile/prompt grants; safe previews use
+existing fixture safety; probes are explicit actions; routing previews are
+read-only policy evaluations.
 ```
 
 ### Plan Prompt
 
 ```text
-Plan React governance pages on top of Specs 007, 011, and 012. Reuse existing
-model provider services, prompt services, profile services, model-skill config
-resolver, gateway provenance, audit/redaction helpers, and local-principal test
-mode. Define contracts for provider lists/detail/forms/tests/catalog, prompt
-library lists/detail/edit/preview/history, profile lists/detail/edit/resolve,
-routing preview, configuration history, and run provenance. Plan guided forms,
-safe diff/history views, health/status badges, inline explanations, and
-authorization-aware links.
+Plan React governance pages on top of Specs 007, 011, 012, and 025. Reuse
+existing model provider services, prompt services, profile services,
+model-skill config resolver, gateway provenance, ProviderSecretResolver,
+audit/redaction helpers, and local-principal test mode. Define contracts for
+provider lists/detail/forms/tests/catalog, credential reference selection and
+resolution status, prompt library lists/detail/edit/preview/history, profile
+lists/detail/edit/resolve, routing preview, configuration history, and run
+provenance. Plan guided forms, safe diff/history views, health/status badges,
+inline explanations, and authorization-aware links.
 ```
 
 ### Tasks Prompt
@@ -610,18 +650,20 @@ Generate tasks for model/prompt/profile/provider governance. Include backend
 contract tasks where React needs safer or richer JSON, React routes/pages,
 provider forms and tests, prompt editor and safe preview, profile editor and
 resolver, model/skill routing preview, history/provenance tables, tenant
-visibility states, redaction tests, provider secret safety tests, direct-call
-guardrail evidence surfaces, Playwright flows, docs, QA guide, and PR notes.
+visibility states, live credential resolution diagnostics, redaction tests,
+provider secret safety tests, direct-call guardrail evidence surfaces,
+Playwright flows, docs, QA guide, and PR notes.
 ```
 
 ### Analyze Prompt
 
 ```text
-Analyze governance artifacts for unsafe secret or prompt exposure, missing
-platform-admin mutation enforcement, tenant catalog leakage, provider probe
-audit gaps, drift from ModelGateway-only execution requirements, missing
-history/provenance coverage, and missing non-technical recovery guidance for
-failed routing or health checks.
+Analyze governance artifacts for unsafe secret, credential, or prompt exposure,
+missing platform-admin mutation enforcement, tenant catalog leakage, provider
+probe audit gaps, invalid credential reference handling, drift from
+ModelGateway-only execution requirements, missing history/provenance coverage,
+and missing non-technical recovery guidance for failed routing, credential
+resolution, or health checks.
 ```
 
 ### Implement Prompt
@@ -630,24 +672,27 @@ failed routing or health checks.
 Implement the governance tasks. Preserve backend services and existing Jinja
 fallbacks. Verify platform provider creation/test/sync, prompt draft/save/
 publish/preview, profile configuration, routing preview, history, provenance,
-tenant scope, redaction, and denied states. Run backend, frontend, Playwright,
+credential reference validation, credential resolution diagnostics, tenant
+scope, redaction, and denied states. Run backend, frontend, Playwright,
 coverage, and QA-doc validation.
 ```
 
-## Spec 026 - React Skill Registry And Installation Lifecycle
+## Spec 032 - React Skill Registry And Tool Execution Lifecycle
 
 ### Specify Prompt
 
 ```text
-Create a feature specification for a React Skill Registry and Installation
+Create a feature specification for a React Skill Registry and Tool Execution
 Lifecycle. Platform admins must be able to publish skill packages through a
 guided browser flow, and tenant admins must be able to discover, install,
-configure, test, and preview binding eligibility for granted skills. The UI
-must cover package creation, manifest paste/upload, candidate validation,
-immutable publication, tenant grants, tenant discovery, tenant installation,
-credential reference configuration, smoke-test/readiness evidence, binding
-eligibility preview, stale conflict recovery, quarantine/withdrawal states,
-audit timeline, and redaction-safe evidence.
+configure, test, preview binding eligibility, and inspect governed tool
+readiness for granted skills. The UI must cover package creation, manifest
+paste/upload, candidate validation, immutable publication, tenant grants,
+tenant discovery, tenant installation, credential reference configuration,
+smoke-test/readiness evidence, SkillExecutionGateway diagnostics, first-party
+calendar/Gmail/news/weather/commute connector readiness, mock or approved
+staging probe evidence, binding eligibility preview, stale conflict recovery,
+quarantine/withdrawal states, audit timeline, and redaction-safe evidence.
 ```
 
 ### Clarify Prompt
@@ -655,8 +700,9 @@ audit timeline, and redaction-safe evidence.
 ```text
 Run clarification for the React skill registry lifecycle. Focus on wizard
 steps, manifest paste versus upload behavior, publish readiness gating,
-credential reference picker behavior, smoke-test refresh, binding context
-selection, stale revision handling, and how much safe manifest detail is shown.
+credential reference picker behavior, smoke-test refresh, connector diagnostic
+refresh, binding context selection, stale revision handling, and how much safe
+manifest or tool output detail is shown.
 Recommended defaults: use guided wizards for platform publication and tenant
 installation, upload takes precedence over paste when both are present, raw
 manifest text is never echoed after submit, credential references are selected
@@ -667,14 +713,15 @@ stale conflicts provide reload-latest and retry guidance.
 ### Plan Prompt
 
 ```text
-Plan the React Skill Registry using existing Spec 014 and 014-v2 services,
-schemas, templates as behavior references, validation runner, smoke runner,
+Plan the React Skill Registry using existing Specs 014, 014-v2, and 021
+services, schemas, templates as behavior references, validation runner, smoke
+runner, skill execution gateway, connector adapters, policy decisions,
 readiness, eligibility, audit, object storage, redaction, and tenant isolation.
 Define React JSON contracts for package list/create/detail, manifest candidate,
 validation findings, publish, version detail, grants, available versions,
-installations, credentials, smoke tests, eligibility preview, conflicts, and
-audit timeline. Include browser-first QA, no curl/API primary path, and
-redaction-safe screenshots.
+installations, credentials, smoke tests, connector diagnostics, tool execution
+summaries, eligibility preview, conflicts, and audit timeline. Include
+browser-first QA, no curl/API primary path, and redaction-safe screenshots.
 ```
 
 ### Tasks Prompt
@@ -683,9 +730,10 @@ redaction-safe screenshots.
 Generate tasks for the React skill registry lifecycle. Include backend
 contract adapters, React routes/pages/wizards, manifest input/upload, validation
 findings, publish gate, grant form, available versions, installation detail,
-credential picker, smoke test panel, eligibility preview, stale conflict UI,
-audit timeline, tenant isolation tests, redaction tests, Playwright browser
-lifecycle flows, docs, QA walkthrough, README updates, and PR notes.
+credential picker, smoke test panel, connector readiness panel, mock diagnostic
+runner, eligibility preview, stale conflict UI, audit timeline, tenant
+isolation tests, redaction tests, Playwright browser lifecycle flows, docs, QA
+walkthrough, README updates, and PR notes.
 ```
 
 ### Analyze Prompt
@@ -693,7 +741,8 @@ lifecycle flows, docs, QA walkthrough, README updates, and PR notes.
 ```text
 Analyze skill registry artifacts for any return to curl/API as the primary QA
 path, raw manifest or credential exposure, cross-tenant discovery leakage,
-missing immutable publication gates, stale revision gaps, unsafe smoke evidence,
+missing immutable publication gates, stale revision gaps, unsafe smoke or tool
+evidence, adapter invocation bypasses, missing outbound/tool policy reasons,
 quarantine/withdrawal confusion, missing binding eligibility policy reasons,
 and incomplete browser screenshot evidence.
 ```
@@ -704,12 +753,13 @@ and incomplete browser screenshot evidence.
 Implement the React skill registry lifecycle tasks. Preserve existing skill
 registry domain services and JSON APIs for automation. Verify platform package
 publication, tenant grants, tenant discovery, installation, credential
-configuration, smoke-test/readiness, eligibility preview, stale conflict,
-quarantine/withdrawal, denied/not-found, and redaction flows through
+configuration, smoke-test/readiness, connector diagnostics, mock tool
+execution, eligibility preview, stale conflict, quarantine/withdrawal,
+denied/not-found, and redaction flows through
 Playwright. Run backend/frontend tests and QA-doc validation.
 ```
 
-## Spec 027 - React Agent And Workflow Test Bench
+## Spec 033 - React Agent And Workflow Test Bench
 
 ### Specify Prompt
 
@@ -719,9 +769,10 @@ Platform and tenant admins must be able to define reusable test suites and
 cases, select safe execution modes, launch tests against prompts, profiles,
 workflow drafts, subworkflows, or published workflows, inspect results,
 understand pass/fail diagnostics, review redacted traces and artifacts, and
-see publish-gate evidence. The UI must make testing understandable for
+see publish-gate evidence tied to the current workflow draft revision or
+published target version. The UI must make testing understandable for
 non-technical admins without exposing raw prompts, completions, secrets, tools,
-or unauthorized tenant data.
+raw connector payloads, or unauthorized tenant data.
 ```
 
 ### Clarify Prompt
@@ -729,7 +780,8 @@ or unauthorized tenant data.
 ```text
 Run clarification for the React test bench. Focus on suite/case authoring
 complexity, default safe execution mode, evaluator prompt visibility, run
-progress updates, assertion editing, artifact access, and publish-gate links.
+progress updates, assertion editing, artifact access, target revision binding,
+stale evidence presentation, and publish-gate links.
 Recommended defaults: guided suite and case forms, mock model/mock tools as the
 default local mode, real dependency probes only when policy allows, redacted
 transcripts only, polling or SSE for run progress based on existing channel
@@ -739,11 +791,12 @@ patterns, and direct links from workflow publish gates.
 ### Plan Prompt
 
 ```text
-Plan the React test bench using existing Spec 015 services, schemas, result
-components, publish-gate integration, artifact metadata, ModelGateway test
-mode metadata, redaction helpers, and audit. Define contracts for suite list,
-suite detail, suite form, case form, run launch, run list, run detail, step
-trace, assertions, result summary, gate status, artifacts, and safe evidence.
+Plan the React test bench using existing Specs 015, 020, 024, and 025 services,
+schemas, result components, publish-gate integration, artifact metadata,
+ModelGateway test mode metadata, redaction helpers, and audit. Define contracts
+for suite list, suite detail, suite form, case form, run launch, run list, run
+detail, step trace, assertions, result summary, target revision binding, gate
+status, artifacts, and safe evidence.
 Include frontend components for forms, assertion builder, run launcher,
 progress/status, diagnostics, and publish-gate panels.
 ```
@@ -754,8 +807,9 @@ progress/status, diagnostics, and publish-gate panels.
 Generate tasks for the React test bench. Include backend contract adapters,
 React route/page tasks, suite/case forms, assertion builder, target selector,
 safe execution mode selector, run launcher, run progress/result views, trace
-step components, artifact links, publish-gate evidence, tenant isolation tests,
-redaction tests, Playwright suite/case/run flows, docs, QA guide, and PR notes.
+step components, artifact links, current-revision publish-gate evidence,
+missing/stale/failing evidence states, tenant isolation tests, redaction tests,
+Playwright suite/case/run flows, docs, QA guide, and PR notes.
 ```
 
 ### Analyze Prompt
@@ -763,8 +817,9 @@ redaction tests, Playwright suite/case/run flows, docs, QA guide, and PR notes.
 ```text
 Analyze test bench artifacts for unsafe transcript/artifact exposure, missing
 safe-mode enforcement, unclear pass/fail thresholds, missing publish-gate
-coverage, tenant leakage, run progress gaps, duplicate evaluator logic in
-React, and missing browser evidence for both passing and failing test runs.
+coverage, stale or manually copied evidence bypasses, tenant leakage, run
+progress gaps, duplicate evaluator logic in React, and missing browser evidence
+for both passing and failing test runs.
 ```
 
 ### Implement Prompt
@@ -777,7 +832,7 @@ gate evidence, redaction, and denied states. Run all relevant backend,
 frontend, Playwright, coverage, and QA-doc validation.
 ```
 
-## Spec 028 - React User And Tenant Membership Administration
+## Spec 034 - React User And Tenant Membership Administration
 
 ### Specify Prompt
 
@@ -851,7 +906,7 @@ and Playwright screenshot evidence. Run backend/frontend tests and QA-doc
 validation.
 ```
 
-## Spec 029 - React Usage And Cost Analytics
+## Spec 035 - React Usage And Cost Analytics
 
 ### Specify Prompt
 
@@ -859,11 +914,13 @@ validation.
 Create a feature specification for React Usage and Cost Analytics. Platform
 admins and tenant admins need modern dashboards to understand token usage,
 model cost estimates, confirmed versus estimated usage, latency, unavailable
-usage, provider/model/workflow/agent/prompt rollups, event drilldowns, and
-audited CSV exports. The UI must be understandable for non-technical admins,
-must respect platform versus tenant visibility, and must never expose raw
-prompts, completions, secrets, memory content, provider credentials, or
-unauthorized run content.
+usage, provider/model/workflow/agent/prompt rollups, graph node attribution,
+gateway operation attempts, physical attempts, governed tool attribution, event
+drilldowns, and audited CSV exports. The UI must be understandable for
+non-technical admins, must respect platform versus tenant visibility, and must
+never expose raw prompts, completions, secrets, memory content, provider
+credentials, credential reference internals, raw tool payloads, or unauthorized
+run content.
 ```
 
 ### Clarify Prompt
@@ -882,7 +939,9 @@ admins see only their tenant scope.
 
 ```text
 Plan React usage analytics using Spec 016 usage services, pricing metadata,
-safe exports, audit records, existing dashboard APIs, and admin shell scope.
+safe exports, audit records, existing dashboard APIs, Spec 020 graph/runtime
+attribution, Spec 021 tool execution summaries, Spec 025 gateway operation
+metadata, and admin shell scope.
 Define or adapt contracts for dashboard summary, time-series rollups, group
 rollups, event drilldown, filter metadata, export creation, export detail, and
 denied states. Plan React charts, metric cards, filters, group selector,
@@ -895,9 +954,10 @@ for bounded result sets.
 ```text
 Generate tasks for React usage analytics. Include backend contract adapters,
 React routes/pages, metric cards, charts, filter drawer, group selector,
-rollup table, event drilldown, export flow and detail page, cost formatting,
-tenant-scope authorization tests, redaction tests, performance tests,
-Playwright platform/tenant/export flows, docs, QA guide, and PR notes.
+rollup table, graph/tool/gateway attribution filters, event drilldown, export
+flow and detail page, cost formatting, tenant-scope authorization tests,
+redaction tests, performance tests, Playwright platform/tenant/export flows,
+docs, QA guide, and PR notes.
 ```
 
 ### Analyze Prompt
@@ -906,7 +966,8 @@ Playwright platform/tenant/export flows, docs, QA guide, and PR notes.
 Analyze usage analytics artifacts for unsafe attribution exposure, tenant
 leakage, missing export audit behavior, unbounded queries, unclear estimated
 cost labels, missing empty/denied states, missing rollup groups from Spec 016,
-and incomplete Playwright coverage for exports and drilldowns.
+missing graph/tool/gateway attribution, and incomplete Playwright coverage for
+exports and drilldowns.
 ```
 
 ### Implement Prompt
@@ -914,81 +975,99 @@ and incomplete Playwright coverage for exports and drilldowns.
 ```text
 Implement the React usage analytics tasks. Preserve existing usage capture and
 export services. Verify summary, trend, rollup, drilldown, filters, export
-creation/detail, tenant scope, denied attempts, redaction, and performance
-limits. Run backend/frontend tests, Playwright flows, and QA-doc validation.
+creation/detail, graph/tool/gateway attribution, tenant scope, denied attempts,
+redaction, and performance limits. Run backend/frontend tests, Playwright
+flows, and QA-doc validation.
 ```
 
-## Spec 030 - React Channel And Telegram Administration
+## Spec 036 - React Channel, Telegram, And Briefing Preferences
 
 ### Specify Prompt
 
 ```text
-Create a feature specification for React Channel and Telegram Administration.
-Platform admins and authorized tenant admins need an intuitive UI for channel
-readiness, Telegram tenant enablement, safe secret-reference configuration,
-webhook validation, linked Telegram identities, one-time link tokens,
-protected command readiness, delivery diagnostics, webhook diagnostics, and
-user-facing run status surfaces where applicable. The UI must not display real
-bot tokens, webhook secrets, private messages, raw prompts, run results, or
-unauthorized tenant data.
+Create a feature specification for React Channel, Telegram, and Briefing
+Preferences. Platform admins, authorized tenant admins, and authorized tenant
+users need an intuitive UI for channel readiness, Telegram tenant enablement,
+safe secret-reference configuration, webhook validation, natural-language
+aliases such as `Morning briefing`, protected alias readiness, linked Telegram
+identities, one-time link tokens, delivery attempts, webhook diagnostics,
+user-facing run status links, and Daily Intelligence Briefing preference
+profiles. Preference profiles must cover location, timezone, news topics, VIP
+sender hints, workday hours, commute mode, default account references, output
+style, and optional scheduled briefing time. The UI must not display real bot
+tokens, webhook secrets, full Telegram user or chat identifiers, link tokens
+after creation, private messages, raw preference values in admin summaries, raw
+prompts, run results, or unauthorized tenant data.
 ```
 
 ### Clarify Prompt
 
 ```text
-Run clarification for channel and Telegram administration. Focus on whether
-user-facing run status is in scope for this migration slice, how link tokens
-are displayed, webhook validation refresh behavior, diagnostics retention,
-protected command readiness, and tenant-admin permissions. Recommended
-defaults: include admin Telegram configuration plus links to existing user run
-status pages, show one-time link token result only at creation with safe
-expiration guidance, use explicit webhook validation actions, and keep tenant
-admins limited to their tenant settings and identities.
+Run clarification for channel, Telegram, and briefing preferences. Focus on
+whether user-facing run status is in scope for this migration slice, how link
+tokens are displayed, alias CRUD behavior, delivery attempt retention,
+preference import/export scope, whether scheduled briefing time is profile-only
+until a scheduler exists, webhook validation refresh behavior, diagnostics
+retention, protected alias readiness, and tenant-admin permissions.
+Recommended defaults: include admin Telegram configuration, tenant alias CRUD,
+delivery diagnostics, and a tenant-user preference profile screen; show
+one-time link token result only at creation with safe expiration guidance; use
+explicit webhook validation actions; and keep tenant admins limited to their
+tenant settings, safe preference summaries, aliases, and identities.
 ```
 
 ### Plan Prompt
 
 ```text
-Plan React channel and Telegram administration using Specs 006 and 017,
-existing Telegram config services, channel services, link-token behavior,
-webhook diagnostics, notification delivery records, secret providers,
-reliability retry/breaker summaries, local fake-secret readiness, and audit/
-redaction helpers. Define contracts for readiness, tenant enablement,
-configuration forms, webhook validation, linked identities, link tokens,
-diagnostics, protected command readiness, and safe run status links.
+Plan React channel, Telegram, and briefing preferences using Specs 006, 017,
+022, and 023, existing Telegram config services, channel services, alias
+services, link-token behavior, persistent linked identities, webhook
+idempotency, delivery attempt records, briefing preference services, runtime
+preference resolver, secret providers, reliability retry/breaker summaries,
+local fake-secret readiness, and audit/redaction helpers. Define contracts for
+readiness, tenant enablement, configuration forms, alias list/create/update/
+disable, webhook validation, linked identities, link tokens, diagnostics,
+delivery attempts, protected alias readiness, preference read/update/import/
+export, admin preference summaries, runtime resolver readiness, and safe run
+status links.
 ```
 
 ### Tasks Prompt
 
 ```text
-Generate tasks for React channel and Telegram administration. Include backend
-contract adapters, React routes/pages, readiness cards, tenant enablement
-forms, secret-reference picker, webhook validation panel, linked identities
-table, link token create/revoke flow, diagnostics panels, protected command
-readiness, tenant isolation tests, redaction tests, Playwright platform/tenant
-flows, docs, QA guide, and PR notes.
+Generate tasks for React channel, Telegram, and briefing preferences. Include
+backend contract adapters, React routes/pages, readiness cards, tenant
+enablement forms, secret-reference picker, alias CRUD forms, webhook validation
+panel, linked identities table, link token create/revoke flow, delivery attempt
+table, diagnostics panels, protected alias readiness, briefing preference form,
+preference import/export, admin safe summary panels, tenant isolation tests,
+idempotency tests, redaction tests, Playwright platform/tenant/user flows,
+docs, QA guide, and PR notes.
 ```
 
 ### Analyze Prompt
 
 ```text
-Analyze channel/Telegram artifacts for real token or secret exposure, private
-message leakage, cross-tenant identity leakage, missing webhook validation
-audit, unsafe link token display, unclear protected command readiness, and
-missing denied/empty/degraded states.
+Analyze channel/Telegram/briefing artifacts for real token or secret exposure,
+private message or preference leakage, full Telegram identifier exposure,
+cross-tenant alias/identity/preference leakage, missing webhook validation or
+delivery audit, unsafe link token display, unclear protected alias readiness,
+missing alias idempotency evidence, and missing denied/empty/degraded states.
 ```
 
 ### Implement Prompt
 
 ```text
-Implement the React channel and Telegram administration tasks. Preserve
-existing channel services and Jinja fallback routes. Verify readiness,
-configuration, webhook validation, link token creation/revocation, identity
-inspection, diagnostics, tenant isolation, redaction, and Playwright evidence.
+Implement the React channel, Telegram, and briefing preference tasks. Preserve
+existing channel, Telegram, and briefing preference services and Jinja fallback
+routes. Verify readiness, configuration, alias create/update/disable, webhook
+validation, link token creation/revocation, identity inspection, delivery
+attempts, briefing preference save/reload/import/export, admin safe summaries,
+diagnostics, tenant isolation, redaction, and Playwright evidence.
 Run backend/frontend tests and QA-doc validation.
 ```
 
-## Spec 031 - React Admin Migration Hardening And Jinja Retirement
+## Spec 037 - React Admin Migration Hardening And Jinja Retirement
 
 ### Specify Prompt
 
@@ -1020,11 +1099,12 @@ by feature flag plus asset version.
 ```text
 Plan React admin migration hardening. Build a parity matrix for all admin
 routes from Specs 003, 006, 007, 008, 009, 010, 011, 012, 013, 014/014-v2,
-015, 016, 017, 018, and 019. Plan route redirects or aliases, feature flags,
-legacy template deprecation, CSS/static cleanup, generated contract checks,
-accessibility audit, performance budgets, Playwright end-to-end suite,
-redaction sweep, tenant isolation sweep, docs, reviewer guides, and rollback
-runbook. Do not delete legacy routes unless the spec's criteria are met.
+015, 016, 017, 018, 019, 020, 021, 022, 023, 024, and 025. Plan route
+redirects or aliases, feature flags, legacy template deprecation, CSS/static
+cleanup, generated contract checks, accessibility audit, performance budgets,
+Playwright end-to-end suite, redaction sweep, tenant isolation sweep, docs,
+reviewer guides, and rollback runbook. Do not delete legacy routes unless the
+spec's criteria are met.
 ```
 
 ### Tasks Prompt
@@ -1065,7 +1145,7 @@ for routes that meet the approved retirement criteria.
 - Create one Spec Kit feature at a time. Do not run all specs in parallel.
 - After each implementation, run its generated QA guide and Playwright UI
   walkthrough before starting the next spec.
-- Keep the React UI additive until Spec 031 proves parity.
+- Keep the React UI additive until Spec 037 proves parity.
 - Treat dual-auth-mode coverage as mandatory for every implementation spec:
   each feature must prove Auth0-backed principal behavior and
   `AUTH_MODE=local_principal` behavior for its React routes and protected

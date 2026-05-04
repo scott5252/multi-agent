@@ -1,125 +1,121 @@
 # multi-agent Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-30
+Auto-generated from all feature plans. Last updated: 2026-05-04
 
 ## Active Technologies
-- Python 3.12 + FastAPI security dependencies, Auth0 JWT validation, Pydantic
-  Settings, SQLAlchemy 2.x, Alembic, PostgreSQL auth metadata, pytest,
-  pytest-asyncio, httpx, Ruff, mypy, uv (002-platform-auth-access)
-- Python 3.12 + FastAPI, Pydantic v2, Pydantic Settings, SQLAlchemy (003-workflow-studio-registry)
-- PostgreSQL for workflow lineages, active drafts, immutable draft revisions, published bundle metadata (003-workflow-studio-registry)
-- Python 3.12 + FastAPI, Pydantic v2, SQLAlchemy 2.x, Alembic, PostgreSQL 16+, psycopg 3, LangChain 1.2.15, LangGraph 1.1.9, langgraph-checkpoint-postgres 3.0.5, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (004-durable-orchestration-runtime)
-- PostgreSQL for workflow runs, run steps, worker leases, LangGraph checkpoints, handoff envelopes, side-effect intents, approvals, parent-child lineage, audit events, and retention metadata (004-durable-orchestration-runtime)
-- Python 3.12 + FastAPI, Pydantic v2, Pydantic Settings, SQLAlchemy 2.x, Alembic, PostgreSQL 16+, psycopg 3, LangChain 1.2.15, LangGraph 1.1.9, langgraph-checkpoint-postgres 3.0.5, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (005-immutable-memory)
-- PostgreSQL for memory scopes, immutable memory versions, head projections, read/write audit records, archival markers, links to runtime execution bundles, workflow runs, run steps, and parent-child lineage (005-immutable-memory)
-- Python 3.12 + FastAPI, Starlette `StreamingResponse` for SSE, Pydantic v2,
-  SQLAlchemy 2.x, Alembic, PostgreSQL 16+, psycopg 3, Auth0 JWT validation,
-  httpx, pytest, pytest-asyncio, Ruff, mypy, uv (006-user-interaction-channels)
-- PostgreSQL for channel sessions, Telegram identity links, normalized
-  requests, idempotency records, notification subscriptions and delivery
-  attempts, API callbacks, timeline projections, and interaction audit records
-  (006-user-interaction-channels)
-- Python 3.12 + FastAPI, Pydantic v2, Pydantic Settings, SQLAlchemy 2.x,
-  Alembic, PostgreSQL 16+, psycopg 3, Auth0 JWT validation,
-  LangChain 1.2.15, LangGraph 1.1.9, langgraph-checkpoint-postgres 3.0.5,
-  pytest, pytest-asyncio, httpx, Ruff, mypy, uv (007-model-skill-routing)
-- PostgreSQL for model provider catalog entries, versioned model routing,
-  prompt references, skill bindings, tool policies, outbound policies,
-  secret-reference metadata, credential requirements, active pointers, runtime
-  pins, policy decisions, migrations, and configuration audit records
-  (007-model-skill-routing)
-- Python 3.12 + FastAPI, Pydantic v2, Pydantic Settings, SQLAlchemy 2.x,
-  Alembic, PostgreSQL 16+, psycopg 3, Auth0 JWT validation,
-  LangChain 1.2.15, LangGraph 1.1.9, langgraph-checkpoint-postgres 3.0.5,
-  pytest, pytest-asyncio, httpx, Ruff, mypy, uv
-  (008-production-audit-debugging)
-- PostgreSQL for append-only audit events, run timeline events, runtime trace
-  records, capture gaps, lineage projections, version-bundle references,
-  notification delivery projections, secret-access audit metadata, inspection
-  access audits, export metadata, redaction/classification records, and replay
-  snapshots (008-production-audit-debugging)
-- Python 3.12 + FastAPI, Starlette response handling, Pydantic v2,
-  Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+,
-  psycopg 3, Auth0 JWT validation, LangChain 1.2.15, LangGraph 1.1.9,
-  langgraph-checkpoint-postgres 3.0.5, prometheus-client, pytest,
-  pytest-asyncio, httpx, Ruff, mypy, uv (009-reliability-scale-hardening)
-- PostgreSQL for reliability policies, worker leases, queue state, quota
-  counters, fairness windows, retry schedules, circuit breaker state,
-  compensation requests, dead-letter records, operational snapshots, audit
-  events, artifact metadata, and object-storage artifact references
-  (009-reliability-scale-hardening)
-- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
-  SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+, psycopg 3,
-  Auth0 JWT validation, local-principal test mode, prometheus-client,
-  pytest, pytest-asyncio, httpx, Ruff, mypy, uv (010-admin-console-shell)
-- PostgreSQL for persisted admin saved filters, plus existing access decision
-  and audit records for shell navigation, direct destination access, scope
-  selection, and saved-filter restoration (010-admin-console-shell)
-- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
-  SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+, psycopg 3, httpx,
-  Auth0 JWT validation, existing secret providers, existing
-  model_skill_config catalog/resolver, existing audit/debugging capture,
-  existing reliability breakers/retries, prometheus-client, pytest,
-  pytest-asyncio, Ruff, mypy, uv (011-model-provider-gateway)
-- PostgreSQL for provider connections, model definitions, tenant visibility,
-  connection test results, health snapshots, catalog synchronization records,
-  gateway invocation metadata, safe audit summaries, and migration state
-  (011-model-provider-gateway)
-- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
-  Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+,
-  psycopg 3, Auth0 JWT validation, existing workflow registry,
-  model_skill_config prompt references, memory policy, audit/redaction helpers,
-  prometheus-client, pytest, pytest-asyncio, httpx, Ruff, mypy, uv
-  (012-prompt-runtime-profiles)
-- PostgreSQL for prompt lineages, prompt drafts, immutable prompt versions,
-  render tests, prompt audit records, agent runtime profiles, immutable profile
-  versions, tenant grants, workflow validation references, bundle pins, and run
-  provenance metadata (012-prompt-runtime-profiles)
-- PostgreSQL for additive gateway operation identities, provider probe and
-  catalog sync recovery records, physical attempt summaries, retry/breaker
-  summaries, prompt/profile/provider provenance links, and safe audit records
-  (012-prompt-runtime-profiles V2)
-- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2, Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+, psycopg 3, Auth0 JWT validation, local-principal admin test mode, existing workflow registry services/schemas/web_admin templates/static workflow_studio assets, prompt library services, agent runtime profile services, model_skill_config resolver and preview APIs, ModelGateway/provider catalog readiness, existing skill binding policy models, audit/redaction helpers, prometheus-client, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (013-admin-workflow-builder)
-- PostgreSQL for existing workflow lineages, active drafts, immutable draft revisions, validation results, published bundle metadata, sharing grants, audit records, prompt/profile references, provider catalog metadata, skill policy metadata, and future test bench result summaries; object/artifact storage for compiled workflow bundles and oversized validation reports (013-admin-workflow-builder)
-- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
-  Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+,
-  psycopg 3, Auth0 JWT validation, local-principal admin test mode,
-  existing secret providers, existing delegated credential metadata,
-  existing model_skill_config skill bindings, allowed tool policies,
-  outbound domain policies, credential requirement policies, existing workflow
-  registry publish validation hooks, existing object storage providers,
-  existing audit and redaction helpers, existing reliability quotas/retries/
-  breakers, prometheus-client, pytest, pytest-asyncio, httpx, Ruff, mypy, uv
-  (014-skill-registry-lifecycle)
-- PostgreSQL for skill packages, immutable package versions, tenant
-  availability grants, tenant installations, smoke-test evidence, credential
-  readiness, quarantine decisions, upgrade lineage, binding eligibility
-  projections, and skill audit records; object/artifact storage for immutable
-  package artifacts, safe docs, fixtures, pinned manifests, validation
-  evidence, and oversized smoke-test reports (014-skill-registry-lifecycle)
-- Python 3.12 + FastAPI, Starlette/Jinja2 template responses, Pydantic v2,
-  Pydantic Settings, SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+,
-  psycopg 3, Auth0 JWT validation, local-principal admin test mode, existing
-  skill registry services/schemas/templates, admin shell navigation,
-  audit/redaction helpers, model_skill_config policy preview APIs,
-  prometheus-client, pytest, pytest-asyncio, httpx, Ruff, mypy, uv
-  (014-skill-registry-lifecycle-v2)
-- Reuse existing Spec 014 PostgreSQL tables for skill packages, manifest
-  candidates/validation evidence if already present, immutable package
-  versions, tenant availability grants, tenant installations, credential
-  readiness, smoke-test evidence, binding eligibility projections, revision
-  tokens, and audit records; object/artifact storage only for existing package
-  artifacts, safe docs, fixtures, pinned manifests, validation evidence, and
-  oversized smoke-test reports (014-skill-registry-lifecycle-v2)
 
-- Python 3.12 + FastAPI, Pydantic Settings, LangChain, LangGraph, SQLAlchemy 2.x, Alembic, psycopg 3, pytest, pytest-asyncio, httpx, Ruff, mypy, uv (001-platform-foundation)
+- Python 3.12 across the platform.
+- FastAPI control-plane application with Starlette/Jinja2 server-rendered admin
+  pages, JSON APIs, channel webhooks, selected streaming/SSE responses, and a
+  worker process.
+- Pydantic v2 and Pydantic Settings for request/response schemas, domain
+  contracts, settings, and validation.
+- SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+, and psycopg 3 for durable
+  tenant-scoped state.
+- Auth0 JWT validation for production auth plus explicit local-principal admin
+  test mode for deterministic local and CI validation.
+- LangChain 1.2.15, LangGraph 1.1.9, and
+  langgraph-checkpoint-postgres 3.0.5 for runtime orchestration and durable
+  checkpoints.
+- Model provider gateway with OpenAI and local OpenAI-compatible adapters,
+  provider probes, secret-reference credential resolution, retry/breaker
+  behavior, redaction-safe attempt evidence, and usage capture.
+- First-party skill execution gateway for governed, read-only connector tools
+  with tenant, tool, outbound, credential, and side-effect policy checks.
+- prometheus-client, structured logging/tracing, audit/redaction helpers,
+  reliability quotas/leases/breakers, and operational dashboards.
+- pytest, pytest-asyncio, httpx/TestClient, Playwright QA scripts, Ruff, mypy,
+  coverage gates, and uv.
+- Object/filesystem storage providers for oversized artifacts, exports,
+  validation evidence, fixture payloads, and QA/test-bench outputs.
+
+## Active Domain Areas
+
+- Platform foundation and access control (001-002): tenant/principal metadata,
+  role grants, Auth0/local-principal auth, and access decision records.
+- Workflow registry, studio, builder, and publish gates (003, 013, 024):
+  workflow lineages, active drafts, immutable revisions, published bundles,
+  validation results, graph preview, publish gates, sharing grants, and
+  repository-backed required test-bench evidence.
+- Durable runtime, immutable memory, and graph execution (004, 005, 020):
+  workflow runs, run steps, worker leases, checkpoints, handoffs, side-effect
+  intents, approvals, timeline events, parent-child lineage, memory scopes,
+  immutable memory versions, and parallel sub-agent scheduling.
+- User interaction channels and Telegram delivery/configuration (006, 017,
+  022): channel sessions, normalized requests, callbacks, notification
+  attempts, Telegram tenant config, link-token audit, linked identities,
+  command aliases, webhook update receipts, and mocked-safe Bot API delivery.
+- Model/skill routing and model provider gateway (007, 011, 012 V2, 021, 025):
+  provider catalog entries, versioned model routing, tool/outbound/credential
+  policies, prompt/profile/provider provenance, runtime pins, provider
+  connections, gateway operations, physical attempts, health snapshots,
+  live secret resolution, and skill connector execution summaries.
+- Prompt library and runtime profiles (012): prompt lineages, drafts,
+  immutable versions, render tests, prompt audit records, agent runtime profile
+  versions, tenant grants, bundle pins, and run provenance metadata.
+- Audit, debugging, reliability, and operations (008, 009, 019): append-only
+  audit events, traces, timeline/search/replay records, redaction and
+  classification records, reliability policies, queues, quotas, fairness
+  windows, retry schedules, circuit breakers, compensation/dead-letter records,
+  operational snapshots, and platform operations console exports.
+- Admin console, membership administration, and saved filters (010, 018):
+  server-rendered admin shell navigation, tenant-scope handling,
+  authorization-aware destinations, persisted saved filters, invitations,
+  tenant memberships, role-grant refresh, and membership audit records.
+- Skill registry lifecycle (014, 014-v2): package manifests, immutable package
+  versions, tenant availability and installation state, credential readiness,
+  validation evidence, smoke-test evidence, quarantine decisions, upgrade
+  lineage, binding eligibility projections, revision tokens, and browser-first
+  admin workflows.
+- Agent/workflow test bench, usage analytics, and briefing preferences (015,
+  016, 023): test suites/cases/assertions/runs/artifacts, publish-gate
+  requirements, normalized LLM usage and pricing metadata, export requests,
+  briefing preference heads/revisions/imports/exports, and runtime preference
+  resolution evidence.
 
 ## Project Structure
 
 ```text
 src/multi_agent_platform/
+- admin/                  # Admin domain services: workflow registry, skill registry, memberships, Telegram config, briefing preferences
+- api/
+  - routers/              # Admin APIs/UI routes, channel webhooks, runtime endpoints, auth, ops
+  - schemas/              # Pydantic API schemas
+  - ui/                   # View models for server-rendered admin pages
+- audit/                  # Audit capture, inspection, classification, exports
+- auth/                   # Auth0/local-principal auth, policies, dependencies
+- bootstrap/              # API/worker container wiring
+- channels/               # Web/REST/Telegram channels, notifications, delivery
+- config/                 # Model/skill config catalog, policies, resolver
+- db/                     # Async session, models, repositories
+- memory/                 # Immutable memory service and repository
+- model_providers/        # Provider catalog, probes, gateway, adapters, secret resolution
+- observability/          # Logging, metrics, tracing
+- operations/             # Platform operations console aggregation and exports
+- prompts/                # Prompt library, previews, workflow hooks
+- reliability/            # Admission, leases, quotas, retries, breakers, dead letters
+- runtime/                # Orchestration, graph execution, skill tools, runtime resolvers
+- secrets/                # Secret provider abstractions
+- skill_execution/        # Governed first-party tool connector gateway
+- storage/                # Object/filesystem storage abstractions
+- tenancy/                # Tenant context and guards
+- testing/                # Agent/workflow test bench helpers
+- usage/                  # Token usage and cost analytics
+- web_admin/              # Jinja2 templates and static assets
+- workers/                # Worker loop entrypoints
+
+alembic/versions/           # Migrations 0001 through 0020 as of 2026-05-04
 tests/
-alembic/
+- contract/
+- docs/
+- fixtures/
+- integration/
+- performance/
+- unit/
+
+specs/                      # Spec Kit feature artifacts 001 through 025
+docs/
+scripts/
 ```
 
 ## Commands
@@ -131,85 +127,89 @@ alembic/
 - `uv run ruff check .`
 - `uv run ruff format --check .`
 - `uv run mypy src`
+- `uv run pytest`
 - `uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90`
+- `uv run python scripts/qa/run_spec_qa.py <validation.yml>`
+- `uv run python scripts/qa/run_playwright_ui.py <validation.yml> --start-processes`
 
 ## Code Style
 
-Python 3.12: Follow standard conventions with type annotations on public
-boundaries, FastAPI dependency injection for service wiring, and SQLAlchemy 2.x
-async patterns for PostgreSQL access.
+Python 3.12: follow standard conventions with explicit type annotations on
+public boundaries. Keep FastAPI routers thin and wire services through
+dependencies/container helpers. Put business behavior in domain services and
+repository modules that follow existing SQLAlchemy 2.x async patterns.
+
+Use Pydantic v2 models for contracts and validation. Keep all tenant,
+principal, workflow version, profile version, prompt version, provider, skill,
+and revision identifiers explicit at boundaries. Cross-tenant checks fail
+closed.
+
+Never persist, render, log, export, or include in QA artifacts raw secrets,
+credential values, provider authorization headers, private channel messages,
+raw prompts/completions, memory contents, unauthorized run payloads, or raw
+external tool payloads. Use existing redaction, fingerprinting, safe-summary,
+artifact-reference, and audit helpers.
+
+Local and CI validation should avoid real provider, Telegram, credential, and
+external tool calls unless a spec explicitly marks an approved live probe path.
+Prefer deterministic mocks/fakes that still exercise authorization, tenancy,
+secret-reference, policy, idempotency, and persistence behavior.
+
+Tests should scale with the changed surface: unit coverage for domain logic,
+repository tests for persistence and tenant filters, httpx/TestClient
+integration coverage for API/UI flows, performance tests for bounded queries,
+docs/QA tests for generated guides, and Playwright validation for browser-first
+admin workflows.
 
 ## Recent Changes
-- 014-skill-registry-lifecycle-v2: Planned browser-first skill registry
-  lifecycle workflows to replace primary QA curl/API helper steps with
-  server-rendered admin UI forms for package creation, manifest paste/upload,
-  candidate validation, immutable publication, tenant grants, tenant
-  discovery, tenant installation, credential reference configuration,
-  smoke-test/readiness evidence, binding eligibility preview, stale conflict
-  recovery, tenant isolation, and redaction-safe screenshot evidence.
-- 014-skill-registry-lifecycle: Planned governed skill registry and tenant
-  installation lifecycle with immutable package artifacts, manifest schema,
-  validation, credential readiness, smoke tests, quarantine, upgrade/rollback
-  semantics, Spec 007 skill-binding eligibility, workflow publish validation,
-  admin views, APIs, audit, reliability controls, docs, and tests.
-- 013-admin-workflow-builder: Planned guided admin workflow builder UX on top
-  of existing workflow registry services, workflow schemas, admin templates,
-  workflow_studio assets, prompt library, agent profiles, model routing
-  previews, provider catalog readiness, skill policies, reusable subworkflows,
-  field-level validation, graph preview, publish gate, draft revisions,
-  optimistic concurrency, audit events, docs, and reviewer QA tests.
-- 012-prompt-runtime-profiles V2: Planned additive runtime gateway completion
-  with container-managed ModelGateway wiring, gateway-ready worker bootstrap,
-  profile-governed model execution, test bench parity, durable provider
-  operation idempotency, retry and circuit breaker summaries, admin probe
-  limits, direct provider call guardrails, and safe combined prompt/profile plus
-  provider provenance.
-- 012-prompt-runtime-profiles: Planned prompt library and agent runtime profile
-  management with prompt lineages, draft revisions, template variable
-  validation, safe fixture previews, immutable prompt publication, retirement,
-  tenant grants, profile versioning, workflow validation hooks, Spec 007 prompt
-  reference integration, run acceptance and dynamic first-use pinning, safe
-  audit records, browser admin views for non-developers, API contracts, docs,
-  and tests.
-- 011-model-provider-gateway: Planned model provider connection management
-  and shared ModelGateway with OpenAI/local OpenAI-compatible adapters, safe
-  probes, health snapshots, catalog synchronization, secret-reference
-  resolution, gateway runtime contracts, timeout/retry/breaker behavior,
-  usage metadata extraction, tenant visibility, admin web views, tests, docs,
-  PR notes, and reviewer QA.
-- 010-admin-console-shell: Implemented shared server-rendered admin console
-  shell with FastAPI/Jinja2 templates, Auth0/local-principal authorization,
-  validated tenant-scope query handling, authorization-aware navigation,
-  item-level navigation audit evidence, fail-closed audit persistence behavior,
-  common empty/error/flash states, breadcrumbs, saved filters, accessibility,
-  docs, and tests while preserving existing admin routes.
-- 009-reliability-scale-hardening: Planned reliability and scale hardening with
-  tenant-aware admission and backpressure, worker autoscaling signals, lease
-  tuning, DB pooling, partitioning, retry budgets, circuit breakers,
-  compensation orchestration, dead-letter handling, operational dashboards,
-  tenant fairness controls, artifact-throughput limits, failure-mode research,
-  and resume-after-failure validation under load.
-- 008-production-audit-debugging: Planned production observability and audit
-  debugging with structured logs, trace IDs, metrics, append-only audit tables,
-  admin timeline/search/replay APIs, lineage and version-bundle views,
-  redaction/classification, exports, and completeness testing.
-- 007-model-skill-routing: Planned versioned model routing and skill/tool
-  configuration, deterministic precedence resolution, run and first-use
-  pinning, rollback, outbound and credential policy enforcement, audit
-  provenance, and admin preview/history views.
-- 006-user-interaction-channels: Planned FastAPI channel adapters for Web UI,
-  Telegram webhooks, and REST APIs with normalized requests, shared run status,
-  SSE/polling, callbacks, approval/resume flows, notifications, and artifact
-  access.
-- 005-immutable-memory: Planned append-only PostgreSQL-backed memory scopes,
-  immutable version lineage, head projections, runtime-safe reads/writes,
-  retrieval APIs, audit redaction, archival markers, and concurrency tests.
+
+- 025-live-model-credential-resolution-for-gateway-calls: Completed live
+  credential resolution for provider probes and ModelGateway calls using
+  `ProviderSecretResolver`, safe secret reference selection, fail-closed OpenAI
+  behavior, local allowlisted no-auth behavior, redaction-safe diagnostics, and
+  focused provider/gateway tests.
+- 024-automatic-test-bench-evidence-integration-workflow-publish-gates:
+  Completed repository-backed required test-bench evidence for workflow
+  validation, publish gate responses, published bundle summaries, and admin UI
+  evidence rendering.
+- 023-user-briefing-preferences-and-context: Completed tenant-scoped Daily
+  Intelligence Briefing preferences with immutable revisions, admin/user UI,
+  JSON import/export, safe admin summaries, runtime resolver, and Telegram alias
+  context injection.
+- 022-telegram-natural-language-trigger-delivery-persistence: Completed
+  tenant-scoped Telegram command aliases, persistent identity/link-token
+  consumption, update receipts, readiness checks, mockable Bot API delivery,
+  and durable delivery attempts.
+- 021-real-skill-tool-execution-connectors: Completed governed
+  `SkillExecutionGateway` support for first-party read-only Daily Briefing
+  connector tools with policy enforcement, redaction, normalized outputs, and
+  admin diagnostics.
+- 020-workflow-graph-execution-parallel-sub-agent-runtime: Completed durable
+  graph execution for published workflow bundles, deterministic role execution
+  for QA, parallel branch scheduling, join policies, step/timeline evidence,
+  manual resolution pauses, and worker integration.
+- 019-operations-console-logs-performance: Completed platform-operator
+  Operations Console aggregation over existing health, reliability, provider,
+  Telegram, usage, gateway, and audit/debugging records with redacted CSV
+  exports.
+- 018-user-tenant-membership-administration: Completed governed membership
+  administration with invitations, tenant memberships, role guardrails,
+  next-request grant refresh, admin UI/API flows, and safe audit records.
+- 017-telegram-configuration-console: Completed Telegram configuration console
+  with tenant enablement, safe token audit, linked identity summaries,
+  diagnostics, local fake-secret readiness, and redaction-safe admin UI.
+- 016-token-usage-cost-analytics: Completed normalized token usage and
+  estimated-cost analytics with usage/pricing tables, ModelGateway capture,
+  tenant dashboards, safe CSV export metadata, and audit-safe access logging.
+- 015-agent-workflow-test-bench: Completed governed test bench foundations for
+  tenant-scoped suites, cases, assertions, durable runs, artifacts, mocked-safe
+  execution, and workflow publication gate evidence.
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan:
-`specs/022-telegram-natural-language-trigger-delivery-persistence/plan.md`
+shell commands, and other important information, read the latest plan:
+`specs/025-live-model-credential-resolution-for-gateway-calls/plan.md`
 <!-- SPECKIT END -->
