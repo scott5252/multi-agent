@@ -29,11 +29,17 @@ from multi_agent_platform.channels.telegram_delivery import (
 )
 from multi_agent_platform.config.settings import Settings
 from multi_agent_platform.db.models.channels import NotificationDeliveryAttemptRecord
+from multi_agent_platform.db.repositories.briefing_preferences import (
+    BriefingPreferenceRepository,
+)
 from multi_agent_platform.db.repositories.channels import ChannelRepository
 from multi_agent_platform.db.repositories.telegram_config import (
     TelegramConfigRepository,
 )
 from multi_agent_platform.observability.tracing import generate_trace_id
+from multi_agent_platform.runtime.briefing_preferences import (
+    resolve_briefing_preferences,
+)
 
 
 @dataclass(slots=True)
@@ -57,6 +63,7 @@ class TelegramCommandHandler:
         settings: Settings | None = None,
         telegram_config_repository: TelegramConfigRepository | None = None,
         channel_repository: ChannelRepository | None = None,
+        briefing_preference_repository: BriefingPreferenceRepository | None = None,
         bot_client: TelegramBotApiClient | None = None,
     ) -> None:
         self.service = service
@@ -64,6 +71,7 @@ class TelegramCommandHandler:
         self.settings = settings or service.settings
         self.telegram_config_repository = telegram_config_repository
         self.channel_repository = channel_repository
+        self.briefing_preference_repository = briefing_preference_repository
         self.bot_client = bot_client
 
     async def handle_update(
@@ -412,14 +420,27 @@ class TelegramCommandHandler:
                 ErrorCategory.UNAVAILABLE_CHANNEL_DELIVERY,
                 trace_id=actor.trace_id,
             )
+        inputs: dict[str, object] = {
+            "text": text,
+            "telegram_alias": alias.alias_text,
+            "telegram_update_id": update_id,
+        }
+        if (
+            self.briefing_preference_repository is not None
+            and alias.alias_normalized == "morning briefing"
+        ):
+            context = await resolve_briefing_preferences(
+                repository=self.briefing_preference_repository,
+                tenant_id=tenant_id,
+                principal_id=actor.platform_identity_id,
+                source_channel="telegram",
+                trace_id=actor.trace_id,
+            )
+            inputs["briefing_preferences"] = context.as_run_input()
         start_result = await self.service.start_run(
             actor=actor,
             workflow_id=str(alias.published_workflow_version_id),
-            inputs={
-                "text": text,
-                "telegram_alias": alias.alias_text,
-                "telegram_update_id": update_id,
-            },
+            inputs=inputs,
             idempotency_key=f"telegram-{update_id}",
         )
         summary = _alias_completion_summary(alias.alias_text)

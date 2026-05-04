@@ -12,6 +12,9 @@ from multi_agent_platform.channels.telegram_delivery import (
     HttpTelegramBotApiClient,
     TelegramBotApiClient,
 )
+from multi_agent_platform.db.repositories.briefing_preferences import (
+    BriefingPreferenceRepository,
+)
 from multi_agent_platform.db.repositories.channels import ChannelRepository
 from multi_agent_platform.db.repositories.telegram_config import (
     TelegramConfigRepository,
@@ -38,6 +41,7 @@ async def telegram_webhook(
         settings=service.settings,
         telegram_config_repository=TelegramConfigRepository(session),
         channel_repository=ChannelRepository(session),
+        briefing_preference_repository=BriefingPreferenceRepository(session),
         bot_client=cast(TelegramBotApiClient, bot_client),
     )
     return await handler.handle_update(provided_secret=secret, update=update)

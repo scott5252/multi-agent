@@ -567,6 +567,19 @@ def navigation_registry() -> tuple[NavigationItem, ...]:
             filter_profile="telegram_configuration",
         ),
         NavigationItem(
+            item_id="briefing_preferences",
+            label="Briefing Preferences",
+            group="Model And Skill Config",
+            href="/admin/briefing-preferences",
+            route_surface_key="GET:/admin/briefing-preferences",
+            required_scope="either",
+            admin_area="briefing_preferences",
+            preserve_tenant_scope=True,
+            active_matchers=("/admin/briefing-preferences",),
+            order=27,
+            filter_profile="briefing_preferences",
+        ),
+        NavigationItem(
             item_id="model_providers",
             label="Model Providers",
             group="Model And Skill Config",
@@ -885,6 +898,18 @@ def filter_profiles() -> dict[str, FilterProfile]:
                 "enabled": "Enabled",
                 "status": "Status",
                 "category": "Diagnostic category",
+            },
+        ),
+        "briefing_preferences": FilterProfile(
+            admin_area="briefing_preferences",
+            filter_key="briefing-preferences",
+            destination_href="/admin/briefing-preferences",
+            allowed_criteria=("tenant_id", "principal_id", "timezone", "ready"),
+            labels={
+                "tenant_id": "Tenant",
+                "principal_id": "Principal",
+                "timezone": "Timezone",
+                "ready": "Ready",
             },
         ),
         "run_inspection": FilterProfile(

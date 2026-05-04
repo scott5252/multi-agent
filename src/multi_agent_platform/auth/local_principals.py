@@ -102,6 +102,21 @@ TELEGRAM_CONFIG_TENANT_PERMISSIONS = (
     "telegram-config:tokens",
     "telegram-config:diagnostics",
 )
+BRIEFING_PREFERENCES_PLATFORM_PERMISSIONS = (
+    "platform:admin",
+    "briefing-preferences:read",
+    "briefing-preferences:write",
+    "briefing-preferences:export",
+    "briefing-preferences:resolve",
+)
+BRIEFING_PREFERENCES_TENANT_PERMISSIONS = (
+    "tenant:read",
+    "tenant:admin",
+    "briefing-preferences:read",
+    "briefing-preferences:write",
+    "briefing-preferences:export",
+    "briefing-preferences:resolve",
+)
 MEMBERSHIP_ADMIN_PLATFORM_PERMISSIONS = (
     "platform:admin",
     "membership-admin:read",
@@ -154,6 +169,12 @@ def telegram_config_permission_codes(*, platform: bool) -> tuple[str, ...]:
     if platform:
         return TELEGRAM_CONFIG_PLATFORM_PERMISSIONS
     return TELEGRAM_CONFIG_TENANT_PERMISSIONS
+
+
+def briefing_preferences_permission_codes(*, platform: bool) -> tuple[str, ...]:
+    if platform:
+        return BRIEFING_PREFERENCES_PLATFORM_PERMISSIONS
+    return BRIEFING_PREFERENCES_TENANT_PERMISSIONS
 
 
 def membership_admin_permission_codes(*, platform: bool) -> tuple[str, ...]:

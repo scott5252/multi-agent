@@ -62,6 +62,11 @@ from multi_agent_platform.db.models.audit_debugging import (
     ToolUsageTraceRecord,
     VersionBundleSnapshotRecord,
 )
+from multi_agent_platform.db.models.briefing_preferences import (
+    BriefingPreferenceAuditEvent,
+    BriefingPreferenceProfile,
+    BriefingPreferenceRevision,
+)
 from multi_agent_platform.db.models.channels import (
     ApiCallbackDeliveryAttemptRecord,
     ApiCallbackRegistrationRecord,
@@ -275,6 +280,9 @@ def import_models() -> None:
         LlmPricingVersion,
         LlmUsageEvent,
         LlmUsageRollup,
+        BriefingPreferenceAuditEvent,
+        BriefingPreferenceProfile,
+        BriefingPreferenceRevision,
         TelegramCommandAlias,
         TelegramDiagnosticEvent,
         TelegramLinkedIdentitySummary,

@@ -723,6 +723,66 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         classification=SurfaceClassification.AUTHENTICATED,
         required_permissions=("telegram-config:tokens",),
     ),
+    "GET:/admin/briefing-preferences": ProtectedSurface(
+        surface_key="GET:/admin/briefing-preferences",
+        requested_action="render_briefing_preferences_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:read",),
+    ),
+    "POST:/admin/briefing-preferences": ProtectedSurface(
+        surface_key="POST:/admin/briefing-preferences",
+        requested_action="save_briefing_preferences_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:write",),
+    ),
+    "GET:/admin/briefing-preferences/export": ProtectedSurface(
+        surface_key="GET:/admin/briefing-preferences/export",
+        requested_action="export_briefing_preferences_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:export",),
+    ),
+    "POST:/admin/briefing-preferences/import": ProtectedSurface(
+        surface_key="POST:/admin/briefing-preferences/import",
+        requested_action="import_briefing_preferences_ui",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:write",),
+    ),
+    "GET:/admin/briefing-preferences/api/profile": ProtectedSurface(
+        surface_key="GET:/admin/briefing-preferences/api/profile",
+        requested_action="read_briefing_preference_profile",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:read",),
+    ),
+    "POST:/admin/briefing-preferences/api/profile": ProtectedSurface(
+        surface_key="POST:/admin/briefing-preferences/api/profile",
+        requested_action="save_briefing_preference_profile",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:write",),
+    ),
+    "GET:/admin/briefing-preferences/api/summaries": ProtectedSurface(
+        surface_key="GET:/admin/briefing-preferences/api/summaries",
+        requested_action="read_briefing_preference_summaries",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:read",),
+    ),
+    "GET:/admin/briefing-preferences/api/export": ProtectedSurface(
+        surface_key="GET:/admin/briefing-preferences/api/export",
+        requested_action="export_briefing_preference_profile",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:export",),
+    ),
+    "POST:/admin/briefing-preferences/api/import": ProtectedSurface(
+        surface_key="POST:/admin/briefing-preferences/api/import",
+        requested_action="import_briefing_preference_profile",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:write",),
+    ),
+    "POST:/admin/briefing-preferences/api/resolve": ProtectedSurface(
+        surface_key="POST:/admin/briefing-preferences/api/resolve",
+        requested_action="resolve_briefing_preference_runtime_context",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("briefing-preferences:resolve",),
+    ),
     (
         "POST:/admin/support-overrides/{support_override_request_id}/approve"
     ): ProtectedSurface(

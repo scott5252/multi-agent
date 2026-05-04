@@ -643,6 +643,58 @@ Manual production audit debugging QA:
   credential values, unauthorized prompt text, or unauthorized memory content.
 - [Production Audit Debugging](/Users/scottcornell/src/my-projects/multi-agent/docs/production-audit-debugging.md)
 
+## Briefing Preferences Quickstart
+
+Use the QA023 environment when validating Daily Intelligence Briefing
+preferences:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/023-user-briefing-preferences-and-context/.env.qa023 .env
+uv sync
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa023 && createdb -U postgres multi_agent_platform_qa023'
+uv run alembic upgrade head
+docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa023 -c "INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING;"
+```
+
+Open the browser UI:
+
+- [Briefing Preferences](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/briefing-preferences)
+
+Manual QA:
+
+- Sign in as `tenant-admin-acme` and save a profile with location, timezone,
+  topics, VIP sender hints, workday hours, commute mode, calendar/email account
+  references, output style, and scheduled time.
+- Sign in as `platform-admin` and inspect the Acme safe summary.
+- Confirm the summary masks VIP senders and account references.
+- Sign in as `tenant-admin-globex` and confirm Acme profile access is denied.
+- Resolve runtime context through
+  `/admin/briefing-preferences/api/resolve` and confirm revision id plus
+  content digest are present.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/contract/test_briefing_preferences_contract.py \
+  tests/docs/test_briefing_preferences_docs.py \
+  tests/unit/auth/test_briefing_preferences_policy.py \
+  tests/unit/admin/briefing_preferences/test_briefing_preference_service.py \
+  tests/unit/db/test_briefing_preferences_repository.py \
+  tests/integration/api/test_admin_briefing_preferences_api.py \
+  tests/integration/api/test_admin_briefing_preferences_ui.py \
+  tests/integration/runtime/test_briefing_preference_resolution.py
+```
+
+Additional evidence:
+
+- [Spec 023 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/023-user-briefing-preferences-and-context/qa023.md)
+- [Spec 023 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/023-user-briefing-preferences-and-context/qa023_ui.md)
+- [Spec 023 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/023-user-briefing-preferences-and-context/qa023_user_guide.md)
+- [Spec 023 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/023-user-briefing-preferences-and-context/testing-instructions.md)
+
 ## Troubleshooting
 
 - `401 missing local principal header or cookie`: sign in through

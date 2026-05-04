@@ -362,6 +362,30 @@ non-repeatable side effects route to operator intervention, compensation is
 requested at most once automatically per affected intent and hook, and large
 failure evidence remains in object storage with PostgreSQL metadata only.
 
+## Briefing Preferences
+
+Tenant admins review and save Daily Intelligence Briefing preference profiles
+at `/admin/briefing-preferences` or through JSON APIs under
+`/admin/briefing-preferences/api`. Profiles capture location, timezone, news
+topics, VIP sender hints, workday hours, commute mode, safe calendar/email
+account references, output style, and optional scheduled briefing time.
+
+Every profile update appends an immutable revision and moves a current head
+projection. Runtime resolution looks up preferences by tenant id and principal
+id, returning the pinned revision id and content digest for Daily Intelligence
+Briefing run inputs. Telegram `Morning briefing` alias handling can attach this
+context when a linked user has saved a profile.
+
+Admin summaries show safe readiness evidence only: counts, masked sender hints,
+reference labels, revision metadata, timestamps, and trace ids. Raw credentials,
+raw account references, raw VIP sender values, and cross-tenant profile data are
+excluded from admin summaries and audit metadata.
+
+QA023 reviewer evidence lives in
+`specs/023-user-briefing-preferences-and-context/qa023.md`,
+`specs/023-user-briefing-preferences-and-context/qa023_ui.md`, and
+`specs/023-user-briefing-preferences-and-context/qa023_user_guide.md`.
+
 ## Latest Validation Evidence
 
 Latest full validation run: `2026-04-24`

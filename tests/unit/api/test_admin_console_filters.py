@@ -19,6 +19,7 @@ def test_filter_profiles_cover_useful_admin_areas() -> None:
         "model_providers",
         "model_skill_history",
         "operations",
+        "briefing_preferences",
         "run_inspection",
         "reliability_breakers",
         "reliability_dead_letters",
