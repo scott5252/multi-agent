@@ -10,3 +10,5 @@ def test_readme_mentions_model_provider_gateway_user_flow() -> None:
     assert "Safe provider tests" in readme
     assert "Catalog sync" in readme
     assert "ModelGateway" in readme
+    assert "QA025" in readme
+    assert "secret_reference_invalid" in readme

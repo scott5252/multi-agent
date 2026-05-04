@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from uuid import UUID
 
 from multi_agent_platform.auth.principal import PrincipalContext
@@ -68,9 +68,17 @@ def validate_connection_draft(
             "OpenAI endpoint overrides must use https",
             field="base_url",
         )
+    credential_secret_reference_ids = _validate_credential_references(
+        draft.credential_secret_reference_ids
+    )
     if draft.visibility.mode is VisibilityMode.TENANT_ALLOWLIST:
         _validate_grantable_tenants(draft.visibility.tenant_ids, principal=principal)
-    return draft
+    if credential_secret_reference_ids == draft.credential_secret_reference_ids:
+        return draft
+    return replace(
+        draft,
+        credential_secret_reference_ids=credential_secret_reference_ids,
+    )
 
 
 def _reject_duplicate_models(models: tuple[ProviderModel, ...]) -> None:
@@ -97,3 +105,32 @@ def _validate_grantable_tenants(
             "actor cannot grant visibility for this tenant",
             field="visibility",
         )
+
+
+def _validate_credential_references(references: tuple[str, ...]) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for reference in references:
+        safe_reference = reference.strip()
+        if not safe_reference:
+            raise ProviderValidationError(
+                "credential secret references cannot be blank",
+                field="credential_secret_reference_ids",
+            )
+        lowered = safe_reference.lower()
+        if any(
+            marker in lowered
+            for marker in ("sk-", "bearer ", "password", "secret=", "api_key=")
+        ):
+            raise ProviderValidationError(
+                "credential fields accept secret references only",
+                field="credential_secret_reference_ids",
+            )
+        if safe_reference in seen:
+            raise ProviderValidationError(
+                "credential secret references must be unique",
+                field="credential_secret_reference_ids",
+            )
+        seen.add(safe_reference)
+        normalized.append(safe_reference)
+    return tuple(normalized)

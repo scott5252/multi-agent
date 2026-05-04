@@ -227,6 +227,9 @@ class ModelProviderService:
             timeout_policy=TimeoutPolicy.model_validate(connection.timeout_policy),
             base_url=connection.base_url_safe,
             credential=None,
+            credential_secret_reference_ids=tuple(
+                connection.credential_secret_reference_ids
+            ),
         )
         record = await self._repository.append_test_result(
             connection=connection,

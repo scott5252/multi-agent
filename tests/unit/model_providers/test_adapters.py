@@ -153,8 +153,11 @@ def test_provider_adapter_registry_rejects_unknown_provider() -> None:
 
 @pytest.mark.asyncio
 async def test_openai_and_local_adapters_delegate_to_chat_completions() -> None:
+    seen_authorization_headers: list[str | None] = []
+
     async def handler(request: httpx.Request) -> httpx.Response:
         assert str(request.url).endswith("/v1/chat/completions")
+        seen_authorization_headers.append(request.headers.get("authorization"))
         return httpx.Response(200, json={"choices": [{"message": {"content": "ok"}}]})
 
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
@@ -177,9 +180,27 @@ async def test_openai_and_local_adapters_delegate_to_chat_completions() -> None:
             base_url="http://localhost:11434",
         )
     )
+    local_credential_response = await LocalOpenAICompatibleAdapter(
+        allowlist=LocalEndpointAllowlist(("http",), ("localhost",), (11434,)),
+        client=client,
+    ).chat_completion(
+        AdapterRequest(
+            model_id="local-test",
+            messages=({"role": "user", "content": "health"},),
+            timeout_policy=TimeoutPolicy(),
+            base_url="http://localhost:11434",
+            credential="local-resolved",
+        )
+    )
 
     assert openai_response.outcome is TestOutcome.SUCCESS
     assert local_response.outcome is TestOutcome.SUCCESS
+    assert local_credential_response.outcome is TestOutcome.SUCCESS
+    assert seen_authorization_headers == [
+        "Bearer resolved",
+        None,
+        "Bearer local-resolved",
+    ]
     assert (
         ProviderAdapterRegistry({ProviderType.OPENAI: OpenAIAdapter(client)})
         .get(ProviderType.OPENAI)

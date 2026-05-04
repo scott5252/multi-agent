@@ -86,3 +86,25 @@ def test_validate_connection_draft_wraps_allowlist_errors() -> None:
 
     assert exc_info.value.field == "base_url"
     assert str(exc_info.value) == "local provider URL cannot include userinfo"
+
+
+def test_validate_connection_draft_rejects_duplicate_secret_references() -> None:
+    draft = ProviderConnectionDraft(
+        provider_type=ProviderType.OPENAI,
+        display_name="Provider",
+        base_url=None,
+        timeout_policy=TimeoutPolicy(),
+        visibility=TenantVisibility(),
+        models=(ProviderModel(model_id="gpt-test"),),
+        credential_secret_reference_ids=("qa025/openai", " qa025/openai "),
+        active=True,
+    )
+
+    with pytest.raises(ProviderValidationError) as exc_info:
+        validate_connection_draft(
+            draft,
+            principal=PrincipalContext(role_codes=("platform_admin",)),
+            allowlist=LocalEndpointAllowlist(("http",), ("localhost",), (11434,)),
+        )
+
+    assert exc_info.value.field == "credential_secret_reference_ids"

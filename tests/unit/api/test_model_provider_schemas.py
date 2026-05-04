@@ -28,3 +28,21 @@ def test_provider_connection_schema_rejects_raw_secret_like_reference() -> None:
             models=[{"model_id": "gpt-test"}],
             credential_secret_reference_ids=["sk-live-secret-value"],
         )
+
+
+def test_provider_connection_schema_rejects_blank_and_duplicate_references() -> None:
+    with pytest.raises(ValidationError):
+        ProviderConnectionCreateRequest(
+            provider_type="openai",
+            display_name="QA Provider",
+            models=[{"model_id": "gpt-test"}],
+            credential_secret_reference_ids=["qa025/openai", " qa025/openai "],
+        )
+
+    with pytest.raises(ValidationError):
+        ProviderConnectionCreateRequest(
+            provider_type="openai",
+            display_name="QA Provider",
+            models=[{"model_id": "gpt-test"}],
+            credential_secret_reference_ids=[" "],
+        )

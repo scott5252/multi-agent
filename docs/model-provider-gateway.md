@@ -35,6 +35,12 @@ actor/source, latency, tested model, outcome, normalized reason, and safe
 diagnostics. Raw prompts, completions, provider response bodies, API keys,
 tokens, Authorization headers, and endpoint secrets are not persisted.
 
+Credential secret reference ids are resolved through the configured secret
+provider only at probe time. OpenAI probes require a resolvable reference and
+fail closed with `secret_reference_invalid` before any provider call when the
+reference is missing or invalid. Local OpenAI-compatible probes may remain
+no-auth only for allowlisted local endpoints.
+
 Health states are derived from active state and latest probe evidence:
 `disabled`, `untested`, `healthy`, `degraded`, `failing`, and `unavailable`.
 Routing may select only healthy, active, tenant-visible, gateway-governed
@@ -55,6 +61,11 @@ usage availability, retry/breaker summaries, and a safe audit summary. The
 gateway response keeps provider content in memory only and does not persist raw
 prompts or completions.
 
+`ModelGateway` resolves provider credentials at call time from the connection's
+ordered safe reference list. Resolved values are passed only into the adapter
+request and are never written to gateway attempts, operations, physical
+attempts, usage records, or audit summaries.
+
 ## Review Checks
 
 Use the Spec 011 QA guide and UI guide for copy/paste verification:
@@ -62,3 +73,6 @@ Use the Spec 011 QA guide and UI guide for copy/paste verification:
 - `specs/011-model-provider-gateway/qa011.md`
 - `specs/011-model-provider-gateway/QA011_UI.MD`
 - `specs/011-model-provider-gateway/testing-instructions.md`
+- `specs/025-live-model-credential-resolution-for-gateway-calls/qa025.md`
+- `specs/025-live-model-credential-resolution-for-gateway-calls/qa025_ui.md`
+- `specs/025-live-model-credential-resolution-for-gateway-calls/testing-instructions.md`

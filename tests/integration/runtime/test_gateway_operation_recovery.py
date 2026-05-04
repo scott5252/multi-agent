@@ -11,6 +11,7 @@ from multi_agent_platform.model_providers.gateway import ModelGateway
 from multi_agent_platform.model_providers.models import (
     AdapterRequest,
     AdapterResponse,
+    ErrorCategory,
     GatewayInvocationContext,
     HealthState,
     ProviderModel,
@@ -20,6 +21,8 @@ from multi_agent_platform.model_providers.models import (
     TimeoutPolicy,
     VisibilityMode,
 )
+from multi_agent_platform.model_providers.secrets import ProviderSecretResolver
+from multi_agent_platform.secrets.providers.static import StaticSecretProvider
 
 
 class CountingAdapter:
@@ -94,3 +97,67 @@ async def test_gateway_operation_duplicate_reuses_authoritative_outcome(
     assert second.outcome is TestOutcome.SUCCESS
     assert adapter.calls == 1
     assert attempts == [False, True]
+
+
+async def test_gateway_operation_records_safe_secret_resolution_failure(
+    session,
+) -> None:
+    repo = ModelProviderRepository(session)
+    connection = await repo.save_connection(
+        connection_id=None,
+        provider_type=ProviderType.OPENAI,
+        display_name="Provider",
+        base_url_safe=None,
+        timeout_policy=TimeoutPolicy(),
+        visibility=TenantVisibility(mode=VisibilityMode.PLATFORM_DEFAULT),
+        credential_secret_reference_ids=("qa025/missing",),
+        models=(ProviderModel(model_id="gpt-test"),),
+        active=True,
+        principal_id="platform-admin",
+    )
+    connection.health_state = HealthState.HEALTHY
+    adapter = CountingAdapter()
+    gateway = ModelGateway(
+        repository=repo,
+        registry=ProviderAdapterRegistry({ProviderType.OPENAI: adapter}),
+        secret_resolver=ProviderSecretResolver(StaticSecretProvider({})),
+    )
+    context = GatewayInvocationContext(
+        tenant_id=uuid4(),
+        workflow_run_id=uuid4(),
+        workflow_run_step_id=uuid4(),
+        trace_id="trace",
+        idempotency_key="idem-secret-failure",
+        operation_identity="gateway:secret-failure",
+        agent_profile_version_id=uuid4(),
+        prompt_version_ids=(uuid4(),),
+        prompt_reference_version_ids=(uuid4(),),
+        model_routing_provenance={"resolver": "model_skill_config"},
+    )
+
+    result = await gateway.invoke(
+        connection_id=connection.provider_connection_id,
+        model_id="gpt-test",
+        messages=({"role": "user", "content": "health"},),
+        context=context,
+    )
+    attempt = (
+        (
+            await session.execute(
+                select(GatewayPhysicalAttempt).where(
+                    GatewayPhysicalAttempt.normalized_error_category
+                    == ErrorCategory.SECRET_REFERENCE_INVALID
+                )
+            )
+        )
+        .scalars()
+        .one()
+    )
+
+    assert result.outcome is TestOutcome.FAILURE
+    assert result.normalized_error_category is ErrorCategory.SECRET_REFERENCE_INVALID
+    assert adapter.calls == 0
+    assert attempt.safe_audit_summary_json["credential_reference_id"] == (
+        "qa025/missing"
+    )
+    assert "secret-value" not in str(attempt.safe_audit_summary_json)

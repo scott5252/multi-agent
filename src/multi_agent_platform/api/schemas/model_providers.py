@@ -34,10 +34,23 @@ class ProviderConnectionCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_secret_refs(self) -> ProviderConnectionCreateRequest:
+        normalized: list[str] = []
+        seen: set[str] = set()
         for reference in self.credential_secret_reference_ids:
-            lowered = reference.lower()
-            if any(marker in lowered for marker in ("sk-", "bearer ", "password")):
+            safe_reference = reference.strip()
+            if not safe_reference:
+                raise ValueError("credential secret references cannot be blank")
+            lowered = safe_reference.lower()
+            if any(
+                marker in lowered
+                for marker in ("sk-", "bearer ", "password", "secret=", "api_key=")
+            ):
                 raise ValueError("credential fields accept secret references only")
+            if safe_reference in seen:
+                raise ValueError("credential secret references must be unique")
+            seen.add(safe_reference)
+            normalized.append(safe_reference)
+        self.credential_secret_reference_ids = tuple(normalized)
         return self
 
 

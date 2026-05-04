@@ -19,7 +19,11 @@ class OpenAIAdapter:
 
     async def chat_completion(self, request: AdapterRequest) -> AdapterResponse:
         base_url = (request.base_url or "https://api.openai.com").rstrip("/")
-        headers = {"Authorization": f"Bearer {request.credential or ''}"}
+        headers = (
+            {"Authorization": f"Bearer {request.credential}"}
+            if request.credential
+            else {}
+        )
         return await post_openai_chat_completion(
             client=self._client,
             request=request,

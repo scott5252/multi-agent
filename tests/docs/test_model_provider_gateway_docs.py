@@ -16,6 +16,8 @@ def test_model_provider_gateway_docs_cover_required_surfaces() -> None:
         "Runtime Gateway",
         "qa011.md",
         "QA011_UI.MD",
+        "qa025.md",
+        "secret_reference_invalid",
     ):
         assert expected in text
 

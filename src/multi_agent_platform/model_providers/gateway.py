@@ -3,6 +3,10 @@ from __future__ import annotations
 from typing import Protocol
 from uuid import UUID
 
+from multi_agent_platform.db.models.model_providers import (
+    GatewayOperation,
+    ModelProviderConnection,
+)
 from multi_agent_platform.db.repositories.model_providers import ModelProviderRepository
 from multi_agent_platform.model_providers.adapters import ProviderAdapterRegistry
 from multi_agent_platform.model_providers.models import (
@@ -15,6 +19,10 @@ from multi_agent_platform.model_providers.models import (
     TestOutcome,
     TimeoutPolicy,
 )
+from multi_agent_platform.model_providers.secrets import (
+    ProviderSecretResolver,
+    SecretReferenceError,
+)
 from multi_agent_platform.reliability.breakers import gateway_breaker_summary
 from multi_agent_platform.reliability.retries import gateway_retry_summary
 
@@ -26,10 +34,12 @@ class ModelGateway:
         repository: ModelProviderRepository,
         registry: ProviderAdapterRegistry,
         usage_recorder: GatewayUsageRecorder | None = None,
+        secret_resolver: ProviderSecretResolver | None = None,
     ) -> None:
         self._repository = repository
         self._registry = registry
         self._usage_recorder = usage_recorder
+        self._secret_resolver = secret_resolver
 
     async def invoke(
         self,
@@ -164,13 +174,34 @@ class ModelGateway:
             connection_id=connection.provider_connection_id,
             model_id=model_id,
         )
+        resolved_credential = credential
+        if self._secret_resolver is not None:
+            try:
+                provider_credential = await self._secret_resolver.resolve_for_provider(
+                    provider_type=connection.provider_type,
+                    credential_secret_reference_ids=tuple(
+                        connection.credential_secret_reference_ids
+                    ),
+                )
+            except SecretReferenceError as exc:
+                return await self._record_credential_failure(
+                    context=context,
+                    connection=connection,
+                    model_id=model_id,
+                    error=exc,
+                    operation=operation,
+                    breaker_summary=breaker_summary,
+                )
+            resolved_credential = (
+                provider_credential.value if provider_credential is not None else None
+            )
         response = await adapter.chat_completion(
             AdapterRequest(
                 model_id=model_id,
                 messages=messages,
                 timeout_policy=TimeoutPolicy.model_validate(connection.timeout_policy),
                 base_url=connection.base_url_safe,
-                credential=credential,
+                credential=resolved_credential,
             )
         )
         retry_summary = gateway_retry_summary(response.normalized_error_category)
@@ -245,6 +276,93 @@ class ModelGateway:
             old_attempt_id=old_attempt.gateway_invocation_attempt_id
             if old_attempt is not None
             else None,
+        )
+        return result
+
+    async def _record_credential_failure(
+        self,
+        *,
+        context: GatewayInvocationContext,
+        connection: ModelProviderConnection,
+        model_id: str,
+        error: SecretReferenceError,
+        operation: GatewayOperation | None,
+        breaker_summary: dict[str, object],
+    ) -> GatewayResult:
+        provider_connection_id = connection.provider_connection_id
+        provider_type = connection.provider_type
+        result = GatewayResult(
+            outcome=TestOutcome.FAILURE,
+            normalized_error_category=ErrorCategory.SECRET_REFERENCE_INVALID,
+            safe_audit_summary={
+                "tenant_id": str(context.tenant_id) if context.tenant_id else None,
+                "connection_id": str(provider_connection_id),
+                "provider_type": provider_type.value,
+                "model_id": model_id,
+                "outcome": TestOutcome.FAILURE.value,
+                "error_category": ErrorCategory.SECRET_REFERENCE_INVALID.value,
+                "normalized_error_category": (
+                    ErrorCategory.SECRET_REFERENCE_INVALID.value
+                ),
+                "credential_reference_id": error.reference,
+                "credential_resolution_outcome": "failed",
+            },
+        )
+        retry_summary = gateway_retry_summary(result.normalized_error_category)
+        old_attempt = await self._repository.record_gateway_attempt(
+            tenant_id=context.tenant_id,
+            provider_type=provider_type,
+            provider_connection_id=provider_connection_id,
+            model_id=model_id,
+            result=result,
+            workflow_run_id=context.workflow_run_id,
+            test_bench_run_id=context.test_bench_run_id,
+            trace_id=context.trace_id,
+            idempotency_key=context.idempotency_key,
+            workflow_run_step_id=context.workflow_run_step_id,
+            workflow_validation_id=context.workflow_validation_id,
+            retry_decision_summary=retry_summary,
+            breaker_scope=str(breaker_summary["scope"]),
+            breaker_decision_summary=breaker_summary,
+        )
+        old_attempt_id = (
+            old_attempt.gateway_invocation_attempt_id
+            if old_attempt is not None
+            else None
+        )
+        if operation is not None:
+            await self._repository.record_gateway_physical_attempt(
+                operation=operation,
+                gateway_invocation_attempt_id=old_attempt_id,
+                result=result,
+                retry_category=str(retry_summary.get("category", "skipped")),
+                retry_decision_summary=retry_summary,
+                retry_budget_snapshot={
+                    "tenant_retry_budget_remaining": retry_summary.get(
+                        "tenant_retry_budget_remaining"
+                    )
+                },
+                breaker_scope=str(breaker_summary.get("scope")),
+                breaker_decision_summary=breaker_summary,
+                duplicate_suppressed=False,
+            )
+        else:
+            await self._record_operation_attempt(
+                context=context,
+                connection_id=provider_connection_id,
+                model_id=model_id,
+                result=result,
+                retry_summary=retry_summary,
+                breaker_summary=breaker_summary,
+                old_attempt_id=old_attempt_id,
+            )
+        await self._record_usage_event(
+            context=context,
+            connection_id=provider_connection_id,
+            provider_type=provider_type,
+            model_id=model_id,
+            result=result,
+            old_attempt_id=old_attempt_id,
         )
         return result
 

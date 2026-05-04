@@ -150,6 +150,59 @@ Manual QA for this flow:
 - [Spec 022 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/022-telegram-natural-language-trigger-delivery-persistence/qa022_user_guide.md)
 - [Spec 022 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/022-telegram-natural-language-trigger-delivery-persistence/testing-instructions.md)
 
+## Model Provider Credential Resolution Quickstart
+
+Use QA025 when validating live model credential resolution:
+
+```bash
+test ! -f .env || test -f .env.autopilot-backup || cp .env .env.autopilot-backup
+cp specs/025-live-model-credential-resolution-for-gateway-calls/.env.qa025 .env
+uv sync
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa025 && createdb -U postgres multi_agent_platform_qa025'
+uv run alembic upgrade head
+```
+
+Open the browser UI:
+
+- [Model Providers](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/model-providers)
+
+Manual QA:
+
+- Sign in as `platform-admin`.
+- Create an OpenAI provider with model id `gpt-test` and safe reference
+  `qa025/openai-placeholder`.
+- Run the provider test and confirm any result is redaction-safe.
+- Create a local OpenAI-compatible provider for `http://localhost:11434`
+  without a credential reference and confirm the allowlisted no-auth case is
+  accepted.
+- Confirm missing or unresolved OpenAI credentials fail with
+  `secret_reference_invalid`.
+- Confirm rendered pages, JSON responses, logs, and screenshots do not contain
+  raw resolved credential values.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/model_providers/test_secret_references.py \
+  tests/unit/model_providers/test_probes.py \
+  tests/unit/model_providers/test_model_provider_service.py \
+  tests/unit/model_providers/test_gateway.py \
+  tests/unit/model_providers/test_adapters.py \
+  tests/unit/model_providers/test_validation.py \
+  tests/unit/api/test_model_provider_schemas.py \
+  tests/integration/runtime/test_gateway_operation_recovery.py \
+  tests/integration/model_providers/test_gateway_attempt_evidence.py
+```
+
+Additional evidence:
+
+- [Spec 025 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/025-live-model-credential-resolution-for-gateway-calls/qa025.md)
+- [Spec 025 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/025-live-model-credential-resolution-for-gateway-calls/qa025_ui.md)
+- [Spec 025 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/025-live-model-credential-resolution-for-gateway-calls/qa025_user_guide.md)
+- [Spec 025 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/025-live-model-credential-resolution-for-gateway-calls/testing-instructions.md)
+
 ## Workflow Studio Quickstart
 
 1. Open [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui).

@@ -220,6 +220,17 @@ match the configured scheme, host, port, and CIDR allowlist. Raw API keys,
 provider tokens, Authorization headers, prompts, completions, URL userinfo,
 secret query parameters, and raw provider responses are not stored.
 
+Provider probes and `ModelGateway` runtime calls resolve credentials through
+the configured secret provider only at call time. OpenAI calls require a
+resolvable safe reference and fail closed with `secret_reference_invalid` when
+the reference is missing or invalid. Local OpenAI-compatible providers may run
+without credentials only for allowlisted local endpoints. QA025 reviewer
+evidence lives in
+`specs/025-live-model-credential-resolution-for-gateway-calls/qa025.md`,
+`specs/025-live-model-credential-resolution-for-gateway-calls/qa025_ui.md`,
+and
+`specs/025-live-model-credential-resolution-for-gateway-calls/qa025_user_guide.md`.
+
 Catalog sync makes only active, healthy, tenant-visible, gateway-governed model
 entries selectable. Runtime workers and test bench executions use
 `ModelGateway` so latency, normalized errors, usage availability, retry/breaker

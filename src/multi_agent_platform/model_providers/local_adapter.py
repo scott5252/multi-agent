@@ -46,7 +46,7 @@ class LocalOpenAICompatibleAdapter:
             )
         headers = {}
         if request.credential:
-            headers["Authorization"] = "Bearer [resolved]"
+            headers["Authorization"] = f"Bearer {request.credential}"
         return await post_openai_chat_completion(
             client=self._client,
             request=request,

@@ -3,10 +3,15 @@ from __future__ import annotations
 from multi_agent_platform.model_providers.adapters import ProviderAdapterRegistry
 from multi_agent_platform.model_providers.models import (
     AdapterRequest,
+    ErrorCategory,
     ProviderTestSummary,
     ProviderType,
     TestOutcome,
     TimeoutPolicy,
+)
+from multi_agent_platform.model_providers.secrets import (
+    ProviderSecretResolver,
+    SecretReferenceError,
 )
 
 SAFE_PROBE_MESSAGE = (
@@ -16,8 +21,14 @@ SAFE_PROBE_MESSAGE = (
 
 
 class ProviderProbeRunner:
-    def __init__(self, registry: ProviderAdapterRegistry) -> None:
+    def __init__(
+        self,
+        registry: ProviderAdapterRegistry,
+        *,
+        secret_resolver: ProviderSecretResolver | None = None,
+    ) -> None:
         self._registry = registry
+        self._secret_resolver = secret_resolver
 
     async def run_probe(
         self,
@@ -26,8 +37,21 @@ class ProviderProbeRunner:
         model_id: str,
         timeout_policy: TimeoutPolicy,
         base_url: str | None,
-        credential: str | None,
+        credential: str | None = None,
+        credential_secret_reference_ids: tuple[str, ...] = (),
     ) -> ProviderTestSummary:
+        resolved_credential = credential
+        if self._secret_resolver is not None and credential is None:
+            try:
+                provider_credential = await self._secret_resolver.resolve_for_provider(
+                    provider_type=provider_type,
+                    credential_secret_reference_ids=credential_secret_reference_ids,
+                )
+            except SecretReferenceError as exc:
+                return _credential_failure_summary(model_id=model_id, error=exc)
+            resolved_credential = (
+                provider_credential.value if provider_credential is not None else None
+            )
         adapter = self._registry.get(provider_type)
         response = await adapter.chat_completion(
             AdapterRequest(
@@ -35,7 +59,7 @@ class ProviderProbeRunner:
                 messages=SAFE_PROBE_MESSAGE,
                 timeout_policy=timeout_policy,
                 base_url=base_url,
-                credential=credential,
+                credential=resolved_credential,
             )
         )
         return ProviderTestSummary(
@@ -50,3 +74,17 @@ class ProviderProbeRunner:
 
 def probe_succeeded(summary: ProviderTestSummary) -> bool:
     return summary.outcome is TestOutcome.SUCCESS
+
+
+def _credential_failure_summary(
+    *,
+    model_id: str,
+    error: SecretReferenceError,
+) -> ProviderTestSummary:
+    return ProviderTestSummary(
+        outcome=TestOutcome.FAILURE,
+        normalized_reason=ErrorCategory.SECRET_REFERENCE_INVALID,
+        latency_ms=0,
+        tested_model_id=model_id,
+        safe_diagnostic_summary=str(error),
+    )

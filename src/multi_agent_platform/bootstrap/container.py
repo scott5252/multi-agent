@@ -169,7 +169,10 @@ def build_container(settings: Settings | None = None) -> Container:
             repository=ModelProviderRepository(session),
             allowlist=build_model_provider_allowlist(resolved_settings),
             probe_runner=ProviderProbeRunner(
-                _provider_adapter_registry(holder["container"])
+                _provider_adapter_registry(holder["container"]),
+                secret_resolver=ProviderSecretResolver(
+                    holder["container"].secret_provider
+                ),
             ),
         ),
         provider_adapter_registry_factory=lambda: _provider_adapter_registry(
@@ -179,6 +182,7 @@ def build_container(settings: Settings | None = None) -> Container:
             repository=ModelProviderRepository(session),
             registry=_provider_adapter_registry(holder["container"]),
             usage_recorder=UsageAnalyticsService(UsageRepository(session)),
+            secret_resolver=ProviderSecretResolver(holder["container"].secret_provider),
         ),
         provider_secret_resolver_factory=lambda _session: ProviderSecretResolver(
             build_secret_provider(resolved_settings)
