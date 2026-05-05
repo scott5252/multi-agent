@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 038 - Jinja Surface Inventory And Deletion Plan",
+    "spec_number": "038",
+    "spec_slug": "jinja-surface-inventory-and-deletion-plan",
+    "feature_dir": "specs/038-jinja-surface-inventory-and-deletion-plan",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/038-jinja-surface-inventory-and-deletion-plan",
+    "branch": "codex/038-jinja-surface-inventory-and-deletion-plan",
+    "qa_id": "qa038",
+    "qa_label": "QA038",
+    "qa_database": "multi_agent_platform_qa038",
+    "qa_env_file": "specs/038-jinja-surface-inventory-and-deletion-plan/.env.qa038",
+    "artifact_root": ".data/qa038-artifacts",
+    "playwright_output_dir": "output/playwright/qa038_ui",
+    "manual_qa_user_guide": "specs/038-jinja-surface-inventory-and-deletion-plan/qa038_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa038-react-ui2-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app/migration"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Migration"
+          },
+          {
+            "screenshot": "qa038-react-ui2-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

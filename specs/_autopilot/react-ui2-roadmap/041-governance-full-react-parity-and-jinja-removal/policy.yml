@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 041 - Governance Full React Parity And Jinja Removal",
+    "spec_number": "041",
+    "spec_slug": "governance-full-react-parity-and-jinja-removal",
+    "feature_dir": "specs/041-governance-full-react-parity-and-jinja-removal",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/041-governance-full-react-parity-and-jinja-removal",
+    "branch": "codex/041-governance-full-react-parity-and-jinja-removal",
+    "qa_id": "qa041",
+    "qa_label": "QA041",
+    "qa_database": "multi_agent_platform_qa041",
+    "qa_env_file": "specs/041-governance-full-react-parity-and-jinja-removal/.env.qa041",
+    "artifact_root": ".data/qa041-artifacts",
+    "playwright_output_dir": "output/playwright/qa041_ui",
+    "manual_qa_user_guide": "specs/041-governance-full-react-parity-and-jinja-removal/qa041_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa041-react-ui2-smoke"
+    ]
+  }
+}

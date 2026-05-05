@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 044 - Operations, Reliability, Run Inspection, And Usage Full React Parity",
+    "spec_number": "044",
+    "spec_slug": "operations-reliability-run-inspection-and-usage-full-react-parity",
+    "feature_dir": "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/044-operations-reliability-run-inspection-and-usage-full-react-parity",
+    "branch": "codex/044-operations-reliability-run-inspection-and-usage-full-react-parity",
+    "qa_id": "qa044",
+    "qa_label": "QA044",
+    "qa_database": "multi_agent_platform_qa044",
+    "qa_env_file": "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/.env.qa044",
+    "artifact_root": ".data/qa044-artifacts",
+    "playwright_output_dir": "output/playwright/qa044_ui",
+    "manual_qa_user_guide": "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/qa044_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa044-react-ui2-smoke"
+    ]
+  }
+}

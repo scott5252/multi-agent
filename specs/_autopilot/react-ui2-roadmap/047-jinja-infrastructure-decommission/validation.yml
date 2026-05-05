@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 047 - Jinja Infrastructure Decommission",
+    "spec_number": "047",
+    "spec_slug": "jinja-infrastructure-decommission",
+    "feature_dir": "specs/047-jinja-infrastructure-decommission",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/047-jinja-infrastructure-decommission",
+    "branch": "codex/047-jinja-infrastructure-decommission",
+    "qa_id": "qa047",
+    "qa_label": "QA047",
+    "qa_database": "multi_agent_platform_qa047",
+    "qa_env_file": "specs/047-jinja-infrastructure-decommission/.env.qa047",
+    "artifact_root": ".data/qa047-artifacts",
+    "playwright_output_dir": "output/playwright/qa047_ui",
+    "manual_qa_user_guide": "specs/047-jinja-infrastructure-decommission/qa047_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa047-react-ui2-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app/migration"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Jinja"
+          },
+          {
+            "screenshot": "qa047-react-ui2-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

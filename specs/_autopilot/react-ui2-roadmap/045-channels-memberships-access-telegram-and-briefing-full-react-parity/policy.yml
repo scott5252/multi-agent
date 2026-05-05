@@ -1,0 +1,28 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 045 - Channels, Memberships, Access, Telegram, And Briefing Full React Parity",
+    "spec_number": "045",
+    "spec_slug": "channels-memberships-access-telegram-and-briefing-full-react-parity",
+    "feature_dir": "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
+    "branch": "codex/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
+    "qa_id": "qa045",
+    "qa_label": "QA045",
+    "qa_database": "multi_agent_platform_qa045",
+    "qa_env_file": "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/.env.qa045",
+    "artifact_root": ".data/qa045-artifacts",
+    "playwright_output_dir": "output/playwright/qa045_ui",
+    "manual_qa_user_guide": "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/qa045_user_guide.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa045-react-ui2-smoke"
+    ]
+  }
+}

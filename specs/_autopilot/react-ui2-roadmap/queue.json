@@ -1,0 +1,208 @@
+{
+  "schema_version": "1.0",
+  "roadmap_file": "react_ui2.md",
+  "spec_range": "038..047",
+  "next_spec": "038",
+  "specs": [
+    {
+      "number": "038",
+      "title": "Jinja Surface Inventory And Deletion Plan",
+      "slug": "jinja-surface-inventory-and-deletion-plan",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/038-jinja-surface-inventory-and-deletion-plan",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/038-jinja-surface-inventory-and-deletion-plan/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/038-jinja-surface-inventory-and-deletion-plan/validation.yml",
+      "feature_dir": "specs/038-jinja-surface-inventory-and-deletion-plan",
+      "branch": "codex/038-jinja-surface-inventory-and-deletion-plan",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "039",
+      "title": "No-Jinja React Host, Auth, Shell Utilities, And Local Login",
+      "slug": "no-jinja-react-host-auth-shell-utilities-and-local-login",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/039-no-jinja-react-host-auth-shell-utilities-and-local-login/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/039-no-jinja-react-host-auth-shell-utilities-and-local-login/validation.yml",
+      "feature_dir": "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
+      "branch": "codex/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "040",
+      "title": "Workflow Registry Full React Parity And Jinja Removal",
+      "slug": "workflow-registry-full-react-parity-and-jinja-removal",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/040-workflow-registry-full-react-parity-and-jinja-removal",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/040-workflow-registry-full-react-parity-and-jinja-removal/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/040-workflow-registry-full-react-parity-and-jinja-removal/validation.yml",
+      "feature_dir": "specs/040-workflow-registry-full-react-parity-and-jinja-removal",
+      "branch": "codex/040-workflow-registry-full-react-parity-and-jinja-removal",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "041",
+      "title": "Governance Full React Parity And Jinja Removal",
+      "slug": "governance-full-react-parity-and-jinja-removal",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/041-governance-full-react-parity-and-jinja-removal",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/041-governance-full-react-parity-and-jinja-removal/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/041-governance-full-react-parity-and-jinja-removal/validation.yml",
+      "feature_dir": "specs/041-governance-full-react-parity-and-jinja-removal",
+      "branch": "codex/041-governance-full-react-parity-and-jinja-removal",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "042",
+      "title": "Skill Registry And Tool Diagnostics Full React Parity And Jinja Removal",
+      "slug": "skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/validation.yml",
+      "feature_dir": "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+      "branch": "codex/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "043",
+      "title": "Test Bench Full React Parity And Jinja Removal",
+      "slug": "test-bench-full-react-parity-and-jinja-removal",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/043-test-bench-full-react-parity-and-jinja-removal",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/043-test-bench-full-react-parity-and-jinja-removal/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/043-test-bench-full-react-parity-and-jinja-removal/validation.yml",
+      "feature_dir": "specs/043-test-bench-full-react-parity-and-jinja-removal",
+      "branch": "codex/043-test-bench-full-react-parity-and-jinja-removal",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "044",
+      "title": "Operations, Reliability, Run Inspection, And Usage Full React Parity",
+      "slug": "operations-reliability-run-inspection-and-usage-full-react-parity",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/044-operations-reliability-run-inspection-and-usage-full-react-parity",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/044-operations-reliability-run-inspection-and-usage-full-react-parity/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/044-operations-reliability-run-inspection-and-usage-full-react-parity/validation.yml",
+      "feature_dir": "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity",
+      "branch": "codex/044-operations-reliability-run-inspection-and-usage-full-react-parity",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "045",
+      "title": "Channels, Memberships, Access, Telegram, And Briefing Full React Parity",
+      "slug": "channels-memberships-access-telegram-and-briefing-full-react-parity",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/045-channels-memberships-access-telegram-and-briefing-full-react-parity/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/045-channels-memberships-access-telegram-and-briefing-full-react-parity/validation.yml",
+      "feature_dir": "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
+      "branch": "codex/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "046",
+      "title": "User-Facing Run UI React Port And Jinja Removal",
+      "slug": "user-facing-run-ui-react-port-and-jinja-removal",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal/validation.yml",
+      "feature_dir": "specs/046-user-facing-run-ui-react-port-and-jinja-removal",
+      "branch": "codex/046-user-facing-run-ui-react-port-and-jinja-removal",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "047",
+      "title": "Jinja Infrastructure Decommission",
+      "slug": "jinja-infrastructure-decommission",
+      "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/047-jinja-infrastructure-decommission",
+      "autopilot_file": "specs/_autopilot/react-ui2-roadmap/047-jinja-infrastructure-decommission/autopilot.yml",
+      "validation_file": "specs/_autopilot/react-ui2-roadmap/047-jinja-infrastructure-decommission/validation.yml",
+      "feature_dir": "specs/047-jinja-infrastructure-decommission",
+      "branch": "codex/047-jinja-infrastructure-decommission",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    }
+  ]
+}

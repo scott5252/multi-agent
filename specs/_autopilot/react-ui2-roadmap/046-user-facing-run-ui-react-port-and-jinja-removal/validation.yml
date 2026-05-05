@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 046 - User-Facing Run UI React Port And Jinja Removal",
+    "spec_number": "046",
+    "spec_slug": "user-facing-run-ui-react-port-and-jinja-removal",
+    "feature_dir": "specs/046-user-facing-run-ui-react-port-and-jinja-removal",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal",
+    "branch": "codex/046-user-facing-run-ui-react-port-and-jinja-removal",
+    "qa_id": "qa046",
+    "qa_label": "QA046",
+    "qa_database": "multi_agent_platform_qa046",
+    "qa_env_file": "specs/046-user-facing-run-ui-react-port-and-jinja-removal/.env.qa046",
+    "artifact_root": ".data/qa046-artifacts",
+    "playwright_output_dir": "output/playwright/qa046_ui",
+    "manual_qa_user_guide": "specs/046-user-facing-run-ui-react-port-and-jinja-removal/qa046_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa046-react-ui2-smoke",
+        "steps": [
+          {
+            "goto": "/runs"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Run"
+          },
+          {
+            "screenshot": "qa046-react-ui2-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

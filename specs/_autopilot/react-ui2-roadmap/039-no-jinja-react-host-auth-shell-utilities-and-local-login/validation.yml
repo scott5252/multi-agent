@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 039 - No-Jinja React Host, Auth, Shell Utilities, And Local Login",
+    "spec_number": "039",
+    "spec_slug": "no-jinja-react-host-auth-shell-utilities-and-local-login",
+    "feature_dir": "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
+    "branch": "codex/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
+    "qa_id": "qa039",
+    "qa_label": "QA039",
+    "qa_database": "multi_agent_platform_qa039",
+    "qa_env_file": "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/.env.qa039",
+    "artifact_root": ".data/qa039-artifacts",
+    "playwright_output_dir": "output/playwright/qa039_ui",
+    "manual_qa_user_guide": "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/qa039_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa039-react-ui2-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Admin"
+          },
+          {
+            "screenshot": "qa039-react-ui2-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

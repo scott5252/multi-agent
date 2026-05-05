@@ -6,12 +6,10 @@ production-like installation. It is written for administrators and operators who
 do not write code every day, but it stays precise about the current system so
 that setup decisions are repeatable.
 
-This document reflects the repository state reviewed on May 4, 2026. It covers
-feature specifications 001 through 025 and the current code structure under
-`src/multi_agent_platform`. Spec 018 currently has only a QA environment stub in
-this checkout, so tenant and user administration guidance in this guide is based
-on the implemented authentication, authorization, role grant, tenant, and admin
-console code rather than a full Spec 018 plan document.
+This document reflects the repository state reviewed on May 5, 2026. It covers
+feature specifications 001 through 037, the Python code under
+`src/multi_agent_platform`, and the React admin workspace under
+`frontend/admin`.
 
 ## Before You Begin
 
@@ -20,6 +18,7 @@ You will need:
 - A computer with Python 3.12 installed.
 - `uv`, which installs Python dependencies and runs project commands.
 - Docker Compose v2, used here to run PostgreSQL locally.
+- Node.js `>=20.19.0 <26` and npm for the React admin build.
 - A terminal window.
 - Optional: an Auth0 tenant if you want production-style login.
 - Optional: an OpenAI API key or a local OpenAI-compatible model server.
@@ -32,16 +31,19 @@ The fastest path to a working system is:
 3. Use `AUTH_MODE=local_principal` for the first local setup.
 4. Start PostgreSQL with `docker compose up -d postgres`.
 5. Apply database migrations with `uv run alembic upgrade head`.
-6. Seed at least one tenant row.
-7. Start the API server.
-8. Open the admin console through the local login screen.
-9. Configure model providers, prompts, agent profiles, skill diagnostics,
+6. Build the React admin assets from `frontend/admin`.
+7. Seed at least one tenant row.
+8. Start the API server.
+9. Open `/admin/app` through the local login screen.
+10. Configure model providers, prompts, agent profiles, skill diagnostics,
    workflows, briefing preferences, tests, channels, and operational
    monitoring.
 
 The platform is meant to be administered through the browser first. APIs are
 available for automation, but most setup steps can be completed through the
-server-rendered admin console.
+React admin console at `/admin/app`. Older server-rendered admin routes remain
+available as authorized fallbacks until the migration dashboard records parity
+and retirement evidence for a route.
 
 ## Current Implementation Notes
 
@@ -54,6 +56,12 @@ audit/debug records, reliability records, and operations console projections.
 
 Some areas are intentionally lighter in the current code:
 
+- The React admin console is the primary browser entry for the migrated admin
+  journeys. It is served by FastAPI at `/admin/app` from built Vite assets under
+  `src/multi_agent_platform/web_admin/static/react`, and its browser contracts
+  are generated from Pydantic schemas. Build or verify those assets before
+  browser QA. Retained Jinja pages still exist for fallback and direct-link
+  compatibility.
 - The `/runtime/runs` API is backed by a process-local runtime service in the
   public API facade. Durable runtime database models, repositories, graph
   execution, and worker code exist, but a run started only through that facade
@@ -164,6 +172,38 @@ areas:
   ProviderSecretResolver use in probes and runtime, OpenAI fail-closed
   credential behavior, local no-auth allowlist behavior, and redaction-safe
   diagnostics.
+- Spec 026, React admin UI foundation: `/admin/app` mount, built assets served
+  under `/admin/static/react`, bootstrap/config/manifest contracts, generated
+  TypeScript contracts, and Auth0/local-principal validation.
+- Spec 027, modern admin shell and design system: backend-authorized navigation,
+  active scope, breadcrumbs, command/search, saved-filter chips, common states,
+  responsive layout, and shared React primitives.
+- Spec 028, React admin data contracts and form patterns: page envelopes, safe
+  problem details, mutation results, filters, pagination, sorting, export
+  snapshots, evidence summaries, and a protected patterns sample.
+- Spec 029, operations workbench: React operations, reliability, run debug,
+  redacted log, and export workspace over existing operations services.
+- Spec 030, React workflow builder: guided workflow draft authoring, graph/list
+  review, validation, publish evidence, revision history, and redacted JSON
+  preview.
+- Spec 031, React governance: provider setup and health, credential reference
+  diagnostics, prompt/profile governance, routing previews, policy history,
+  direct-call guardrails, and run provenance.
+- Spec 032, React skill lifecycle: package publication, tenant discovery and
+  installation, credentials, smoke/readiness checks, connector diagnostics,
+  binding eligibility, quarantine/withdrawal state, and audit evidence.
+- Spec 033, React agent and workflow test bench: suite/case authoring, safe run
+  launch, progress, diagnostics, artifacts, publish-gate evidence, and audit.
+- Spec 034, React membership administration: user directory, invitations,
+  principal linking, role grants, status changes, access history, and audit.
+- Spec 035, React usage and cost analytics: metric cards, trends, rollups,
+  event drilldowns, filters, exports, confidence, partial, and denied states.
+- Spec 036, React channel, Telegram, and briefing preferences: readiness,
+  Telegram configuration, aliases, link tokens, identity summaries, delivery
+  diagnostics, safe run status, and Daily Briefing preferences.
+- Spec 037, React admin migration hardening and Jinja retirement: route parity
+  matrix, fallback/retirement decisions, rollback guidance, performance,
+  accessibility, redaction, tenant-isolation, and reviewer evidence.
 
 ## 1. Overview
 
@@ -176,8 +216,9 @@ subworkflows, input and output contracts, and publish-time validation rules.
 The system has several major capabilities:
 
 - Tenant-aware authentication and authorization with Auth0 or local principals.
-- A shared admin console with workflow, access, reliability, operations, model,
-  prompt, profile, skill, test bench, usage, and Telegram areas.
+- A React admin console with workflow, access, reliability, operations, model,
+  prompt, profile, skill, test bench, usage, channel/Telegram, migration, and
+  briefing preference workspaces.
 - Workflow registry and workflow builder pages for creating draft workflows,
   validating graphs and references, reviewing revisions, and publishing
   immutable workflow bundles.
@@ -224,6 +265,7 @@ A complete local setup has:
 
 - PostgreSQL running.
 - Migrations applied.
+- React admin dependencies installed and built.
 - At least one active tenant.
 - One platform administrator principal.
 - One tenant administrator principal.
@@ -269,6 +311,15 @@ Apply migrations:
 
 ```bash
 uv run alembic upgrade head
+```
+
+Build React admin assets:
+
+```bash
+cd frontend/admin
+npm install
+npm run build
+cd ../..
 ```
 
 Create starter tenant rows:
@@ -320,7 +371,7 @@ uv run python -m multi_agent_platform.workers.main
 Open the local login page:
 
 ```text
-http://127.0.0.1:8000/auth/local-login?redirect_to=/admin
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app
 ```
 
 Useful health pages:
@@ -332,30 +383,39 @@ Useful health pages:
 
 ### Main Admin Areas
 
-After login, start at `/admin`. The admin console groups the system by
-operational area while preserving each underlying route.
+After login, start at `/admin/app`. The React admin console groups the system
+by operational area while preserving backend authorization, active scope,
+breadcrumbs, search, common states, and generated browser contracts. The older
+Jinja paths remain available for direct-link compatibility until migration
+evidence supports retirement.
+
+Build the React assets whenever frontend code or generated contracts change:
+
+```bash
+cd frontend/admin
+npm install
+npm run build
+cd ../..
+```
 
 Important browser pages:
 
-- `/admin` - shared admin console shell.
-- `/admin/workflows/ui` - workflow registry and guided builder.
-- `/admin/config/ui` - model and skill routing configuration.
-- `/admin/model-providers` - OpenAI and local provider connections.
-- `/admin/prompt-runtime/prompts` - prompt library.
-- `/admin/prompt-runtime/profiles` - agent and sub-agent runtime profiles.
-- `/admin/skill-registry/ui/packages` - skill package lifecycle.
-- `/admin/skill-registry/ui/installations` - tenant skill installations.
-- `/admin/skill-execution/ui/diagnostics` - governed Daily Briefing tool
-  diagnostics.
-- `/admin/agent-tests/ui` - agent and workflow test bench.
-- `/admin/usage` - token usage and cost analytics.
-- `/admin/telegram` - Telegram configuration, aliases, identities, link tokens,
-  diagnostics, and delivery evidence.
-- `/admin/briefing-preferences` - Daily Intelligence Briefing user
-  preferences and safe summaries.
-- `/admin/operations` - operations console for health and redacted logs.
-- `/admin/reliability/ui/` - reliability and queue controls.
-- `/admin/runs` - production run inspection and debug search.
+- `/admin/app` - React admin home and migration-hardening summary.
+- `/admin/app/migration` - route parity matrix, fallback decisions, rollback,
+  performance, accessibility, redaction, and tenant-isolation evidence.
+- `/admin/app/operations` - operations, reliability, and run debug workbench.
+- `/admin/app/workflows` - workflow registry and guided builder.
+- `/admin/app/governance` - model providers, prompt library, runtime profiles,
+  routing previews, policy history, and run provenance.
+- `/admin/app/skills` - skill package lifecycle, tenant installations,
+  connector diagnostics, and binding eligibility.
+- `/admin/app/test-bench` - agent and workflow test bench.
+- `/admin/app/memberships` - user and tenant membership administration.
+- `/admin/app/usage` - token usage and cost analytics.
+- `/admin/app/channels` - channel readiness, Telegram configuration, aliases,
+  identities, delivery evidence, safe run status, and Daily Briefing
+  preferences.
+- `/admin` and legacy `/admin/...` pages - retained server-rendered fallbacks.
 - `/runs` - user-facing run Web UI channel.
 
 ### Quality Checks
@@ -367,6 +427,17 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy src
 uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90
+```
+
+For React admin changes also run:
+
+```bash
+uv run python scripts/frontend/generate_admin_react_types.py --check
+cd frontend/admin
+npm run typecheck
+npm run test
+npm run build
+cd ../..
 ```
 
 The repository also provides:
@@ -691,8 +762,11 @@ tokens, passwords, and pasted API keys are rejected by provider validation.
 
 ### OpenAI Provider Setup
 
-OpenAI providers are configured at `/admin/model-providers`. Sign in as a
-platform admin, create a connection, and choose provider type `openai`.
+OpenAI provider readiness, credential references, health, and probe evidence
+are reviewed in `/admin/app/governance`. Sign in as a platform admin and keep
+provider records configured with safe secret references. Use the older
+`/admin/model-providers` fallback when you need a creation flow that is not
+available in the React workspace for your deployment.
 
 Recommended fields:
 
@@ -782,13 +856,15 @@ Resolution precedence is:
 
 Set a tenant default first so every workflow has a fallback. Then add workflow,
 agent, or step overrides only where a different model is clearly needed. The
-admin configuration pages under `/admin/config/ui` expose preview, history,
+governance workspace at `/admin/app/governance` exposes preview, history,
 rollback, and provenance views so you can verify the final resolved model before
-publishing or running.
+publishing or running. The older `/admin/config/ui` page remains a fallback.
 
 ### Prompt Library
 
-Prompt management lives at `/admin/prompt-runtime/prompts`.
+Prompt review, safe preview, save feedback, and history live in
+`/admin/app/governance`. The older `/admin/prompt-runtime/prompts` page remains
+a fallback for creation or workflows not yet retired.
 
 Recommended workflow:
 
@@ -807,7 +883,9 @@ so fixing a prompt means publishing a new version, not editing the old one.
 
 ### Agents And Sub-Agents
 
-Agent runtime profiles live at `/admin/prompt-runtime/profiles`. A profile
+Agent runtime profile review, safe edits, resolution previews, and history live
+in `/admin/app/governance`. The older `/admin/prompt-runtime/profiles` page
+remains a fallback for creation or workflows not yet retired. A profile
 describes the behavior and runtime expectations for one agent or sub-agent.
 
 Important profile fields include:
@@ -842,9 +920,10 @@ operational complexity.
 
 ### Daily Briefing Preferences
 
-Daily Intelligence Briefing preferences live at `/admin/briefing-preferences`.
-They store one active profile per tenant/principal, with immutable revisions and
-a current head projection for fast runtime lookup.
+Daily Intelligence Briefing preferences live in `/admin/app/channels`. The
+older `/admin/briefing-preferences` page and APIs remain fallbacks. Preferences
+store one active profile per tenant/principal, with immutable revisions and a
+current head projection for fast runtime lookup.
 
 Useful API endpoints are:
 
@@ -879,7 +958,9 @@ preference context pinned at creation time.
 
 ### Workflow Setup From Start To Finish
 
-Use `/admin/workflows/ui` for the guided browser flow.
+Use `/admin/app/workflows` for the guided React browser flow. The older
+`/admin/workflows/ui` page remains a fallback when investigating route
+compatibility or rollback behavior.
 
 1. Create a new workflow draft.
 2. Fill in metadata such as name, description, owner, tenant visibility, and
@@ -927,8 +1008,9 @@ resolution pauses the run with durable approval and timeline evidence.
 ### Skills
 
 Skills represent approved tools or MCP references that agents may use. The
-governed lifecycle is handled through `/admin/skill-registry/ui/packages` and
-`/admin/skill-registry/ui/installations`.
+governed lifecycle is handled through `/admin/app/skills`. The older
+`/admin/skill-registry/ui/packages`, `/admin/skill-registry/ui/installations`,
+and `/admin/skill-execution/ui/diagnostics` pages remain fallback routes.
 
 Skill package setup:
 
@@ -990,10 +1072,11 @@ The first built-in read-only tools are for the Daily Intelligence Briefing:
 - `weather.forecast.read`
 - `commute.lookup`
 
-Open `/admin/skill-execution/ui/diagnostics` to run safe mock diagnostics. The
-page should show all five tool families, mode `mock`, readiness, redacted
-credential status, allowed domains, latest safe summaries, and policy decisions.
-The API endpoints are `/admin/skill-execution/api/diagnostics` and
+Open `/admin/app/skills` and use the connector diagnostics/readiness sections
+to run safe mock diagnostics. The page should show all five tool families, mode
+`mock`, readiness, redacted credential status, allowed domains, latest safe
+summaries, and policy decisions. The fallback API endpoints are
+`/admin/skill-execution/api/diagnostics` and
 `/admin/skill-execution/api/diagnostics/run`.
 
 Local QA does not call Google, Gmail, news, weather, traffic, or maps services.
@@ -1005,9 +1088,10 @@ policy allows the exact operation.
 
 ## 4. Test Bench
 
-The agent and workflow test bench lives at `/admin/agent-tests/ui`. It lets
+The agent and workflow test bench lives at `/admin/app/test-bench`. It lets
 administrators create safe, tenant-scoped test suites for prompts, agent
 profiles, workflow drafts, published subworkflows, and published workflows.
+The older `/admin/agent-tests/ui` page remains a fallback.
 
 Supported target types:
 
@@ -1029,7 +1113,7 @@ Supported safe execution modes:
 
 ### Creating A Test Suite
 
-1. Open `/admin/agent-tests/ui`.
+1. Open `/admin/app/test-bench`.
 2. Create a new suite.
 3. Choose the tenant.
 4. Choose the target type and target id.
@@ -1104,17 +1188,19 @@ tenant, the page or command, and the trace id if available.
 4. Confirm the active tenant id.
 5. Confirm the relevant resource exists.
 6. Confirm role grants and support overrides.
-7. Check `/admin/operations` for platform readiness and redacted logs.
-8. Check `/admin/runs` for workflow run timelines and replay evidence.
-9. Check `/admin/usage` if the issue is model invocation or cost related.
-10. Check `/admin/telegram` if the issue came from Telegram.
+7. Check `/admin/app/operations` for platform readiness and redacted logs.
+8. Check `/admin/app/operations` or `/admin/runs` for workflow run timelines
+   and replay evidence.
+9. Check `/admin/app/usage` if the issue is model invocation or cost related.
+10. Check `/admin/app/channels` if the issue came from Telegram.
 
 ### Operations Console
 
-The operations console at `/admin/operations` is intended for platform admins
-and auditors. It summarizes health, dependency readiness, capacity, provider and
-channel status, reliability pressure, throughput, redacted logs, and exportable
-evidence.
+The operations console at `/admin/app/operations` is intended for platform
+admins and auditors. It summarizes health, dependency readiness, capacity,
+provider and channel status, reliability pressure, throughput, redacted logs,
+and exportable evidence. The older `/admin/operations`, `/admin/reliability/ui/`,
+and `/admin/runs` pages remain fallbacks for direct route checks.
 
 Use log filters for:
 
@@ -1135,9 +1221,10 @@ provider credentials.
 
 ### Run Inspection
 
-Use `/admin/runs` for production audit debugging. It supports run search,
-timeline, replay, lineage, bundle snapshots, notification state, secret-access
-metadata, and redacted exports.
+Use `/admin/app/operations` for React run-debug summaries and `/admin/runs` for
+the retained production audit debugging fallback. The debug surfaces support run
+search, timeline, replay, lineage, bundle snapshots, notification state,
+secret-access metadata, and redacted exports.
 
 Useful API patterns:
 
@@ -1175,8 +1262,9 @@ When reviewing a run, look for:
 
 ### Reliability Debugging
 
-Use `/admin/reliability/ui/` and related pages when work is queued, delayed, or
-failing repeatedly. The reliability layer tracks admission controls, tenant
+Use `/admin/app/operations` and the retained `/admin/reliability/ui/` fallback
+when work is queued, delayed, or failing repeatedly. The reliability layer
+tracks admission controls, tenant
 quotas, queue state, worker leases, retry budgets, circuit breakers,
 compensation requests, dead letters, operational snapshots, and artifact
 throughput.
@@ -1237,8 +1325,9 @@ the current draft revision and validate again.
 
 ### Skill Tool Debugging
 
-Use `/admin/skill-execution/ui/diagnostics` when Daily Briefing tools do not
-appear ready or a role node reports a tool denial. Check:
+Use `/admin/app/skills` when Daily Briefing tools do not appear ready or a role
+node reports a tool denial. The older `/admin/skill-execution/ui/diagnostics`
+page remains a fallback. Check:
 
 - The requested tool name is one of the installed and supported tools.
 - The tenant has the skill installation and exact version required by the
@@ -1252,8 +1341,8 @@ appear ready or a role node reports a tool denial. Check:
 
 ### Briefing Preference Debugging
 
-Use `/admin/briefing-preferences` when a Daily Intelligence Briefing is missing
-personal context. Check:
+Use `/admin/app/channels` when a Daily Intelligence Briefing is missing personal
+context. The older `/admin/briefing-preferences` page remains a fallback. Check:
 
 - The profile exists for the linked tenant/principal.
 - Timezone is a valid IANA value.
@@ -1294,7 +1383,7 @@ For Telegram:
 
 - Confirm tenant Telegram config is enabled.
 - Confirm `TELEGRAM_WEBHOOK_SECRET` matches the webhook path.
-- Confirm provider readiness in `/admin/telegram`.
+- Confirm provider readiness in `/admin/app/channels`.
 - Confirm the alias is enabled, tenant scoped, and normalized as expected.
 - Confirm protected aliases require an active linked identity.
 - Confirm link token has not expired.
@@ -1309,8 +1398,9 @@ For Telegram:
 
 ## 6. Token Usage And Cost Analytics
 
-Usage analytics live at `/admin/usage`. The platform records normalized LLM
-usage when model calls pass through the model gateway usage capture path.
+Usage analytics live at `/admin/app/usage`; `/admin/usage` remains a fallback.
+The platform records normalized LLM usage when model calls pass through the
+model gateway usage capture path.
 
 Tracked fields include:
 
@@ -1372,7 +1462,7 @@ Practical savings usually come from:
   caching.
 - Testing changes in the test bench before running large real-model workloads.
 
-Use `/admin/usage` after each workflow change. Compare cost by workflow,
+Use `/admin/app/usage` after each workflow change. Compare cost by workflow,
 provider, model, agent, sub-agent, prompt version, and execution mode. If cost
 jumps after a prompt or workflow edit, inspect that version's input contract and
 prompt rendering path.
@@ -1387,7 +1477,7 @@ If usage events are missing:
    information to estimate.
 4. Confirm the time filter includes the event.
 5. Confirm the active admin principal has access to the tenant.
-6. Check `/admin/operations` for gateway attempt records.
+6. Check `/admin/app/operations` for gateway attempt records.
 
 If estimated costs look wrong:
 
@@ -1405,10 +1495,11 @@ Telegram webhooks, callbacks, artifacts, and model/tool providers.
 
 ### Web UI
 
-Users can start and inspect workflow runs at `/runs`. Admins use `/admin` and
-the admin subpages. The browser UI is the best first integration for operations
-teams because it exposes scope, validation messages, readiness checks, audit
-links, and safe diagnostics.
+Users can start and inspect workflow runs at `/runs`. Admins use `/admin/app`
+and its domain workspaces. Retained `/admin` pages remain fallbacks for legacy
+links and rollback validation. The browser UI is the best first integration for
+operations teams because it exposes scope, validation messages, readiness
+checks, audit links, and safe diagnostics.
 
 ### Web API
 
@@ -1425,7 +1516,8 @@ External systems should store the returned `run_id` and the response trace id.
 Telegram support has two parts:
 
 - Runtime webhook: `/channels/telegram/webhook/{secret}`.
-- Admin configuration console: `/admin/telegram`.
+- Admin configuration console: `/admin/app/channels`, with `/admin/telegram`
+  retained as a fallback.
 
 Supported runtime commands include:
 
@@ -1447,7 +1539,7 @@ The recommended flow is to create a one-time link token from the platform, send
 `/link TOKEN` through Telegram, then use protected commands. Link tokens expire
 based on `TELEGRAM_LINK_TOKEN_TTL_SECONDS`.
 
-Tenants can also configure natural-language aliases in `/admin/telegram`. An
+Tenants can also configure natural-language aliases in `/admin/app/channels`. An
 alias is a tenant-scoped exact match after trimming, case folding, and whitespace
 normalization. For example, `Morning briefing` and `/briefing` can both point to
 a published Daily Intelligence Briefing workflow version. Protected aliases
@@ -1957,6 +2049,31 @@ Sets the per-minute channel rate limit. The default `120` protects channel APIs
 from accidental loops while allowing normal use. If Telegram or webhook
 integrations generate bursts, tune this alongside idempotency and retry
 behavior.
+
+### React Admin
+
+#### `REACT_ADMIN_ENABLED`
+
+Enables the React admin entry at `/admin/app`. It defaults to `true`. Set it to
+`false` only for rollback or fallback validation; retained Jinja routes still
+require normal authentication and authorization.
+
+#### `REACT_ADMIN_ASSET_BASE_PATH`
+
+Controls where FastAPI serves built React assets. The default is
+`/admin/static/react`, which points to files produced by `npm run build` under
+`frontend/admin`.
+
+#### `REACT_ADMIN_MANIFEST_PATH`
+
+Optionally points to a specific Vite manifest file. Leave it unset for normal
+local development so the application uses the bundled static React directory.
+
+#### `REACT_ADMIN_DOMAIN_ROUTES_JSON`
+
+Optional JSON map for domain route enablement experiments. Use it only with the
+migration dashboard and rollback guidance, because route ownership must remain
+backend-authorized and tenant-safe.
 
 ### Build Metadata
 
@@ -2613,6 +2730,7 @@ Apply migrations and run the API:
 ```bash
 docker compose up -d postgres
 uv run alembic upgrade head
+cd frontend/admin && npm install && npm run build && cd ../..
 uv run uvicorn multi_agent_platform.api.main:app --reload
 ```
 
@@ -2627,13 +2745,13 @@ uv run python -m multi_agent_platform.workers.main
 Sign in as a platform admin:
 
 ```text
-http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/telegram
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/channels
 ```
 
 Open:
 
 ```text
-http://127.0.0.1:8000/admin/telegram?tenant_id=11111111-1111-1111-1111-111111111111
+http://127.0.0.1:8000/admin/app/channels?tenant_id=11111111-1111-1111-1111-111111111111
 ```
 
 Review provider readiness. The console should show whether the global provider
@@ -2642,10 +2760,10 @@ diagnostic only; it does not prove Telegram has accepted a public webhook.
 
 #### Step 5: Enable Tenant Telegram Configuration And Alias
 
-In `/admin/telegram`, enable Telegram for Acme. Configure command availability
-according to your policy. Protected commands such as `/run`, `/status`,
-`/result`, and approvals should require a linked identity. Protected aliases
-should also require a linked identity.
+In `/admin/app/channels`, enable Telegram for Acme. Configure command
+availability according to your policy. Protected commands such as `/run`,
+`/status`, `/result`, and approvals should require a linked identity. Protected
+aliases should also require a linked identity.
 
 If using the API, use the `/admin/telegram/api/config` endpoint with platform or
 tenant admin credentials. Keep tenant id explicit so you do not accidentally
@@ -2659,7 +2777,7 @@ Create an alias for the published briefing workflow:
 - Protected: enabled.
 - Enabled: enabled.
 
-The admin page shows `Telegram Command Aliases`. The API endpoint is
+The admin page shows alias management. The fallback API endpoint is
 `/admin/telegram/api/aliases`. Alias matching is exact after trimming,
 whitespace normalization, and case folding, so `morning   briefing` routes like
 `Morning briefing`, but fuzzy intent matching is not part of this flow.
@@ -2682,8 +2800,9 @@ exposure.
 
 #### Step 7: Create A Link Token
 
-From `/admin/telegram`, create a one-time link token for the Acme user. Give the
-token only to the intended user. The default link token lifetime is 10 minutes.
+From `/admin/app/channels`, create a one-time link token for the Acme user. Give
+the token only to the intended user. The default link token lifetime is 10
+minutes.
 
 The user sends this in Telegram:
 
@@ -2698,8 +2817,8 @@ identity without exposing raw private Telegram message contents.
 
 #### Step 8: Save Briefing Preferences
 
-For Daily Intelligence Briefing, open `/admin/briefing-preferences` as the Acme
-user and save a profile before testing the alias. At minimum, configure:
+For Daily Intelligence Briefing, open `/admin/app/channels` as the Acme user and
+save a profile before testing the alias. At minimum, configure:
 
 - Location and timezone.
 - News topics and VIP sender hints.
@@ -2778,8 +2897,8 @@ If the bot does not receive messages:
 - Confirm firewalls or tunnels allow Telegram to reach the API.
 - Confirm the API server is running and can reach its database.
 - Confirm the webhook path includes the current secret.
-- Check `/admin/telegram` diagnostics and `/admin/operations` logs with the
-  trace id if available.
+- Check `/admin/app/channels` diagnostics and `/admin/app/operations` logs with
+  the trace id if available.
 
 If results or artifacts are missing:
 

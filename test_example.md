@@ -1,6 +1,6 @@
 # Daily Intelligence Briefing Test Example
 
-Review date: 2026-05-04
+Review date: 2026-05-05
 
 This file documents how to set up the "Daily Intelligence Briefing" scenario
 from `/Users/scottcornell/Downloads/multi-agent-testbed.md` against the current
@@ -13,6 +13,14 @@ the original test example:
 - `specs/023-user-briefing-preferences-and-context`
 - `specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates`
 - `specs/025-live-model-credential-resolution-for-gateway-calls`
+- `specs/030-react-workflow-builder`
+- `specs/031-model-prompt-profile-and-provider-governance`
+- `specs/032-react-skill-registry-and-tool-execution-lifecycle`
+- `specs/033-react-agent-and-workflow-test-bench`
+- `specs/034-react-user-and-tenant-membership-administration`
+- `specs/035-react-usage-and-cost-analytics`
+- `specs/036-react-channel-telegram-and-briefing-preferences`
+- `specs/037-react-admin-migration-hardening-and-jinja-retirement`
 
 ## Implementation Verdict
 
@@ -21,6 +29,9 @@ DB-backed, and deterministic QA version of the scenario:
 
 - tenant setup
 - local-principal admin login
+- React admin shell and migration dashboard
+- React workspaces for governance, skills, workflows, test bench, usage,
+  memberships, operations, channels, Telegram, and briefing preferences
 - model provider records
 - live model provider credential resolution through safe secret references
 - prompt library records
@@ -62,8 +73,15 @@ The scenario setup below is grounded in these current code areas:
 
 - `system_architecture.md` and `user_guide.md`
 - `src/multi_agent_platform/api/main.py`
+- `src/multi_agent_platform/api/routers/admin_react.py`
+- `src/multi_agent_platform/api/schemas/admin_react.py`
 - `src/multi_agent_platform/api/routers/channel_runs.py`
 - `src/multi_agent_platform/api/routers/telegram_webhook.py`
+- `src/multi_agent_platform/admin/governance.py`
+- `src/multi_agent_platform/admin/workflow_builder.py`
+- `src/multi_agent_platform/admin/skill_lifecycle.py`
+- `src/multi_agent_platform/admin/channel_telegram_briefing/*`
+- `src/multi_agent_platform/admin/migration_hardening/*`
 - `src/multi_agent_platform/channels/service.py`
 - `src/multi_agent_platform/channels/telegram.py`
 - `src/multi_agent_platform/admin/telegram_config/service.py`
@@ -88,6 +106,17 @@ The scenario setup below is grounded in these current code areas:
 - `src/multi_agent_platform/api/routers/admin_agent_tests.py`
 - `src/multi_agent_platform/api/routers/admin_briefing_preferences.py`
 - `src/multi_agent_platform/api/routers/admin_skill_execution.py`
+- `frontend/admin/src/App.tsx`
+- `frontend/admin/src/routes.tsx`
+- `frontend/admin/src/api/generated/reactAdminApi.ts`
+- `frontend/admin/src/components/workflows/*`
+- `frontend/admin/src/components/governance/*`
+- `frontend/admin/src/components/skills/*`
+- `frontend/admin/src/components/testBench/*`
+- `frontend/admin/src/components/channelTelegramBriefing/*`
+- `frontend/admin/src/components/usage/*`
+- `frontend/admin/src/components/migrationHardening/*`
+- `scripts/frontend/generate_admin_react_types.py`
 - `src/multi_agent_platform/db/models/agent_tests.py`
 - `src/multi_agent_platform/db/models/briefing_preferences.py`
 - `src/multi_agent_platform/db/models/telegram_config.py`
@@ -103,6 +132,14 @@ The scenario setup below is grounded in these current code areas:
 - `specs/023-user-briefing-preferences-and-context/*`
 - `specs/024-automatic-test-bench-evidence-integration-workflow-publish-gates/*`
 - `specs/025-live-model-credential-resolution-for-gateway-calls/*`
+- `specs/030-react-workflow-builder/*`
+- `specs/031-model-prompt-profile-and-provider-governance/*`
+- `specs/032-react-skill-registry-and-tool-execution-lifecycle/*`
+- `specs/033-react-agent-and-workflow-test-bench/*`
+- `specs/034-react-user-and-tenant-membership-administration/*`
+- `specs/035-react-usage-and-cost-analytics/*`
+- `specs/036-react-channel-telegram-and-briefing-preferences/*`
+- `specs/037-react-admin-migration-hardening-and-jinja-retirement/*`
 
 ## Scenario To Build
 
@@ -162,6 +199,7 @@ SUGGESTED FOCUS
 
 | Scenario requirement | Current support | Codebase used | Implementable now |
 | --- | --- | --- | --- |
+| React admin scenario setup | Primary admin setup can use `/admin/app` with domain workspaces for governance, skills, workflows, test bench, channels, usage, operations, and migration evidence; legacy routes remain fallbacks | `api/routers/admin_react.py`, `frontend/admin/src/*`, `admin/migration_hardening/*` | Yes |
 | Telegram account linking | Admin-issued link tokens and consumed identity links persist in PostgreSQL; the legacy channel link-token endpoint remains in-memory | `channels/telegram.py`, `admin/telegram_config/service.py`, `db/repositories/telegram_config.py`, `db/repositories/channels.py` | Yes |
 | Telegram trigger | Exact-match tenant aliases such as `Morning briefing` route to a published workflow version; slash commands such as `/run` still work | `channels/telegram.py`, `admin/telegram_config/service.py`, `api/routers/admin_telegram.py` | Yes |
 | Telegram bot reply | Alias-triggered results are formatted and sent through a mockable or real `sendMessage` client; delivery attempts persist with safe fingerprints | `channels/telegram_delivery.py`, `channels/telegram.py`, `api/routers/telegram_webhook.py` | Yes with configured Bot API secret or test-injected mock client |
@@ -186,6 +224,19 @@ SUGGESTED FOCUS
 | 024 | Required workflow test evidence is authoritative test-bench data rather than a manually copied status field. | Verify required suite evidence is bound to the current `workflow_draft_id` and current revision id, stale or cross-tenant evidence blocks publish, and UI summaries show required/passing/missing/failing/stale counts. |
 | 025 | Provider probes and gateway calls resolve credentials live from secret references. | Verify OpenAI fails closed without a resolvable reference, local OpenAI-compatible no-auth is allowed only for allowlisted local endpoints, configured references are passed to adapters, and raw secret values never render. |
 
+## Spec 030-037 React UI Updates Incorporated
+
+| Spec | Change to this test example | Detail to verify |
+| --- | --- | --- |
+| 030 | Workflow authoring should use `/admin/app/workflows` as the primary browser path. | Verify guided sections, graph canvas plus keyboard lists, validation, required evidence, publish confirmation, revision history, and redacted JSON preview. |
+| 031 | Provider, prompt, profile, routing, policy history, and provenance setup should use `/admin/app/governance`. | Verify platform-only provider probes and credential-reference actions, tenant-safe read-only previews, safe prompt previews, and no raw credentials or prompts. |
+| 032 | Skill package lifecycle and Daily Briefing connector diagnostics should use `/admin/app/skills`. | Verify package publication, tenant install, credential reference configuration, smoke/readiness evidence, binding eligibility, connector diagnostics, quarantine state, and audit. |
+| 033 | Test-bench authoring and publish-gate evidence should use `/admin/app/test-bench`. | Verify safe execution mode selection, run progress, diagnostics, artifact references, current-revision gate evidence, and redacted traces. |
+| 034 | Membership setup can be reviewed in `/admin/app/memberships` when local principals or tenant grants need adjustment. | Verify platform and tenant scopes, invitations, masked identity labels, role grant guardrails, access history, and audit timeline. |
+| 035 | Usage and cost review should use `/admin/app/usage`. | Verify default 7-day filters, rollups, bounded event drilldowns, export metadata, confidence labels, and tenant-only visibility for tenant admins. |
+| 036 | Telegram readiness, aliases, identity links, delivery diagnostics, safe run status, and briefing preferences should use `/admin/app/channels`. | Verify one-time link tokens show only on creation, identities are masked, delivery attempts are bounded, and preference admin summaries redact raw values. |
+| 037 | Final migration review should use `/admin/app/migration`. | Verify route parity decisions, retained fallbacks, rollback plan, dual-auth evidence, performance/accessibility evidence, redaction sweep, and tenant-isolation sweep before retiring any legacy page. |
+
 ## Step-By-Step Setup With Current Code
 
 ### Step 1 - Prepare The Local Environment
@@ -195,6 +246,10 @@ From the repository root:
 ```bash
 uv sync
 cp .env.example .env
+cd frontend/admin
+npm install
+npm run build
+cd ../..
 ```
 
 Edit `.env` for a local demo:
@@ -297,10 +352,10 @@ Terminal 2, optional:
 uv run python -m multi_agent_platform.workers.main
 ```
 
-Open the admin console:
+Open the React admin console:
 
 ```text
-http://127.0.0.1:8000/auth/local-login?redirect_to=/admin
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app
 ```
 
 Choose `platform-admin` for platform-wide setup and `tenant-admin-acme` for
@@ -309,6 +364,8 @@ tenant-scoped setup.
 Codebase used by this step:
 
 - `api/main.py`
+- `api/routers/admin_react.py`
+- `frontend/admin/src/App.tsx`
 - `workers/main.py`
 - `workers/loops.py`
 - `workers/orchestration.py`
@@ -328,7 +385,7 @@ graph result.
 Open:
 
 ```text
-http://127.0.0.1:8000/admin/telegram?tenant_id=11111111-1111-1111-1111-111111111111
+http://127.0.0.1:8000/admin/app/channels?tenant_id=11111111-1111-1111-1111-111111111111
 ```
 
 In the browser:
@@ -360,18 +417,21 @@ Alias routing enforces tenant Telegram readiness before starting the run.
 Open:
 
 ```text
-http://127.0.0.1:8000/admin/model-providers
+http://127.0.0.1:8000/admin/app/governance
 ```
 
 For a current-code local demo, prefer a local OpenAI-compatible endpoint:
 
-1. Create a provider connection.
-2. Set provider type to `local_openai_compatible`.
-3. Set base URL to an allowlisted endpoint, for example
+1. Review provider setup and credential readiness in React.
+2. If the deployment still creates provider records through the fallback page,
+   open `/admin/model-providers` for creation.
+3. Create a provider connection.
+4. Set provider type to `local_openai_compatible`.
+5. Set base URL to an allowlisted endpoint, for example
    `http://127.0.0.1:11434`.
-4. Add one model id exposed by that endpoint.
-5. Set visibility for the Acme tenant.
-6. Activate the connection after review.
+6. Add one model id exposed by that endpoint.
+7. Set visibility for the Acme tenant.
+8. Activate the connection after review.
 
 For a live OpenAI connection, create an `openai` provider record and store only
 credential references, not raw keys. Use a reference such as `OPENAI_API_KEY`
@@ -402,10 +462,14 @@ demo unless a role executor is explicitly wired to do so.
 Open:
 
 ```text
-http://127.0.0.1:8000/admin/prompt-runtime/prompts
+http://127.0.0.1:8000/admin/app/governance
 ```
 
 Create and publish prompt versions for:
+
+If your deployment still creates new prompt lineages through the retained page,
+use `/admin/prompt-runtime/prompts` for creation and return to
+`/admin/app/governance` for React review, preview, and history evidence.
 
 1. `daily-briefing-orchestrator`
 2. `calendar-scout`
@@ -445,10 +509,14 @@ these prompt versions to perform the final daily briefing.
 Open:
 
 ```text
-http://127.0.0.1:8000/admin/prompt-runtime/profiles
+http://127.0.0.1:8000/admin/app/governance
 ```
 
 Create and activate these profiles:
+
+If your deployment still creates new runtime profiles through the retained page,
+use `/admin/prompt-runtime/profiles` for creation and return to
+`/admin/app/governance` for React resolution and provenance review.
 
 | Profile | Agent key | Agent kind in profile UI | Purpose |
 | --- | --- | --- | --- |
@@ -486,7 +554,7 @@ invoking its prompt/model/tool stack.
 Open:
 
 ```text
-http://127.0.0.1:8000/admin/skill-registry/ui/packages
+http://127.0.0.1:8000/admin/app/skills
 ```
 
 Create platform skill packages and publish immutable versions for:
@@ -624,7 +692,7 @@ provider clients.
 After registering metadata, open:
 
 ```text
-http://127.0.0.1:8000/admin/skill-execution/ui/diagnostics?tenant_id=11111111-1111-1111-1111-111111111111
+http://127.0.0.1:8000/admin/app/skills?tenant_id=11111111-1111-1111-1111-111111111111
 ```
 
 Expected current-code result:
@@ -641,7 +709,7 @@ Expected current-code result:
 Open:
 
 ```text
-http://127.0.0.1:8000/admin/briefing-preferences?tenant_id=11111111-1111-1111-1111-111111111111
+http://127.0.0.1:8000/admin/app/channels?tenant_id=11111111-1111-1111-1111-111111111111
 ```
 
 Sign in as `tenant-admin-acme` and save the Acme user's Daily Briefing context:
@@ -718,7 +786,7 @@ or `none`; raw OAuth tokens, passwords, and API keys are rejected.
 Open:
 
 ```text
-http://127.0.0.1:8000/admin/workflows/ui
+http://127.0.0.1:8000/admin/app/workflows
 ```
 
 Create a tenant-scoped main workflow:
@@ -947,7 +1015,7 @@ and the worker executes a claimed graph run.
 Open:
 
 ```text
-http://127.0.0.1:8000/admin/agent-tests/ui
+http://127.0.0.1:8000/admin/app/test-bench
 ```
 
 Create a suite:
@@ -1046,7 +1114,7 @@ failing, missing, and stale evidence counts.
 
 ### Step 11 - Publish The Workflow
 
-In `/admin/workflows/ui`:
+In `/admin/app/workflows`:
 
 1. Open the `daily-intelligence-briefing` draft.
 2. Validate the draft after adding the Step 10 test requirement.
@@ -1257,14 +1325,14 @@ graph or produce live scenario content.
 
 After setup and mock runs, inspect:
 
-- `/admin/operations`
-- `/admin/usage`
+- `/admin/app/migration`
+- `/admin/app/operations`
+- `/admin/app/usage`
 - `/admin/runs`
-- `/admin/agent-tests/ui`
-- `/admin/telegram`
-- `/admin/briefing-preferences`
-- `/admin/skill-execution/ui/diagnostics`
-- `/admin/workflows/ui`
+- `/admin/app/test-bench`
+- `/admin/app/channels`
+- `/admin/app/skills`
+- `/admin/app/workflows`
 
 Codebase used by this step:
 
@@ -1302,7 +1370,7 @@ flows.
 | 14. Completed channel demo | Yes as optional simulation | Uses `_channel_state=completed` for generic channel result QA |
 | 15. Operations/audit | Yes | Evidence reflects deterministic graph, connector, preference, test-bench, provider, Telegram, and channel flows |
 
-## Spec 020-025 Status And Remaining Limits
+## Spec 020-037 Status And Remaining Limits
 
 ### Spec 020 - Workflow Graph Execution And Parallel Sub-Agent Runtime
 
@@ -1350,8 +1418,8 @@ Current status:
 - Policy checks evaluate installed skill version, allowed tool, outbound
   domains, read-only side-effect behavior, execution mode, credential
   availability, and credential tenant.
-- Admin diagnostics are available at
-  `/admin/skill-execution/ui/diagnostics`.
+- React admin diagnostics are available in `/admin/app/skills`; the older
+  `/admin/skill-execution/ui/diagnostics` page remains a fallback.
 - Redaction removes raw email body fields, token-like strings, credential
   values, and sensitive URL query strings from summaries.
 - `runtime/skill_tools.py` provides a role-node helper that executes approved
@@ -1372,7 +1440,7 @@ Primary QA references:
 Current status:
 
 - Tenant admins can create exact normalized aliases such as `Morning briefing`
-  on `/admin/telegram`.
+  in `/admin/app/channels`; `/admin/telegram` remains a fallback.
 - Alias records include published workflow version id, protected/enabled flags,
   revision tokens, and safe metadata.
 - Admin-issued link tokens, consumed identity links, identity summaries, and
@@ -1404,8 +1472,9 @@ Primary QA references:
 
 Current status:
 
-- `/admin/briefing-preferences` supports tenant-scoped Daily Briefing profile
-  save/read/update.
+- `/admin/app/channels` supports tenant-scoped Daily Briefing profile
+  save/read/update through React; `/admin/briefing-preferences` remains a
+  fallback.
 - Profiles have immutable revision rows and a current head projection.
 - Validated fields include location label, IANA timezone, news topics, VIP
   senders, workday hours, commute mode, calendar/email account references,
@@ -1493,6 +1562,44 @@ Primary QA references:
 - `specs/025-live-model-credential-resolution-for-gateway-calls/qa025_ui.md`
 - `specs/025-live-model-credential-resolution-for-gateway-calls/testing-instructions.md`
 
+### Specs 030-037 - React Admin Scenario Surface
+
+Current status:
+
+- `/admin/app/workflows` is the primary workflow builder for this scenario. It
+  renders backend-owned draft, graph, validation, publish, evidence, revision,
+  and JSON-preview contracts.
+- `/admin/app/governance` is the primary model provider, prompt, profile,
+  routing, policy history, and provenance workspace. Provider probes and
+  credential-reference changes remain platform-admin-only.
+- `/admin/app/skills` is the primary skill lifecycle and connector diagnostics
+  workspace for Daily Briefing package/readiness evidence.
+- `/admin/app/test-bench` is the primary suite, case, run, artifact, diagnostic,
+  and publish-gate evidence workspace.
+- `/admin/app/channels` is the primary channel, Telegram, alias, link identity,
+  delivery diagnostic, safe run status, and Daily Briefing preference workspace.
+- `/admin/app/usage` and `/admin/app/operations` provide usage/cost and
+  operational review for the scenario.
+- `/admin/app/migration` records route parity, retained fallbacks, rollback
+  guidance, and performance/accessibility/redaction/tenant-isolation evidence.
+
+Remaining limit: React migration hardening changes the admin route ownership and
+review workflow; it does not make the Daily Briefing runtime consume live
+Calendar, Gmail, news, weather, or commute payloads. Older Jinja routes should
+remain available unless the migration dashboard records complete retirement
+evidence for that route.
+
+Primary QA references:
+
+- `specs/030-react-workflow-builder/qa030.md`
+- `specs/031-model-prompt-profile-and-provider-governance/qa031.md`
+- `specs/032-react-skill-registry-and-tool-execution-lifecycle/qa032.md`
+- `specs/033-react-agent-and-workflow-test-bench/qa033.md`
+- `specs/034-react-user-and-tenant-membership-administration/qa034.md`
+- `specs/035-react-usage-and-cost-analytics/qa035.md`
+- `specs/036-react-channel-telegram-and-briefing-preferences/qa036.md`
+- `specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037.md`
+
 ## Final Accuracy Review
 
 The current repository can be used to create a detailed administrative showcase
@@ -1502,7 +1609,7 @@ credential references, prompts, profiles, skill package metadata, mock
 connector diagnostics, user briefing preferences, workflow drafts, current
 test-bench publish evidence, published bundles, DB graph execution evidence,
 Telegram aliases, persistent link state, update receipts, delivery attempts,
-and channel results.
+channel results, React admin route parity, and migration rollback evidence.
 
 The current repository still cannot produce the real sample Telegram briefing
 from live Google Calendar, Gmail, news, weather, and commute data. The remaining
@@ -1512,4 +1619,5 @@ delivery, and mock connector contracts, but the Daily Briefing path does not
 yet wire live external tool payloads through agent prompts/models into a final
 real-world synthesis. For reviewer QA, treat the sample briefing as the target
 product behavior and the current output as deterministic evidence that the
-governance, routing, safety, and orchestration scaffolding is in place.
+governance, routing, safety, React administration, and orchestration scaffolding
+is in place.

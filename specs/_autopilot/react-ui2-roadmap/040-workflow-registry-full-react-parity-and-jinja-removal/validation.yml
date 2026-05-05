@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 040 - Workflow Registry Full React Parity And Jinja Removal",
+    "spec_number": "040",
+    "spec_slug": "workflow-registry-full-react-parity-and-jinja-removal",
+    "feature_dir": "specs/040-workflow-registry-full-react-parity-and-jinja-removal",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/040-workflow-registry-full-react-parity-and-jinja-removal",
+    "branch": "codex/040-workflow-registry-full-react-parity-and-jinja-removal",
+    "qa_id": "qa040",
+    "qa_label": "QA040",
+    "qa_database": "multi_agent_platform_qa040",
+    "qa_env_file": "specs/040-workflow-registry-full-react-parity-and-jinja-removal/.env.qa040",
+    "artifact_root": ".data/qa040-artifacts",
+    "playwright_output_dir": "output/playwright/qa040_ui",
+    "manual_qa_user_guide": "specs/040-workflow-registry-full-react-parity-and-jinja-removal/qa040_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa040-react-ui2-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Workflow"
+          },
+          {
+            "screenshot": "qa040-react-ui2-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

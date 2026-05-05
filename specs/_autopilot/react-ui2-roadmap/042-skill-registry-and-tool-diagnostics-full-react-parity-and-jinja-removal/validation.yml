@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 042 - Skill Registry And Tool Diagnostics Full React Parity And Jinja Removal",
+    "spec_number": "042",
+    "spec_slug": "skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+    "feature_dir": "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+    "branch": "codex/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+    "qa_id": "qa042",
+    "qa_label": "QA042",
+    "qa_database": "multi_agent_platform_qa042",
+    "qa_env_file": "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/.env.qa042",
+    "artifact_root": ".data/qa042-artifacts",
+    "playwright_output_dir": "output/playwright/qa042_ui",
+    "manual_qa_user_guide": "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/qa042_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa042-react-ui2-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app/skills"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Skill"
+          },
+          {
+            "screenshot": "qa042-react-ui2-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}

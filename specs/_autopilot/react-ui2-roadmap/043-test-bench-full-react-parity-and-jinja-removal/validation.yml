@@ -1,0 +1,40 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 043 - Test Bench Full React Parity And Jinja Removal",
+    "spec_number": "043",
+    "spec_slug": "test-bench-full-react-parity-and-jinja-removal",
+    "feature_dir": "specs/043-test-bench-full-react-parity-and-jinja-removal",
+    "autopilot_dir": "specs/_autopilot/react-ui2-roadmap/043-test-bench-full-react-parity-and-jinja-removal",
+    "branch": "codex/043-test-bench-full-react-parity-and-jinja-removal",
+    "qa_id": "qa043",
+    "qa_label": "QA043",
+    "qa_database": "multi_agent_platform_qa043",
+    "qa_env_file": "specs/043-test-bench-full-react-parity-and-jinja-removal/.env.qa043",
+    "artifact_root": ".data/qa043-artifacts",
+    "playwright_output_dir": "output/playwright/qa043_ui",
+    "manual_qa_user_guide": "specs/043-test-bench-full-react-parity-and-jinja-removal/qa043_user_guide.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa043-react-ui2-smoke",
+        "steps": [
+          {
+            "goto": "/admin/app/test-bench"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Test Bench"
+          },
+          {
+            "screenshot": "qa043-react-ui2-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  }
+}
