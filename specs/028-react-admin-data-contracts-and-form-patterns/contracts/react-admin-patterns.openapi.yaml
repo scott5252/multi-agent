@@ -1,0 +1,316 @@
+openapi: 3.1.0
+info:
+  title: React Admin Data Contracts And Form Patterns
+  version: qa028
+paths:
+  /admin/app/patterns.json:
+    get:
+      summary: Return a safe sample page envelope for shared React admin patterns.
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: Safe page envelope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPatternsPageEnvelope"
+        "401":
+          description: Missing or invalid principal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeProblemDetail"
+        "403":
+          description: Principal is not authorized for the requested scope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeProblemDetail"
+  /admin/app/patterns/actions/sample:
+    post:
+      summary: Submit a harmless sample action and return a mutation result.
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SampleActionRequest"
+      responses:
+        "200":
+          description: Sample mutation result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          description: Validation or confirmation required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "409":
+          description: Stale revision conflict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+  /admin/app/patterns/export:
+    post:
+      summary: Return a safe sample export snapshot.
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Safe export snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportSnapshot"
+components:
+  schemas:
+    AdminPatternsPageEnvelope:
+      type: object
+      required:
+        - page_id
+        - title
+        - scope
+        - data
+        - filters
+        - pagination
+        - sorting
+        - actions
+      properties:
+        page_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        scope:
+          type: object
+        state:
+          $ref: "#/components/schemas/ShellState"
+        data:
+          $ref: "#/components/schemas/PatternsSampleData"
+        filters:
+          $ref: "#/components/schemas/FilterProfile"
+        pagination:
+          $ref: "#/components/schemas/PaginationState"
+        sorting:
+          $ref: "#/components/schemas/SortingState"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAction"
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvidenceSummary"
+    SafeProblemDetail:
+      type: object
+      required:
+        - title
+        - status
+        - reason_category
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        reason_category:
+          type: string
+        field_errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationFieldError"
+        audit_reference_id:
+          type: string
+    ValidationFieldError:
+      type: object
+      required:
+        - field
+        - label
+        - message
+        - code
+      properties:
+        field:
+          type: string
+        label:
+          type: string
+        message:
+          type: string
+        code:
+          type: string
+    AdminAction:
+      type: object
+      required:
+        - action_id
+        - label
+        - method
+        - href
+        - enabled
+      properties:
+        action_id:
+          type: string
+        label:
+          type: string
+        method:
+          type: string
+        href:
+          type: string
+        variant:
+          type: string
+        requires_confirmation:
+          type: boolean
+        requires_idempotency_key:
+          type: boolean
+        enabled:
+          type: boolean
+        disabled_reason:
+          type: string
+    MutationResult:
+      type: object
+      required:
+        - status
+        - summary
+      properties:
+        status:
+          type: string
+        summary:
+          type: string
+        field_errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationFieldError"
+        stale_conflict:
+          $ref: "#/components/schemas/RevisionConflict"
+        audit_reference_id:
+          type: string
+    RevisionConflict:
+      type: object
+      properties:
+        submitted_revision:
+          type: string
+        current_revision:
+          type: string
+        message:
+          type: string
+        reload_href:
+          type: string
+    FilterProfile:
+      type: object
+      properties:
+        profile_id:
+          type: string
+        criteria:
+          type: array
+          items:
+            type: object
+        active_chips:
+          type: array
+          items:
+            type: object
+    PaginationState:
+      type: object
+      properties:
+        page_size:
+          type: integer
+        page_size_options:
+          type: array
+          items:
+            type: integer
+        next_cursor:
+          type: string
+        total_known:
+          type: boolean
+        total_items:
+          type: integer
+    SortingState:
+      type: object
+      properties:
+        active:
+          type: object
+        allowed:
+          type: array
+          items:
+            type: object
+    ExportSnapshot:
+      type: object
+      required:
+        - export_id
+        - status
+        - summary
+      properties:
+        export_id:
+          type: string
+        status:
+          type: string
+        summary:
+          type: string
+        artifact_reference_id:
+          type: string
+        progress_label:
+          type: string
+        audit_reference_id:
+          type: string
+    EvidenceSummary:
+      type: object
+      properties:
+        evidence_id:
+          type: string
+        label:
+          type: string
+        summary:
+          type: string
+        reference_type:
+          type: string
+        href:
+          type: string
+    ShellState:
+      type: object
+    PatternsSampleData:
+      type: object
+    SampleActionRequest:
+      type: object
+      properties:
+        sample_name:
+          type: string
+        revision:
+          type: string
+        idempotency_key:
+          type: string
+        confirmed:
+          type: boolean

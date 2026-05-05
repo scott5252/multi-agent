@@ -1,0 +1,432 @@
+openapi: 3.1.0
+info:
+  title: React Admin Skill Lifecycle API
+  version: 0.32.0
+paths:
+  /admin/app/skills:
+    get:
+      summary: Render the protected React skill lifecycle route wrapper.
+      responses:
+        "200":
+          description: React application shell for authorized principals.
+        "401":
+          description: Authentication required.
+        "403":
+          description: Safe denied response.
+  /admin/app/skills/bootstrap.json:
+    get:
+      summary: Return the authorized skill lifecycle dashboard.
+      responses:
+        "200":
+          description: Skill lifecycle dashboard.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillLifecycleDashboard"
+        "401":
+          description: Authentication required.
+        "403":
+          description: Safe denied response.
+  /admin/app/skills/packages/candidates:
+    post:
+      summary: Submit a package candidate manifest by paste, upload reference, or deterministic fixture.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PackageCandidateRequest"
+      responses:
+        "200":
+          description: Safe candidate mutation result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillLifecycleMutationResult"
+        "403":
+          description: Platform-admin permission required.
+  /admin/app/skills/packages/candidates/{candidate_id}/validate:
+    post:
+      summary: Run deterministic candidate validation.
+      parameters:
+        - name: candidate_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe validation result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillLifecycleMutationResult"
+  /admin/app/skills/packages/candidates/{candidate_id}/publish:
+    post:
+      summary: Publish an immutable package version when readiness gates pass.
+      parameters:
+        - name: candidate_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe publish result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillLifecycleMutationResult"
+  /admin/app/skills/packages/{package_id}/quarantine:
+    post:
+      summary: Quarantine a package version.
+      responses:
+        "200":
+          description: Safe quarantine result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillLifecycleMutationResult"
+  /admin/app/skills/discovery.json:
+    get:
+      summary: Return granted package discovery summaries for the active tenant.
+      responses:
+        "200":
+          description: Tenant discovery summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  packages:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SkillPackageVersionSummary"
+  /admin/app/skills/installations.json:
+    get:
+      summary: Return tenant skill installation summaries.
+      responses:
+        "200":
+          description: Tenant installation summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  installations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TenantSkillInstallationSummary"
+  /admin/app/skills/installations/{installation_id}/install:
+    post:
+      summary: Install or upgrade a granted package version for the active tenant.
+      parameters:
+        - name: installation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe install or upgrade result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillLifecycleMutationResult"
+  /admin/app/skills/installations/{installation_id}/credentials:
+    post:
+      summary: Configure authorized credential references for an installation.
+      parameters:
+        - name: installation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe credential configuration result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillLifecycleMutationResult"
+  /admin/app/skills/installations/{installation_id}/smoke-tests:
+    post:
+      summary: Queue an explicit smoke-test refresh.
+      parameters:
+        - name: installation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe queued smoke-test result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillLifecycleMutationResult"
+  /admin/app/skills/installations/{installation_id}/eligibility/preview:
+    post:
+      summary: Run a read-only binding eligibility preview.
+      parameters:
+        - name: installation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe eligibility preview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BindingEligibilityPreview"
+  /admin/app/skills/diagnostics.json:
+    get:
+      summary: Return safe SkillExecutionGateway and connector diagnostics.
+      responses:
+        "200":
+          description: Safe diagnostics.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diagnostics:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SkillExecutionDiagnosticSummary"
+  /admin/app/skills/audit.json:
+    get:
+      summary: Return bounded skill lifecycle audit timeline.
+      responses:
+        "200":
+          description: Safe lifecycle audit records.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SkillLifecycleAuditRecord"
+components:
+  schemas:
+    SkillLifecycleDashboard:
+      type: object
+      required: [page_id, title, scope, sections, installations, connector_diagnostics, binding_preview, audit_timeline, actions]
+      properties:
+        page_id:
+          type: string
+        title:
+          type: string
+        scope:
+          type: object
+        sections:
+          type: array
+          items:
+            type: object
+        platform_publication:
+          $ref: "#/components/schemas/PackagePublicationWorkspace"
+        tenant_discovery:
+          type: object
+        installations:
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantSkillInstallationSummary"
+        connector_diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectorReadinessSummary"
+        binding_preview:
+          $ref: "#/components/schemas/BindingEligibilityPreview"
+        audit_timeline:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillLifecycleAuditRecord"
+        actions:
+          type: array
+          items:
+            type: object
+    PackagePublicationWorkspace:
+      type: object
+      properties:
+        candidate:
+          $ref: "#/components/schemas/SkillPackageCandidate"
+        available_steps:
+          type: array
+          items:
+            type: object
+        validation_summary:
+          type: string
+        grant_preview:
+          type: string
+        publish_readiness:
+          type: string
+    SkillPackageCandidate:
+      type: object
+      required: [candidate_id, package_slug, candidate_revision, manifest_digest, validation_status, safe_manifest_summary]
+      properties:
+        candidate_id:
+          type: string
+        package_slug:
+          type: string
+        candidate_revision:
+          type: string
+        manifest_digest:
+          type: string
+        manifest_source:
+          type: string
+        safe_manifest_summary:
+          type: string
+        validation_status:
+          type: string
+        validation_findings:
+          type: array
+          items:
+            type: string
+    SkillPackageVersionSummary:
+      type: object
+      properties:
+        package_id:
+          type: string
+        package_slug:
+          type: string
+        version_id:
+          type: string
+        version_label:
+          type: string
+        lifecycle_status:
+          type: string
+        manifest_digest:
+          type: string
+        safe_manifest_summary:
+          type: string
+        tenant_grant_summary:
+          type: string
+        validation_evidence_ref:
+          type: string
+        smoke_evidence_ref:
+          type: string
+    TenantSkillInstallationSummary:
+      type: object
+      properties:
+        installation_id:
+          type: string
+        tenant_id:
+          type: string
+        package_slug:
+          type: string
+        installed_version:
+          type: string
+        installation_revision:
+          type: string
+        installation_status:
+          type: string
+        credential_readiness:
+          type: string
+        smoke_test_readiness:
+          type: string
+        binding_readiness:
+          type: string
+    ConnectorReadinessSummary:
+      type: object
+      properties:
+        connector_id:
+          type: string
+        connector_label:
+          type: string
+        readiness:
+          type: string
+        credential_status:
+          type: string
+        policy_status:
+          type: string
+        smoke_test_status:
+          type: string
+        evidence_reference_id:
+          type: string
+    SkillExecutionDiagnosticSummary:
+      type: object
+      properties:
+        diagnostic_id:
+          type: string
+        tool_name:
+          type: string
+        gateway_decision:
+          type: string
+        side_effect_posture:
+          type: string
+        safe_attempt_summary:
+          type: string
+        audit_reference_id:
+          type: string
+    BindingEligibilityPreview:
+      type: object
+      properties:
+        preview_id:
+          type: string
+        tenant_label:
+          type: string
+        eligible_tools:
+          type: array
+          items:
+            type: string
+        blocked_tools:
+          type: array
+          items:
+            type: string
+        policy_reasons:
+          type: array
+          items:
+            type: string
+        audit_reference_id:
+          type: string
+    SkillLifecycleAuditRecord:
+      type: object
+      properties:
+        record_id:
+          type: string
+        domain:
+          type: string
+        package_slug:
+          type: string
+        tenant_scope_label:
+          type: string
+        action:
+          type: string
+        outcome:
+          type: string
+        safe_diff_summary:
+          type: string
+        audit_reference_id:
+          type: string
+    PackageCandidateRequest:
+      type: object
+      properties:
+        idempotency_key:
+          type: string
+        revision:
+          type: string
+        manifest_text:
+          type: string
+        upload_reference_id:
+          type: string
+        fixture_id:
+          type: string
+    SkillLifecycleMutationResult:
+      type: object
+      properties:
+        status:
+          type: string
+        summary:
+          type: string
+        revision:
+          type: string
+        audit_reference_id:
+          type: string
+        warnings:
+          type: array
+          items:
+            type: string

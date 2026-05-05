@@ -1,0 +1,322 @@
+openapi: 3.1.0
+info:
+  title: React Admin Migration Hardening API
+  version: 0.1.0
+paths:
+  /admin/app:
+    get:
+      summary: React admin app shell with migration hardening home
+      responses:
+        "200":
+          description: React app shell
+        "401":
+          description: Unauthenticated
+        "403":
+          description: Forbidden
+  /admin/app/migration:
+    get:
+      summary: React migration hardening app shell
+      responses:
+        "200":
+          description: React app shell
+        "401":
+          description: Unauthenticated
+        "403":
+          description: Forbidden
+  /admin/app/migration/bootstrap.json:
+    get:
+      summary: Migration hardening dashboard
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Migration dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMigrationHardeningDashboard"
+        "401":
+          description: Unauthenticated
+        "403":
+          description: Forbidden
+  /admin/app/migration/rollback.json:
+    get:
+      summary: Safe rollback plan
+      responses:
+        "200":
+          description: Rollback plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MigrationRollbackPlan"
+        "401":
+          description: Unauthenticated
+        "403":
+          description: Forbidden
+  /admin/app/migration/routes.json:
+    get:
+      summary: Route parity groups
+      responses:
+        "200":
+          description: Route parity groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MigrationRouteGroup"
+        "401":
+          description: Unauthenticated
+        "403":
+          description: Forbidden
+components:
+  schemas:
+    AdminMigrationHardeningDashboard:
+      type: object
+      required:
+        - page_id
+        - title
+        - description
+        - scope
+        - updated_at
+        - summary
+        - route_groups
+        - rollback_plan
+        - performance_budget
+        - accessibility_audit
+        - redaction_sweep
+        - tenant_isolation_sweep
+        - states
+      properties:
+        page_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        scope:
+          type: object
+        updated_at:
+          type: string
+          format: date-time
+        summary:
+          $ref: "#/components/schemas/MigrationHardeningSummary"
+        route_groups:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/MigrationRouteGroup"
+        rollback_plan:
+          $ref: "#/components/schemas/MigrationRollbackPlan"
+        performance_budget:
+          $ref: "#/components/schemas/MigrationPerformanceBudget"
+        accessibility_audit:
+          $ref: "#/components/schemas/MigrationAccessibilityAudit"
+        redaction_sweep:
+          $ref: "#/components/schemas/MigrationSweepSummary"
+        tenant_isolation_sweep:
+          $ref: "#/components/schemas/MigrationSweepSummary"
+        states:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/MigrationProblem"
+    MigrationHardeningSummary:
+      type: object
+      properties:
+        total_destinations:
+          type: integer
+        react_primary_count:
+          type: integer
+        redirect_count:
+          type: integer
+        retained_fallback_count:
+          type: integer
+        retirement_candidate_count:
+          type: integer
+        blocked_count:
+          type: integer
+        overall_status:
+          type: string
+        next_step:
+          type: string
+    MigrationRouteGroup:
+      type: object
+      properties:
+        group_id:
+          type: string
+        label:
+          type: string
+        spec_refs:
+          type: array
+          items:
+            type: string
+        group_status:
+          type: string
+        entries:
+          type: array
+          maxItems: 40
+          items:
+            $ref: "#/components/schemas/MigrationRouteEntry"
+    MigrationRouteEntry:
+      type: object
+      properties:
+        entry_id:
+          type: string
+        admin_area:
+          type: string
+        legacy_route:
+          type: string
+          nullable: true
+        react_route:
+          type: string
+          nullable: true
+        decision:
+          type: string
+        scope_requirement:
+          type: string
+        auth_modes:
+          type: array
+          items:
+            type: string
+        parity_evidence:
+          type: array
+          items:
+            type: string
+        redirect_preserves:
+          type: array
+          items:
+            type: string
+        fallback_notice:
+          type: string
+          nullable: true
+        retirement_allowed:
+          type: boolean
+        rollback_reference:
+          type: string
+        audit_reference:
+          type: string
+    MigrationRollbackPlan:
+      type: object
+      properties:
+        plan_id:
+          type: string
+        status:
+          type: string
+        feature_flag_label:
+          type: string
+        asset_version_label:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+        verification_steps:
+          type: array
+          items:
+            type: string
+        owner_label:
+          type: string
+        last_reviewed_at:
+          type: string
+          format: date-time
+        audit_reference:
+          type: string
+    MigrationPerformanceBudget:
+      type: object
+      properties:
+        budget_id:
+          type: string
+        route_bootstrap_ms_limit:
+          type: integer
+        primary_interactive_ms_limit:
+          type: integer
+        compressed_asset_kb_limit:
+          type: integer
+        status:
+          type: string
+        mitigation:
+          type: string
+        measurements:
+          type: array
+          items:
+            $ref: "#/components/schemas/MigrationPerformanceMeasurement"
+    MigrationPerformanceMeasurement:
+      type: object
+      properties:
+        measurement_id:
+          type: string
+        label:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        limit:
+          type: number
+        status:
+          type: string
+        evidence_reference:
+          type: string
+    MigrationAccessibilityAudit:
+      type: object
+      properties:
+        audit_id:
+          type: string
+        status:
+          type: string
+        viewport_coverage:
+          type: array
+          items:
+            type: string
+        keyboard_status:
+          type: string
+        focus_status:
+          type: string
+        landmark_status:
+          type: string
+        label_status:
+          type: string
+        contrast_state_status:
+          type: string
+        text_overlap_status:
+          type: string
+        evidence_references:
+          type: array
+          items:
+            type: string
+    MigrationSweepSummary:
+      type: object
+      properties:
+        sweep_id:
+          type: string
+        status:
+          type: string
+        checked_artifacts:
+          type: integer
+        unsafe_match_count:
+          type: integer
+        safe_summary:
+          type: string
+        evidence_reference:
+          type: string
+    MigrationProblem:
+      type: object
+      properties:
+        reason:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        next_action:
+          type: string
+        severity:
+          type: string
+        audit_reference:
+          type: string
+          nullable: true

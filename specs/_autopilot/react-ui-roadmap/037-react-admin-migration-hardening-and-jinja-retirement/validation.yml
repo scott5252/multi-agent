@@ -1,40 +1,159 @@
-{
-  "extends": "../../shared/validation.base.yml",
-  "variables": {
-    "spec_title": "Spec 037 - React Admin Migration Hardening And Jinja Retirement",
-    "spec_number": "037",
-    "spec_slug": "react-admin-migration-hardening-and-jinja-retirement",
-    "feature_dir": "specs/037-react-admin-migration-hardening-and-jinja-retirement",
-    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/037-react-admin-migration-hardening-and-jinja-retirement",
-    "branch": "codex/037-react-admin-migration-hardening-and-jinja-retirement",
-    "qa_id": "qa037",
-    "qa_label": "QA037",
-    "qa_database": "multi_agent_platform_qa037",
-    "qa_env_file": "specs/037-react-admin-migration-hardening-and-jinja-retirement/.env.qa037",
-    "artifact_root": ".data/qa037-artifacts",
-    "playwright_output_dir": "output/playwright/qa037_ui",
-    "manual_qa_user_guide": "specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_user_guide.md"
-  },
-  "playwright": {
-    "flows": [
-      {
-        "id": "qa037-react-ui-smoke",
-        "steps": [
-          {
-            "goto": "/admin/app"
-          },
-          {
-            "wait_for_load_state": "networkidle"
-          },
-          {
-            "expect_text": "Admin"
-          },
-          {
-            "screenshot": "qa037-react-ui-smoke.png",
-            "full_page": true
-          }
-        ]
-      }
-    ]
-  }
-}
+extends: ../../shared/validation.base.yml
+variables:
+  spec_title: Spec 037 - React Admin Migration Hardening And Jinja Retirement
+  spec_number: "037"
+  spec_slug: react-admin-migration-hardening-and-jinja-retirement
+  feature_dir: specs/037-react-admin-migration-hardening-and-jinja-retirement
+  autopilot_dir: specs/_autopilot/react-ui-roadmap/037-react-admin-migration-hardening-and-jinja-retirement
+  branch: codex/037-react-admin-migration-hardening-and-jinja-retirement
+  qa_id: qa037
+  qa_label: QA037
+  qa_database: multi_agent_platform_qa037
+  qa_env_file: specs/037-react-admin-migration-hardening-and-jinja-retirement/.env.qa037
+  artifact_root: .data/qa037-artifacts
+  playwright_output_dir: output/playwright/qa037_ui
+  manual_qa_user_guide: specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_user_guide.md
+setup_commands:
+  - id: backup-env
+    command: test ! -f .env || test -f .env.autopilot-backup || cp .env .env.autopilot-backup
+    expect_exit_code: 0
+  - id: copy-qa-env
+    command: test -f specs/037-react-admin-migration-hardening-and-jinja-retirement/.env.qa037 && cp specs/037-react-admin-migration-hardening-and-jinja-retirement/.env.qa037 .env
+    expect_exit_code: 0
+  - id: install-deps
+    command: uv sync
+    expect_exit_code: 0
+    timeout_seconds: 300
+  - id: build-react-admin-assets
+    command: cd frontend/admin && npm install && npm run build
+    expect_exit_code: 0
+    timeout_seconds: 300
+  - id: start-postgres
+    command: docker compose up -d postgres
+    expect_exit_code: 0
+    timeout_seconds: 120
+  - id: reset-qa-db
+    command: docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa037 && createdb -U postgres multi_agent_platform_qa037'
+    expect_exit_code: 0
+    timeout_seconds: 120
+  - id: migrate-db
+    command: uv run alembic upgrade head
+    expect_exit_code: 0
+    timeout_seconds: 180
+  - id: seed-local-tenants
+    command: >-
+      docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa037 -v ON_ERROR_STOP=1 -c "INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING"
+    expect_exit_code: 0
+    timeout_seconds: 120
+  - id: create-artifact-root
+    command: mkdir -p .data/qa037-artifacts output/playwright/qa037_ui
+    expect_exit_code: 0
+extra_commands:
+  - id: react-migration-root-shell
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app' > /tmp/qa037-react-shell.html && rg -q 'React Admin' /tmp/qa037-react-shell.html && rg -q '/admin/app/bootstrap.json' /tmp/qa037-react-shell.html && ! rg -q 'qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label' /tmp/qa037-react-shell.html
+    expect_exit_code: 0
+  - id: react-migration-direct-shell
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/migration' > /tmp/qa037-migration-shell.html && rg -q 'React Admin' /tmp/qa037-migration-shell.html && rg -q '/admin/app/migration/shell.json' /tmp/qa037-migration-shell.html && ! rg -q 'qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label' /tmp/qa037-migration-shell.html
+    expect_exit_code: 0
+  - id: react-migration-platform-dashboard
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/migration/bootstrap.json' > /tmp/qa037-platform-migration.json && rg -q 'React Admin Migration Hardening' /tmp/qa037-platform-migration.json && rg -q 'operations-workflows-qa037' /tmp/qa037-platform-migration.json && rg -q 'governance-skills-tests-qa037' /tmp/qa037-platform-migration.json && rg -q 'retained_fallback' /tmp/qa037-platform-migration.json && ! rg -q 'qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label' /tmp/qa037-platform-migration.json
+    expect_exit_code: 0
+  - id: react-migration-tenant-admin-dashboard
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/migration/bootstrap.json?tenant_id=11111111-1111-1111-1111-111111111111' > /tmp/qa037-tenant-migration.json && rg -q 'Acme' /tmp/qa037-tenant-migration.json && rg -q 'Membership administration' /tmp/qa037-tenant-migration.json && ! rg -q 'Operations workbench|Globex|qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label' /tmp/qa037-tenant-migration.json
+    expect_exit_code: 0
+  - id: react-migration-tenant-user-dashboard
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: tenant-user-acme' 'http://127.0.0.1:8000/admin/app/migration/bootstrap.json?tenant_id=11111111-1111-1111-1111-111111111111' > /tmp/qa037-tenant-user-migration.json && rg -q 'user_scope_limited' /tmp/qa037-tenant-user-migration.json && rg -q 'React admin home' /tmp/qa037-tenant-user-migration.json && ! rg -q 'Workflow builder|Globex|qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label' /tmp/qa037-tenant-user-migration.json
+    expect_exit_code: 0
+  - id: react-migration-routes-json
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/migration/routes.json' > /tmp/qa037-routes.json && rg -q 'react_primary' /tmp/qa037-routes.json && rg -q 'retained_fallback' /tmp/qa037-routes.json && rg -q 'rollback-plan-qa037' /tmp/qa037-routes.json && ! rg -q 'qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label' /tmp/qa037-routes.json
+    expect_exit_code: 0
+  - id: react-migration-rollback-json
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/migration/rollback.json' > /tmp/qa037-rollback.json && rg -q 'React admin primary routing flag' /tmp/qa037-rollback.json && rg -q 'Platform operations' /tmp/qa037-rollback.json && rg -q 'audit-qa037-rollback-plan' /tmp/qa037-rollback.json && ! rg -q 'qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label' /tmp/qa037-rollback.json
+    expect_exit_code: 0
+  - id: react-migration-cross-tenant-denied
+    command: >-
+      status="$(curl --silent --show-error --output /tmp/qa037-cross-tenant-denied.json --write-out '%{http_code}' -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/migration/bootstrap.json?tenant_id=22222222-2222-2222-2222-222222222222')" && test "$status" = "403" && ! rg -q 'Globex|qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label' /tmp/qa037-cross-tenant-denied.json
+    expect_exit_code: 0
+  - id: react-migration-unauthenticated-denied
+    command: >-
+      status="$(curl --silent --show-error --output /tmp/qa037-unauthenticated.json --write-out '%{http_code}' 'http://127.0.0.1:8000/admin/app/migration/bootstrap.json')" && test "$status" = "401" && ! rg -q 'qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label' /tmp/qa037-unauthenticated.json
+    expect_exit_code: 0
+extra_quality_commands:
+  - id: qa-docs
+    command: bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/037-react-admin-migration-hardening-and-jinja-retirement
+    expect_exit_code: 0
+  - id: frontend-typecheck-test-build
+    command: cd frontend/admin && npm run typecheck && npm run test && npm run build
+    expect_exit_code: 0
+    timeout_seconds: 300
+  - id: generated-react-types-check
+    command: uv run python scripts/frontend/generate_admin_react_types.py --check
+    expect_exit_code: 0
+  - id: focused-migration-hardening-pytest
+    command: uv run pytest --no-cov tests/unit/api/test_admin_migration_hardening_react_schema.py tests/unit/admin/test_migration_hardening_service.py tests/performance/migration_hardening/test_react_migration_hardening_queries.py tests/contract/test_admin_react_contract.py tests/integration/test_admin_react_routes.py
+    expect_exit_code: 0
+    timeout_seconds: 300
+  - id: qa037-redaction-scan
+    command: >-
+      ! rg -n "qa037-secret-value|bot token|webhook secret|credential value|authorization header|raw prompt|raw completion|memory content|private message|raw run|run result|raw tool payload|full telegram|link token|stack trace|/Users/|unauthorized tenant label" /tmp/qa037-* output/playwright/qa037_ui
+    expect_exit_code: 0
+playwright:
+  base_url: http://127.0.0.1:8000
+  output_dir: output/playwright/qa037_ui
+  flows:
+    - id: qa037-react-migration-denied
+      steps:
+        - goto: /admin/app/migration
+        - wait_for_load_state: networkidle
+        - screenshot: qa037-react-migration-denied.png
+          full_page: true
+    - id: qa037-react-migration-platform-home
+      steps:
+        - goto: /auth/local-login?redirect_to=/admin/app
+        - wait_for_load_state: networkidle
+        - click: form:has(input[value="platform-admin"]) button
+        - wait_for_load_state: networkidle
+        - goto: /admin/app
+        - wait_for_load_state: networkidle
+        - expect_text: React Admin Migration Hardening
+        - expect_text: Route safety plan
+        - expect_text: Redaction and tenant isolation
+        - screenshot: qa037-react-home-platform.png
+          full_page: true
+    - id: qa037-react-migration-platform-direct
+      steps:
+        - goto: /admin/app/migration
+        - wait_for_load_state: networkidle
+        - expect_text: React Admin Migration Hardening
+        - expect_text: Operations and workflow authoring
+        - expect_text: Retained fallback
+        - screenshot: qa037-react-migration-platform.png
+          full_page: true
+    - id: qa037-react-migration-tenant-admin
+      steps:
+        - goto: /auth/local-login?redirect_to=/admin/app/migration?tenant_id=11111111-1111-1111-1111-111111111111
+        - wait_for_load_state: networkidle
+        - click: form:has(input[value="tenant-admin-acme"]) button
+        - wait_for_load_state: networkidle
+        - expect_text: React Admin Migration Hardening
+        - expect_text: Acme
+        - expect_text: Membership administration
+        - screenshot: qa037-react-migration-tenant-admin.png
+          full_page: true
+    - id: qa037-react-migration-tenant-user
+      steps:
+        - goto: /auth/local-login?redirect_to=/admin/app/migration?tenant_id=11111111-1111-1111-1111-111111111111
+        - wait_for_load_state: networkidle
+        - click: form:has(input[value="tenant-user-acme"]) button
+        - wait_for_load_state: networkidle
+        - expect_text: User scope limited
+        - expect_text: React admin home
+        - screenshot: qa037-react-migration-tenant-user.png
+          full_page: true

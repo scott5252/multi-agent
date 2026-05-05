@@ -1,0 +1,506 @@
+openapi: 3.1.0
+info:
+  title: React Operations Workbench Contract
+  version: qa029
+paths:
+  /admin/app/operations:
+    get:
+      summary: Serve the protected React operations workbench shell route.
+      responses:
+        "200":
+          description: React app shell for authorized principals.
+        "401":
+          description: Missing or invalid principal.
+        "403":
+          description: Principal is not authorized for requested scope.
+  /admin/app/operations.json:
+    get:
+      summary: Return the authorized operations workbench envelope.
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: range
+          in: query
+          schema:
+            type: string
+            default: 60m
+        - name: severity
+          in: query
+          schema:
+            type: string
+        - name: subsystem
+          in: query
+          schema:
+            type: string
+        - name: run_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Safe workbench envelope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationsWorkbenchEnvelope"
+        "400":
+          description: Invalid filter or range.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeProblemDetail"
+        "401":
+          description: Missing or invalid principal.
+        "403":
+          description: Scope denied.
+  /admin/app/operations/runs/{workflow_run_id}.json:
+    get:
+      summary: Return a safe run debug envelope.
+      parameters:
+        - name: workflow_run_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Safe run debug envelope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunDebugEnvelope"
+        "401":
+          description: Missing or invalid principal.
+        "403":
+          description: Scope denied.
+        "404":
+          description: Run not found within authorized scope.
+  /admin/app/operations/export:
+    post:
+      summary: Request a safe workbench export snapshot.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkbenchExportRequest"
+      responses:
+        "200":
+          description: Safe export snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkbenchExportSnapshot"
+        "401":
+          description: Missing or invalid principal.
+        "403":
+          description: Export denied.
+components:
+  schemas:
+    SafeProblemDetail:
+      type: object
+      required: [title, status, reason_category]
+      properties:
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        reason_category:
+          type: string
+        audit_reference_id:
+          type: string
+          nullable: true
+    OperationsWorkbenchEnvelope:
+      type: object
+      required:
+        - page_id
+        - scope
+        - generated_at
+        - time_range
+        - summary_cards
+        - health_panels
+        - reliability
+        - logs
+        - exports
+      properties:
+        page_id:
+          type: string
+        scope:
+          type: object
+        generated_at:
+          type: string
+          format: date-time
+        time_range:
+          $ref: "#/components/schemas/WorkbenchTimeRange"
+        summary_cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkbenchSummaryCard"
+        likely_causes:
+          type: array
+          items:
+            $ref: "#/components/schemas/LikelyCauseSummary"
+        health_panels:
+          type: array
+          items:
+            $ref: "#/components/schemas/HealthPressurePanel"
+        run_debug:
+          $ref: "#/components/schemas/RunDebugEnvelope"
+          nullable: true
+        reliability:
+          $ref: "#/components/schemas/ReliabilityRecoverySummary"
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkbenchLogSummary"
+        filters:
+          type: object
+        actions:
+          type: array
+          items:
+            type: object
+        exports:
+          $ref: "#/components/schemas/WorkbenchExportSnapshot"
+        fallback_links:
+          type: array
+          items:
+            type: object
+        state:
+          type: object
+          nullable: true
+        refresh:
+          type: object
+    WorkbenchTimeRange:
+      type: object
+      required: [preset, label]
+      properties:
+        preset:
+          type: string
+        label:
+          type: string
+        start:
+          type: string
+          format: date-time
+          nullable: true
+        end:
+          type: string
+          format: date-time
+          nullable: true
+    WorkbenchSummaryCard:
+      type: object
+      required: [card_id, label, value, status, severity, summary]
+      properties:
+        card_id:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+        status:
+          type: string
+        severity:
+          type: string
+        summary:
+          type: string
+        freshness_label:
+          type: string
+        trend:
+          type: string
+          nullable: true
+        href:
+          type: string
+          nullable: true
+        evidence_reference_id:
+          type: string
+          nullable: true
+    LikelyCauseSummary:
+      type: object
+      required: [cause_id, severity, affected_subsystem, symptom, likely_cause_category, recommended_next_step]
+      properties:
+        cause_id:
+          type: string
+        severity:
+          type: string
+        affected_subsystem:
+          type: string
+        symptom:
+          type: string
+        likely_cause_category:
+          type: string
+        recommended_next_step:
+          type: string
+        href:
+          type: string
+          nullable: true
+        evidence_reference_id:
+          type: string
+          nullable: true
+    HealthPressurePanel:
+      type: object
+      required: [panel_id, title, status, metrics]
+      properties:
+        panel_id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        metrics:
+          type: array
+          items:
+            type: object
+        dependencies:
+          type: array
+          items:
+            type: object
+        partial_reason:
+          type: string
+          nullable: true
+        polling_allowed:
+          type: boolean
+    RunDebugEnvelope:
+      type: object
+      required: [workflow_run_id, run_status, timeline, branches, gateway_attempts, tool_calls, deliveries]
+      properties:
+        workflow_run_id:
+          type: string
+          format: uuid
+        tenant_scope:
+          type: object
+          nullable: true
+        run_status:
+          type: string
+        safe_title:
+          type: string
+          nullable: true
+        timeline:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineEventSummary"
+        branches:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphBranchSummary"
+        gateway_attempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/GatewayAttemptSummary"
+        tool_calls:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolCallSummary"
+        deliveries:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChannelDeliverySummary"
+        lineage:
+          type: array
+          items:
+            type: object
+        replay_links:
+          type: array
+          items:
+            type: object
+    TimelineEventSummary:
+      type: object
+      required: [event_id, occurred_at, category, severity, status, summary]
+      properties:
+        event_id:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        sequence:
+          type: integer
+          nullable: true
+        category:
+          type: string
+        severity:
+          type: string
+        status:
+          type: string
+        summary:
+          type: string
+        trace_id:
+          type: string
+          nullable: true
+        audit_reference_id:
+          type: string
+          nullable: true
+    GraphBranchSummary:
+      type: object
+      required: [branch_id, label, status, summary]
+      properties:
+        branch_id:
+          type: string
+        label:
+          type: string
+        status:
+          type: string
+        node_count:
+          type: integer
+        completed_count:
+          type: integer
+        failed_count:
+          type: integer
+        waiting_count:
+          type: integer
+        join_policy:
+          type: string
+          nullable: true
+        join_decision:
+          type: string
+          nullable: true
+        manual_resolution_required:
+          type: boolean
+        summary:
+          type: string
+    GatewayAttemptSummary:
+      type: object
+      properties:
+        attempt_id:
+          type: string
+        provider_label:
+          type: string
+        status:
+          type: string
+        latency_ms:
+          type: integer
+          nullable: true
+        credential_diagnostic_category:
+          type: string
+          nullable: true
+        safe_summary:
+          type: string
+    ToolCallSummary:
+      type: object
+      properties:
+        tool_call_id:
+          type: string
+        tool_label:
+          type: string
+        connector_label:
+          type: string
+        readiness_status:
+          type: string
+        policy_outcome:
+          type: string
+        result_category:
+          type: string
+        safe_summary:
+          type: string
+    ChannelDeliverySummary:
+      type: object
+      properties:
+        delivery_id:
+          type: string
+        channel:
+          type: string
+        alias_label:
+          type: string
+        delivery_status:
+          type: string
+        failure_category:
+          type: string
+          nullable: true
+        safe_summary:
+          type: string
+    ReliabilityRecoverySummary:
+      type: object
+      properties:
+        breakers:
+          type: array
+          items:
+            type: object
+        retries:
+          type: array
+          items:
+            type: object
+        dead_letters:
+          type: array
+          items:
+            type: object
+        confirmation_requirements:
+          type: array
+          items:
+            type: object
+        partial_reason:
+          type: string
+          nullable: true
+    WorkbenchLogSummary:
+      type: object
+      required: [log_id, occurred_at, source, severity, status, subsystem, summary]
+      properties:
+        log_id:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        source:
+          type: string
+        severity:
+          type: string
+        status:
+          type: string
+        subsystem:
+          type: string
+        tenant_scope:
+          type: string
+          nullable: true
+        run_reference:
+          type: string
+          nullable: true
+        correlation_reference:
+          type: string
+          nullable: true
+        summary:
+          type: string
+        safe_details:
+          type: object
+    WorkbenchExportRequest:
+      type: object
+      properties:
+        scope_type:
+          type: string
+        range:
+          type: string
+        include_run_debug:
+          type: boolean
+    WorkbenchExportSnapshot:
+      type: object
+      required: [export_id, status, summary, artifact_reference_id, redaction_summary]
+      properties:
+        export_id:
+          type: string
+        status:
+          type: string
+        summary:
+          type: string
+        scope:
+          type: string
+          nullable: true
+        artifact_reference_id:
+          type: string
+        redaction_summary:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        row_count:
+          type: integer
+        audit_reference_id:
+          type: string
+          nullable: true

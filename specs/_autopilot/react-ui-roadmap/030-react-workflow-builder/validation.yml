@@ -15,10 +15,266 @@
     "playwright_output_dir": "output/playwright/qa030_ui",
     "manual_qa_user_guide": "specs/030-react-workflow-builder/qa030_user_guide.md"
   },
+  "setup_commands": [
+    {
+      "id": "backup-env",
+      "command": "test ! -f .env || test -f .env.autopilot-backup || cp .env .env.autopilot-backup",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "copy-qa-env",
+      "command": "test -f specs/030-react-workflow-builder/.env.qa030 && cp specs/030-react-workflow-builder/.env.qa030 .env",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "install-deps",
+      "command": "uv sync",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "build-react-admin-assets",
+      "command": "cd frontend/admin && npm install && npm run build",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "start-postgres",
+      "command": "docker compose up -d postgres",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "reset-qa-db",
+      "command": "docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa030 && createdb -U postgres multi_agent_platform_qa030'",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "migrate-db",
+      "command": "uv run alembic upgrade head",
+      "expect_exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "seed-local-tenants",
+      "command": "docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa030 -v ON_ERROR_STOP=1 -c \"INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING\"",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "create-artifact-root",
+      "command": "mkdir -p .data/qa030-artifacts output/playwright/qa030_ui",
+      "expect_exit_code": 0
+    }
+  ],
+  "extra_commands": [
+    {
+      "id": "react-workflows-shell-authenticated",
+      "command": "curl --fail --silent --show-error -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "React Admin",
+        "/admin/app/bootstrap.json"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/"
+      ]
+    },
+    {
+      "id": "react-workflows-platform-envelope",
+      "command": "curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/workflows/builder.json'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Workflow builder",
+        "Daily briefing workflow",
+        "artifact-ref-qa030-stale-evidence",
+        "workflow-save",
+        "workflow-validate",
+        "workflow-publish"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/",
+        "raw prompt",
+        "raw provider response",
+        "private channel message"
+      ]
+    },
+    {
+      "id": "react-workflows-tenant-envelope",
+      "command": "curl --fail --silent --show-error -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/builder.json?tenant_id=11111111-1111-1111-1111-111111111111'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Workflow builder",
+        "Acme",
+        "Calendar branch",
+        "Weather branch",
+        "artifact-ref-qa030-json-preview"
+      ],
+      "expect_not_contains": [
+        "Globex",
+        "qa030-secret-value",
+        "/Users/",
+        "raw tool result"
+      ]
+    },
+    {
+      "id": "react-workflows-lookups",
+      "command": "curl --fail --silent --show-error -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/lookups.json?tenant_id=11111111-1111-1111-1111-111111111111'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Daily briefing prompt",
+        "Briefing runtime profile",
+        "Weather connector skill",
+        "Daily briefing required suite"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/",
+        "raw prompt"
+      ]
+    },
+    {
+      "id": "react-workflows-save",
+      "command": "curl --fail --silent --show-error -X POST -H 'Content-Type: application/json' -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/drafts/00000000-0000-0000-0000-000000000030/save?tenant_id=11111111-1111-1111-1111-111111111111' -d '{\"revision\":\"draft-rev-qa030-current\",\"idempotency_key\":\"qa030-save\",\"name\":\"Daily briefing workflow\",\"description\":\"Prepare a safe daily intelligence briefing for a tenant.\",\"selected_prompt_ref\":\"prompt-daily-briefing-v3\",\"selected_profile_ref\":\"profile-briefing-safe\",\"join_policy\":\"wait_for_required_branches\"}'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "accepted",
+        "audit-workflow-save-qa030",
+        "draft-rev-qa030-next"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/"
+      ]
+    },
+    {
+      "id": "react-workflows-stale-save",
+      "command": "curl --fail --silent --show-error -X POST -H 'Content-Type: application/json' -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/drafts/00000000-0000-0000-0000-000000000030/save?tenant_id=11111111-1111-1111-1111-111111111111' -d '{\"revision\":\"draft-rev-qa030-current\",\"idempotency_key\":\"qa030-stale\",\"name\":\"Daily briefing workflow\",\"description\":\"Prepare a safe daily intelligence briefing for a tenant.\",\"force_stale\":true}'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "stale_conflict",
+        "audit-workflow-save-stale-qa030"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/"
+      ]
+    },
+    {
+      "id": "react-workflows-validate-blocked",
+      "command": "curl --fail --silent --show-error -X POST -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/drafts/00000000-0000-0000-0000-000000000030/validate?tenant_id=11111111-1111-1111-1111-111111111111'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Required Daily briefing test evidence is stale",
+        "audit-workflow-validation-qa030",
+        "artifact-ref-qa030-validation"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/"
+      ]
+    },
+    {
+      "id": "react-workflows-validate-ready",
+      "command": "curl --fail --silent --show-error -X POST -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/drafts/00000000-0000-0000-0000-000000000030/validate?tenant_id=11111111-1111-1111-1111-111111111111&ready=true'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "confirmation_required",
+        "artifact-ref-qa030-ready-evidence"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/"
+      ]
+    },
+    {
+      "id": "react-workflows-publish-blocked",
+      "command": "curl --fail --silent --show-error -X POST -H 'Content-Type: application/json' -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/drafts/00000000-0000-0000-0000-000000000030/publish?tenant_id=11111111-1111-1111-1111-111111111111' -d '{\"revision\":\"draft-rev-qa030-current\",\"idempotency_key\":\"qa030-publish-blocked\",\"ready_fixture\":false,\"confirmed\":false}'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "validation_error",
+        "audit-workflow-publish-blocked-qa030"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/"
+      ]
+    },
+    {
+      "id": "react-workflows-publish-confirmation",
+      "command": "curl --fail --silent --show-error -X POST -H 'Content-Type: application/json' -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/drafts/00000000-0000-0000-0000-000000000030/publish?tenant_id=11111111-1111-1111-1111-111111111111' -d '{\"revision\":\"draft-rev-qa030-current\",\"idempotency_key\":\"qa030-publish-confirm\",\"ready_fixture\":true,\"confirmed\":false}'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "confirmation_required",
+        "audit-workflow-publish-confirm-qa030"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/"
+      ]
+    },
+    {
+      "id": "react-workflows-publish-accepted",
+      "command": "curl --fail --silent --show-error -X POST -H 'Content-Type: application/json' -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/drafts/00000000-0000-0000-0000-000000000030/publish?tenant_id=11111111-1111-1111-1111-111111111111' -d '{\"revision\":\"draft-rev-qa030-current\",\"idempotency_key\":\"qa030-publish-accepted\",\"ready_fixture\":true,\"confirmed\":true}'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "accepted",
+        "Workflow published as an immutable bundle",
+        "audit-workflow-publish-qa030"
+      ],
+      "expect_not_contains": [
+        "qa030-secret-value",
+        "/Users/"
+      ]
+    },
+    {
+      "id": "react-workflows-denied-fails-closed",
+      "command": "test \"$(curl --silent --output /tmp/qa030-workflows-denied.json --write-out '%{http_code}' http://127.0.0.1:8000/admin/app/workflows/builder.json)\" = \"401\" && rg -q 'missing local principal header or cookie' /tmp/qa030-workflows-denied.json && ! rg -q 'Workflow builder|artifact-ref-qa030' /tmp/qa030-workflows-denied.json",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "react-workflows-cross-tenant-denied",
+      "command": "test \"$(curl --silent --output /tmp/qa030-workflows-cross-tenant.json --write-out '%{http_code}' -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/builder.json?tenant_id=22222222-2222-2222-2222-222222222222')\" = \"403\" && ! rg -q 'Globex|Workflow builder|artifact-ref-qa030' /tmp/qa030-workflows-cross-tenant.json",
+      "expect_exit_code": 0
+    }
+  ],
+  "extra_quality_commands": [
+    {
+      "id": "qa-documents",
+      "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/030-react-workflow-builder",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "frontend-typecheck",
+      "command": "cd frontend/admin && npm run typecheck",
+      "expect_exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "frontend-tests",
+      "command": "cd frontend/admin && npm run test",
+      "expect_exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "frontend-build",
+      "command": "cd frontend/admin && npm run build",
+      "expect_exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "generated-react-contracts",
+      "command": "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "expect_exit_code": 0
+    }
+  ],
   "playwright": {
     "flows": [
       {
-        "id": "qa030-react-ui-smoke",
+        "id": "qa030-react-workflows-denied",
         "steps": [
           {
             "goto": "/admin/app/workflows"
@@ -27,10 +283,148 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Workflow"
+            "expect_text": "missing local principal header or cookie"
           },
           {
-            "screenshot": "qa030-react-ui-smoke.png",
+            "screenshot": "qa030-react-workflows-denied.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa030-react-workflows-tenant",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value='tenant-admin-acme']) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "React Admin"
+          },
+          {
+            "expect_text": "Workflow builder"
+          },
+          {
+            "expect_text": "Daily briefing workflow"
+          },
+          {
+            "expect_text": "Runtime structure"
+          },
+          {
+            "expect_text": "Evidence and decision"
+          },
+          {
+            "expect_text": "artifact-ref-qa030-stale-evidence"
+          },
+          {
+            "screenshot": "qa030-react-workflows-tenant.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa030-react-workflows-save",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value='tenant-admin-acme']) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "button:has-text('Save draft')"
+          },
+          {
+            "expect_text": "audit-workflow-save-qa030"
+          },
+          {
+            "expect_text": "accepted"
+          },
+          {
+            "screenshot": "qa030-react-workflows-save.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa030-react-workflows-publish",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value='tenant-admin-acme']) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "button:has-text('Mark evidence current')"
+          },
+          {
+            "expect_text": "artifact-ref-qa030-ready-evidence"
+          },
+          {
+            "click": "button:has-text('Prepare publish')"
+          },
+          {
+            "expect_text": "confirmation_required"
+          },
+          {
+            "click": "button:has-text('Confirm publish')"
+          },
+          {
+            "expect_text": "Workflow published as an immutable bundle"
+          },
+          {
+            "screenshot": "qa030-react-workflows-publish.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa030-react-workflows-cross-tenant",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value='tenant-admin-acme']) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "goto": "/admin/app/workflows?tenant_id=22222222-2222-2222-2222-222222222222"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "cross_tenant_scope"
+          },
+          {
+            "screenshot": "qa030-react-workflows-cross-tenant.png",
             "full_page": true
           }
         ]

@@ -1,10 +1,12 @@
 # multi-agent Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-05-04
+Auto-generated from all feature plans. Last updated: 2026-05-05
 
 ## Active Technologies
 
 - Python 3.12 across the platform.
+- TypeScript strict mode and Node.js `>=20.19.0 <26` for the React admin UI
+  foundation under `frontend/admin`.
 - FastAPI control-plane application with Starlette/Jinja2 server-rendered admin
   pages, JSON APIs, channel webhooks, selected streaming/SSE responses, and a
   worker process.
@@ -26,6 +28,11 @@ Auto-generated from all feature plans. Last updated: 2026-05-04
   reliability quotas/leases/breakers, and operational dashboards.
 - pytest, pytest-asyncio, httpx/TestClient, Playwright QA scripts, Ruff, mypy,
   coverage gates, and uv.
+- React 19, React Router, Vite, Vitest, Testing Library, npm, generated
+  TypeScript contracts, optional `lucide-react` icons, planned `@xyflow/react`
+  graph components, and FastAPI-served built assets for the additive admin
+  React migration foundation, shared shell/design system, reusable data/form
+  patterns, operations workbench, workflow builder, and governance workspace.
 - Object/filesystem storage providers for oversized artifacts, exports,
   validation evidence, fixture payloads, and QA/test-bench outputs.
 
@@ -113,7 +120,7 @@ tests/
 - performance/
 - unit/
 
-specs/                      # Spec Kit feature artifacts 001 through 025
+specs/                      # Spec Kit feature artifacts 001 through 033
 docs/
 scripts/
 ```
@@ -163,6 +170,50 @@ admin workflows.
 
 ## Recent Changes
 
+- 033-react-agent-and-workflow-test-bench: Planned additive React test bench
+  workspace for guided suite and case authoring, safe execution-mode selection,
+  deterministic run launch, backend-owned run progress, pass/fail diagnostics,
+  redacted traces, artifact references, current-revision publish-gate evidence,
+  and browser-first QA over existing Spec 015/020/024/025 services.
+- 032-react-skill-registry-and-tool-execution-lifecycle: Completed additive
+  React skill lifecycle workspace for platform package publication, manifest
+  validation, tenant grants, tenant discovery and installation, credential
+  reference configuration, smoke-test/readiness evidence, first-party connector
+  diagnostics, SkillExecutionGateway evidence, binding eligibility previews,
+  quarantine/withdrawal states, stale conflict recovery, audit timeline, and
+  browser-first redaction-safe QA over existing Specs 014/014-v2/021 services.
+- 031-model-prompt-profile-and-provider-governance: Completed additive React
+  governance workspace for provider setup/health, credential-reference
+  diagnostics, platform-admin-only probes and credential-reference actions,
+  prompt versions and safe previews, runtime profiles, read-only routing
+  previews, policy history, direct-call guardrail evidence, and run provenance
+  over existing provider/prompt/profile/routing/gateway services with QA docs
+  and Playwright evidence.
+- 030-react-workflow-builder: Completed additive React workflow builder with
+  backend-owned draft/reference/graph/validation/publish contracts, guided
+  semantic saves, stale-revision recovery, React Flow graph preview with
+  accessible lists, required evidence, publish confirmation, revision history,
+  read-only JSON inspection, QA docs, and Playwright evidence.
+- 029-operations-reliability-and-run-debug-workbench: Completed additive React
+  operations workbench over existing operations, reliability, run inspection,
+  graph runtime, provider gateway, Telegram/channel delivery, skill execution,
+  usage, audit, redaction, export, and fallback route services with QA docs and
+  Playwright evidence.
+- 028-react-admin-data-contracts-and-form-patterns: Completed shared
+  backend-owned React admin page envelopes, safe problem details, form and
+  mutation result contracts, filter/pagination/sorting metadata, export
+  snapshots, evidence summaries, reusable React table/form/mutation helpers,
+  harmless `/admin/app/patterns` sample page, QA docs, and Playwright evidence.
+- 027-modern-admin-shell-and-design-system: Completed the shared React admin
+  shell and design system with backend-authorized navigation, persistent
+  scope awareness, breadcrumbs, saved-filter chips, command/search over safe
+  destinations, responsive shell layouts, WCAG-oriented primitives, Jinja
+  fallback coexistence, QA docs, and Playwright evidence.
+- 026-react-admin-ui-foundation: Completed additive React admin UI foundation
+  with `/admin/app`, backend-owned bootstrap/navigation contracts,
+  generated TypeScript types, Vite/npm tooling, FastAPI-served built assets,
+  dual Auth0/local-principal validation, QA docs, Playwright evidence, and
+  Jinja fallback guardrails.
 - 025-live-model-credential-resolution-for-gateway-calls: Completed live
   credential resolution for provider probes and ModelGateway calls using
   `ProviderSecretResolver`, safe secret reference selection, fail-closed OpenAI
@@ -211,5 +262,5 @@ admin workflows.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the latest plan:
-`specs/025-live-model-credential-resolution-for-gateway-calls/plan.md`
+`specs/037-react-admin-migration-hardening-and-jinja-retirement/plan.md`
 <!-- SPECKIT END -->

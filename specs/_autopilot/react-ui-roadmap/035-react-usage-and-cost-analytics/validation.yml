@@ -1,40 +1,181 @@
-{
-  "extends": "../../shared/validation.base.yml",
-  "variables": {
-    "spec_title": "Spec 035 - React Usage And Cost Analytics",
-    "spec_number": "035",
-    "spec_slug": "react-usage-and-cost-analytics",
-    "feature_dir": "specs/035-react-usage-and-cost-analytics",
-    "autopilot_dir": "specs/_autopilot/react-ui-roadmap/035-react-usage-and-cost-analytics",
-    "branch": "codex/035-react-usage-and-cost-analytics",
-    "qa_id": "qa035",
-    "qa_label": "QA035",
-    "qa_database": "multi_agent_platform_qa035",
-    "qa_env_file": "specs/035-react-usage-and-cost-analytics/.env.qa035",
-    "artifact_root": ".data/qa035-artifacts",
-    "playwright_output_dir": "output/playwright/qa035_ui",
-    "manual_qa_user_guide": "specs/035-react-usage-and-cost-analytics/qa035_user_guide.md"
-  },
-  "playwright": {
-    "flows": [
-      {
-        "id": "qa035-react-ui-smoke",
-        "steps": [
-          {
-            "goto": "/admin/app/usage"
-          },
-          {
-            "wait_for_load_state": "networkidle"
-          },
-          {
-            "expect_text": "Usage"
-          },
-          {
-            "screenshot": "qa035-react-ui-smoke.png",
-            "full_page": true
-          }
-        ]
-      }
-    ]
-  }
-}
+extends: ../../shared/validation.base.yml
+variables:
+  spec_title: Spec 035 - React Usage And Cost Analytics
+  spec_number: "035"
+  spec_slug: react-usage-and-cost-analytics
+  feature_dir: specs/035-react-usage-and-cost-analytics
+  autopilot_dir: specs/_autopilot/react-ui-roadmap/035-react-usage-and-cost-analytics
+  branch: codex/035-react-usage-and-cost-analytics
+  qa_id: qa035
+  qa_label: QA035
+  qa_database: multi_agent_platform_qa035
+  qa_env_file: specs/035-react-usage-and-cost-analytics/.env.qa035
+  artifact_root: .data/qa035-artifacts
+  playwright_output_dir: output/playwright/qa035_ui
+  manual_qa_user_guide: specs/035-react-usage-and-cost-analytics/qa035_user_guide.md
+setup_commands:
+  - id: backup-env
+    command: test ! -f .env || test -f .env.autopilot-backup || cp .env .env.autopilot-backup
+    expect_exit_code: 0
+  - id: copy-qa-env
+    command: test -f specs/035-react-usage-and-cost-analytics/.env.qa035 && cp specs/035-react-usage-and-cost-analytics/.env.qa035 .env
+    expect_exit_code: 0
+  - id: install-deps
+    command: uv sync
+    expect_exit_code: 0
+    timeout_seconds: 300
+  - id: build-react-admin-assets
+    command: cd frontend/admin && npm install && npm run build
+    expect_exit_code: 0
+    timeout_seconds: 300
+  - id: start-postgres
+    command: docker compose up -d postgres
+    expect_exit_code: 0
+    timeout_seconds: 120
+  - id: reset-qa-db
+    command: docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa035 && createdb -U postgres multi_agent_platform_qa035'
+    expect_exit_code: 0
+    timeout_seconds: 120
+  - id: migrate-db
+    command: uv run alembic upgrade head
+    expect_exit_code: 0
+    timeout_seconds: 180
+  - id: seed-local-tenants
+    command: >-
+      docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa035 -v ON_ERROR_STOP=1 -c "INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING"
+    expect_exit_code: 0
+    timeout_seconds: 120
+  - id: create-artifact-root
+    command: mkdir -p .data/qa035-artifacts output/playwright/qa035_ui
+    expect_exit_code: 0
+extra_commands:
+  - id: react-usage-shell-authenticated
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/usage'
+    expect_exit_code: 0
+    expect_contains:
+      - React Admin
+      - /admin/app/bootstrap.json
+    expect_not_contains:
+      - qa035-secret-value
+      - /Users/
+  - id: react-usage-platform-dashboard
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/usage/bootstrap.json' > /tmp/qa035-platform-usage.json && rg -q 'Usage and Cost Analytics' /tmp/qa035-platform-usage.json && rg -q 'Globex' /tmp/qa035-platform-usage.json && rg -q 'Confidence coverage' /tmp/qa035-platform-usage.json && ! rg -q 'qa035-secret-value|raw prompt|raw completion|memory content|authorization header|provider token|credential value|credential reference|raw tool payload|/Users/|unauthorized tenant label|private message' /tmp/qa035-platform-usage.json
+    expect_exit_code: 0
+  - id: react-usage-tenant-dashboard
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/usage/bootstrap.json?tenant_id=11111111-1111-1111-1111-111111111111' > /tmp/qa035-tenant-usage.json && rg -q 'Usage and Cost Analytics' /tmp/qa035-tenant-usage.json && rg -q 'Acme' /tmp/qa035-tenant-usage.json && ! rg -q 'Globex|qa035-secret-value|raw prompt|raw completion|memory content|authorization header|provider token|credential value|credential reference|raw tool payload|/Users/|unauthorized tenant label|private message' /tmp/qa035-tenant-usage.json
+    expect_exit_code: 0
+  - id: react-usage-gateway-grouping
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/usage/bootstrap.json?group_by=gateway_operation' > /tmp/qa035-gateway-usage.json && rg -q 'gateway_operation' /tmp/qa035-gateway-usage.json && rg -q 'chat.completions primary route' /tmp/qa035-gateway-usage.json && ! rg -q 'qa035-secret-value|raw prompt|raw completion|authorization header|provider token|credential value|raw tool payload|/Users/' /tmp/qa035-gateway-usage.json
+    expect_exit_code: 0
+  - id: react-usage-physical-attempt-grouping
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/usage/bootstrap.json?group_by=physical_attempt' > /tmp/qa035-physical-attempt-usage.json && rg -q 'physical_attempt' /tmp/qa035-physical-attempt-usage.json && rg -q 'OpenAI attempt 1 succeeded' /tmp/qa035-physical-attempt-usage.json && ! rg -q 'qa035-secret-value|raw prompt|raw completion|authorization header|provider token|credential value|raw tool payload|/Users/' /tmp/qa035-physical-attempt-usage.json
+    expect_exit_code: 0
+  - id: react-usage-governed-tool-grouping
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/usage/bootstrap.json?group_by=governed_tool' > /tmp/qa035-governed-tool-usage.json && rg -q 'governed_tool' /tmp/qa035-governed-tool-usage.json && rg -q 'Daily briefing calendar list' /tmp/qa035-governed-tool-usage.json && ! rg -q 'qa035-secret-value|raw prompt|raw completion|authorization header|provider token|credential value|raw tool payload|/Users/' /tmp/qa035-governed-tool-usage.json
+    expect_exit_code: 0
+  - id: react-usage-events-drilldown
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/usage/events.json?group_by=provider&rollup_key=OpenAI' > /tmp/qa035-events.json && rg -q 'audit-usage-qa035' /tmp/qa035-events.json && rg -q 'OpenAI' /tmp/qa035-events.json && ! rg -q 'qa035-secret-value|raw prompt|raw completion|memory content|authorization header|provider token|credential value|credential reference|raw tool payload|/Users/|unauthorized tenant label|private message' /tmp/qa035-events.json
+    expect_exit_code: 0
+  - id: react-usage-export-create
+    command: >-
+      curl --fail --silent --show-error -X POST -H 'Content-Type: application/json' -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/usage/exports?tenant_id=11111111-1111-1111-1111-111111111111' -d '{"filters":{"tenant_id":"11111111-1111-1111-1111-111111111111","range":"Last 7 days"},"requested_group_by":"provider","idempotency_key":"usage-export-ui-qa035"}' > /tmp/qa035-export.json && rg -q 'completed' /tmp/qa035-export.json && rg -q 'usage-export-artifact-qa035' /tmp/qa035-export.json && rg -q 'audit-usage-qa035-export-created' /tmp/qa035-export.json && ! rg -q 'Globex|qa035-secret-value|raw prompt|raw completion|memory content|authorization header|provider token|credential value|credential reference|raw tool payload|/Users/|private message' /tmp/qa035-export.json
+    expect_exit_code: 0
+  - id: react-usage-export-detail
+    command: >-
+      curl --fail --silent --show-error -H 'X-Local-Principal: platform-admin' 'http://127.0.0.1:8000/admin/app/usage/exports/35000000-0000-0000-0000-000000000035.json' > /tmp/qa035-export-detail.json && rg -q 'completed' /tmp/qa035-export-detail.json && rg -q 'usage-export-artifact-qa035' /tmp/qa035-export-detail.json && rg -q 'sha256:qa035d' /tmp/qa035-export-detail.json && ! rg -q 'qa035-secret-value|raw prompt|raw completion|memory content|authorization header|provider token|credential value|credential reference|raw tool payload|/Users/|unauthorized tenant label|private message' /tmp/qa035-export-detail.json
+    expect_exit_code: 0
+  - id: react-usage-cross-tenant-export-denied
+    command: >-
+      curl --fail --silent --show-error -X POST -H 'Content-Type: application/json' -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/usage/exports?tenant_id=11111111-1111-1111-1111-111111111111' -d '{"filters":{"tenant_id":"22222222-2222-2222-2222-222222222222"},"requested_group_by":"provider","idempotency_key":"usage-export-ui-qa035-denied"}' > /tmp/qa035-denied-export.json && rg -q 'denied' /tmp/qa035-denied-export.json && rg -q 'audit-usage-qa035-export-denied' /tmp/qa035-denied-export.json && ! rg -q 'Globex|qa035-secret-value|raw prompt|raw completion|memory content|authorization header|provider token|credential value|credential reference|raw tool payload|/Users/|private message' /tmp/qa035-denied-export.json
+    expect_exit_code: 0
+extra_quality_commands:
+  - id: qa-docs
+    command: bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/035-react-usage-and-cost-analytics
+    expect_exit_code: 0
+  - id: frontend-typecheck-test-build
+    command: cd frontend/admin && npm run typecheck && npm run test && npm run build
+    expect_exit_code: 0
+    timeout_seconds: 300
+  - id: generated-react-types-check
+    command: uv run python scripts/frontend/generate_admin_react_types.py --check
+    expect_exit_code: 0
+  - id: focused-usage-pytest
+    command: uv run pytest --no-cov tests/unit/api/test_admin_usage_react_schema.py tests/unit/admin/usage/test_react_usage_service.py tests/performance/usage/test_react_usage_queries.py tests/contract/test_admin_react_contract.py tests/integration/test_admin_react_routes.py
+    expect_exit_code: 0
+    timeout_seconds: 300
+  - id: qa035-redaction-scan
+    command: >-
+      ! rg -n "qa035-secret-value|raw prompt|raw completion|memory content|authorization header|provider token|credential value|credential reference|raw tool payload|/Users/|unauthorized tenant label|private message" /tmp/qa035-* output/playwright/qa035_ui
+    expect_exit_code: 0
+playwright:
+  base_url: http://127.0.0.1:8000
+  output_dir: output/playwright/qa035_ui
+  flows:
+    - id: qa035-react-usage-denied
+      steps:
+        - goto: /admin/app/usage
+        - wait_for_load_state: networkidle
+        - screenshot: qa035-react-usage-denied.png
+          full_page: true
+    - id: qa035-react-usage-platform
+      steps:
+        - goto: /auth/local-login?redirect_to=/admin/app/usage?group_by=tenant
+        - wait_for_load_state: networkidle
+        - click: form:has(input[value="platform-admin"]) button
+        - wait_for_load_state: networkidle
+        - goto: /admin/app/usage?group_by=tenant
+        - wait_for_load_state: networkidle
+        - expect_text: Usage and Cost Analytics
+        - expect_text: Total tokens
+        - expect_text: Confidence coverage
+        - screenshot: qa035-react-usage-platform.png
+          full_page: true
+    - id: qa035-react-usage-rollups
+      steps:
+        - goto: /admin/app/usage?group_by=gateway_operation
+        - wait_for_load_state: networkidle
+        - expect_text: chat.completions primary route
+        - goto: /admin/app/usage?group_by=governed_tool
+        - wait_for_load_state: networkidle
+        - expect_text: Daily briefing calendar list
+        - screenshot: qa035-react-usage-rollups.png
+          full_page: true
+    - id: qa035-react-usage-drilldown-export
+      steps:
+        - click: button:has-text("View") >> nth=0
+        - expect_text: Safe events
+        - expect_text: audit-usage-qa035
+        - screenshot: qa035-react-usage-drilldown.png
+          full_page: true
+        - click: button:has-text("Create export")
+        - expect_text: usage-export-artifact-qa035
+        - expect_text: audit-usage-qa035-export-created
+        - screenshot: qa035-react-usage-export.png
+          full_page: true
+    - id: qa035-react-usage-export-detail
+      steps:
+        - goto: /admin/app/usage/exports/35000000-0000-0000-0000-000000000035
+        - wait_for_load_state: networkidle
+        - expect_text: completed
+        - expect_text: usage-export-artifact-qa035
+        - expect_text: audit-usage-qa035-export-created
+        - screenshot: qa035-react-usage-export-detail.png
+          full_page: true
+    - id: qa035-react-usage-tenant
+      steps:
+        - goto: /auth/local-login?redirect_to=/admin/app/usage?tenant_id=11111111-1111-1111-1111-111111111111
+        - wait_for_load_state: networkidle
+        - click: form:has(input[value="tenant-admin-acme"]) button
+        - wait_for_load_state: networkidle
+        - expect_text: Usage and Cost Analytics
+        - expect_text: Acme
+        - expect_text: Total tokens
+        - screenshot: qa035-react-usage-tenant.png
+          full_page: true

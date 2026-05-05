@@ -940,6 +940,583 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="render_admin_console_shell",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/admin/app": ProtectedSurface(
+        surface_key="GET:/admin/app",
+        requested_action="render_react_admin_shell",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/bootstrap.json": ProtectedSurface(
+        surface_key="GET:/admin/app/bootstrap.json",
+        requested_action="read_react_admin_bootstrap",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/config.json": ProtectedSurface(
+        surface_key="GET:/admin/app/config.json",
+        requested_action="read_react_admin_config",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/manifest.json": ProtectedSurface(
+        surface_key="GET:/admin/app/manifest.json",
+        requested_action="read_react_admin_manifest",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/search.json": ProtectedSurface(
+        surface_key="GET:/admin/app/search.json",
+        requested_action="read_react_admin_command_search",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/patterns": ProtectedSurface(
+        surface_key="GET:/admin/app/patterns",
+        requested_action="render_react_admin_patterns",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/patterns.json": ProtectedSurface(
+        surface_key="GET:/admin/app/patterns.json",
+        requested_action="read_react_admin_patterns_envelope",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/patterns/actions/sample": ProtectedSurface(
+        surface_key="POST:/admin/app/patterns/actions/sample",
+        requested_action="preview_react_admin_patterns_action",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/patterns/export": ProtectedSurface(
+        surface_key="POST:/admin/app/patterns/export",
+        requested_action="preview_react_admin_patterns_export",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/workflows": ProtectedSurface(
+        surface_key="GET:/admin/app/workflows",
+        requested_action="render_react_admin_workflow_builder",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/workflows/builder.json": ProtectedSurface(
+        surface_key="GET:/admin/app/workflows/builder.json",
+        requested_action="read_react_admin_workflow_builder",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/workflows/lookups.json": ProtectedSurface(
+        surface_key="GET:/admin/app/workflows/lookups.json",
+        requested_action="read_react_admin_workflow_builder_lookups",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/workflows/drafts/{workflow_draft_id}/save": ProtectedSurface(
+        surface_key="POST:/admin/app/workflows/drafts/{workflow_draft_id}/save",
+        requested_action="save_react_admin_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/workflows/drafts/{workflow_draft_id}/validate": ProtectedSurface(
+        surface_key="POST:/admin/app/workflows/drafts/{workflow_draft_id}/validate",
+        requested_action="validate_react_admin_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/workflows/drafts/{workflow_draft_id}/publish": ProtectedSurface(
+        surface_key="POST:/admin/app/workflows/drafts/{workflow_draft_id}/publish",
+        requested_action="publish_react_admin_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/governance": ProtectedSurface(
+        surface_key="GET:/admin/app/governance",
+        requested_action="render_react_admin_governance",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/governance/bootstrap.json": ProtectedSurface(
+        surface_key="GET:/admin/app/governance/bootstrap.json",
+        requested_action="read_react_admin_governance_dashboard",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/governance/providers.json": ProtectedSurface(
+        surface_key="GET:/admin/app/governance/providers.json",
+        requested_action="read_react_admin_governance_providers",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/governance/providers/{provider_id}/probe": ProtectedSurface(
+        surface_key="POST:/admin/app/governance/providers/{provider_id}/probe",
+        requested_action="probe_react_admin_governance_provider",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("admin:model-providers:write",),
+    ),
+    (
+        "POST:/admin/app/governance/providers/{provider_id}/credential-reference"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/app/governance/providers/{provider_id}/credential-reference"
+        ),
+        requested_action="update_react_admin_governance_provider_credential",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("admin:model-providers:write",),
+    ),
+    "GET:/admin/app/governance/prompts.json": ProtectedSurface(
+        surface_key="GET:/admin/app/governance/prompts.json",
+        requested_action="read_react_admin_governance_prompts",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/governance/prompts/{prompt_lineage_id}/save": ProtectedSurface(
+        surface_key="POST:/admin/app/governance/prompts/{prompt_lineage_id}/save",
+        requested_action="save_react_admin_governance_prompt",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/app/governance/prompts/{prompt_lineage_id}/preview"
+    ): ProtectedSurface(
+        surface_key="POST:/admin/app/governance/prompts/{prompt_lineage_id}/preview",
+        requested_action="preview_react_admin_governance_prompt",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/governance/profiles.json": ProtectedSurface(
+        surface_key="GET:/admin/app/governance/profiles.json",
+        requested_action="read_react_admin_governance_profiles",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/governance/profiles/{profile_id}/save": ProtectedSurface(
+        surface_key="POST:/admin/app/governance/profiles/{profile_id}/save",
+        requested_action="save_react_admin_governance_profile",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/governance/profiles/{profile_id}/resolve": ProtectedSurface(
+        surface_key="POST:/admin/app/governance/profiles/{profile_id}/resolve",
+        requested_action="resolve_react_admin_governance_profile",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/governance/routing/preview": ProtectedSurface(
+        surface_key="POST:/admin/app/governance/routing/preview",
+        requested_action="preview_react_admin_governance_routing",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/governance/history.json": ProtectedSurface(
+        surface_key="GET:/admin/app/governance/history.json",
+        requested_action="read_react_admin_governance_history",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    ("GET:/admin/app/governance/provenance/{run_id}.json"): ProtectedSurface(
+        surface_key="GET:/admin/app/governance/provenance/{run_id}.json",
+        requested_action="read_react_admin_governance_provenance",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/skills": ProtectedSurface(
+        surface_key="GET:/admin/app/skills",
+        requested_action="render_react_admin_skill_lifecycle",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/skills/bootstrap.json": ProtectedSurface(
+        surface_key="GET:/admin/app/skills/bootstrap.json",
+        requested_action="read_react_admin_skill_lifecycle",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/skills/packages/candidates": ProtectedSurface(
+        surface_key="POST:/admin/app/skills/packages/candidates",
+        requested_action="create_react_admin_skill_candidate",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    (
+        "POST:/admin/app/skills/packages/candidates/{candidate_id}/validate"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/app/skills/packages/candidates/{candidate_id}/validate"
+        ),
+        requested_action="validate_react_admin_skill_candidate",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    (
+        "POST:/admin/app/skills/packages/candidates/{candidate_id}/publish"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/app/skills/packages/candidates/{candidate_id}/publish"
+        ),
+        requested_action="publish_react_admin_skill_candidate",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    "POST:/admin/app/skills/packages/{package_id}/grants": ProtectedSurface(
+        surface_key="POST:/admin/app/skills/packages/{package_id}/grants",
+        requested_action="grant_react_admin_skill_package",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    "POST:/admin/app/skills/packages/{package_id}/quarantine": ProtectedSurface(
+        surface_key="POST:/admin/app/skills/packages/{package_id}/quarantine",
+        requested_action="quarantine_react_admin_skill_package",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    "POST:/admin/app/skills/packages/{package_id}/withdraw": ProtectedSurface(
+        surface_key="POST:/admin/app/skills/packages/{package_id}/withdraw",
+        requested_action="withdraw_react_admin_skill_package",
+        classification=SurfaceClassification.PLATFORM_ADMIN,
+        required_roles=("platform_admin",),
+        required_permissions=("skill-registry:publish",),
+    ),
+    "GET:/admin/app/skills/discovery.json": ProtectedSurface(
+        surface_key="GET:/admin/app/skills/discovery.json",
+        requested_action="read_react_admin_skill_discovery",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    "GET:/admin/app/skills/installations.json": ProtectedSurface(
+        surface_key="GET:/admin/app/skills/installations.json",
+        requested_action="read_react_admin_skill_installations",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    (
+        "POST:/admin/app/skills/installations/{installation_id}/install"
+    ): ProtectedSurface(
+        surface_key="POST:/admin/app/skills/installations/{installation_id}/install",
+        requested_action="install_react_admin_skill_package",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    (
+        "POST:/admin/app/skills/installations/{installation_id}/credentials"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/app/skills/installations/{installation_id}/credentials"
+        ),
+        requested_action="configure_react_admin_skill_credentials",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    (
+        "POST:/admin/app/skills/installations/{installation_id}/smoke-tests"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/app/skills/installations/{installation_id}/smoke-tests"
+        ),
+        requested_action="refresh_react_admin_skill_smoke_tests",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:install"),
+    ),
+    "GET:/admin/app/skills/diagnostics.json": ProtectedSurface(
+        surface_key="GET:/admin/app/skills/diagnostics.json",
+        requested_action="read_react_admin_skill_diagnostics",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("skill-execution:read",),
+    ),
+    "POST:/admin/app/skills/diagnostics/run": ProtectedSurface(
+        surface_key="POST:/admin/app/skills/diagnostics/run",
+        requested_action="run_react_admin_skill_diagnostics",
+        classification=SurfaceClassification.AUTHENTICATED,
+        required_permissions=("skill-execution:read",),
+    ),
+    "POST:/admin/app/skills/eligibility/preview": ProtectedSurface(
+        surface_key="POST:/admin/app/skills/eligibility/preview",
+        requested_action="preview_react_admin_skill_binding",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:bind"),
+    ),
+    (
+        "POST:/admin/app/skills/installations/{installation_id}/eligibility/preview"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/app/skills/installations/{installation_id}/eligibility/preview"
+        ),
+        requested_action="preview_react_admin_skill_installation_binding",
+        classification=SurfaceClassification.TENANT_ADMIN,
+        required_roles=("tenant_admin",),
+        required_permissions=("tenant:admin", "skill-registry:bind"),
+    ),
+    "GET:/admin/app/skills/audit.json": ProtectedSurface(
+        surface_key="GET:/admin/app/skills/audit.json",
+        requested_action="read_react_admin_skill_audit",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/test-bench": ProtectedSurface(
+        surface_key="GET:/admin/app/test-bench",
+        requested_action="render_react_admin_test_bench",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/test-bench/bootstrap.json": ProtectedSurface(
+        surface_key="GET:/admin/app/test-bench/bootstrap.json",
+        requested_action="read_react_admin_test_bench_dashboard",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/test-bench/suites": ProtectedSurface(
+        surface_key="GET:/admin/app/test-bench/suites",
+        requested_action="list_react_admin_test_suites",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/test-bench/suites": ProtectedSurface(
+        surface_key="POST:/admin/app/test-bench/suites",
+        requested_action="save_react_admin_test_suite",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/test-bench/suites/{suite_id}": ProtectedSurface(
+        surface_key="GET:/admin/app/test-bench/suites/{suite_id}",
+        requested_action="read_react_admin_test_suite",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/test-bench/suites/{suite_id}/cases": ProtectedSurface(
+        surface_key="POST:/admin/app/test-bench/suites/{suite_id}/cases",
+        requested_action="save_react_admin_test_case",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/test-bench/suites/{suite_id}/runs": ProtectedSurface(
+        surface_key="POST:/admin/app/test-bench/suites/{suite_id}/runs",
+        requested_action="launch_react_admin_test_run",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/test-bench/runs.json": ProtectedSurface(
+        surface_key="GET:/admin/app/test-bench/runs.json",
+        requested_action="list_react_admin_test_runs",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/test-bench/runs/{run_id}.json": ProtectedSurface(
+        surface_key="GET:/admin/app/test-bench/runs/{run_id}.json",
+        requested_action="read_react_admin_test_run",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/test-bench/gates.json": ProtectedSurface(
+        surface_key="GET:/admin/app/test-bench/gates.json",
+        requested_action="read_react_admin_test_gate_evidence",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/test-bench/gates/{gate_id}/refresh": ProtectedSurface(
+        surface_key="POST:/admin/app/test-bench/gates/{gate_id}/refresh",
+        requested_action="refresh_react_admin_test_gate_evidence",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/app/test-bench/artifacts/{artifact_reference_id}.json"
+    ): ProtectedSurface(
+        surface_key=(
+            "GET:/admin/app/test-bench/artifacts/{artifact_reference_id}.json"
+        ),
+        requested_action="read_react_admin_test_artifact_metadata",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/test-bench/audit.json": ProtectedSurface(
+        surface_key="GET:/admin/app/test-bench/audit.json",
+        requested_action="read_react_admin_test_audit",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/memberships": ProtectedSurface(
+        surface_key="GET:/admin/app/memberships",
+        requested_action="render_react_admin_memberships",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/memberships/bootstrap.json": ProtectedSurface(
+        surface_key="GET:/admin/app/memberships/bootstrap.json",
+        requested_action="read_react_admin_membership_dashboard",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/memberships/invitations": ProtectedSurface(
+        surface_key="POST:/admin/app/memberships/invitations",
+        requested_action="create_react_admin_membership_invitation",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/memberships/principals/link": ProtectedSurface(
+        surface_key="POST:/admin/app/memberships/principals/link",
+        requested_action="link_react_admin_membership_principal",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/memberships/role-grants": ProtectedSurface(
+        surface_key="POST:/admin/app/memberships/role-grants",
+        requested_action="create_react_admin_membership_role_grant",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/app/memberships/role-grants/{role_grant_id}/revoke"
+    ): ProtectedSurface(
+        surface_key=("POST:/admin/app/memberships/role-grants/{role_grant_id}/revoke"),
+        requested_action="revoke_react_admin_membership_role_grant",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/app/memberships/principals/{principal_identity_id}/{status_action}"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/app/memberships/principals/{principal_identity_id}/"
+            "{status_action}"
+        ),
+        requested_action="update_react_admin_membership_principal_status",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/app/memberships/memberships/{tenant_membership_id}/"
+        "{membership_status}"
+    ): ProtectedSurface(
+        surface_key=(
+            "POST:/admin/app/memberships/memberships/{tenant_membership_id}/"
+            "{membership_status}"
+        ),
+        requested_action="update_react_admin_membership_status",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/memberships/access-history.json": ProtectedSurface(
+        surface_key="GET:/admin/app/memberships/access-history.json",
+        requested_action="read_react_admin_membership_access_history",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/memberships/audit.json": ProtectedSurface(
+        surface_key="GET:/admin/app/memberships/audit.json",
+        requested_action="read_react_admin_membership_audit",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/usage": ProtectedSurface(
+        surface_key="GET:/admin/app/usage",
+        requested_action="render_react_admin_usage_analytics",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/usage/bootstrap.json": ProtectedSurface(
+        surface_key="GET:/admin/app/usage/bootstrap.json",
+        requested_action="read_react_admin_usage_dashboard",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/usage/events.json": ProtectedSurface(
+        surface_key="GET:/admin/app/usage/events.json",
+        requested_action="read_react_admin_usage_events",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/usage/exports": ProtectedSurface(
+        surface_key="POST:/admin/app/usage/exports",
+        requested_action="create_react_admin_usage_export",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/usage/exports/{usage_export_request_id}.json": ProtectedSurface(
+        surface_key="GET:/admin/app/usage/exports/{usage_export_request_id}.json",
+        requested_action="read_react_admin_usage_export",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/channels": ProtectedSurface(
+        surface_key="GET:/admin/app/channels",
+        requested_action="render_react_admin_channels",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/channels/shell.json": ProtectedSurface(
+        surface_key="GET:/admin/app/channels/shell.json",
+        requested_action="read_react_admin_channels_shell",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/channels/bootstrap.json": ProtectedSurface(
+        surface_key="GET:/admin/app/channels/bootstrap.json",
+        requested_action="read_react_admin_channels_dashboard",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/channels/runs/{workflow_run_id}": ProtectedSurface(
+        surface_key="GET:/admin/app/channels/runs/{workflow_run_id}",
+        requested_action="render_react_admin_channel_run_status",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/channels/telegram/config": ProtectedSurface(
+        surface_key="POST:/admin/app/channels/telegram/config",
+        requested_action="save_react_admin_telegram_config",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/channels/telegram/webhook/validate": ProtectedSurface(
+        surface_key="POST:/admin/app/channels/telegram/webhook/validate",
+        requested_action="validate_react_admin_telegram_webhook",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/channels/telegram/aliases": ProtectedSurface(
+        surface_key="POST:/admin/app/channels/telegram/aliases",
+        requested_action="save_react_admin_telegram_alias",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    ("POST:/admin/app/channels/telegram/aliases/{alias_id}/{action}"): ProtectedSurface(
+        surface_key="POST:/admin/app/channels/telegram/aliases/{alias_id}/{action}",
+        requested_action="update_react_admin_telegram_alias",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/channels/telegram/link-tokens": ProtectedSurface(
+        surface_key="POST:/admin/app/channels/telegram/link-tokens",
+        requested_action="create_react_admin_telegram_link_token",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/channels/telegram/deliveries.json": ProtectedSurface(
+        surface_key="GET:/admin/app/channels/telegram/deliveries.json",
+        requested_action="read_react_admin_telegram_deliveries",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/channels/runs/{workflow_run_id}/status.json": ProtectedSurface(
+        surface_key="GET:/admin/app/channels/runs/{workflow_run_id}/status.json",
+        requested_action="read_react_admin_channel_run_status",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/channels/briefing/preferences.json": ProtectedSurface(
+        surface_key="GET:/admin/app/channels/briefing/preferences.json",
+        requested_action="read_react_admin_briefing_preferences",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/channels/briefing/preferences": ProtectedSurface(
+        surface_key="POST:/admin/app/channels/briefing/preferences",
+        requested_action="save_react_admin_briefing_preferences",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/channels/briefing/preferences/import": ProtectedSurface(
+        surface_key="POST:/admin/app/channels/briefing/preferences/import",
+        requested_action="import_react_admin_briefing_preferences",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/channels/briefing/preferences/export": ProtectedSurface(
+        surface_key="POST:/admin/app/channels/briefing/preferences/export",
+        requested_action="export_react_admin_briefing_preferences",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/migration": ProtectedSurface(
+        surface_key="GET:/admin/app/migration",
+        requested_action="render_react_admin_migration_hardening",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/migration/shell.json": ProtectedSurface(
+        surface_key="GET:/admin/app/migration/shell.json",
+        requested_action="read_react_admin_migration_shell",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/migration/bootstrap.json": ProtectedSurface(
+        surface_key="GET:/admin/app/migration/bootstrap.json",
+        requested_action="read_react_admin_migration_dashboard",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/migration/routes.json": ProtectedSurface(
+        surface_key="GET:/admin/app/migration/routes.json",
+        requested_action="read_react_admin_migration_routes",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/migration/rollback.json": ProtectedSurface(
+        surface_key="GET:/admin/app/migration/rollback.json",
+        requested_action="read_react_admin_migration_rollback",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/operations": ProtectedSurface(
+        surface_key="GET:/admin/app/operations",
+        requested_action="render_react_admin_operations_workbench",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/operations.json": ProtectedSurface(
+        surface_key="GET:/admin/app/operations.json",
+        requested_action="read_react_admin_operations_workbench",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/operations/runs/{workflow_run_id}.json": ProtectedSurface(
+        surface_key="GET:/admin/app/operations/runs/{workflow_run_id}.json",
+        requested_action="read_react_admin_operations_run_debug",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/operations/export": ProtectedSurface(
+        surface_key="POST:/admin/app/operations/export",
+        requested_action="request_react_admin_operations_export",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/{react_path:path}": ProtectedSurface(
+        surface_key="GET:/admin/app/{react_path:path}",
+        requested_action="render_react_admin_spa_fallback",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
     "GET:/admin/scope": ProtectedSurface(
         surface_key="GET:/admin/scope",
         requested_action="select_admin_console_scope",

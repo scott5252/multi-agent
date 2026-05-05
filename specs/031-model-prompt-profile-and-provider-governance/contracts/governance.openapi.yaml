@@ -1,0 +1,391 @@
+openapi: 3.1.0
+info:
+  title: React Admin Governance API
+  version: 0.31.0
+paths:
+  /admin/app/governance:
+    get:
+      summary: Render the protected React governance route wrapper.
+      responses:
+        "200":
+          description: React application shell for authorized principals.
+        "401":
+          description: Authentication required.
+        "403":
+          description: Safe denied response.
+  /admin/app/governance/bootstrap.json:
+    get:
+      summary: Return the authorized governance dashboard envelope.
+      responses:
+        "200":
+          description: Governance dashboard.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GovernanceDashboard"
+        "401":
+          description: Authentication required.
+        "403":
+          description: Safe denied response.
+  /admin/app/governance/providers.json:
+    get:
+      summary: Return provider governance summaries for the active scope.
+      responses:
+        "200":
+          description: Provider summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProviderGovernanceSummary"
+  /admin/app/governance/providers/{provider_id}/probe:
+    post:
+      summary: Run an explicit safe provider probe.
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe probe result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GovernanceMutationResult"
+        "403":
+          description: Platform-admin permission required.
+  /admin/app/governance/providers/{provider_id}/credential-reference:
+    post:
+      summary: Update a provider credential reference.
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential_reference_id]
+              properties:
+                credential_reference_id:
+                  type: string
+                revision:
+                  type: string
+      responses:
+        "200":
+          description: Safe credential-reference mutation result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GovernanceMutationResult"
+        "403":
+          description: Platform-admin permission required.
+  /admin/app/governance/prompts.json:
+    get:
+      summary: Return prompt governance summaries for the active scope.
+      responses:
+        "200":
+          description: Prompt summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prompts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PromptLibrarySummary"
+  /admin/app/governance/prompts/{prompt_lineage_id}/preview:
+    post:
+      summary: Run a fixture-backed safe prompt preview.
+      parameters:
+        - name: prompt_lineage_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fixture_id]
+              properties:
+                fixture_id:
+                  type: string
+      responses:
+        "200":
+          description: Safe prompt preview result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafePromptPreview"
+  /admin/app/governance/profiles.json:
+    get:
+      summary: Return runtime profile governance summaries.
+      responses:
+        "200":
+          description: Runtime profile summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RuntimeProfileGovernanceSummary"
+  /admin/app/governance/profiles/{profile_id}/resolve:
+    post:
+      summary: Run a read-only runtime profile resolution preview.
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe profile resolution preview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResolutionPreview"
+  /admin/app/governance/routing/preview:
+    post:
+      summary: Run a read-only model/skill routing preview.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workflow_context]
+              properties:
+                workflow_context:
+                  type: string
+                profile_id:
+                  type: string
+                skill_id:
+                  type: string
+      responses:
+        "200":
+          description: Safe routing preview result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoutingPreviewResult"
+  /admin/app/governance/history.json:
+    get:
+      summary: Return bounded safe policy/configuration history.
+      responses:
+        "200":
+          description: Policy history records.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  history:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PolicyHistoryRecord"
+  /admin/app/governance/provenance/{run_id}.json:
+    get:
+      summary: Return safe run provenance for an authorized run.
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Run provenance.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunProvenanceSummary"
+        "403":
+          description: Safe denied response.
+components:
+  schemas:
+    GovernanceDashboard:
+      type: object
+      required: [page_id, title, scope, sections, providers, prompts, profiles, routing_preview, policy_history, run_provenance]
+      properties:
+        page_id:
+          type: string
+        title:
+          type: string
+        scope:
+          type: object
+        sections:
+          type: array
+          items:
+            type: object
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderGovernanceSummary"
+        prompts:
+          type: array
+          items:
+            $ref: "#/components/schemas/PromptLibrarySummary"
+        profiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeProfileGovernanceSummary"
+        routing_preview:
+          $ref: "#/components/schemas/RoutingPreviewResult"
+        policy_history:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyHistoryRecord"
+        run_provenance:
+          type: array
+          items:
+            $ref: "#/components/schemas/RunProvenanceSummary"
+    ProviderGovernanceSummary:
+      type: object
+      required: [provider_id, display_name, status, credential_reference, direct_call_guardrail]
+      properties:
+        provider_id:
+          type: string
+        display_name:
+          type: string
+        status:
+          type: string
+        credential_reference:
+          $ref: "#/components/schemas/ProviderCredentialReference"
+        direct_call_guardrail:
+          type: string
+    ProviderCredentialReference:
+      type: object
+      required: [reference_id, label, readiness]
+      properties:
+        reference_id:
+          type: string
+        label:
+          type: string
+        readiness:
+          type: string
+        fingerprint:
+          type: string
+    PromptLibrarySummary:
+      type: object
+      required: [prompt_lineage_id, name, status, render_test_status]
+      properties:
+        prompt_lineage_id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        render_test_status:
+          type: string
+    SafePromptPreview:
+      type: object
+      required: [preview_id, status, safe_output, redaction_findings]
+      properties:
+        preview_id:
+          type: string
+        status:
+          type: string
+        safe_output:
+          type: string
+        redaction_findings:
+          type: array
+          items:
+            type: string
+    RuntimeProfileGovernanceSummary:
+      type: object
+      required: [profile_id, name, status, resolver_status]
+      properties:
+        profile_id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        resolver_status:
+          type: string
+    ProfileResolutionPreview:
+      type: object
+      required: [preview_id, status, policy_reasons]
+      properties:
+        preview_id:
+          type: string
+        status:
+          type: string
+        policy_reasons:
+          type: array
+          items:
+            type: string
+    RoutingPreviewResult:
+      type: object
+      required: [preview_id, status, policy_reasons, direct_call_guardrail]
+      properties:
+        preview_id:
+          type: string
+        status:
+          type: string
+        policy_reasons:
+          type: array
+          items:
+            type: string
+        direct_call_guardrail:
+          type: string
+    PolicyHistoryRecord:
+      type: object
+      required: [history_id, domain, actor_label, change_category, audit_reference_id]
+      properties:
+        history_id:
+          type: string
+        domain:
+          type: string
+        actor_label:
+          type: string
+        change_category:
+          type: string
+        audit_reference_id:
+          type: string
+    RunProvenanceSummary:
+      type: object
+      required: [run_id, workflow_label, provider_evidence, prompt_evidence, profile_evidence]
+      properties:
+        run_id:
+          type: string
+        workflow_label:
+          type: string
+        provider_evidence:
+          type: string
+        prompt_evidence:
+          type: string
+        profile_evidence:
+          type: string
+    GovernanceMutationResult:
+      type: object
+      required: [status, summary, audit_reference_id]
+      properties:
+        status:
+          type: string
+        summary:
+          type: string
+        audit_reference_id:
+          type: string
+        diagnostics:
+          type: array
+          items:
+            type: string

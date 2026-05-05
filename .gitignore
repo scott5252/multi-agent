@@ -11,6 +11,9 @@ htmlcov/
 venv/
 dist/
 build/
+node_modules/
+coverage/
+*.log
 .env
 .env*
 .env.local
@@ -18,6 +21,7 @@ build/
 !specs/013-admin-workflow-builder/.env.qa013
 !specs/014-skill-registry-lifecycle/.env.qa014
 !specs/014-skill-registry-lifecycle-v2/.env.qa014
+!specs/026-react-admin-ui-foundation/.env.qa026
 .DS_Store
 Thumbs.db
 *.tmp

@@ -32,6 +32,7 @@ from multi_agent_platform.api.routers.admin_operations import (
 from multi_agent_platform.api.routers.admin_prompts import (
     router as admin_prompts_router,
 )
+from multi_agent_platform.api.routers.admin_react import router as admin_react_router
 from multi_agent_platform.api.routers.admin_run_inspection import (
     router as admin_run_inspection_router,
 )
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(admin_access_router)
     app.include_router(admin_console_router)
+    app.include_router(admin_react_router)
     app.include_router(admin_run_inspection_router)
     app.include_router(admin_workflows_router)
     app.include_router(admin_model_skill_config_router)

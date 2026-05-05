@@ -1,0 +1,307 @@
+openapi: 3.1.0
+info:
+  title: React Admin Foundation Contract
+  version: qa026
+paths:
+  /admin/app:
+    get:
+      summary: Render the authenticated React admin app shell
+      operationId: renderReactAdminApp
+      responses:
+        "200":
+          description: HTML app shell for authorized admin principals
+          content:
+            text/html:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+        "503":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/bootstrap.json:
+    get:
+      summary: Return safe bootstrap data for the React admin shell
+      operationId: getReactAdminBootstrap
+      responses:
+        "200":
+          description: Redaction-safe bootstrap data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactAdminBootstrap"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+        "503":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/config.json:
+    get:
+      summary: Return safe frontend runtime configuration
+      operationId: getReactAdminConfig
+      responses:
+        "200":
+          description: Safe frontend config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactAdminConfig"
+  /admin/app/manifest.json:
+    get:
+      summary: Return safe built asset manifest summary
+      operationId: getReactAdminManifest
+      responses:
+        "200":
+          description: Safe manifest summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactAdminAssetManifestSummary"
+components:
+  responses:
+    SafeProblem:
+      description: Safe problem response without restricted payloads
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SafeProblem"
+  schemas:
+    ReactAdminBootstrap:
+      type: object
+      required:
+        - principal
+        - active_scope
+        - available_scopes
+        - navigation
+        - feature_flags
+        - version
+        - asset_manifest
+        - action_tokens
+      properties:
+        principal:
+          $ref: "#/components/schemas/ReactAdminPrincipal"
+        active_scope:
+          $ref: "#/components/schemas/ReactAdminScope"
+        available_scopes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactAdminScopeOption"
+        navigation:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactAdminNavigationGroup"
+        feature_flags:
+          $ref: "#/components/schemas/ReactAdminFeatureFlags"
+        version:
+          $ref: "#/components/schemas/ReactAdminVersion"
+        asset_manifest:
+          $ref: "#/components/schemas/ReactAdminAssetManifestSummary"
+        action_tokens:
+          $ref: "#/components/schemas/ReactAdminActionTokens"
+    ReactAdminPrincipal:
+      type: object
+      required:
+        - principal_id
+        - role_codes
+        - auth_mode
+        - trace_id
+      properties:
+        principal_id:
+          type: string
+        display_name:
+          type:
+            - string
+            - "null"
+        role_codes:
+          type: array
+          items:
+            type: string
+        auth_mode:
+          type: string
+          enum:
+            - auth0
+            - local_principal
+        trace_id:
+          type: string
+    ReactAdminScope:
+      type: object
+      required:
+        - scope_type
+        - tenant_id
+        - label
+      properties:
+        scope_type:
+          type: string
+          enum:
+            - platform
+            - tenant
+        tenant_id:
+          type:
+            - string
+            - "null"
+          format: uuid
+        label:
+          type: string
+    ReactAdminScopeOption:
+      type: object
+      required:
+        - scope
+        - label
+        - href
+        - selected
+      properties:
+        scope:
+          $ref: "#/components/schemas/ReactAdminScope"
+        label:
+          type: string
+        href:
+          type: string
+        selected:
+          type: boolean
+    ReactAdminNavigationGroup:
+      type: object
+      required:
+        - label
+        - items
+      properties:
+        label:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactAdminNavigationItem"
+    ReactAdminNavigationItem:
+      type: object
+      required:
+        - item_id
+        - label
+        - group
+        - href
+        - route_surface_key
+        - required_scope
+        - preserve_tenant_scope
+        - active
+        - fallback_kind
+      properties:
+        item_id:
+          type: string
+        label:
+          type: string
+        group:
+          type: string
+        href:
+          type: string
+        route_surface_key:
+          type: string
+        required_scope:
+          type: string
+          enum:
+            - platform
+            - tenant
+            - either
+        admin_area:
+          type:
+            - string
+            - "null"
+        preserve_tenant_scope:
+          type: boolean
+        active:
+          type: boolean
+        fallback_kind:
+          type: string
+          enum:
+            - jinja
+            - react
+            - disabled
+    ReactAdminFeatureFlags:
+      type: object
+      required:
+        - react_admin_enabled
+        - react_domain_routes
+        - source
+      properties:
+        react_admin_enabled:
+          type: boolean
+        react_domain_routes:
+          type: object
+          additionalProperties:
+            type: boolean
+        source:
+          type: string
+    ReactAdminVersion:
+      type: object
+      required:
+        - app_name
+        - app_version
+        - api_version
+      properties:
+        app_name:
+          type: string
+        app_version:
+          type: string
+        api_version:
+          type: string
+    ReactAdminAssetManifestSummary:
+      type: object
+      required:
+        - available
+        - base_path
+        - entrypoints
+      properties:
+        available:
+          type: boolean
+        base_path:
+          type: string
+        entrypoints:
+          type: array
+          items:
+            type: string
+        version:
+          type:
+            - string
+            - "null"
+    ReactAdminActionTokens:
+      type: object
+      required:
+        - csrf_token
+        - issued_at
+      properties:
+        csrf_token:
+          type:
+            - string
+            - "null"
+        issued_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+    ReactAdminConfig:
+      type: object
+      required:
+        - mount_path
+        - asset_base_path
+        - bootstrap_url
+      properties:
+        mount_path:
+          type: string
+        asset_base_path:
+          type: string
+        bootstrap_url:
+          type: string
+    SafeProblem:
+      type: object
+      required:
+        - detail
+        - reason
+        - trace_id
+      properties:
+        detail:
+          type: string
+        reason:
+          type: string
+        trace_id:
+          type:
+            - string
+            - "null"

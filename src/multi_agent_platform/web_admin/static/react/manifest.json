@@ -1,0 +1,11 @@
+{
+  "src/main.tsx": {
+    "file": "assets/main-BvoL6zJU.js",
+    "name": "main",
+    "src": "src/main.tsx",
+    "isEntry": true,
+    "css": [
+      "assets/main-Bnil_pa1.css"
+    ]
+  }
+}

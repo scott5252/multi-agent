@@ -146,6 +146,11 @@ class Settings(BaseSettings):
     channel_sse_heartbeat_seconds: int = Field(default=15, ge=5, le=120)
     channel_rate_limit_per_minute: int = Field(default=120, ge=1, le=10_000)
 
+    react_admin_enabled: bool = True
+    react_admin_asset_base_path: str = "/admin/static/react"
+    react_admin_manifest_path: Path | None = None
+    react_admin_domain_routes_json: dict[str, bool] = Field(default_factory=dict)
+
     commit_sha: str = "dev"
     build_time: str = "1970-01-01T00:00:00+00:00"
 
@@ -258,6 +263,12 @@ class Settings(BaseSettings):
     @cached_property
     def web_admin_static_dir(self) -> Path:
         return self.web_admin_root / "static"
+
+    @cached_property
+    def react_admin_manifest_file(self) -> Path:
+        if self.react_admin_manifest_path is not None:
+            return self.react_admin_manifest_path
+        return self.web_admin_static_dir / "react" / "manifest.json"
 
     @cached_property
     def workflow_registry_artifact_prefix(self) -> str:

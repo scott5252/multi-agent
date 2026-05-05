@@ -51,7 +51,7 @@ SQL
 ```bash
 export AUTH_MODE=local_principal
 export LOCAL_PRINCIPAL_HEADER=X-Local-Principal
-export LOCAL_PRINCIPAL_CATALOG_JSON='{"tenant-admin-acme":{"catalog_key":"tenant-admin-acme","display_name":"Tenant Admin","tenant_id":"11111111-1111-1111-1111-111111111111","org_id":"org-acme","role_codes":["tenant_user","tenant_admin"],"permission_codes":["tenant:read","tenant:admin"]},"platform-admin":{"catalog_key":"platform-admin","display_name":"Platform Admin","role_codes":["platform_admin"],"permission_codes":["tenant:admin"]}}'
+export LOCAL_PRINCIPAL_CATALOG_JSON='{"tenant-admin-acme":{"catalog_key":"tenant-admin-acme","display_name":"Tenant Admin","tenant_id":"11111111-1111-1111-1111-111111111111","org_id":"org-acme","role_codes":["tenant_user","tenant_admin"],"permission_codes":["tenant:read","tenant:admin","usage:read"]},"platform-admin":{"catalog_key":"platform-admin","display_name":"Platform Admin","role_codes":["platform_admin"],"permission_codes":["tenant:admin","usage:read"]}}'
 ```
 
 ## Run The API And Worker
@@ -62,6 +62,302 @@ uv run uvicorn multi_agent_platform.api.main:app --reload
 
 ```bash
 uv run python -m multi_agent_platform.workers.main
+```
+
+## React Admin Foundation, Shell, Patterns, Workbench, Builder, Governance, Skills, Test Bench, Membership, And Usage Quickstart
+
+Build the React admin workspace before opening `/admin/app` through FastAPI:
+
+```bash
+cd frontend/admin
+npm install
+npm run build
+cd ../..
+```
+
+Open the local browser login flow:
+
+```text
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app
+```
+
+Sign in as `tenant-admin-acme` or `platform-admin`. The React shell reads
+safe bootstrap metadata from `/admin/app/bootstrap.json`, serves assets from
+`/admin/static/react`, reads safe command-search metadata from
+`/admin/app/search.json`, and links back to existing Jinja admin pages for
+domain workflows that have not migrated yet. Spec 027 adds the modern shell,
+design tokens, accessible primitives, common states, saved-filter presentation,
+notifications, page actions, breadcrumbs, and command search without migrating
+domain pages.
+
+Open the reusable data/form pattern page:
+
+```text
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/patterns
+```
+
+The patterns page reads `/admin/app/patterns.json` and renders backend-owned
+records, filters, sorting, form fields, safe mutation results, stale conflict
+recovery, idempotency replay messaging, confirmation prompts, and export
+artifact references. It is a harmless sample route for future React admin
+domain pages. React should render the generated contracts and should not
+invent authorization, filter, export, or mutation rules in the browser.
+
+Open the React operations workbench:
+
+```text
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/operations
+```
+
+The operations workbench reads `/admin/app/operations.json` and renders
+backend-owned health, dependency pressure, likely-cause, run debug, graph
+branch, gateway attempt, tool call, channel delivery, reliability recovery,
+log, and export summaries. Platform administrators and auditors can review
+platform summaries. Tenant administrators see tenant-scoped summaries with
+platform-only provider and pressure details hidden. Exports return
+`artifact-ref-qa029-*` references and audit references instead of local files
+or raw operational payloads.
+
+Open the React workflow builder:
+
+```text
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/workflows
+```
+
+The workflow builder reads `/admin/app/workflows/builder.json` and
+`/admin/app/workflows/lookups.json`, then renders backend-owned draft
+metadata, reference choices, React Flow graph preview, keyboard-readable graph
+lists, validation findings, publish readiness, required evidence, revision
+history, and redacted JSON preview summaries. Save, validation, stale revision,
+and publish outcomes come from protected backend actions. Existing Jinja
+workflow pages remain available under `/admin/workflows/ui`.
+
+Open the React governance workspace:
+
+```text
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/governance
+```
+
+The governance workspace reads `/admin/app/governance/bootstrap.json` and
+supporting provider, prompt, profile, routing, history, and provenance
+contracts. It renders backend-owned provider health, credential-reference
+diagnostics, explicit platform-admin provider probes, prompt version summaries,
+fixture-backed safe prompt previews, runtime profile save and resolution
+evidence, read-only routing decisions, policy history, and run provenance.
+Provider mutations and credential-reference changes stay platform-admin only.
+Tenant administrators see authorized readiness and evidence summaries without
+raw credentials, provider payloads, prompts, completions, or cross-tenant
+labels.
+
+Open the React skill lifecycle workspace:
+
+```text
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/skills
+```
+
+The skill lifecycle workspace reads `/admin/app/skills/bootstrap.json` and
+supporting discovery, installation, diagnostics, eligibility, and audit
+contracts. Platform administrators can review safe package candidates,
+manifest upload precedence, validation findings, tenant grant impact,
+immutable publication, quarantine, and withdrawal state. Tenant administrators
+can discover granted packages, install a skill, select authorized credential
+references, queue smoke-test/readiness refreshes, inspect first-party calendar,
+Gmail, news, weather, and commute readiness, preview binding eligibility, and
+review SkillExecutionGateway diagnostics without raw manifests, credential
+values, connector outputs, live tool execution, or cross-tenant labels.
+
+Open the React agent and workflow test bench:
+
+```text
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/test-bench
+```
+
+The test bench reads `/admin/app/test-bench/bootstrap.json` and supporting
+suite, run, gate, artifact, and audit contracts. Tenant administrators can
+author reusable suites and cases, bind them to authorized workflow revisions,
+choose safe execution modes, launch deterministic QA runs, inspect progress,
+review assertion diagnostics and trace summaries, inspect artifact metadata,
+refresh required publish-gate evidence, and review bounded governance audit
+records. React renders backend-owned status and evidence only; it does not
+evaluate pass/fail locally or expose raw prompts, completions, transcripts,
+credential values, connector payloads, local paths, or cross-tenant labels.
+
+Open the React usage and cost analytics workspace:
+
+```text
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/usage
+```
+
+The usage workspace reads `/admin/app/usage/bootstrap.json`,
+`/admin/app/usage/events.json`, and `/admin/app/usage/exports/*` contracts. It
+renders backend-owned total tokens, estimated cost, usage events, average
+latency, unavailable usage, confidence coverage, trend buckets, provider,
+model, workflow, agent, sub-agent, prompt, execution-mode, principal, graph
+node, gateway operation, physical attempt, and governed tool rollups, bounded
+event drilldowns, and audited export metadata. Platform administrators can
+review authorized platform-wide and tenant usage. Tenant administrators see
+only their active tenant. Existing server-rendered usage analytics remain
+available at `/admin/usage`.
+
+Focused validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_patterns_schema.py \
+  tests/unit/api/test_admin_react_schema.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused operations workbench validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_workbench_schema.py \
+  tests/unit/operations/test_workbench_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/operations/test_workbench_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused workflow builder validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_workflow_builder_schema.py \
+  tests/unit/admin/test_workflow_builder_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/workflows/test_workflow_builder_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused governance validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_governance_schema.py \
+  tests/unit/admin/test_governance_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/governance/test_governance_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused skill lifecycle validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_skill_lifecycle_schema.py \
+  tests/unit/admin/test_skill_lifecycle_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/skills/test_skill_lifecycle_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused test bench validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_test_bench_schema.py \
+  tests/unit/admin/test_test_bench_react_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/test_bench/test_react_test_bench_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused usage analytics validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_usage_react_schema.py \
+  tests/unit/admin/usage/test_react_usage_service.py \
+  tests/performance/usage/test_react_usage_queries.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+QA027 full validation:
+
+```bash
+bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/027-modern-admin-shell-and-design-system
+uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui-roadmap/027-modern-admin-shell-and-design-system/validation.yml
+uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui-roadmap/027-modern-admin-shell-and-design-system/validation.yml --start-processes
+```
+
+QA028 full validation:
+
+```bash
+bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/028-react-admin-data-contracts-and-form-patterns
+uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui-roadmap/028-react-admin-data-contracts-and-form-patterns/validation.yml
+uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui-roadmap/028-react-admin-data-contracts-and-form-patterns/validation.yml --start-processes
+```
+
+QA029 full validation:
+
+```bash
+bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/029-operations-reliability-and-run-debug-workbench
+uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui-roadmap/029-operations-reliability-and-run-debug-workbench/validation.yml
+uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui-roadmap/029-operations-reliability-and-run-debug-workbench/validation.yml --start-processes
+```
+
+QA030 full validation:
+
+```bash
+bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/030-react-workflow-builder
+uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui-roadmap/030-react-workflow-builder/validation.yml
+uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui-roadmap/030-react-workflow-builder/validation.yml --start-processes
+```
+
+QA031 full validation:
+
+```bash
+bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/031-model-prompt-profile-and-provider-governance
+uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui-roadmap/031-model-prompt-profile-and-provider-governance/validation.yml
+uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui-roadmap/031-model-prompt-profile-and-provider-governance/validation.yml --start-processes
+```
+
+QA032 full validation:
+
+```bash
+bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/032-react-skill-registry-and-tool-execution-lifecycle
+uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui-roadmap/032-react-skill-registry-and-tool-execution-lifecycle/validation.yml
+uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui-roadmap/032-react-skill-registry-and-tool-execution-lifecycle/validation.yml --start-processes
+```
+
+QA033 full validation:
+
+```bash
+bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/033-react-agent-and-workflow-test-bench
+uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui-roadmap/033-react-agent-and-workflow-test-bench/validation.yml
+uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui-roadmap/033-react-agent-and-workflow-test-bench/validation.yml --start-processes
+```
+
+QA035 full validation:
+
+```bash
+bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/035-react-usage-and-cost-analytics
+uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui-roadmap/035-react-usage-and-cost-analytics/validation.yml
+uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui-roadmap/035-react-usage-and-cost-analytics/validation.yml --start-processes
 ```
 
 ## Durable Runtime Quickstart
@@ -674,6 +970,115 @@ Additional evidence:
 - [Spec 018 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/018-user-tenant-membership-administration/qa018_user_guide.md)
 - [Spec 018 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/018-user-tenant-membership-administration/testing-instructions.md)
 
+## React Membership Administration Quickstart
+
+Use the QA034 environment when validating the React membership workspace:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/034-react-user-and-tenant-membership-administration/.env.qa034 .env
+uv sync
+cd frontend/admin
+npm install
+npm run build
+cd ../..
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa034 && createdb -U postgres multi_agent_platform_qa034'
+uv run alembic upgrade head
+```
+
+Open the browser UI:
+
+- [React Membership Administration](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/memberships)
+
+Manual QA:
+
+- Sign in as `platform-admin` and confirm `/admin/app/memberships` renders the
+  React shell, overview, directory, invitations, principal linking, role grants,
+  status actions, access history, and audit sections.
+- Create or replay an Acme invitation and confirm the result uses masked email,
+  idempotency replay state, an audit reference, and next-request effect copy.
+- Link a principal identity and confirm only safe subject suffix evidence is
+  rendered.
+- Create and revoke a role grant, then confirm safe audit evidence is visible.
+- Suspend a principal or remove a tenant membership and confirm the status
+  result explains next-request effect.
+- Sign in as `tenant-admin-acme` with
+  `/admin/app/memberships?tenant_id=11111111-1111-1111-1111-111111111111` and
+  confirm Acme self-service works without Globex data or platform role choices.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_membership_react_schema.py \
+  tests/unit/admin/memberships/test_react_membership_service.py \
+  tests/performance/memberships/test_react_membership_queries.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py
+```
+
+Additional evidence:
+
+- [Spec 034 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/034-react-user-and-tenant-membership-administration/qa034.md)
+- [Spec 034 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/034-react-user-and-tenant-membership-administration/qa034_ui.md)
+- [Spec 034 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/034-react-user-and-tenant-membership-administration/qa034_user_guide.md)
+
+## React Usage And Cost Analytics Quickstart
+
+Use the QA035 environment when validating the React usage workspace:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/035-react-usage-and-cost-analytics/.env.qa035 .env
+uv sync
+cd frontend/admin
+npm install
+npm run build
+cd ../..
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa035 && createdb -U postgres multi_agent_platform_qa035'
+uv run alembic upgrade head
+```
+
+Open the browser UI:
+
+- [React Usage And Cost Analytics](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/usage)
+
+Manual QA:
+
+- Sign in as `platform-admin` and confirm `/admin/app/usage` renders the React
+  shell, summary cards, trend, rollups, drilldown, and export panel.
+- Change Group by to provider, model, gateway operation, physical attempt, and
+  governed tool; confirm rows use safe labels and bounded metrics.
+- Click View on a rollup row and confirm drilldown rows show safe event,
+  latency, token, cost, trace, and audit evidence only.
+- Click Create export and confirm the panel shows completed status,
+  `usage-export-artifact-qa035`, a checksum prefix, and
+  `audit-usage-qa035-export-created`.
+- Open `/admin/app/usage/exports/35000000-0000-0000-0000-000000000035` and
+  confirm export detail metadata renders through the React route.
+- Sign in as `tenant-admin-acme` with
+  `/admin/app/usage?tenant_id=11111111-1111-1111-1111-111111111111` and confirm
+  Acme usage renders without Globex labels or platform-wide tenant rollups.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_usage_react_schema.py \
+  tests/unit/admin/usage/test_react_usage_service.py \
+  tests/performance/usage/test_react_usage_queries.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py
+```
+
+Additional evidence:
+
+- [Spec 035 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/035-react-usage-and-cost-analytics/qa035.md)
+- [Spec 035 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/035-react-usage-and-cost-analytics/qa035_ui.md)
+- [Spec 035 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/035-react-usage-and-cost-analytics/qa035_user_guide.md)
+
 ## Operations Console Quickstart
 
 Use the QA019 environment when validating the Operations Console:
@@ -809,6 +1214,109 @@ Additional evidence:
 - [Spec 023 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/023-user-briefing-preferences-and-context/qa023_ui.md)
 - [Spec 023 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/023-user-briefing-preferences-and-context/qa023_user_guide.md)
 - [Spec 023 Testing Instructions](/Users/scottcornell/src/my-projects/multi-agent/specs/023-user-briefing-preferences-and-context/testing-instructions.md)
+
+## React Channel And Briefing Workspace Quickstart
+
+Use the QA036 environment when validating the React channel, Telegram, alias,
+delivery, safe run status, and briefing preference workspace:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/036-react-channel-telegram-and-briefing-preferences/.env.qa036 .env
+uv sync
+cd frontend/admin && npm install && npm run build && cd ../..
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa036 && createdb -U postgres multi_agent_platform_qa036'
+uv run alembic upgrade head
+docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa036 -c "INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING;"
+```
+
+Open the browser UI:
+
+- [React Channel Workspace](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/channels)
+- [Acme Tenant Channel Workspace](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/channels?tenant_id=11111111-1111-1111-1111-111111111111)
+- [Safe Run Status](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/channels/runs/qa036-run-morning-briefing?tenant_id=11111111-1111-1111-1111-111111111111)
+
+Manual QA:
+
+- Sign in as `platform-admin` and confirm Acme and Globex readiness are visible
+  with safe reference labels only.
+- Sign in as `tenant-admin-acme` and confirm Globex is absent from the Acme
+  channel workspace.
+- Validate webhook readiness, create or refresh the `Morning briefing` alias,
+  inspect masked identities, and review delivery diagnostics.
+- Create a link code only when ready to observe the one-time display; refresh
+  before taking screenshots so evidence shows masked token status only.
+- Sign in as `tenant-user-acme`, save briefing preferences, and confirm admin
+  summaries remain redacted.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_channel_telegram_briefing_react_schema.py \
+  tests/unit/admin/channel_telegram_briefing/test_react_channel_telegram_briefing_service.py \
+  tests/performance/channel_telegram_briefing/test_react_channel_telegram_briefing_queries.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py
+```
+
+Additional evidence:
+
+- [Spec 036 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/036-react-channel-telegram-and-briefing-preferences/qa036.md)
+- [Spec 036 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/036-react-channel-telegram-and-briefing-preferences/qa036_ui.md)
+- [Spec 036 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/036-react-channel-telegram-and-briefing-preferences/qa036_user_guide.md)
+
+## React Admin Migration Hardening Quickstart
+
+Use the QA037 environment when validating React primary routing, route parity,
+retained fallbacks, rollback evidence, performance budgets, accessibility
+coverage, redaction sweeps, and tenant isolation checks:
+
+```bash
+test ! -f .env || cp .env .env.autopilot-backup
+cp specs/037-react-admin-migration-hardening-and-jinja-retirement/.env.qa037 .env
+uv sync
+cd frontend/admin && npm install && npm run build && cd ../..
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa037 && createdb -U postgres multi_agent_platform_qa037'
+uv run alembic upgrade head
+docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa037 -c "INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING;"
+```
+
+Open the browser UI:
+
+- [React Admin Migration Home](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app)
+- [Direct Migration Hardening Route](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/migration)
+- [Acme Tenant Migration Route](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/migration?tenant_id=11111111-1111-1111-1111-111111111111)
+
+Manual QA:
+
+- Sign in as `platform-admin` and confirm all route groups are visible.
+- Sign in as `tenant-admin-acme` and confirm platform-only rows are hidden.
+- Sign in as `tenant-user-acme` and confirm the limited user-scope guidance is
+  shown.
+- Confirm retained fallback rows remain visible and no legacy deletion is
+  implied.
+- Confirm rollback, performance, accessibility, redaction, and tenant isolation
+  panels are present.
+
+Focused reviewer command:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_migration_hardening_react_schema.py \
+  tests/unit/admin/test_migration_hardening_service.py \
+  tests/performance/migration_hardening/test_react_migration_hardening_queries.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py
+```
+
+Additional evidence:
+
+- [Spec 037 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037.md)
+- [Spec 037 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_ui.md)
+- [Spec 037 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_user_guide.md)
 
 ## Troubleshooting
 

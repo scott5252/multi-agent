@@ -1,0 +1,293 @@
+openapi: 3.1.0
+info:
+  title: React Admin Shell Contract
+  version: qa027
+paths:
+  /admin/app/bootstrap.json:
+    get:
+      summary: Return safe shell bootstrap metadata
+      responses:
+        "200":
+          description: Safe React admin bootstrap with shell metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactAdminBootstrap"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeProblem"
+        "403":
+          description: Principal is not authorized for the requested shell scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeProblem"
+        "503":
+          description: Required audit or metadata dependency is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeProblem"
+  /admin/app/search.json:
+    get:
+      summary: Return authorized command/search destination summaries
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+      responses:
+        "200":
+          description: Authorized safe command/search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactAdminCommandSearch"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeProblem"
+        "403":
+          description: Principal is not authorized for the requested scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeProblem"
+components:
+  schemas:
+    ReactAdminBootstrap:
+      type: object
+      required:
+        - principal
+        - active_scope
+        - navigation
+        - shell
+      properties:
+        principal:
+          type: object
+        active_scope:
+          type: object
+        navigation:
+          type: array
+          items:
+            type: object
+        shell:
+          $ref: "#/components/schemas/ReactAdminShellChrome"
+    ReactAdminShellChrome:
+      type: object
+      required:
+        - product_name
+        - active_area
+        - breadcrumbs
+        - states
+        - design_token_version
+      properties:
+        product_name:
+          type: string
+        active_area:
+          type: string
+        breadcrumbs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactAdminBreadcrumb"
+        page_actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactAdminPageAction"
+        saved_filters:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactAdminSavedFilterChip"
+        notifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactAdminShellNotification"
+        states:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactAdminShellState"
+        design_token_version:
+          type: string
+    ReactAdminBreadcrumb:
+      type: object
+      required:
+        - label
+        - active
+      properties:
+        label:
+          type: string
+        href:
+          type:
+            - string
+            - "null"
+        active:
+          type: boolean
+    ReactAdminPageAction:
+      type: object
+      required:
+        - action_id
+        - label
+        - method
+        - variant
+      properties:
+        action_id:
+          type: string
+        label:
+          type: string
+        href:
+          type:
+            - string
+            - "null"
+        method:
+          type: string
+          enum: [get]
+        variant:
+          type: string
+          enum: [primary, secondary, danger, ghost]
+        disabled_reason:
+          type:
+            - string
+            - "null"
+    ReactAdminShellState:
+      type: object
+      required:
+        - state
+        - title
+        - summary
+      properties:
+        state:
+          type: string
+          enum:
+            - loading
+            - empty
+            - filtered_empty
+            - denied
+            - not_found
+            - validation_error
+            - dependency_unavailable
+            - partial_data
+            - unexpected_error
+        title:
+          type: string
+        summary:
+          type: string
+        action:
+          $ref: "#/components/schemas/ReactAdminPageAction"
+        trace_id:
+          type:
+            - string
+            - "null"
+    ReactAdminSavedFilterChip:
+      type: object
+      required:
+        - filter_id
+        - label
+        - admin_area
+        - href
+        - scope_type
+      properties:
+        filter_id:
+          type: string
+        label:
+          type: string
+        admin_area:
+          type: string
+        href:
+          type: string
+        scope_type:
+          type: string
+          enum: [platform, tenant]
+        tenant_id:
+          type:
+            - string
+            - "null"
+          format: uuid
+    ReactAdminShellNotification:
+      type: object
+      required:
+        - notification_id
+        - tone
+        - title
+        - summary
+      properties:
+        notification_id:
+          type: string
+        tone:
+          type: string
+          enum: [info, success, warning, critical]
+        title:
+          type: string
+        summary:
+          type: string
+        href:
+          type:
+            - string
+            - "null"
+    ReactAdminCommandSearch:
+      type: object
+      required:
+        - query
+        - results
+      properties:
+        query:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactAdminCommandSearchResult"
+    ReactAdminCommandSearchResult:
+      type: object
+      required:
+        - result_id
+        - label
+        - group
+        - href
+        - required_scope
+        - fallback_kind
+      properties:
+        result_id:
+          type: string
+        label:
+          type: string
+        description:
+          type:
+            - string
+            - "null"
+        group:
+          type: string
+        href:
+          type: string
+        required_scope:
+          type: string
+          enum: [platform, tenant, either]
+        fallback_kind:
+          type: string
+          enum: [jinja, react, disabled]
+    SafeProblem:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+        reason:
+          type:
+            - string
+            - "null"
+        trace_id:
+          type:
+            - string
+            - "null"

@@ -1,0 +1,225 @@
+openapi: 3.1.0
+info:
+  title: React Channel, Telegram, And Briefing Preferences API
+  version: 0.1.0
+paths:
+  /admin/app/channels/bootstrap.json:
+    get:
+      summary: Load safe channel, Telegram, delivery, run status, and briefing preference dashboard
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: view
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [overview, aliases, diagnostics, preferences]
+      responses:
+        "200":
+          description: Safe dashboard projection
+        "401":
+          description: Authentication required
+        "403":
+          description: Tenant or role denied
+  /admin/app/channels/telegram/config:
+    post:
+      summary: Save tenant Telegram configuration readiness metadata
+      responses:
+        "200":
+          description: Safe mutation result
+        "401":
+          description: Authentication required
+        "403":
+          description: Tenant or role denied
+  /admin/app/channels/telegram/webhook/validate:
+    post:
+      summary: Refresh safe webhook validation evidence
+      responses:
+        "200":
+          description: Safe validation result
+  /admin/app/channels/telegram/aliases:
+    post:
+      summary: Create or update a tenant Telegram alias
+      responses:
+        "200":
+          description: Safe alias mutation result
+  /admin/app/channels/telegram/aliases/{alias_id}/{action}:
+    post:
+      summary: Disable, enable, delete, or refresh readiness for a tenant alias
+      parameters:
+        - name: alias_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [enable, disable, delete, refresh-readiness]
+      responses:
+        "200":
+          description: Safe alias action result
+  /admin/app/channels/telegram/link-tokens:
+    post:
+      summary: Create one-time Telegram link token result
+      responses:
+        "200":
+          description: Immediate token result; bootstrap never returns token_value
+  /admin/app/channels/telegram/deliveries.json:
+    get:
+      summary: Load bounded delivery and webhook diagnostics
+      responses:
+        "200":
+          description: Safe diagnostics rows
+  /admin/app/channels/runs/{workflow_run_id}/status.json:
+    get:
+      summary: Load safe user-facing run status summary
+      parameters:
+        - name: workflow_run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe run status summary
+  /admin/app/channels/briefing/preferences.json:
+    get:
+      summary: Load safe briefing preference profile and admin summaries
+      responses:
+        "200":
+          description: Safe preference profile projection
+  /admin/app/channels/briefing/preferences:
+    post:
+      summary: Save briefing preference profile
+      responses:
+        "200":
+          description: Safe preference mutation result
+  /admin/app/channels/briefing/preferences/import:
+    post:
+      summary: Import briefing preferences with safe artifact evidence
+      responses:
+        "200":
+          description: Safe import result
+  /admin/app/channels/briefing/preferences/export:
+    post:
+      summary: Export briefing preferences with safe artifact metadata
+      responses:
+        "200":
+          description: Safe export result
+components:
+  schemas:
+    ChannelTelegramBriefingDashboard:
+      type: object
+      required: [page_id, title, scope, readiness, aliases, linked_identities, delivery_attempts, preference_profiles, updated_at]
+      properties:
+        page_id:
+          type: string
+        title:
+          type: string
+        scope:
+          type: object
+        readiness:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReadinessCard"
+        aliases:
+          type: array
+          maxItems: 25
+          items:
+            $ref: "#/components/schemas/TelegramAliasRecord"
+        linked_identities:
+          type: array
+          maxItems: 25
+          items:
+            $ref: "#/components/schemas/LinkedTelegramIdentitySummary"
+        delivery_attempts:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/DeliveryAttemptSummary"
+        preference_profiles:
+          type: array
+          maxItems: 25
+          items:
+            $ref: "#/components/schemas/BriefingPreferenceProfile"
+        updated_at:
+          type: string
+          format: date-time
+    ReadinessCard:
+      type: object
+      required: [card_id, label, status, detail]
+      properties:
+        card_id:
+          type: string
+        label:
+          type: string
+        status:
+          type: string
+        detail:
+          type: string
+        audit_reference:
+          type: string
+    TelegramAliasRecord:
+      type: object
+      required: [alias_id, alias_text, status, protected_readiness, audit_reference]
+      properties:
+        alias_id:
+          type: string
+        alias_text:
+          type: string
+        status:
+          type: string
+        protected_readiness:
+          type: string
+        audit_reference:
+          type: string
+    LinkedTelegramIdentitySummary:
+      type: object
+      required: [identity_id, principal_label, telegram_label, status]
+      properties:
+        identity_id:
+          type: string
+        principal_label:
+          type: string
+        telegram_label:
+          type: string
+        status:
+          type: string
+    DeliveryAttemptSummary:
+      type: object
+      required: [attempt_id, alias_label, status, retry_category, attempted_at]
+      properties:
+        attempt_id:
+          type: string
+        alias_label:
+          type: string
+        status:
+          type: string
+        retry_category:
+          type: string
+        run_status_href:
+          type: string
+        attempted_at:
+          type: string
+          format: date-time
+    BriefingPreferenceProfile:
+      type: object
+      required: [profile_id, principal_label, timezone, revision, runtime_ready]
+      properties:
+        profile_id:
+          type: string
+        principal_label:
+          type: string
+        timezone:
+          type: string
+        revision:
+          type: string
+        runtime_ready:
+          type: boolean

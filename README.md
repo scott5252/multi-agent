@@ -80,6 +80,22 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   including deterministic role/sub-agent nodes, parallel ready-wave fan-out,
   join policies, resume-safe persisted steps, tenant-compatible bundle loading,
   and redaction-safe graph evidence
+- React admin foundation, modern shell, shared data/form patterns,
+  operations workbench, workflow builder, governance workspace, skill
+  lifecycle workspace, test bench workspace, membership administration, and
+  usage analytics under
+  `/admin/app`, backed by FastAPI bootstrap, config, manifest, authorized
+  command search, generated page envelopes, reusable filter/table/form
+  contracts, safe mutation feedback, workbench health/run/reliability
+  summaries, workflow draft/reference/graph/validation/publish contracts,
+  model/provider/prompt/profile/routing/provenance governance contracts,
+  skill package publication/discovery/installation/credential/readiness/
+  binding/diagnostic/audit contracts, test suite/case/run/gate contracts,
+  membership invitation/principal/role/status/history/audit contracts, usage
+  summary/trend/rollup/drilldown/export contracts, export and evidence artifact
+  references, shared design tokens, common states, and Jinja fallback routes
+  while existing admin domain pages remain on their current server-rendered
+  routes
 
 ## Quickstart
 
@@ -104,17 +120,227 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
     `/admin/skill-execution/ui/diagnostics`.
 13. Review agent and workflow test suites at `/admin/agent-tests/ui`, then run
     safe mock or mocked-provider checks before publication.
-14. Review membership administration at `/admin/memberships` as
-    `platform-admin` and as `tenant-admin-acme`.
-15. Review platform operational status at `/admin/operations` as
+14. Review React membership administration at `/admin/app/memberships` as
+    `platform-admin` and as `tenant-admin-acme`; the existing fallback remains
+    at `/admin/memberships`.
+15. Review React usage analytics at `/admin/app/usage` as `platform-admin` and
+    as `tenant-admin-acme`; the existing fallback remains at `/admin/usage`.
+16. Review platform operational status at `/admin/operations` as
     `platform-admin` or `auditor`.
-16. Dry-run the Spec Kit Autopilot example with
+17. Dry-run the Spec Kit Autopilot example with
     `uv run python scripts/qa/run_spec_qa.py specs/_autopilot/example/validation.yml --dry-run`.
-17. Validate workflow graph execution with
+18. Validate workflow graph execution with
     `uv run pytest --no-cov tests/integration/runtime/test_workflow_graph_execution.py`.
-18. Validate Telegram alias delivery with
+19. Validate Telegram alias delivery with
     `uv run pytest --no-cov tests/contract/test_telegram_alias_delivery_contract.py tests/integration/api/test_telegram_webhook.py`.
-19. Validate the repo with `./scripts/check.sh`.
+20. Validate the repo with `./scripts/check.sh`.
+
+### React Admin Foundation, Shell, Patterns, Workbench, Builder, Governance, Skills, Test Bench, Membership, And Usage
+
+The React admin shell is available at
+[http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app)
+when `AUTH_MODE=local_principal` is enabled. Build assets before manual browser
+review:
+
+```bash
+cd frontend/admin
+npm install
+npm run build
+cd ../..
+uv run uvicorn multi_agent_platform.api.main:app --reload
+```
+
+The shell uses backend-authorized bootstrap metadata from
+`/admin/app/bootstrap.json` and safe command-search metadata from
+`/admin/app/search.json`. React renders shared shell chrome, active scope,
+breadcrumbs, page actions, saved-filter presentation, notifications, common
+states, and local design tokens from the backend contract. Existing Jinja admin
+pages remain available and future React domain routes stay disabled until their
+own migration specs pass.
+
+The reusable data/form pattern page is available at
+[http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/patterns](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/patterns).
+It reads an authorized `AdminPageEnvelope` from `/admin/app/patterns.json` and
+demonstrates backend-owned table records, allowed filters, sorting, field
+validation, confirmation prompts, stale revision recovery, idempotency replay
+feedback, safe toast metadata, and export snapshots that expose artifact
+reference IDs instead of local paths or raw payloads. The page is intentionally
+harmless and exists so later React admin routes can reuse the same generated
+contracts instead of copying domain rules into the browser.
+
+The React operations workbench is available at
+[http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/operations](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/operations).
+It reads `/admin/app/operations.json` and renders backend-owned health,
+dependency pressure, likely-cause, run debug, graph branch, gateway attempt,
+tool call, channel delivery, reliability recovery, log, and export summaries.
+Platform administrators and auditors see platform summaries; tenant
+administrators see tenant-scoped summaries with platform-only provider and
+pressure details hidden. Exports return `artifact-ref-qa029-*` references and
+audit references instead of raw files or operational payloads.
+
+The React workflow builder is available at
+[http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/workflows](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/workflows).
+It reads `/admin/app/workflows/builder.json` and
+`/admin/app/workflows/lookups.json`, then renders backend-owned draft
+metadata, reference options, graph preview, validation findings, publish
+readiness, required evidence, revisions, and redacted JSON preview summaries.
+Save, validation, stale revision, and publish decisions post back to protected
+workflow builder actions. Jinja workflow registry pages remain available under
+`/admin/workflows/ui`.
+
+The React governance workspace is available at
+[http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/governance](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/governance).
+It reads `/admin/app/governance/bootstrap.json` plus provider, prompt, profile,
+routing, history, and provenance contracts, then renders backend-owned provider
+health, credential-reference diagnostics, explicit platform-admin probes, safe
+prompt previews, runtime profile resolution, read-only routing decisions,
+policy history, and run provenance. Provider mutations and credential-reference
+changes are platform-admin only; tenant administrators receive authorized
+readiness and provenance summaries without raw credentials, provider payloads,
+prompts, completions, or cross-tenant labels.
+
+The React skill lifecycle workspace is available at
+[http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/skills](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/skills).
+It reads `/admin/app/skills/bootstrap.json` plus discovery, installation,
+diagnostic, eligibility, and audit contracts, then renders backend-owned
+package publication, manifest upload precedence, validation findings,
+platform-only tenant grants, immutable publication, quarantine/withdrawal
+evidence, tenant discovery, installation, credential references, queued
+smoke-test/readiness actions, connector readiness, SkillExecutionGateway
+diagnostics, binding eligibility, and lifecycle audit records. Existing Jinja
+skill registry and skill execution diagnostic routes remain available.
+
+The React agent and workflow test bench is available at
+[http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/test-bench](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/test-bench).
+It reads `/admin/app/test-bench/bootstrap.json` plus suite, run, gate,
+artifact, and audit contracts, then renders backend-owned suite authoring,
+target revision binding, safe execution mode choices, run progress, assertion
+diagnostics, trace summaries, artifact references, required publish-gate
+evidence, and governance audit records. Test runs are deterministic in local
+QA, default to mocked model/tool execution, and expose only safe summaries,
+audit references, and artifact metadata to React.
+
+The React usage and cost analytics workspace is available at
+[http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/usage](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/usage).
+It reads `/admin/app/usage/bootstrap.json`, `/admin/app/usage/events.json`,
+and `/admin/app/usage/exports/*` contracts, then renders backend-owned token
+usage, estimated cost, confidence coverage, latency, unavailable usage, trend
+buckets, provider/model/workflow/agent/sub-agent/prompt/execution-mode/
+principal rollups, graph node attribution, gateway operation attribution,
+physical attempt attribution, governed tool attribution, bounded event
+drilldowns, and audited export summaries. Platform administrators can review
+authorized cross-tenant usage; tenant administrators see only their active
+tenant. Existing server-rendered usage pages remain available at
+`/admin/usage`.
+
+Focused shell validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_react_schema.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused data/form pattern validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_patterns_schema.py \
+  tests/unit/api/test_admin_react_schema.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused operations workbench validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_workbench_schema.py \
+  tests/unit/operations/test_workbench_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/operations/test_workbench_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused workflow builder validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_workflow_builder_schema.py \
+  tests/unit/admin/test_workflow_builder_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/workflows/test_workflow_builder_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused governance validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_governance_schema.py \
+  tests/unit/admin/test_governance_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/governance/test_governance_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused skill lifecycle validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_skill_lifecycle_schema.py \
+  tests/unit/admin/test_skill_lifecycle_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/skills/test_skill_lifecycle_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused test bench validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_test_bench_schema.py \
+  tests/unit/admin/test_test_bench_react_service.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py \
+  tests/performance/test_bench/test_react_test_bench_queries.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
+
+Focused usage analytics validation:
+
+```bash
+uv run pytest --no-cov \
+  tests/unit/api/test_admin_usage_react_schema.py \
+  tests/unit/admin/usage/test_react_usage_service.py \
+  tests/performance/usage/test_react_usage_queries.py \
+  tests/contract/test_admin_react_contract.py \
+  tests/integration/test_admin_react_routes.py
+cd frontend/admin && npm run typecheck && npm run test && npm run build
+cd ../..
+uv run python scripts/frontend/generate_admin_react_types.py --check
+```
 
 ## Admin Console Shell
 
@@ -295,6 +521,17 @@ QA016 reviewer evidence lives in
 `specs/016-token-usage-cost-analytics/qa016_ui.md`, and
 `specs/016-token-usage-cost-analytics/qa016_user_guide.md`.
 
+The React usage workspace is available at `/admin/app/usage` with dashboard,
+event drilldown, export creation, and export detail contracts under
+`/admin/app/usage/*`. It keeps the same safe usage analytics behaviors while
+adding generated TypeScript contracts, summary cards, trend buckets, all
+supported rollup dimensions, gateway and physical-attempt attribution,
+governed tool attribution, bounded event rows, audited export evidence, and
+browser-first platform versus tenant review. QA035 reviewer evidence lives in
+`specs/035-react-usage-and-cost-analytics/qa035.md`,
+`specs/035-react-usage-and-cost-analytics/qa035_ui.md`, and
+`specs/035-react-usage-and-cost-analytics/qa035_user_guide.md`.
+
 ## Telegram Configuration Console
 
 Administrators review Telegram channel readiness at `/admin/telegram` or
@@ -338,6 +575,15 @@ QA018 reviewer evidence lives in
 `specs/018-user-tenant-membership-administration/qa018.md`,
 `specs/018-user-tenant-membership-administration/qa018_ui.md`, and
 `specs/018-user-tenant-membership-administration/qa018_user_guide.md`.
+
+The React membership workspace is available at `/admin/app/memberships` with
+bootstrap and mutation contracts under `/admin/app/memberships/*`. It keeps the
+same safe membership behaviors while adding generated TypeScript contracts,
+browser-first invitation, principal linking, role grant, revocation, status,
+access-history, and audit panels. QA034 reviewer evidence lives in
+`specs/034-react-user-and-tenant-membership-administration/qa034.md`,
+`specs/034-react-user-and-tenant-membership-administration/qa034_ui.md`, and
+`specs/034-react-user-and-tenant-membership-administration/qa034_user_guide.md`.
 
 ## Operations Console
 
@@ -409,6 +655,37 @@ QA023 reviewer evidence lives in
 `specs/023-user-briefing-preferences-and-context/qa023.md`,
 `specs/023-user-briefing-preferences-and-context/qa023_ui.md`, and
 `specs/023-user-briefing-preferences-and-context/qa023_user_guide.md`.
+
+The React channel, Telegram, and briefing preference workspace is available at
+`/admin/app/channels`. It combines channel readiness, Telegram tenant
+configuration, safe secret-reference labels, webhook validation, natural
+language aliases such as `Morning briefing`, protected alias readiness, masked
+linked identities, one-time link-code handling, delivery diagnostics, safe run
+status links, and Daily Intelligence Briefing preference profile management.
+
+Tenant administrators stay scoped to their active tenant for Telegram settings,
+aliases, link tokens, identities, diagnostics, and safe preference summaries.
+Tenant users can manage their own briefing profile and safe run status links
+without receiving tenant-wide alias administration. The workspace never renders
+real bot tokens, webhook secrets, full Telegram identifiers, private messages,
+raw preference values in admin summaries, raw prompts, run results, or raw tool
+payloads. QA036 reviewer evidence lives in
+`specs/036-react-channel-telegram-and-briefing-preferences/qa036.md`,
+`specs/036-react-channel-telegram-and-briefing-preferences/qa036_ui.md`, and
+`specs/036-react-channel-telegram-and-briefing-preferences/qa036_user_guide.md`.
+
+The React admin migration hardening dashboard is the React landing experience at
+`/admin/app` and is also available directly at `/admin/app/migration`. It
+summarizes Specs 026 through 036 route parity, React-primary destinations,
+retained fallbacks, rollback instructions, performance budgets, accessibility
+coverage, redaction sweeps, and tenant isolation checks. Legacy Jinja route
+deletion stays disabled by default; retained fallbacks remain visible until
+route-specific parity and rollback evidence is complete. QA037 reviewer
+evidence lives in
+`specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037.md`,
+`specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_ui.md`,
+and
+`specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_user_guide.md`.
 
 ## Latest Validation Evidence
 

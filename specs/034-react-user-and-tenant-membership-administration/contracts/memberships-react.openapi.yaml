@@ -1,0 +1,186 @@
+openapi: 3.1.0
+info:
+  title: React Membership Administration Contracts
+  version: 0.1.0
+paths:
+  /admin/app/memberships:
+    get:
+      summary: Render React membership administration shell
+      responses:
+        "200":
+          description: React shell
+        "401":
+          description: Unauthenticated
+        "403":
+          description: Unauthorized
+  /admin/app/memberships/bootstrap.json:
+    get:
+      summary: Get membership dashboard bootstrap
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Membership dashboard
+        "403":
+          description: Safe denied problem
+  /admin/app/memberships/invitations:
+    post:
+      summary: Create or replay an invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipInvitationSaveRequest"
+      responses:
+        "200":
+          description: Membership mutation result
+        "403":
+          description: Safe denied problem
+  /admin/app/memberships/principals/link:
+    post:
+      summary: Link or provision a principal identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrincipalLinkRequest"
+      responses:
+        "200":
+          description: Membership mutation result
+  /admin/app/memberships/role-grants:
+    post:
+      summary: Create a role grant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleGrantSaveRequest"
+      responses:
+        "200":
+          description: Membership mutation result
+  /admin/app/memberships/role-grants/{role_grant_id}/revoke:
+    post:
+      summary: Revoke a role grant
+      parameters:
+        - name: role_grant_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Membership mutation result
+  /admin/app/memberships/principals/{principal_identity_id}/{status_action}:
+    post:
+      summary: Suspend or reactivate a principal
+      parameters:
+        - name: principal_identity_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: status_action
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [suspend, reactivate]
+      responses:
+        "200":
+          description: Membership mutation result
+  /admin/app/memberships/memberships/{tenant_membership_id}/{membership_status}:
+    post:
+      summary: Update tenant membership status
+      parameters:
+        - name: tenant_membership_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: membership_status
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [active, suspended, removed]
+      responses:
+        "200":
+          description: Membership mutation result
+  /admin/app/memberships/access-history.json:
+    get:
+      summary: Get bounded access history
+      responses:
+        "200":
+          description: Access history list
+  /admin/app/memberships/audit.json:
+    get:
+      summary: Get membership audit timeline
+      responses:
+        "200":
+          description: Membership audit list
+components:
+  schemas:
+    MembershipInvitationSaveRequest:
+      type: object
+      required: [email, requested_roles, idempotency_key]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        requested_roles:
+          type: array
+          items:
+            type: string
+        idempotency_key:
+          type: string
+    PrincipalLinkRequest:
+      type: object
+      required: [display_name, external_subject, idempotency_key]
+      properties:
+        principal_identity_id:
+          type: string
+        display_name:
+          type: string
+        email:
+          type: string
+          format: email
+        external_subject:
+          type: string
+        overwrite_confirmed:
+          type: boolean
+        idempotency_key:
+          type: string
+    RoleGrantSaveRequest:
+      type: object
+      required: [principal_identity_id, scope_type, role_code, idempotency_key]
+      properties:
+        principal_identity_id:
+          type: string
+        scope_type:
+          type: string
+          enum: [platform, tenant]
+        tenant_id:
+          type: string
+          format: uuid
+        role_code:
+          type: string
+        confirmed:
+          type: boolean
+        idempotency_key:
+          type: string

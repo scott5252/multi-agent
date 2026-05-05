@@ -1,8 +1,1311 @@
 {
   "schema_version": "1.0",
-  "state": "prepared",
-  "current_spec": "026",
-  "completed_specs": [],
+  "state": "completed",
+  "current_spec": null,
+  "completed_specs": [
+    "026",
+    "027",
+    "028",
+    "029",
+    "030",
+    "031",
+    "032",
+    "033",
+    "034",
+    "035",
+    "036",
+    "037"
+  ],
   "blocked": null,
-  "history": []
+  "history": [
+    {
+      "spec": "026",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/026-react-admin-ui-foundation/spec.md",
+        "specs/026-react-admin-ui-foundation/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 026 feature specification and quality checklist from generated prompt; branch is codex/026-react-admin-ui-foundation."
+    },
+    {
+      "spec": "026",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/026-react-admin-ui-foundation/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for /admin/app mount path, Jinja fallback strategy, backend-owned session/action protection, generated TypeScript contracts, Vite SPA/npm/Node policy, FastAPI built assets, and backend feature-flag rollout."
+    },
+    {
+      "spec": "026",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/026-react-admin-ui-foundation/plan.md",
+        "specs/026-react-admin-ui-foundation/research.md",
+        "specs/026-react-admin-ui-foundation/data-model.md",
+        "specs/026-react-admin-ui-foundation/contracts/react-admin-bootstrap.openapi.yaml",
+        "specs/026-react-admin-ui-foundation/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed plan, research decisions, contract sketch, data model, quickstart, and agent-context update for the additive React admin foundation."
+    },
+    {
+      "spec": "026",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/026-react-admin-ui-foundation/tasks.md"
+      ],
+      "notes": "Generated 52 file-specific tasks covering setup, backend contracts/routes, generated TypeScript workflow, React shell, dual-auth tests, Playwright smoke, QA docs, and reviewer notes."
+    },
+    {
+      "spec": "026",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/026-react-admin-ui-foundation/plan.md",
+        "specs/026-react-admin-ui-foundation/tasks.md"
+      ],
+      "notes": "Analysis found no remaining CRITICAL findings after remediating local artifact gaps for audit-failure coverage, denied-access Playwright evidence, and frontend test path consistency."
+    },
+    {
+      "spec": "026",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_react.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/web_admin/templates/admin_react/app.html",
+        "frontend/admin",
+        "scripts/frontend/generate_admin_react_types.py",
+        "tests/unit/api/test_admin_react_schema.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "specs/026-react-admin-ui-foundation/tasks.md",
+        "specs/026-react-admin-ui-foundation/qa026.md",
+        "specs/026-react-admin-ui-foundation/qa026_ui.md",
+        "specs/026-react-admin-ui-foundation/.env.qa026",
+        "specs/026-react-admin-ui-foundation/qa026_user_guide.md",
+        "specs/026-react-admin-ui-foundation/pr_notes.md"
+      ],
+      "notes": "Implemented the protected React admin shell, backend bootstrap/config/manifest routes, Vite React workspace, generated TypeScript contracts, deterministic tests, QA docs, and reviewer notes. All 52 tasks are marked complete."
+    },
+    {
+      "spec": "026",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/026-react-admin-ui-foundation/validation.yml",
+        "output/playwright/qa026_ui/qa026-react-ui-denied.png",
+        "output/playwright/qa026_ui/qa026-react-ui-authenticated.png",
+        "output/playwright/qa026_ui/qa026-react-ui-disabled-route.png"
+      ],
+      "notes": "Passed QA document validation, full Spec QA including ruff, format, mypy, coverage, frontend typecheck/tests, generated contract check, and Playwright UI validation with database reset and app processes."
+    },
+    {
+      "spec": "027",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/027-modern-admin-shell-and-design-system/spec.md",
+        "specs/027-modern-admin-shell-and-design-system/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 027 feature specification and quality checklist from generated prompt; branch is codex/027-modern-admin-shell-and-design-system."
+    },
+    {
+      "spec": "027",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/027-modern-admin-shell-and-design-system/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for backend-authoritative navigation, desktop/mobile shell pattern, saved-filter chips, safe command/search scope, WCAG-oriented design tokens, and Jinja fallback coexistence."
+    },
+    {
+      "spec": "027",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/027-modern-admin-shell-and-design-system/plan.md",
+        "specs/027-modern-admin-shell-and-design-system/research.md",
+        "specs/027-modern-admin-shell-and-design-system/data-model.md",
+        "specs/027-modern-admin-shell-and-design-system/contracts/react-admin-shell.openapi.yaml",
+        "specs/027-modern-admin-shell-and-design-system/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed planning artifacts for a reusable React shell/design system layered on Spec 026 foundation without domain page rewrites."
+    },
+    {
+      "spec": "027",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/027-modern-admin-shell-and-design-system/tasks.md"
+      ],
+      "notes": "Generated 44 file-specific tasks covering dependency setup, shell contracts, modern shell layout, primitives, common states, safe command/search, saved filters, docs, and validation."
+    },
+    {
+      "spec": "027",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/027-modern-admin-shell-and-design-system/tasks.md"
+      ],
+      "notes": "Analysis found no remaining CRITICAL findings after tightening search metadata tests to include Auth0-shaped principal coverage."
+    },
+    {
+      "spec": "027",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_react.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "frontend/admin/src/components/shell",
+        "frontend/admin/src/components/primitives",
+        "frontend/admin/src/components/states",
+        "frontend/admin/src/components/savedFilters",
+        "frontend/admin/src/styles/tokens.css",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_react_schema.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "specs/027-modern-admin-shell-and-design-system/tasks.md",
+        "specs/027-modern-admin-shell-and-design-system/qa027.md",
+        "specs/027-modern-admin-shell-and-design-system/qa027_ui.md",
+        "specs/027-modern-admin-shell-and-design-system/.env.qa027",
+        "specs/027-modern-admin-shell-and-design-system/qa027_user_guide.md",
+        "specs/027-modern-admin-shell-and-design-system/pr_notes.md"
+      ],
+      "notes": "Implemented the modern React admin shell, local design tokens, accessible primitives, common states, saved-filter presentation, safe command search, backend shell/search contracts, tests, QA docs, and reviewer notes. All 44 tasks are marked complete."
+    },
+    {
+      "spec": "027",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/027-modern-admin-shell-and-design-system/validation.yml",
+        "output/playwright/qa027_ui/qa027-react-shell-denied.png",
+        "output/playwright/qa027_ui/qa027-react-shell-authenticated.png",
+        "output/playwright/qa027_ui/qa027-react-shell-search.png"
+      ],
+      "notes": "Passed QA document validation, full Spec QA including ruff, format, mypy, coverage, frontend typecheck/tests/build, generated contract check, and Playwright UI validation with database reset and app processes."
+    },
+    {
+      "spec": "028",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/028-react-admin-data-contracts-and-form-patterns/spec.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 028 feature specification and quality checklist from generated prompt; branch is codex/028-react-admin-data-contracts-and-form-patterns."
+    },
+    {
+      "spec": "028",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/028-react-admin-data-contracts-and-form-patterns/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for AdminPageEnvelope, safe problem details, backend-owned actions, revision/idempotency behavior, filter profiles, export snapshots, and redaction before React."
+    },
+    {
+      "spec": "028",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/028-react-admin-data-contracts-and-form-patterns/plan.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/research.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/data-model.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/contracts/react-admin-patterns.openapi.yaml",
+        "specs/028-react-admin-data-contracts-and-form-patterns/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed planning artifacts for reusable React admin data contracts, form patterns, sample page validation, and backend-owned authorization/redaction."
+    },
+    {
+      "spec": "028",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/028-react-admin-data-contracts-and-form-patterns/tasks.md"
+      ],
+      "notes": "Generated 52 file-specific tasks covering schema contracts, generated TypeScript, sample page envelope, form/mutation helpers, table/filter/export helpers, QA docs, and validation."
+    },
+    {
+      "spec": "028",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/028-react-admin-data-contracts-and-form-patterns/spec.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/plan.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/tasks.md"
+      ],
+      "notes": "Analysis found no blocking inconsistencies; dual-auth, tenant denial, redaction, stale conflict, idempotency, exports, sample page, and QA evidence are covered by tasks."
+    },
+    {
+      "spec": "028",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_patterns.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/components/data/AdminDataTable.tsx",
+        "frontend/admin/src/components/forms/AdminForm.tsx",
+        "frontend/admin/src/components/patterns/PatternsPage.tsx",
+        "frontend/admin/src/hooks/useAdminMutation.ts",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_patterns_schema.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "frontend/admin/src/components/data/AdminDataTable.test.tsx",
+        "frontend/admin/src/components/forms/AdminForm.test.tsx",
+        "frontend/admin/src/components/patterns/PatternsPage.test.tsx",
+        "frontend/admin/src/hooks/useAdminMutation.test.tsx",
+        "specs/028-react-admin-data-contracts-and-form-patterns/tasks.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/qa028.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/qa028_ui.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/.env.qa028",
+        "specs/028-react-admin-data-contracts-and-form-patterns/qa028_user_guide.md",
+        "specs/028-react-admin-data-contracts-and-form-patterns/pr_notes.md"
+      ],
+      "notes": "Implemented reusable backend page envelopes, safe problem details, mutation/export contracts, generated React types, shared data table/form/mutation helpers, the harmless patterns page, focused tests, QA docs, and reviewer notes. All 52 tasks are marked complete."
+    },
+    {
+      "spec": "028",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/028-react-admin-data-contracts-and-form-patterns/validation.yml",
+        "output/playwright/qa028_ui/qa028-react-patterns-denied.png",
+        "output/playwright/qa028_ui/qa028-react-patterns-page.png",
+        "output/playwright/qa028_ui/qa028-react-patterns-validation.png",
+        "output/playwright/qa028_ui/qa028-react-patterns-stale.png",
+        "output/playwright/qa028_ui/qa028-react-patterns-export.png"
+      ],
+      "notes": "Passed QA document validation, dry-runs, full Spec QA including ruff, format, mypy, coverage, curl contract checks, frontend typecheck/tests/build, generated contract check, and Playwright UI validation with screenshot inspection."
+    },
+    {
+      "spec": "029",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/029-operations-reliability-and-run-debug-workbench/spec.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 029 feature specification and quality checklist from generated prompt; branch is codex/029-operations-reliability-and-run-debug-workbench."
+    },
+    {
+      "spec": "029",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/029-operations-reliability-and-run-debug-workbench/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for platform/auditor access, tenant-limited scope, last-60-minutes default range, refresh/polling behavior, dense guided layout, safe log filters, existing cross-links, export snapshots, and degraded dependency cards."
+    },
+    {
+      "spec": "029",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/029-operations-reliability-and-run-debug-workbench/plan.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/research.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/data-model.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/contracts/operations-workbench.openapi.yaml",
+        "specs/029-operations-reliability-and-run-debug-workbench/contracts/operations-workbench-ui.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed planning artifacts for an additive React operations, reliability, and run debug workbench over existing safe operational services, contracts, exports, and fallback routes."
+    },
+    {
+      "spec": "029",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/029-operations-reliability-and-run-debug-workbench/tasks.md"
+      ],
+      "notes": "Generated 67 file-specific tasks covering workbench contracts, platform/tenant triage, default ranges, refresh hints, safe filters, run debug timelines, reliability recovery, safe exports, frontend components, performance tests, QA docs, and validation."
+    },
+    {
+      "spec": "029",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/029-operations-reliability-and-run-debug-workbench/spec.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/plan.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/tasks.md"
+      ],
+      "notes": "Analysis found no remaining CRITICAL or HIGH findings after tightening task wording for default time range, refresh hints, degraded cards, and Spec 019-style filter coverage."
+    },
+    {
+      "spec": "029",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_workbench.py",
+        "src/multi_agent_platform/operations/workbench.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/components/workbench",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_workbench_schema.py",
+        "tests/unit/operations/test_workbench_service.py",
+        "tests/performance/operations/test_workbench_queries.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "specs/029-operations-reliability-and-run-debug-workbench/tasks.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/qa029.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/qa029_ui.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/.env.qa029",
+        "specs/029-operations-reliability-and-run-debug-workbench/qa029_user_guide.md",
+        "specs/029-operations-reliability-and-run-debug-workbench/pr_notes.md"
+      ],
+      "notes": "Implemented the React operations workbench with backend-owned platform/tenant envelopes, run debug summaries, reliability recovery, safe export snapshots, generated React types, workbench components, focused tests, QA docs, and reviewer notes. All 67 tasks are marked complete."
+    },
+    {
+      "spec": "029",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/029-operations-reliability-and-run-debug-workbench/validation.yml",
+        "output/playwright/qa029_ui/qa029-react-operations-denied.png",
+        "output/playwright/qa029_ui/qa029-react-operations-platform.png",
+        "output/playwright/qa029_ui/qa029-react-operations-export.png",
+        "output/playwright/qa029_ui/qa029-react-operations-tenant.png"
+      ],
+      "notes": "Passed QA document validation, dry-runs, full Spec QA including ruff, format, mypy, coverage, curl contract checks, frontend typecheck/tests/build, generated contract check, and Playwright UI validation with screenshot inspection."
+    },
+    {
+      "spec": "030",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/030-react-workflow-builder/spec.md",
+        "specs/030-react-workflow-builder/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 030 feature specification and quality checklist from generated prompt; branch is codex/030-react-workflow-builder."
+    },
+    {
+      "spec": "030",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/030-react-workflow-builder/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for explicit semantic saves, non-authoritative graph layout, backend-owned graph validation semantics, collapsed read-only JSON, on-demand/after-save validation, guided publish review, 100-node local validation, and Jinja fallback during migration."
+    },
+    {
+      "spec": "030",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/030-react-workflow-builder/plan.md",
+        "specs/030-react-workflow-builder/research.md",
+        "specs/030-react-workflow-builder/data-model.md",
+        "specs/030-react-workflow-builder/contracts/workflow-builder.openapi.yaml",
+        "specs/030-react-workflow-builder/contracts/workflow-builder-ui.md",
+        "specs/030-react-workflow-builder/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed planning artifacts for an additive React workflow builder over existing workflow registry, validation, publish gate, graph execution, reference readiness, and required evidence services."
+    },
+    {
+      "spec": "030",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/030-react-workflow-builder/tasks.md"
+      ],
+      "notes": "Generated 73 file-specific tasks covering backend builder contracts, generated TypeScript, guided draft authoring, graph/list accessibility, validation, publish gate, required evidence, revision history, JSON inspector, docs, and validation."
+    },
+    {
+      "spec": "030",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/030-react-workflow-builder/spec.md",
+        "specs/030-react-workflow-builder/plan.md",
+        "specs/030-react-workflow-builder/tasks.md"
+      ],
+      "notes": "Analysis found no remaining CRITICAL or HIGH findings; tasks explicitly cover backend-authoritative graph semantics, publish blockers, required evidence freshness, stale revisions, redaction, accessible graph alternatives, large-workflow bounds, and Playwright evidence."
+    },
+    {
+      "spec": "030",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_workflow_builder.py",
+        "src/multi_agent_platform/admin/workflow_builder.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/components/workflows",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_workflow_builder_schema.py",
+        "tests/unit/admin/test_workflow_builder_service.py",
+        "tests/performance/workflows/test_workflow_builder_queries.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "specs/030-react-workflow-builder/tasks.md",
+        "specs/030-react-workflow-builder/qa030.md",
+        "specs/030-react-workflow-builder/qa030_ui.md",
+        "specs/030-react-workflow-builder/.env.qa030",
+        "specs/030-react-workflow-builder/qa030_user_guide.md",
+        "specs/030-react-workflow-builder/pr_notes.md"
+      ],
+      "notes": "Implemented the React workflow builder with backend-owned draft/reference/graph/validation/publish contracts, generated React types, React Flow graph and accessible lists, guided save/stale/validation/publish UI, focused tests, QA docs, and reviewer notes. All 73 tasks are marked complete."
+    },
+    {
+      "spec": "030",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/030-react-workflow-builder/validation.yml",
+        "output/playwright/qa030_ui/qa030-react-workflows-denied.png",
+        "output/playwright/qa030_ui/qa030-react-workflows-tenant.png",
+        "output/playwright/qa030_ui/qa030-react-workflows-save.png",
+        "output/playwright/qa030_ui/qa030-react-workflows-publish.png",
+        "output/playwright/qa030_ui/qa030-react-workflows-cross-tenant.png"
+      ],
+      "notes": "Passed QA document validation, full Spec QA including ruff, format, mypy, coverage, curl contract checks, frontend typecheck/tests/build, generated contract check, and Playwright UI validation with screenshot inspection."
+    },
+    {
+      "spec": "031",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/031-model-prompt-profile-and-provider-governance/spec.md",
+        "specs/031-model-prompt-profile-and-provider-governance/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 031 feature specification and quality checklist from generated prompt; branch is codex/031-model-prompt-profile-and-provider-governance."
+    },
+    {
+      "spec": "031",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/031-model-prompt-profile-and-provider-governance/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for Setup/Prompts/Profiles/Routing/Providers/Provenance grouping, platform-admin-only provider mutation, tenant-authorized visibility, fixture-safe prompt previews, explicit probes, read-only routing previews, local no-auth allowlist behavior, and direct SDK guardrail evidence."
+    },
+    {
+      "spec": "031",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/031-model-prompt-profile-and-provider-governance/plan.md",
+        "specs/031-model-prompt-profile-and-provider-governance/research.md",
+        "specs/031-model-prompt-profile-and-provider-governance/data-model.md",
+        "specs/031-model-prompt-profile-and-provider-governance/contracts/governance.openapi.yaml",
+        "specs/031-model-prompt-profile-and-provider-governance/contracts/governance-ui.md",
+        "specs/031-model-prompt-profile-and-provider-governance/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed planning artifacts for additive React governance over existing model provider, prompt, runtime profile, routing, ProviderSecretResolver, gateway provenance, audit, and redaction services."
+    },
+    {
+      "spec": "031",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/031-model-prompt-profile-and-provider-governance/tasks.md"
+      ],
+      "notes": "Generated 83 file-specific tasks covering backend governance contracts, generated TypeScript, provider setup and probes, credential diagnostics, prompt previews, profile resolution, routing preview, policy history, provenance, redaction tests, docs, and validation."
+    },
+    {
+      "spec": "031",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/031-model-prompt-profile-and-provider-governance/spec.md",
+        "specs/031-model-prompt-profile-and-provider-governance/plan.md",
+        "specs/031-model-prompt-profile-and-provider-governance/data-model.md",
+        "specs/031-model-prompt-profile-and-provider-governance/tasks.md"
+      ],
+      "notes": "Analysis found no remaining CRITICAL or HIGH findings after tightening prompt/profile safe save coverage and operability wording. Tasks cover platform-admin provider mutation boundaries, tenant visibility, credential/reference safety, explicit probes, safe prompt previews, read-only routing, direct-call guardrails, policy history, provenance, dual auth, and QA evidence."
+    },
+    {
+      "spec": "031",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_governance.py",
+        "src/multi_agent_platform/admin/governance.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/components/governance/GovernancePage.tsx",
+        "frontend/admin/src/components/governance/ProviderGovernancePanel.tsx",
+        "frontend/admin/src/components/governance/PromptGovernancePanel.tsx",
+        "frontend/admin/src/components/governance/ProfileGovernancePanel.tsx",
+        "frontend/admin/src/components/governance/RoutingPreviewPanel.tsx",
+        "frontend/admin/src/components/governance/PolicyHistoryPanel.tsx",
+        "frontend/admin/src/components/governance/ProvenancePanel.tsx",
+        "frontend/admin/src/test/governanceTestData.ts",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_governance_schema.py",
+        "tests/unit/admin/test_governance_service.py",
+        "tests/performance/governance/test_governance_queries.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "specs/031-model-prompt-profile-and-provider-governance/qa031.md",
+        "specs/031-model-prompt-profile-and-provider-governance/qa031_ui.md",
+        "specs/031-model-prompt-profile-and-provider-governance/.env.qa031",
+        "specs/031-model-prompt-profile-and-provider-governance/qa031_user_guide.md",
+        "specs/031-model-prompt-profile-and-provider-governance/pr_notes.md",
+        "specs/_autopilot/react-ui-roadmap/031-model-prompt-profile-and-provider-governance/validation.yml",
+        "README.md",
+        "docs/quickstart.md"
+      ],
+      "notes": "Implemented the additive React governance workspace with backend-owned provider, credential, prompt, profile, routing, policy history, and provenance contracts; generated React types; platform-admin-only provider actions; safe prompt preview and profile/routing mutations; focused backend/frontend tests; QA docs; validation manifest; and all 83 tasks marked complete."
+    },
+    {
+      "spec": "031",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/031-model-prompt-profile-and-provider-governance/validation.yml",
+        "specs/031-model-prompt-profile-and-provider-governance/qa031.md",
+        "specs/031-model-prompt-profile-and-provider-governance/qa031_ui.md",
+        "specs/031-model-prompt-profile-and-provider-governance/qa031_user_guide.md",
+        "output/playwright/qa031_ui/qa031-react-governance-denied.png",
+        "output/playwright/qa031_ui/qa031-react-governance-platform.png",
+        "output/playwright/qa031_ui/qa031-react-governance-tenant.png",
+        "output/playwright/qa031_ui/qa031-react-governance-prompt-preview.png",
+        "output/playwright/qa031_ui/qa031-react-governance-profile-routing.png",
+        "output/playwright/qa031_ui/qa031-react-governance-cross-tenant.png"
+      ],
+      "notes": "Passed QA document validation, full Spec QA including curl governance contracts, ruff, format, mypy, full coverage, focused governance tests, frontend typecheck/tests/build, generated contract drift check, and Playwright UI validation. Screenshot and artifact scan found no qa031 secret marker, raw prompt/completion/provider marker, local path, provider token, authorization header, or cross-tenant Globex leakage."
+    },
+    {
+      "spec": "032",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/spec.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 032 feature specification and quality checklist from generated prompt; branch is codex/032-react-skill-registry-and-tool-execution-lifecycle."
+    },
+    {
+      "spec": "032",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for guided platform publication and tenant installation wizards, upload precedence over paste, no raw manifest echo, publish readiness gates, authorized credential reference choices, explicit queued smoke-test and connector diagnostic refresh, backend-owned binding context choices, stale conflict recovery, and safe summary-only manifest/tool evidence."
+    },
+    {
+      "spec": "032",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/plan.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/research.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/data-model.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/contracts/skill-lifecycle.openapi.yaml",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/contracts/skill-lifecycle-ui.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed the additive React skill lifecycle plan around existing skill registry and SkillExecutionGateway services, guided platform and tenant workflows, generated React contracts, explicit queued smoke/diagnostic actions, binding eligibility previews, audit-safe summaries, and browser-first validation."
+    },
+    {
+      "spec": "032",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/tasks.md"
+      ],
+      "notes": "Generated 82 file-specific tasks covering shared schemas, generated TypeScript contracts, protected routes, platform publication, tenant discovery/install/configuration, queued readiness and connector diagnostics, binding eligibility, gateway diagnostics, bounded audit timeline, dual-auth tests, Playwright evidence, QA docs, validation manifest, and reviewer notes."
+    },
+    {
+      "spec": "032",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/spec.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/plan.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/data-model.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/tasks.md"
+      ],
+      "notes": "Analysis found one HIGH task coverage gap around platform-only tenant grant mutation; remediated tasks to explicitly cover tenant grant mutation route tests, service builders, routes, frontend helpers, and the platform grant form. No remaining CRITICAL or HIGH findings; implementation may proceed."
+    },
+    {
+      "spec": "032",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_skill_lifecycle.py",
+        "src/multi_agent_platform/admin/skill_lifecycle.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/components/skills/SkillLifecyclePage.tsx",
+        "frontend/admin/src/components/skills/SkillLifecycleSectionNav.tsx",
+        "frontend/admin/src/components/skills/PackagePublicationPanel.tsx",
+        "frontend/admin/src/components/skills/ValidationFindingsPanel.tsx",
+        "frontend/admin/src/components/skills/PackageLifecyclePanel.tsx",
+        "frontend/admin/src/components/skills/TenantSkillLifecyclePanel.tsx",
+        "frontend/admin/src/components/skills/CredentialReadinessPanel.tsx",
+        "frontend/admin/src/components/skills/ConnectorReadinessPanel.tsx",
+        "frontend/admin/src/components/skills/SmokeTestPanel.tsx",
+        "frontend/admin/src/components/skills/BindingAndDiagnosticsPanel.tsx",
+        "frontend/admin/src/components/skills/SkillLifecycleAuditPanel.tsx",
+        "frontend/admin/src/components/skills/SkillLifecyclePage.test.tsx",
+        "frontend/admin/src/components/skills/PackagePublicationPanel.test.tsx",
+        "frontend/admin/src/components/skills/TenantSkillLifecyclePanel.test.tsx",
+        "frontend/admin/src/components/skills/CredentialReadinessPanel.test.tsx",
+        "frontend/admin/src/components/skills/BindingAndDiagnosticsPanel.test.tsx",
+        "frontend/admin/src/components/skills/SkillLifecycleAuditPanel.test.tsx",
+        "frontend/admin/src/test/skillLifecycleTestData.ts",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_skill_lifecycle_schema.py",
+        "tests/unit/admin/test_skill_lifecycle_service.py",
+        "tests/performance/skills/test_skill_lifecycle_queries.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/qa032.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/qa032_ui.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/.env.qa032",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/qa032_user_guide.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/pr_notes.md",
+        "specs/_autopilot/react-ui-roadmap/032-react-skill-registry-and-tool-execution-lifecycle/validation.yml",
+        "README.md",
+        "docs/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Implemented the additive React skill lifecycle workspace with safe backend contracts, platform package publication, tenant discovery/install/configuration, credential readiness, queued smoke-test refresh, connector diagnostics, read-only binding previews with explicit blocked tool evidence, audit timeline, generated React types, focused backend/frontend tests, QA docs, validation manifest, and all 82 tasks marked complete."
+    },
+    {
+      "spec": "032",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/032-react-skill-registry-and-tool-execution-lifecycle/validation.yml",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/qa032.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/qa032_ui.md",
+        "specs/032-react-skill-registry-and-tool-execution-lifecycle/qa032_user_guide.md",
+        "output/playwright/qa032_ui/qa032-react-skills-denied.png",
+        "output/playwright/qa032_ui/qa032-react-skills-platform.png",
+        "output/playwright/qa032_ui/qa032-react-skills-publication.png",
+        "output/playwright/qa032_ui/qa032-react-skills-tenant.png",
+        "output/playwright/qa032_ui/qa032-react-skills-credential.png",
+        "output/playwright/qa032_ui/qa032-react-skills-readiness.png",
+        "output/playwright/qa032_ui/qa032-react-skills-diagnostics.png",
+        "output/playwright/qa032_ui/qa032-react-skills-binding.png",
+        "output/playwright/qa032_ui/qa032-react-skills-audit.png",
+        "output/playwright/qa032_ui/qa032-react-skills-cross-tenant.png"
+      ],
+      "notes": "Passed QA document validation, full Spec QA including QA032 curl contracts, ruff, format, mypy, full coverage, focused skill lifecycle tests, frontend typecheck/tests/build, generated contract drift check, and Playwright UI validation. Screenshot and artifact scan found no qa032 secret marker, raw manifest, resolved credential, authorization header, provider token, private message, connector request/response, raw tool output, stack trace, local path, or cross-tenant Globex leakage."
+    },
+    {
+      "spec": "033",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/033-react-agent-and-workflow-test-bench/spec.md",
+        "specs/033-react-agent-and-workflow-test-bench/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 033 feature specification and quality checklist from generated prompt; branch is codex/033-react-agent-and-workflow-test-bench."
+    },
+    {
+      "spec": "033",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/033-react-agent-and-workflow-test-bench/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for guided suite/case forms, mock model/mock tools default mode, policy-approved real dependency probes, redacted evaluator evidence, backend-owned progress updates, structured assertion editing, artifact references, current target revision binding, stale evidence handling, and publish-gate links."
+    },
+    {
+      "spec": "033",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/033-react-agent-and-workflow-test-bench/plan.md",
+        "specs/033-react-agent-and-workflow-test-bench/research.md",
+        "specs/033-react-agent-and-workflow-test-bench/data-model.md",
+        "specs/033-react-agent-and-workflow-test-bench/contracts/test-bench.openapi.yaml",
+        "specs/033-react-agent-and-workflow-test-bench/contracts/test-bench-ui.md",
+        "specs/033-react-agent-and-workflow-test-bench/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed additive React test bench planning around existing Spec 015 test bench services, Spec 020 runtime evidence, Spec 024 publish-gate evidence, Spec 025 gateway metadata, generated React contracts, safe mock-first execution, artifact references, current-revision gate evidence, and browser-first validation."
+    },
+    {
+      "spec": "033",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/033-react-agent-and-workflow-test-bench/tasks.md"
+      ],
+      "notes": "Generated 104 file-specific, dependency-ordered tasks across setup, foundational contracts, five independently testable user stories, QA documentation, validation manifest reconciliation, dual-auth backend coverage, Playwright flows, redaction scans, and full Spec QA evidence."
+    },
+    {
+      "spec": "033",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/033-react-agent-and-workflow-test-bench/spec.md",
+        "specs/033-react-agent-and-workflow-test-bench/plan.md",
+        "specs/033-react-agent-and-workflow-test-bench/tasks.md"
+      ],
+      "notes": "Completed cross-artifact analysis with no CRITICAL or HIGH blockers. Noted medium implementation guardrails for normalized threshold bounds and explicit Playwright screenshot flow naming, plus a low reminder that React must display backend evaluator summaries only."
+    },
+    {
+      "spec": "033",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_test_bench.py",
+        "src/multi_agent_platform/testing/agent_bench/react_test_bench.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/components/testBench/TestBenchPage.tsx",
+        "frontend/admin/src/components/testBench/TestBenchSectionNav.tsx",
+        "frontend/admin/src/components/testBench/TestBenchDashboardPanel.tsx",
+        "frontend/admin/src/components/testBench/SuiteListPanel.tsx",
+        "frontend/admin/src/components/testBench/SuiteAuthoringPanel.tsx",
+        "frontend/admin/src/components/testBench/AssertionAndTargetPanel.tsx",
+        "frontend/admin/src/components/testBench/RunLauncherPanel.tsx",
+        "frontend/admin/src/components/testBench/RunProgressPanel.tsx",
+        "frontend/admin/src/components/testBench/RunListPanel.tsx",
+        "frontend/admin/src/components/testBench/RunDetailPanel.tsx",
+        "frontend/admin/src/components/testBench/TraceAndArtifactPanel.tsx",
+        "frontend/admin/src/components/testBench/PublishGateEvidencePanel.tsx",
+        "frontend/admin/src/components/testBench/TestBenchAuditPanel.tsx",
+        "frontend/admin/src/test/testBenchTestData.ts",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_test_bench_schema.py",
+        "tests/unit/admin/test_test_bench_react_service.py",
+        "tests/performance/test_bench/test_react_test_bench_queries.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "README.md",
+        "docs/quickstart.md",
+        "specs/033-react-agent-and-workflow-test-bench/pr_notes.md",
+        "specs/033-react-agent-and-workflow-test-bench/tasks.md"
+      ],
+      "notes": "Implemented the additive React test bench workspace with safe backend contracts, deterministic mock-first run evidence, suite/case authoring, target revision binding, run diagnostics, trace and artifact summaries, publish-gate evidence, audit timeline, generated React types, focused backend/frontend coverage, docs, and all 104 tasks marked complete."
+    },
+    {
+      "spec": "033",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/033-react-agent-and-workflow-test-bench/validation.yml",
+        "specs/033-react-agent-and-workflow-test-bench/qa033.md",
+        "specs/033-react-agent-and-workflow-test-bench/qa033_ui.md",
+        "specs/033-react-agent-and-workflow-test-bench/qa033_user_guide.md",
+        "specs/033-react-agent-and-workflow-test-bench/.env.qa033",
+        "output/playwright/qa033_ui/qa033-react-test-bench-denied.png",
+        "output/playwright/qa033_ui/qa033-react-test-bench-tenant.png",
+        "output/playwright/qa033_ui/qa033-react-test-bench-authoring.png",
+        "output/playwright/qa033_ui/qa033-react-test-bench-result.png",
+        "output/playwright/qa033_ui/qa033-react-test-bench-run.png",
+        "output/playwright/qa033_ui/qa033-react-test-bench-gates.png",
+        "output/playwright/qa033_ui/qa033-react-test-bench-audit.png"
+      ],
+      "notes": "Passed QA document validation, full Spec QA including QA033 curl contracts, ruff, format, mypy, full coverage, focused test bench tests, frontend typecheck/tests/build, generated contract drift check, Playwright UI validation, and redaction scan with no unsafe matches."
+    },
+    {
+      "spec": "034",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/034-react-user-and-tenant-membership-administration/spec.md",
+        "specs/034-react-user-and-tenant-membership-administration/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 034 feature specification and quality checklist from generated prompt; branch is codex/034-react-user-and-tenant-membership-administration."
+    },
+    {
+      "spec": "034",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/034-react-user-and-tenant-membership-administration/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for safe directory fields, backend-owned search filters, idempotent invite replay display, role grant wizard behavior, confirmation-required actions, bounded access history, and masked email/subject display."
+    },
+    {
+      "spec": "034",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/034-react-user-and-tenant-membership-administration/plan.md",
+        "specs/034-react-user-and-tenant-membership-administration/research.md",
+        "specs/034-react-user-and-tenant-membership-administration/data-model.md",
+        "specs/034-react-user-and-tenant-membership-administration/contracts/memberships-react.openapi.yaml",
+        "specs/034-react-user-and-tenant-membership-administration/contracts/memberships-react-ui.md",
+        "specs/034-react-user-and-tenant-membership-administration/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed additive React membership administration planning around existing Spec 018 membership services, generated React contracts, safe identity summaries, idempotent invites, scoped role grants, status workflows, bounded access history, audit evidence, and browser-first validation."
+    },
+    {
+      "spec": "034",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/034-react-user-and-tenant-membership-administration/tasks.md"
+      ],
+      "notes": "Generated 93 file-specific, dependency-ordered tasks covering shared contracts, platform-admin workflows, tenant-scoped workflows, access history, safe identifier details, audit timeline, dual-auth tests, QA docs, Playwright flows, redaction scans, and full Spec QA evidence."
+    },
+    {
+      "spec": "034",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/034-react-user-and-tenant-membership-administration/spec.md",
+        "specs/034-react-user-and-tenant-membership-administration/plan.md",
+        "specs/034-react-user-and-tenant-membership-administration/quickstart.md",
+        "specs/034-react-user-and-tenant-membership-administration/tasks.md"
+      ],
+      "notes": "Analysis found no remaining CRITICAL or HIGH blockers after tightening the redaction scan so authorized platform Globex labels do not falsely fail QA while unsafe tenant-label markers remain blocked."
+    },
+    {
+      "spec": "034",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_membership_react.py",
+        "src/multi_agent_platform/admin/memberships/react_memberships.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/components/memberships/MembershipPage.tsx",
+        "frontend/admin/src/components/memberships/MembershipSectionNav.tsx",
+        "frontend/admin/src/components/memberships/MembershipOverviewPanel.tsx",
+        "frontend/admin/src/components/memberships/UserDirectoryPanel.tsx",
+        "frontend/admin/src/components/memberships/MaskedIdentityCell.tsx",
+        "frontend/admin/src/components/memberships/RawIdentifierDetailPanel.tsx",
+        "frontend/admin/src/components/memberships/InvitationPanel.tsx",
+        "frontend/admin/src/components/memberships/PrincipalLinkPanel.tsx",
+        "frontend/admin/src/components/memberships/RoleGrantPanel.tsx",
+        "frontend/admin/src/components/memberships/StatusActionsPanel.tsx",
+        "frontend/admin/src/components/memberships/MembershipMutationResultPanel.tsx",
+        "frontend/admin/src/components/memberships/AccessHistoryPanel.tsx",
+        "frontend/admin/src/components/memberships/MembershipAuditPanel.tsx",
+        "frontend/admin/src/test/membershipTestData.ts",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_membership_react_schema.py",
+        "tests/unit/admin/memberships/test_react_membership_service.py",
+        "tests/performance/memberships/test_react_membership_queries.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "README.md",
+        "docs/quickstart.md",
+        "specs/034-react-user-and-tenant-membership-administration/qa034.md",
+        "specs/034-react-user-and-tenant-membership-administration/qa034_ui.md",
+        "specs/034-react-user-and-tenant-membership-administration/.env.qa034",
+        "specs/034-react-user-and-tenant-membership-administration/qa034_user_guide.md",
+        "specs/034-react-user-and-tenant-membership-administration/pr_notes.md",
+        "specs/034-react-user-and-tenant-membership-administration/tasks.md"
+      ],
+      "notes": "Implemented the additive React membership workspace with safe backend contracts, deterministic membership projections, platform and tenant workflows for invitations, principal linking, role grants, revocation, principal and membership status, bounded access history, audit evidence, generated React contracts, docs, and all 93 tasks marked complete."
+    },
+    {
+      "spec": "034",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/034-react-user-and-tenant-membership-administration/validation.yml",
+        "specs/034-react-user-and-tenant-membership-administration/qa034.md",
+        "specs/034-react-user-and-tenant-membership-administration/qa034_ui.md",
+        "specs/034-react-user-and-tenant-membership-administration/qa034_user_guide.md",
+        "specs/034-react-user-and-tenant-membership-administration/.env.qa034",
+        "output/playwright/qa034_ui/qa034-react-memberships-denied.png",
+        "output/playwright/qa034_ui/qa034-react-memberships-platform.png",
+        "output/playwright/qa034_ui/qa034-react-memberships-invite-link-grant.png",
+        "output/playwright/qa034_ui/qa034-react-memberships-status.png",
+        "output/playwright/qa034_ui/qa034-react-memberships-history-audit.png",
+        "output/playwright/qa034_ui/qa034-react-memberships-tenant.png",
+        "output/playwright/qa034_ui/qa034-react-memberships-tenant-actions.png"
+      ],
+      "notes": "Passed QA document validation, full Spec QA including QA034 curl contracts, ruff, format, mypy, full coverage, focused membership tests, frontend typecheck/tests/build, generated contract drift check, Playwright UI validation, and explicit redaction scan with no unsafe matches."
+    },
+    {
+      "spec": "035",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/035-react-usage-and-cost-analytics/spec.md",
+        "specs/035-react-usage-and-cost-analytics/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 035 feature specification and completed quality checklist from the generated React usage and cost analytics roadmap prompt; branch is codex/035-react-usage-and-cost-analytics."
+    },
+    {
+      "spec": "035",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/035-react-usage-and-cost-analytics/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for last-7-days default range, daily grouping, summary/trend/rollup/drilldown primary views, confidence badges, safe filter-snapshot exports, tenant-only visibility, readable cost precision, and empty/partial/unavailable states."
+    },
+    {
+      "spec": "035",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/035-react-usage-and-cost-analytics/plan.md",
+        "specs/035-react-usage-and-cost-analytics/research.md",
+        "specs/035-react-usage-and-cost-analytics/data-model.md",
+        "specs/035-react-usage-and-cost-analytics/contracts/usage-react.openapi.yaml",
+        "specs/035-react-usage-and-cost-analytics/contracts/usage-react-ui.md",
+        "specs/035-react-usage-and-cost-analytics/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed additive React usage analytics planning around existing Spec 016 usage services, pricing metadata, safe exports, platform/tenant visibility, confidence states, bounded rollups and drilldowns, backend-owned filters, export audit evidence, and browser-first validation."
+    },
+    {
+      "spec": "035",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/035-react-usage-and-cost-analytics/tasks.md"
+      ],
+      "notes": "Generated 84 file-specific, dependency-ordered tasks covering usage React contracts, dashboard health, attribution rollups, event drilldowns, audited exports, dual-auth route tests, QA docs, Playwright flows, redaction scans, and full Spec QA evidence."
+    },
+    {
+      "spec": "035",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/035-react-usage-and-cost-analytics/spec.md",
+        "specs/035-react-usage-and-cost-analytics/plan.md",
+        "specs/035-react-usage-and-cost-analytics/research.md",
+        "specs/035-react-usage-and-cost-analytics/data-model.md",
+        "specs/035-react-usage-and-cost-analytics/contracts/usage-react.openapi.yaml",
+        "specs/035-react-usage-and-cost-analytics/contracts/usage-react-ui.md",
+        "specs/035-react-usage-and-cost-analytics/quickstart.md",
+        "specs/035-react-usage-and-cost-analytics/tasks.md"
+      ],
+      "notes": "Analysis found no CRITICAL or HIGH blockers after tightening Spec 016 grouping coverage to include sub-agent, execution mode, principal, and tenant dimensions where authorized, and clarifying export audit persistence and audit-unavailable behavior."
+    },
+    {
+      "spec": "035",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_usage_react.py",
+        "src/multi_agent_platform/admin/usage/react_usage.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/components/usage/UsagePage.tsx",
+        "frontend/admin/src/components/usage/UsageHeader.tsx",
+        "frontend/admin/src/components/usage/UsageFilterBar.tsx",
+        "frontend/admin/src/components/usage/UsageGroupSelector.tsx",
+        "frontend/admin/src/components/usage/UsageSummaryCards.tsx",
+        "frontend/admin/src/components/usage/UsageTrendPanel.tsx",
+        "frontend/admin/src/components/usage/UsageStatePanel.tsx",
+        "frontend/admin/src/components/usage/UsageRollupPanel.tsx",
+        "frontend/admin/src/components/usage/UsageAttributionBadges.tsx",
+        "frontend/admin/src/components/usage/UsageEventDrilldown.tsx",
+        "frontend/admin/src/components/usage/UsageExportPanel.tsx",
+        "frontend/admin/src/components/usage/UsageExportDetailPage.tsx",
+        "frontend/admin/src/test/usageTestData.ts",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_usage_react_schema.py",
+        "tests/unit/admin/usage/test_react_usage_service.py",
+        "tests/performance/usage/test_react_usage_queries.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "README.md",
+        "docs/quickstart.md",
+        "specs/035-react-usage-and-cost-analytics/qa035.md",
+        "specs/035-react-usage-and-cost-analytics/qa035_ui.md",
+        "specs/035-react-usage-and-cost-analytics/.env.qa035",
+        "specs/035-react-usage-and-cost-analytics/qa035_user_guide.md",
+        "specs/035-react-usage-and-cost-analytics/pr_notes.md",
+        "specs/035-react-usage-and-cost-analytics/tasks.md"
+      ],
+      "notes": "Implemented the additive React usage and cost analytics workspace with safe backend schemas, deterministic platform/tenant projections, summary cards, trend buckets, all required rollup dimensions, graph/gateway/attempt/tool attribution, bounded drilldowns, audited export summaries, export detail routing, generated React contracts, docs, and all 84 tasks marked complete."
+    },
+    {
+      "spec": "035",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/035-react-usage-and-cost-analytics/validation.yml",
+        "specs/035-react-usage-and-cost-analytics/qa035.md",
+        "specs/035-react-usage-and-cost-analytics/qa035_ui.md",
+        "specs/035-react-usage-and-cost-analytics/qa035_user_guide.md",
+        "specs/035-react-usage-and-cost-analytics/.env.qa035",
+        "output/playwright/qa035_ui/qa035-react-usage-denied.png",
+        "output/playwright/qa035_ui/qa035-react-usage-platform.png",
+        "output/playwright/qa035_ui/qa035-react-usage-rollups.png",
+        "output/playwright/qa035_ui/qa035-react-usage-drilldown.png",
+        "output/playwright/qa035_ui/qa035-react-usage-export.png",
+        "output/playwright/qa035_ui/qa035-react-usage-export-detail.png",
+        "output/playwright/qa035_ui/qa035-react-usage-tenant.png"
+      ],
+      "notes": "Passed QA document validation, full Spec QA including QA035 curl contracts, ruff, format, mypy, full coverage, focused usage tests, frontend typecheck/tests/build, generated contract drift check, Playwright UI validation, and explicit post-screenshot redaction scan with no unsafe matches."
+    },
+    {
+      "spec": "036",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/036-react-channel-telegram-and-briefing-preferences/spec.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 036 feature specification and quality checklist from the generated React channel, Telegram, and briefing preferences roadmap prompt; branch is codex/036-react-channel-telegram-and-briefing-preferences."
+    },
+    {
+      "spec": "036",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/036-react-channel-telegram-and-briefing-preferences/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for safe run status links, one-time link token display, alias CRUD/readiness behavior, bounded delivery diagnostics, preference import/export scope, scheduled time as profile metadata, explicit webhook validation refresh, and tenant-admin permission boundaries."
+    },
+    {
+      "spec": "036",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/036-react-channel-telegram-and-briefing-preferences/plan.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/research.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/data-model.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/contracts/channel-telegram-briefing-react.openapi.yaml",
+        "specs/036-react-channel-telegram-and-briefing-preferences/contracts/channel-telegram-briefing-react-ui.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed additive React channel, Telegram, alias, delivery diagnostics, safe run status, and briefing preference planning around existing Specs 006, 017, 022, and 023 services, mock-safe local validation, link-token one-time display, tenant boundaries, redacted preference summaries, and explicit backend-owned contracts."
+    },
+    {
+      "spec": "036",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/036-react-channel-telegram-and-briefing-preferences/tasks.md"
+      ],
+      "notes": "Generated 84 file-specific, dependency-ordered tasks covering channel/Telegram/briefing React contracts, readiness dashboards, alias and link-token flows, delivery diagnostics, safe run status, preference profiles, dual-auth route tests, QA docs, Playwright flows, redaction scans, and full Spec QA evidence."
+    },
+    {
+      "spec": "036",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/036-react-channel-telegram-and-briefing-preferences/spec.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/plan.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/tasks.md"
+      ],
+      "notes": "Analysis found no CRITICAL or HIGH blockers. Token display, Telegram identifier masking, preference redaction, tenant scoping, webhook validation, delivery audit evidence, denied/degraded states, and dual-auth validation are covered by requirements and implementation tasks."
+    },
+    {
+      "spec": "036",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_channel_telegram_briefing_react.py",
+        "src/multi_agent_platform/admin/channel_telegram_briefing/react_channel_telegram_briefing.py",
+        "src/multi_agent_platform/admin/channel_telegram_briefing/__init__.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/components/channelTelegramBriefing/",
+        "frontend/admin/src/test/channelTelegramBriefingTestData.ts",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_channel_telegram_briefing_react_schema.py",
+        "tests/unit/admin/channel_telegram_briefing/test_react_channel_telegram_briefing_service.py",
+        "tests/performance/channel_telegram_briefing/test_react_channel_telegram_briefing_queries.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "README.md",
+        "docs/quickstart.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/qa036.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/qa036_ui.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/qa036_user_guide.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/.env.qa036",
+        "specs/036-react-channel-telegram-and-briefing-preferences/pr_notes.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/tasks.md"
+      ],
+      "notes": "Implemented the additive React channel, Telegram, alias, delivery diagnostics, safe run status, and briefing preference workspace with backend-owned redaction, generated contracts, tenant-scoped routes, React panels, docs, and all 84 tasks marked complete."
+    },
+    {
+      "spec": "036",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/036-react-channel-telegram-and-briefing-preferences/validation.yml",
+        "specs/036-react-channel-telegram-and-briefing-preferences/qa036.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/qa036_ui.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/qa036_user_guide.md",
+        "specs/036-react-channel-telegram-and-briefing-preferences/.env.qa036",
+        "output/playwright/qa036_ui/qa036-react-channels-denied.png",
+        "output/playwright/qa036_ui/qa036-react-channels-platform.png",
+        "output/playwright/qa036_ui/qa036-react-channels-admin-actions.png",
+        "output/playwright/qa036_ui/qa036-react-channels-run-status.png",
+        "output/playwright/qa036_ui/qa036-react-channels-tenant-admin.png",
+        "output/playwright/qa036_ui/qa036-react-channels-preferences.png",
+        "output/playwright/qa036_ui/qa036-react-channels-tenant-user.png"
+      ],
+      "notes": "Passed QA document validation, full Spec QA including QA036 curl contracts, ruff, format, mypy, full coverage, frontend typecheck/tests/build, generated contract drift check, focused channel tests, Playwright UI validation, and explicit post-screenshot redaction scan with no unsafe matches."
+    },
+    {
+      "spec": "037",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/spec.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 037 migration hardening and Jinja retirement specification from the generated roadmap prompt with cautious, auditable, reversible parity and retirement criteria."
+    },
+    {
+      "spec": "037",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/spec.md"
+      ],
+      "notes": "Recorded autopilot clarifications for retirement criteria, direct-link redirect semantics, feature flag defaults, visual/accessibility/browser scope, performance budgets, and rollback defaults."
+    },
+    {
+      "spec": "037",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/plan.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/research.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/data-model.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/contracts/migration-hardening-react.openapi.yaml",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/contracts/migration-hardening-react-ui.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Completed additive migration hardening planning with backend-owned parity contracts, React home dashboard, route decisions, rollback, accessibility, performance, redaction, tenant isolation, docs, and validation strategy."
+    },
+    {
+      "spec": "037",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/tasks.md"
+      ],
+      "notes": "Generated 67 file-specific, dependency-ordered tasks covering migration parity contracts, React home dashboard, route decisions, rollback, performance/accessibility/redaction/tenant evidence, dual-auth tests, QA docs, Playwright, and final roadmap closure."
+    },
+    {
+      "spec": "037",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/spec.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/plan.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/tasks.md"
+      ],
+      "notes": "Analysis found no CRITICAL or HIGH blockers. Premature deletion, direct-link safety, rollback, dual-auth validation, redaction, tenant isolation, accessibility, performance, route parity, and documentation coverage are represented in the artifacts and tasks."
+    },
+    {
+      "spec": "037",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_migration_hardening_react.py",
+        "src/multi_agent_platform/admin/migration_hardening/react_migration_hardening.py",
+        "src/multi_agent_platform/admin/migration_hardening/__init__.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/components/migrationHardening/",
+        "frontend/admin/src/test/migrationHardeningTestData.ts",
+        "frontend/admin/src/styles/admin.css",
+        "tests/unit/api/test_admin_migration_hardening_react_schema.py",
+        "tests/unit/admin/test_migration_hardening_service.py",
+        "tests/performance/migration_hardening/test_react_migration_hardening_queries.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/test_admin_react_routes.py",
+        "README.md",
+        "docs/quickstart.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_ui.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_user_guide.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/.env.qa037",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/pr_notes.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/tasks.md"
+      ],
+      "notes": "Implemented the React admin migration hardening dashboard, backend parity and rollback projections, migration shell/API routes, protected surfaces, generated TypeScript contracts, frontend panels, tests, QA docs, and marked all 67 tasks complete."
+    },
+    {
+      "spec": "037",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "specs/_autopilot/react-ui-roadmap/037-react-admin-migration-hardening-and-jinja-retirement/validation.yml",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_ui.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_user_guide.md",
+        "specs/037-react-admin-migration-hardening-and-jinja-retirement/.env.qa037",
+        "output/playwright/qa037_ui/qa037-react-migration-denied.png",
+        "output/playwright/qa037_ui/qa037-react-home-platform.png",
+        "output/playwright/qa037_ui/qa037-react-migration-platform.png",
+        "output/playwright/qa037_ui/qa037-react-migration-tenant-admin.png",
+        "output/playwright/qa037_ui/qa037-react-migration-tenant-user.png"
+      ],
+      "notes": "Passed focused backend tests, frontend typecheck/tests/build, QA document validation, full Spec QA including QA037 curl contracts, ruff, format, mypy, full coverage, generated contract drift check, Playwright UI validation, and explicit post-screenshot redaction scan with no unsafe matches. React UI roadmap Specs 026 through 037 are complete."
+    }
+  ]
 }

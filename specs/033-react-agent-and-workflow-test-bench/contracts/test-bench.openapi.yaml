@@ -1,0 +1,233 @@
+openapi: 3.1.0
+info:
+  title: React Agent And Workflow Test Bench Contracts
+  version: 0.1.0
+paths:
+  /admin/app/test-bench:
+    get:
+      summary: Render React test bench shell
+      responses:
+        "200":
+          description: React admin shell
+        "401":
+          description: Safe unauthenticated problem
+        "403":
+          description: Safe unauthorized problem
+  /admin/app/test-bench/bootstrap.json:
+    get:
+      summary: Fetch test bench dashboard
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Test bench dashboard
+        "401":
+          description: Safe unauthenticated problem
+        "403":
+          description: Safe unauthorized problem
+  /admin/app/test-bench/suites:
+    get:
+      summary: List suites
+      responses:
+        "200":
+          description: Suite list
+    post:
+      summary: Save suite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestSuiteSaveRequest"
+      responses:
+        "200":
+          description: Safe mutation result
+  /admin/app/test-bench/suites/{suite_id}:
+    get:
+      summary: Fetch suite detail
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Suite detail
+    post:
+      summary: Update suite
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestSuiteSaveRequest"
+      responses:
+        "200":
+          description: Safe mutation result
+  /admin/app/test-bench/suites/{suite_id}/cases:
+    post:
+      summary: Save test case
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestCaseSaveRequest"
+      responses:
+        "200":
+          description: Safe mutation result
+  /admin/app/test-bench/suites/{suite_id}/runs:
+    post:
+      summary: Launch suite run
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestRunLaunchRequest"
+      responses:
+        "200":
+          description: Safe mutation result
+  /admin/app/test-bench/runs.json:
+    get:
+      summary: List recent runs
+      responses:
+        "200":
+          description: Run list
+  /admin/app/test-bench/runs/{run_id}.json:
+    get:
+      summary: Fetch run detail
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Run detail
+  /admin/app/test-bench/gates.json:
+    get:
+      summary: Fetch publish-gate evidence
+      responses:
+        "200":
+          description: Gate evidence list
+  /admin/app/test-bench/artifacts/{artifact_reference_id}.json:
+    get:
+      summary: Fetch artifact metadata
+      parameters:
+        - name: artifact_reference_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Artifact metadata
+  /admin/app/test-bench/audit.json:
+    get:
+      summary: Fetch test bench audit timeline
+      responses:
+        "200":
+          description: Audit timeline
+components:
+  schemas:
+    TestSuiteSaveRequest:
+      type: object
+      required:
+        - name
+        - target_type
+        - target_id
+        - target_revision
+        - default_safe_mode
+        - pass_threshold
+        - idempotency_key
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        target_type:
+          type: string
+        target_id:
+          type: string
+        target_revision:
+          type: string
+        default_safe_mode:
+          type: string
+        pass_threshold:
+          type: number
+        required_for_publish:
+          type: boolean
+        revision:
+          type:
+            - string
+            - "null"
+        idempotency_key:
+          type: string
+    TestCaseSaveRequest:
+      type: object
+      required:
+        - name
+        - fixture_summary
+        - expected_contract_summary
+        - assertions
+        - idempotency_key
+      properties:
+        name:
+          type: string
+        fixture_summary:
+          type: string
+        expected_contract_summary:
+          type: string
+        assertions:
+          type: array
+          items:
+            type: object
+        evaluator_reference_id:
+          type:
+            - string
+            - "null"
+        revision:
+          type:
+            - string
+            - "null"
+        idempotency_key:
+          type: string
+    TestRunLaunchRequest:
+      type: object
+      required:
+        - target_revision
+        - safe_mode
+        - idempotency_key
+      properties:
+        target_revision:
+          type: string
+        safe_mode:
+          type: string
+        run_reason:
+          type: string
+        idempotency_key:
+          type: string
