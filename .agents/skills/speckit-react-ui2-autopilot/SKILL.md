@@ -53,7 +53,14 @@ for f in specs/_autopilot/react-ui2-roadmap/*/validation.yml; do
 done
 ```
 
-6. Read the active constitution, the completed React UI artifacts from Specs
+6. Confirm the prior React UI roadmap is complete before starting:
+   - `specs/_autopilot/react-ui-roadmap/queue.json` exists when available.
+   - Specs `026` through `037` are marked completed in that queue when status
+     data is present.
+   - `specs/037-react-admin-migration-hardening-and-jinja-retirement` exists
+     with completed QA artifacts.
+   Stop before Spec `038` if this prerequisite is not true.
+7. Read the active constitution, the completed React UI artifacts from Specs
    `026` through `037`, the current Jinja inventory state, and git status before
    starting.
 
