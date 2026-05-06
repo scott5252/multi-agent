@@ -46,6 +46,7 @@ from multi_agent_platform.api.schemas.admin_membership_react import (
 )
 from multi_agent_platform.api.schemas.admin_migration_hardening_react import (
     AdminMigrationHardeningDashboard,
+    JinjaInventoryDashboard,
     MigrationRollbackPlan,
     MigrationRouteGroup,
 )
@@ -224,6 +225,7 @@ def schema_payload() -> dict[str, Any]:
         "AdminMigrationHardeningDashboard": (
             AdminMigrationHardeningDashboard.model_json_schema()
         ),
+        "JinjaInventoryDashboard": JinjaInventoryDashboard.model_json_schema(),
         "MigrationRouteGroup": MigrationRouteGroup.model_json_schema(),
         "MigrationRollbackPlan": MigrationRollbackPlan.model_json_schema(),
         "ReactAdminAssetManifestSummary": (
@@ -488,6 +490,40 @@ export type MigrationScopeRequirement =
   | "mixed";
 export type MigrationEvidenceStatus = "pass" | "warning" | "fail";
 export type MigrationProblemSeverity = "info" | "warning" | "blocking";
+export type JinjaInventoryItemType =
+  | "template"
+  | "template_include"
+  | "template_response"
+  | "jinja_import"
+  | "template_helper"
+  | "static_asset"
+  | "route"
+  | "direct_link"
+  | "form_action"
+  | "export"
+  | "upload"
+  | "filter"
+  | "sse_progress"
+  | "mutation"
+  | "denied_state"
+  | "react_host";
+export type JinjaInventoryClassification =
+  | "react_parity_proven"
+  | "react_parity_missing"
+  | "redirectable"
+  | "non_jinja_compatibility_needed"
+  | "safe_to_delete"
+  | "blocked_with_reason";
+export type JinjaInventoryEvidenceType =
+  | "scanner"
+  | "contract_test"
+  | "backend_route_test"
+  | "frontend_test"
+  | "playwright"
+  | "qa_doc"
+  | "redaction"
+  | "tenant_isolation"
+  | "reviewer_note";
 
 export interface ReactAdminPrincipal {{
   principal_id: string;
@@ -2716,6 +2752,60 @@ export interface MigrationProblem {{
   audit_reference: string | null;
 }}
 
+export interface JinjaInventorySummary {{
+  generated_at: string;
+  total_items: number;
+  template_count: number;
+  route_count: number;
+  static_asset_count: number;
+  direct_link_count: number;
+  blocked_count: number;
+  safe_to_delete_count: number;
+  reviewer_signoff_required: boolean;
+}}
+
+export interface JinjaInventoryItem {{
+  item_id: string;
+  item_type: JinjaInventoryItemType;
+  label: string;
+  source_path: string | null;
+  source_line: number | null;
+  legacy_route: string | null;
+  react_path: string | null;
+  methods: string[];
+  owner_category: string;
+  planned_removal_spec: string;
+  classification: JinjaInventoryClassification;
+  evidence_refs: string[];
+  blocker_refs: string[];
+  redirect_preserves: string[];
+  behaviors: string[];
+  reviewer_signoff_required: boolean;
+  notes: string;
+}}
+
+export interface JinjaInventoryGroup {{
+  group_id: string;
+  label: string;
+  planned_removal_spec: string;
+  blocked_count: number;
+  safe_to_delete_count: number;
+  items: JinjaInventoryItem[];
+}}
+
+export interface JinjaInventoryEvidence {{
+  evidence_id: string;
+  evidence_type: JinjaInventoryEvidenceType;
+  reference: string;
+  status: MigrationEvidenceStatus;
+}}
+
+export interface JinjaInventoryDashboard {{
+  summary: JinjaInventorySummary;
+  groups: JinjaInventoryGroup[];
+  evidence: JinjaInventoryEvidence[];
+}}
+
 export interface AdminMigrationHardeningDashboard {{
   page_id: string;
   title: string;
@@ -2729,6 +2819,7 @@ export interface AdminMigrationHardeningDashboard {{
   accessibility_audit: MigrationAccessibilityAudit;
   redaction_sweep: MigrationSweepSummary;
   tenant_isolation_sweep: MigrationSweepSummary;
+  jinja_inventory: JinjaInventoryDashboard;
   states: MigrationProblem[];
 }}
 
@@ -3373,6 +3464,21 @@ export function assertMigrationRollbackPlan(
     throw new Error("Migration rollback plan is missing safe steps");
   }}
   return value as unknown as MigrationRollbackPlan;
+}}
+
+export function assertJinjaInventoryDashboard(
+  value: unknown,
+): JinjaInventoryDashboard {{
+  if (!isObject(value)) {{
+    throw new Error("Jinja inventory dashboard must be an object");
+  }}
+  if (!isObject(value.summary) || !Array.isArray(value.groups)) {{
+    throw new Error("Jinja inventory dashboard is missing grouped evidence");
+  }}
+  if (!Array.isArray(value.evidence)) {{
+    throw new Error("Jinja inventory dashboard is missing evidence references");
+  }}
+  return value as unknown as JinjaInventoryDashboard;
 }}
 
 export function assertTestBenchDashboard(value: unknown): TestBenchDashboard {{

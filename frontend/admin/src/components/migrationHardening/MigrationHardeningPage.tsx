@@ -2,16 +2,19 @@ import { useEffect, useState } from "react";
 
 import {
   fetchMigrationHardeningDashboard,
+  fetchJinjaInventoryDashboard,
   fetchMigrationRollbackPlan,
   fetchMigrationRouteGroups,
 } from "../../api/client";
 import type {
   AdminMigrationHardeningDashboard,
+  JinjaInventoryDashboard,
   MigrationRollbackPlan,
   MigrationRouteGroup,
 } from "../../api/generated/reactAdminApi";
 import { CommonState } from "../states/CommonState";
 import { AccessibilityAuditPanel } from "./AccessibilityAuditPanel";
+import { JinjaInventoryPanel } from "./JinjaInventoryPanel";
 import { MigrationParityMatrix } from "./MigrationParityMatrix";
 import { MigrationStatePanel } from "./MigrationStatePanel";
 import { MigrationSummaryHeader } from "./MigrationSummaryHeader";
@@ -21,15 +24,18 @@ import { RollbackPlanPanel } from "./RollbackPlanPanel";
 
 export function MigrationHardeningPage({
   dashboardUrl,
+  inventoryUrl = withSearch("/admin/app/migration/jinja-inventory.json"),
   rollbackUrl = withSearch("/admin/app/migration/rollback.json"),
   routesUrl = withSearch("/admin/app/migration/routes.json"),
 }: {
   dashboardUrl: string;
+  inventoryUrl?: string;
   rollbackUrl?: string;
   routesUrl?: string;
 }) {
   const [dashboard, setDashboard] =
     useState<AdminMigrationHardeningDashboard | null>(null);
+  const [inventory, setInventory] = useState<JinjaInventoryDashboard | null>(null);
   const [routeGroups, setRouteGroups] = useState<MigrationRouteGroup[] | null>(null);
   const [rollbackPlan, setRollbackPlan] = useState<MigrationRollbackPlan | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -38,12 +44,14 @@ export function MigrationHardeningPage({
     let alive = true;
     loadDashboard({
       dashboardUrl,
+      inventoryUrl,
       rollbackUrl,
       routesUrl,
     })
       .then((payload) => {
         if (alive) {
           setDashboard(payload.dashboard);
+          setInventory(payload.inventory);
           setRouteGroups(payload.routeGroups);
           setRollbackPlan(payload.rollbackPlan);
           setLoadError(null);
@@ -59,15 +67,17 @@ export function MigrationHardeningPage({
     return () => {
       alive = false;
     };
-  }, [dashboardUrl, rollbackUrl, routesUrl]);
+  }, [dashboardUrl, inventoryUrl, rollbackUrl, routesUrl]);
 
   async function refresh() {
     const payload = await loadDashboard({
       dashboardUrl,
+      inventoryUrl,
       rollbackUrl,
       routesUrl,
     });
     setDashboard(payload.dashboard);
+    setInventory(payload.inventory);
     setRouteGroups(payload.routeGroups);
     setRollbackPlan(payload.rollbackPlan);
     setLoadError(null);
@@ -102,6 +112,7 @@ export function MigrationHardeningPage({
   }
 
   const visibleGroups = routeGroups ?? dashboard.route_groups;
+  const visibleInventory = inventory ?? dashboard.jinja_inventory;
   const visibleRollback = rollbackPlan ?? dashboard.rollback_plan;
 
   return (
@@ -110,6 +121,7 @@ export function MigrationHardeningPage({
       {loadError ? <p className="safe-error">{loadError}</p> : null}
       <MigrationStatePanel states={dashboard.states} />
       <MigrationParityMatrix groups={visibleGroups} />
+      <JinjaInventoryPanel inventory={visibleInventory} />
       <div className="migration-evidence-grid">
         <RollbackPlanPanel plan={visibleRollback} />
         <PerformanceBudgetPanel budget={dashboard.performance_budget} />
@@ -125,19 +137,22 @@ export function MigrationHardeningPage({
 
 async function loadDashboard({
   dashboardUrl,
+  inventoryUrl,
   rollbackUrl,
   routesUrl,
 }: {
   dashboardUrl: string;
+  inventoryUrl: string;
   rollbackUrl: string;
   routesUrl: string;
 }) {
-  const [dashboard, routeGroups, rollbackPlan] = await Promise.all([
+  const [dashboard, routeGroups, rollbackPlan, inventory] = await Promise.all([
     fetchMigrationHardeningDashboard(dashboardUrl),
     fetchMigrationRouteGroups(routesUrl),
     fetchMigrationRollbackPlan(rollbackUrl),
+    fetchJinjaInventoryDashboard(inventoryUrl).catch(() => null),
   ]);
-  return { dashboard, rollbackPlan, routeGroups };
+  return { dashboard, inventory, rollbackPlan, routeGroups };
 }
 
 function withSearch(url: string): string {

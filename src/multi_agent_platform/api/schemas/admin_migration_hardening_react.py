@@ -9,6 +9,7 @@ from multi_agent_platform.api.schemas.admin_patterns import safe_text
 from multi_agent_platform.api.schemas.admin_react import ReactAdminScope
 
 MIGRATION_HARDENING_UNSAFE_MARKERS = (
+    "qa038-secret-value",
     "qa037-secret-value",
     "bot token",
     "webhook secret",
@@ -102,6 +103,46 @@ class MigrationProblemSeverity(StrEnum):
     INFO = "info"
     WARNING = "warning"
     BLOCKING = "blocking"
+
+
+class JinjaInventoryItemType(StrEnum):
+    TEMPLATE = "template"
+    TEMPLATE_INCLUDE = "template_include"
+    TEMPLATE_RESPONSE = "template_response"
+    JINJA_IMPORT = "jinja_import"
+    TEMPLATE_HELPER = "template_helper"
+    STATIC_ASSET = "static_asset"
+    ROUTE = "route"
+    DIRECT_LINK = "direct_link"
+    FORM_ACTION = "form_action"
+    EXPORT = "export"
+    UPLOAD = "upload"
+    FILTER = "filter"
+    SSE_PROGRESS = "sse_progress"
+    MUTATION = "mutation"
+    DENIED_STATE = "denied_state"
+    REACT_HOST = "react_host"
+
+
+class JinjaInventoryClassification(StrEnum):
+    REACT_PARITY_PROVEN = "react_parity_proven"
+    REACT_PARITY_MISSING = "react_parity_missing"
+    REDIRECTABLE = "redirectable"
+    NON_JINJA_COMPATIBILITY_NEEDED = "non_jinja_compatibility_needed"
+    SAFE_TO_DELETE = "safe_to_delete"
+    BLOCKED_WITH_REASON = "blocked_with_reason"
+
+
+class JinjaInventoryEvidenceType(StrEnum):
+    SCANNER = "scanner"
+    CONTRACT_TEST = "contract_test"
+    BACKEND_ROUTE_TEST = "backend_route_test"
+    FRONTEND_TEST = "frontend_test"
+    PLAYWRIGHT = "playwright"
+    QA_DOC = "qa_doc"
+    REDACTION = "redaction"
+    TENANT_ISOLATION = "tenant_isolation"
+    REVIEWER_NOTE = "reviewer_note"
 
 
 class MigrationHardeningSummary(SafeMigrationHardeningModel):
@@ -229,6 +270,81 @@ class MigrationProblem(SafeMigrationHardeningModel):
     audit_reference: str | None = None
 
 
+class JinjaInventorySummary(SafeMigrationHardeningModel):
+    generated_at: datetime
+    total_items: int = Field(ge=0)
+    template_count: int = Field(ge=0)
+    route_count: int = Field(ge=0)
+    static_asset_count: int = Field(ge=0)
+    direct_link_count: int = Field(ge=0)
+    blocked_count: int = Field(ge=0)
+    safe_to_delete_count: int = Field(ge=0)
+    reviewer_signoff_required: bool = True
+
+
+class JinjaInventoryItem(SafeMigrationHardeningModel):
+    item_id: str
+    item_type: JinjaInventoryItemType
+    label: str
+    source_path: str | None = None
+    source_line: int | None = Field(default=None, ge=1)
+    legacy_route: str | None = None
+    react_path: str | None = None
+    methods: tuple[str, ...] = Field(default_factory=tuple, max_length=8)
+    owner_category: str
+    planned_removal_spec: str
+    classification: JinjaInventoryClassification
+    evidence_refs: tuple[str, ...] = Field(default_factory=tuple, max_length=12)
+    blocker_refs: tuple[str, ...] = Field(default_factory=tuple, max_length=12)
+    redirect_preserves: tuple[str, ...] = Field(default_factory=tuple, max_length=8)
+    behaviors: tuple[str, ...] = Field(default_factory=tuple, max_length=12)
+    reviewer_signoff_required: bool = True
+    notes: str
+
+    @model_validator(mode="after")
+    def safe_delete_requires_evidence(self) -> JinjaInventoryItem:
+        if self.classification == JinjaInventoryClassification.SAFE_TO_DELETE:
+            if not self.evidence_refs or not self.reviewer_signoff_required:
+                raise ValueError(
+                    "safe-to-delete inventory requires evidence and signoff"
+                )
+            if not self.planned_removal_spec:
+                raise ValueError("safe-to-delete inventory requires removal spec")
+        if self.source_path and self.source_path.startswith("/"):
+            raise ValueError("inventory source paths must be repository-relative")
+        return self
+
+
+class JinjaInventoryGroup(SafeMigrationHardeningModel):
+    group_id: str
+    label: str
+    planned_removal_spec: str
+    blocked_count: int = Field(ge=0)
+    safe_to_delete_count: int = Field(ge=0)
+    items: tuple[JinjaInventoryItem, ...] = Field(default_factory=tuple)
+
+
+class JinjaInventoryEvidence(SafeMigrationHardeningModel):
+    evidence_id: str
+    evidence_type: JinjaInventoryEvidenceType
+    reference: str
+    status: MigrationEvidenceStatus
+
+    @model_validator(mode="after")
+    def reference_must_be_relative_or_safe_id(self) -> JinjaInventoryEvidence:
+        if self.reference.startswith("/"):
+            raise ValueError(
+                "inventory evidence references must be repository-relative"
+            )
+        return self
+
+
+class JinjaInventoryDashboard(SafeMigrationHardeningModel):
+    summary: JinjaInventorySummary
+    groups: tuple[JinjaInventoryGroup, ...] = Field(default_factory=tuple)
+    evidence: tuple[JinjaInventoryEvidence, ...] = Field(default_factory=tuple)
+
+
 class AdminMigrationHardeningDashboard(SafeMigrationHardeningModel):
     page_id: str
     title: str
@@ -245,4 +361,5 @@ class AdminMigrationHardeningDashboard(SafeMigrationHardeningModel):
     accessibility_audit: MigrationAccessibilityAudit
     redaction_sweep: MigrationSweepSummary
     tenant_isolation_sweep: MigrationSweepSummary
+    jinja_inventory: JinjaInventoryDashboard
     states: tuple[MigrationProblem, ...] = Field(default_factory=tuple, max_length=12)

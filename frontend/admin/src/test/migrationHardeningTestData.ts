@@ -1,5 +1,6 @@
 import type {
   AdminMigrationHardeningDashboard,
+  JinjaInventoryDashboard,
   MigrationRollbackPlan,
   MigrationRouteGroup,
 } from "../api/generated/reactAdminApi";
@@ -140,6 +141,105 @@ export const migrationRollbackPlan: MigrationRollbackPlan = {
   audit_reference: "audit-qa037-rollback-plan",
 };
 
+export const jinjaInventoryDashboard: JinjaInventoryDashboard = {
+  summary: {
+    generated_at: "2026-05-06T12:00:00Z",
+    total_items: 3,
+    template_count: 1,
+    route_count: 1,
+    static_asset_count: 1,
+    direct_link_count: 0,
+    blocked_count: 1,
+    safe_to_delete_count: 0,
+    reviewer_signoff_required: true,
+  },
+  groups: [
+    {
+      group_id: "spec-039-shell-auth",
+      label: "Spec 039: Shell Auth",
+      planned_removal_spec: "039",
+      blocked_count: 1,
+      safe_to_delete_count: 0,
+      items: [
+        {
+          item_id: "template-admin-react-app",
+          item_type: "react_host",
+          label: "app.html",
+          source_path: "src/multi_agent_platform/web_admin/templates/admin_react/app.html",
+          source_line: null,
+          legacy_route: "/admin/app",
+          react_path: "/admin/app",
+          methods: [],
+          owner_category: "shell-auth",
+          planned_removal_spec: "039",
+          classification: "react_parity_missing",
+          evidence_refs: ["scanner-qa038"],
+          blocker_refs: [],
+          redirect_preserves: [],
+          behaviors: [],
+          reviewer_signoff_required: true,
+          notes: "Inventory item retained until deletion-grade parity is reviewed.",
+        },
+        {
+          item_id: "asset-admin-shell-js",
+          item_type: "static_asset",
+          label: "admin_shell.js",
+          source_path: "src/multi_agent_platform/web_admin/static/admin_shell.js",
+          source_line: null,
+          legacy_route: null,
+          react_path: "/admin/app",
+          methods: [],
+          owner_category: "shell-auth",
+          planned_removal_spec: "039",
+          classification: "blocked_with_reason",
+          evidence_refs: ["scanner-qa038"],
+          blocker_refs: ["asset-usage-scan"],
+          redirect_preserves: [],
+          behaviors: [],
+          reviewer_signoff_required: true,
+          notes: "Legacy static asset must be checked for Jinja-only usage.",
+        },
+      ],
+    },
+    {
+      group_id: "spec-046-user-runs",
+      label: "Spec 046: User Runs",
+      planned_removal_spec: "046",
+      blocked_count: 0,
+      safe_to_delete_count: 0,
+      items: [
+        {
+          item_id: "route-runs",
+          item_type: "route",
+          label: "/runs",
+          source_path: "src/multi_agent_platform/api/routers/web_run_ui.py",
+          source_line: 17,
+          legacy_route: "/runs",
+          react_path: null,
+          methods: ["GET"],
+          owner_category: "user-runs",
+          planned_removal_spec: "046",
+          classification: "non_jinja_compatibility_needed",
+          evidence_refs: ["scanner-qa038"],
+          blocker_refs: [],
+          redirect_preserves: ["tenant id", "route parameters", "query filters"],
+          behaviors: ["mutation", "sse_progress"],
+          reviewer_signoff_required: true,
+          notes: "Legacy browser route requires direct-link plan.",
+        },
+      ],
+    },
+  ],
+  evidence: [
+    {
+      evidence_id: "scanner-qa038",
+      evidence_type: "scanner",
+      reference: "specs/038-jinja-surface-inventory-and-deletion-plan/jinja_inventory.json",
+      status: "pass",
+    },
+  ],
+};
+
 export const migrationDashboard: AdminMigrationHardeningDashboard = {
   page_id: "qa037-react-admin-migration-hardening",
   title: "React Admin Migration Hardening",
@@ -224,6 +324,7 @@ export const migrationDashboard: AdminMigrationHardeningDashboard = {
     safe_summary: "Tenant-scoped route evidence stayed within authorized scope.",
     evidence_reference: "tenant-isolation-qa037",
   },
+  jinja_inventory: jinjaInventoryDashboard,
   states: [
     {
       reason: "retained_fallbacks",

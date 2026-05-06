@@ -70,6 +70,27 @@ The extractor writes deterministic feature directories such as
 `.env.qa038`, and validation manifests extending
 `specs/_autopilot/shared/validation.base.yml`.
 
+## Queue State Bookkeeping
+
+Treat `specs/_autopilot/react-ui2-roadmap/queue.json` as the durable queue
+state, not merely a generated manifest.
+
+- Update the active spec entry in `queue.json` at every phase boundary:
+  `specify`, `clarify`, `plan`, `tasks`, `analyze`, and `implement`.
+- Update `queue.json` immediately after validation passes: set the active
+  spec `status` and `validation` to `completed`, set every completed phase to
+  `completed`, and advance `next_spec` to the next pending spec.
+- If a phase, validation command, or stop condition fails, set that spec's
+  `status` to `blocked` or `in_progress` as appropriate, keep `next_spec`
+  pointing at that spec, and record the detailed blocker in that spec's
+  `status.json`.
+- Keep `queue.json` and each spec's `status.json` consistent before moving to
+  another spec. If they disagree on resume, trust the richer `status.json`
+  evidence only after checking artifacts and validation output, then reconcile
+  `queue.json` before continuing.
+- Validate queue edits with `jq . specs/_autopilot/react-ui2-roadmap/queue.json`
+  before starting the next phase or spec.
+
 ## Per-Spec Loop
 
 For each generated spec entry in ascending order:
@@ -111,6 +132,8 @@ For each generated spec entry in ascending order:
    Jinja routes that the active spec proves safe to retire.
 9. Update `status.json` after each completed phase with the phase name, spec
    number, artifact paths, and any blocker or remediation applied.
+10. Update the matching phase in `queue.json` to `completed` after each phase
+    completes. Do not leave a completed phase as `pending`.
 
 ## Jinja Removal Rules
 
@@ -171,6 +194,10 @@ processes, and captures Playwright screenshots.
    and Playwright validation all pass for the active spec.
 8. Update the generated `status.json` with completed phases, validation
    commands, evidence paths, and any blocker.
+9. Update `queue.json` before moving on: set the active spec `status` and
+   `validation` to `completed`, ensure all phase values are `completed`, and
+   set `next_spec` to the next pending spec number. When Spec `047` completes,
+   set `next_spec` to `null`.
 
 ## Stop Conditions
 

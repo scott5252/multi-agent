@@ -36,6 +36,10 @@ export function MigrationSummaryHeader({
         <Metric label="Blocked" value={summary.blocked_count} />
       </dl>
       <p className="migration-next-step">{summary.next_step}</p>
+      <p className="migration-muted">
+        Inventory rows: {dashboard.jinja_inventory.summary.total_items} surfaces,
+        {dashboard.jinja_inventory.summary.blocked_count} blocked.
+      </p>
     </section>
   );
 }

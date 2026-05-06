@@ -131,6 +131,7 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "/admin/app/migration/shell.json" in schema["paths"]
     assert "/admin/app/migration/bootstrap.json" in schema["paths"]
     assert "/admin/app/migration/routes.json" in schema["paths"]
+    assert "/admin/app/migration/jinja-inventory.json" in schema["paths"]
     assert "/admin/app/migration/rollback.json" in schema["paths"]
     assert "/admin/app/operations" in schema["paths"]
     assert "/admin/app/operations.json" in schema["paths"]
@@ -187,6 +188,7 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "BriefingPreferenceList" in schema["components"]["schemas"]
     assert "BriefingPreferenceMutationResult" in schema["components"]["schemas"]
     assert "AdminMigrationHardeningDashboard" in schema["components"]["schemas"]
+    assert "JinjaInventoryDashboard" in schema["components"]["schemas"]
     assert "MigrationRouteGroup" in schema["components"]["schemas"]
     assert "MigrationRollbackPlan" in schema["components"]["schemas"]
 

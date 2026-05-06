@@ -7,6 +7,14 @@ from pydantic import ValidationError
 
 from multi_agent_platform.api.schemas.admin_migration_hardening_react import (
     AdminMigrationHardeningDashboard,
+    JinjaInventoryClassification,
+    JinjaInventoryDashboard,
+    JinjaInventoryEvidence,
+    JinjaInventoryEvidenceType,
+    JinjaInventoryGroup,
+    JinjaInventoryItem,
+    JinjaInventoryItemType,
+    JinjaInventorySummary,
     MigrationAccessibilityAudit,
     MigrationEvidenceStatus,
     MigrationHardeningSummary,
@@ -51,6 +59,27 @@ def test_route_retirement_requires_eligible_decision_and_evidence() -> None:
 def test_schema_rejects_unsafe_marker_strings() -> None:
     with pytest.raises(ValidationError, match="unsafe migration hardening text"):
         _route_entry(admin_area="qa037-secret-value")
+
+
+def test_jinja_inventory_requires_safe_delete_evidence_and_relative_paths() -> None:
+    with pytest.raises(ValidationError, match="safe-to-delete"):
+        _inventory_item(
+            classification=JinjaInventoryClassification.SAFE_TO_DELETE,
+            evidence_refs=(),
+        )
+
+    with pytest.raises(ValidationError, match="repository-relative"):
+        _inventory_item(source_path="/absolute/template.html")
+
+
+def test_jinja_inventory_dashboard_accepts_safe_payload() -> None:
+    inventory = _jinja_inventory()
+
+    assert inventory.summary.total_items == 1
+    assert inventory.groups[0].items[0].source_path == (
+        "src/multi_agent_platform/web_admin/templates/admin_react/app.html"
+    )
+    assert "qa038-secret-value" not in inventory.model_dump_json()
 
 
 def test_route_group_bounds_entries() -> None:
@@ -174,6 +203,7 @@ def _dashboard() -> AdminMigrationHardeningDashboard:
             safe_summary="Tenant scope held.",
             evidence_reference="tenant-scan",
         ),
+        jinja_inventory=_jinja_inventory(),
         states=(
             MigrationProblem(
                 reason="fallback",
@@ -184,6 +214,74 @@ def _dashboard() -> AdminMigrationHardeningDashboard:
                 audit_reference="audit-fallback",
             ),
         ),
+    )
+
+
+def _jinja_inventory() -> JinjaInventoryDashboard:
+    return JinjaInventoryDashboard(
+        summary=JinjaInventorySummary(
+            generated_at=datetime(2026, 5, 6, 12, tzinfo=UTC),
+            total_items=1,
+            template_count=1,
+            route_count=0,
+            static_asset_count=0,
+            direct_link_count=0,
+            blocked_count=0,
+            safe_to_delete_count=0,
+            reviewer_signoff_required=True,
+        ),
+        groups=(
+            JinjaInventoryGroup(
+                group_id="spec-039-shell-auth",
+                label="Spec 039: Shell Auth",
+                planned_removal_spec="039",
+                blocked_count=0,
+                safe_to_delete_count=0,
+                items=(_inventory_item(),),
+            ),
+        ),
+        evidence=(
+            JinjaInventoryEvidence(
+                evidence_id="scanner-qa038",
+                evidence_type=JinjaInventoryEvidenceType.SCANNER,
+                reference=(
+                    "specs/038-jinja-surface-inventory-and-deletion-plan/"
+                    "jinja_inventory.json"
+                ),
+                status=MigrationEvidenceStatus.PASS,
+            ),
+        ),
+    )
+
+
+def _inventory_item(
+    *,
+    classification: JinjaInventoryClassification = (
+        JinjaInventoryClassification.REACT_PARITY_MISSING
+    ),
+    evidence_refs: tuple[str, ...] = ("scanner-qa038",),
+    source_path: str | None = (
+        "src/multi_agent_platform/web_admin/templates/admin_react/app.html"
+    ),
+) -> JinjaInventoryItem:
+    return JinjaInventoryItem(
+        item_id="template-admin-react-app",
+        item_type=JinjaInventoryItemType.REACT_HOST,
+        label="app.html",
+        source_path=source_path,
+        source_line=None,
+        legacy_route="/admin/app",
+        react_path="/admin/app",
+        methods=(),
+        owner_category="shell-auth",
+        planned_removal_spec="039",
+        classification=classification,
+        evidence_refs=evidence_refs,
+        blocker_refs=(),
+        redirect_preserves=(),
+        behaviors=(),
+        reviewer_signoff_required=True,
+        notes="Inventory item retained until deletion-grade parity is reviewed.",
     )
 
 

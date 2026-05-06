@@ -1,0 +1,196 @@
+openapi: 3.1.0
+info:
+  title: Jinja Inventory React Contract
+  version: 0.1.0
+paths:
+  /admin/app/migration/jinja-inventory.json:
+    get:
+      summary: Return redaction-safe Jinja inventory projection
+      operationId: getJinjaInventory
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Inventory visible to the current principal and scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JinjaInventoryDashboard"
+        "401":
+          description: Authentication required
+        "403":
+          description: Insufficient role or tenant scope denied
+components:
+  schemas:
+    JinjaInventoryDashboard:
+      type: object
+      required:
+        - summary
+        - groups
+        - evidence
+      properties:
+        summary:
+          $ref: "#/components/schemas/JinjaInventorySummary"
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/JinjaInventoryGroup"
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/JinjaInventoryEvidence"
+    JinjaInventorySummary:
+      type: object
+      required:
+        - generated_at
+        - total_items
+        - template_count
+        - route_count
+        - static_asset_count
+        - direct_link_count
+        - blocked_count
+        - safe_to_delete_count
+        - reviewer_signoff_required
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        total_items:
+          type: integer
+          minimum: 0
+        template_count:
+          type: integer
+          minimum: 0
+        route_count:
+          type: integer
+          minimum: 0
+        static_asset_count:
+          type: integer
+          minimum: 0
+        direct_link_count:
+          type: integer
+          minimum: 0
+        blocked_count:
+          type: integer
+          minimum: 0
+        safe_to_delete_count:
+          type: integer
+          minimum: 0
+        reviewer_signoff_required:
+          type: boolean
+    JinjaInventoryGroup:
+      type: object
+      required:
+        - group_id
+        - label
+        - planned_removal_spec
+        - blocked_count
+        - safe_to_delete_count
+        - items
+      properties:
+        group_id:
+          type: string
+        label:
+          type: string
+        planned_removal_spec:
+          type: string
+        blocked_count:
+          type: integer
+          minimum: 0
+        safe_to_delete_count:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JinjaInventoryItem"
+    JinjaInventoryItem:
+      type: object
+      required:
+        - item_id
+        - item_type
+        - label
+        - owner_category
+        - planned_removal_spec
+        - classification
+        - evidence_refs
+        - blocker_refs
+        - redirect_preserves
+        - behaviors
+        - reviewer_signoff_required
+        - notes
+      properties:
+        item_id:
+          type: string
+        item_type:
+          type: string
+        label:
+          type: string
+        source_path:
+          type:
+            - string
+            - "null"
+        source_line:
+          type:
+            - integer
+            - "null"
+          minimum: 1
+        legacy_route:
+          type:
+            - string
+            - "null"
+        react_path:
+          type:
+            - string
+            - "null"
+        methods:
+          type: array
+          items:
+            type: string
+        owner_category:
+          type: string
+        planned_removal_spec:
+          type: string
+        classification:
+          type: string
+        evidence_refs:
+          type: array
+          items:
+            type: string
+        blocker_refs:
+          type: array
+          items:
+            type: string
+        redirect_preserves:
+          type: array
+          items:
+            type: string
+        behaviors:
+          type: array
+          items:
+            type: string
+        reviewer_signoff_required:
+          type: boolean
+        notes:
+          type: string
+    JinjaInventoryEvidence:
+      type: object
+      required:
+        - evidence_id
+        - evidence_type
+        - reference
+        - status
+      properties:
+        evidence_id:
+          type: string
+        evidence_type:
+          type: string
+        reference:
+          type: string
+        status:
+          type: string

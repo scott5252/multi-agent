@@ -262,5 +262,5 @@ admin workflows.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the latest plan:
-`specs/037-react-admin-migration-hardening-and-jinja-retirement/plan.md`
+`specs/038-jinja-surface-inventory-and-deletion-plan/plan.md`
 <!-- SPECKIT END -->

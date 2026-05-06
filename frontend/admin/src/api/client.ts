@@ -8,6 +8,7 @@ import {
   assertMembershipDashboard,
   assertMembershipMutationResult,
   assertAdminMigrationHardeningDashboard,
+  assertJinjaInventoryDashboard,
   assertBriefingPreferenceList,
   assertBriefingPreferenceMutationResult,
   assertChannelMutationResult,
@@ -62,6 +63,7 @@ import {
   type MembershipInvitationSaveRequest,
   type MembershipMutationResult,
   type AdminMigrationHardeningDashboard,
+  type JinjaInventoryDashboard,
   type BriefingPreferenceExportRequest,
   type BriefingPreferenceImportRequest,
   type BriefingPreferenceList,
@@ -913,6 +915,20 @@ export async function fetchMigrationRollbackPlan(
     throw new Error(detail);
   }
   return assertMigrationRollbackPlan(await response.json());
+}
+
+export async function fetchJinjaInventoryDashboard(
+  inventoryUrl: string,
+): Promise<JinjaInventoryDashboard> {
+  const response = await fetch(inventoryUrl, {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertJinjaInventoryDashboard(await response.json());
 }
 
 export async function fetchTestBenchDashboard(

@@ -1,0 +1,110 @@
+{
+  "spec": "038",
+  "title": "Jinja Surface Inventory And Deletion Plan",
+  "feature_dir": "specs/038-jinja-surface-inventory-and-deletion-plan",
+  "branch": "codex/038-jinja-surface-inventory-and-deletion-plan",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/038-jinja-surface-inventory-and-deletion-plan/spec.md",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/checklists/requirements.md"
+      ],
+      "notes": "Created the active Spec 038 specification from the generated roadmap prompt. No Jinja files were deleted."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/038-jinja-surface-inventory-and-deletion-plan/spec.md"
+      ],
+      "auto_clarifications": [
+        "Include all repository Jinja templates, legacy web_admin static assets, TemplateResponse/Jinja2Templates usage, template helpers, routes, and docs/QA links.",
+        "Require deletion-grade parity across safe journeys, denied states, tenant scope, redaction, direct links, filters, mutations, exports, uploads, SSE/progress, dual-auth tests, Playwright evidence, and reviewer signoff.",
+        "Include user-facing /runs, auth/local-login, React app host, shell utilities, admin domain pages, and fallback browser routes.",
+        "Prefer authenticated redirects where safe, use non-Jinja compatibility responses when redirects cannot preserve behavior, and require reviewer signoff before deletion.",
+        "Store evidence under active spec artifacts and migration dashboard projection; allow static Vite HTML because server-side Jinja is the removal target."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/038-jinja-surface-inventory-and-deletion-plan/plan.md",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/research.md",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/data-model.md",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/contracts/jinja-inventory-react-ui.md",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/contracts/jinja-inventory.openapi.yaml",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned scanner-backed inventory, backend-owned contracts, React migration dashboard extension, QA evidence, and no-deletion guardrails."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/038-jinja-surface-inventory-and-deletion-plan/tasks.md"
+      ],
+      "task_count": 35,
+      "notes": "Generated dependency-ordered, file-specific tasks with tests, scanner implementation, React dashboard updates, QA docs, and validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "notes": "Spec, plan, and tasks cover templates, TemplateResponse/Jinja2Templates, static assets, docs links, /runs, auth/local-login, denied states, tenant isolation, redaction, QA docs, and no-deletion guardrails."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/admin/migration_hardening/jinja_inventory.py",
+        "src/multi_agent_platform/admin/migration_hardening/react_migration_hardening.py",
+        "src/multi_agent_platform/api/schemas/admin_migration_hardening_react.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/components/migrationHardening/JinjaInventoryPanel.tsx",
+        "frontend/admin/src/components/migrationHardening/MigrationHardeningPage.tsx",
+        "frontend/admin/src/components/migrationHardening/MigrationSummaryHeader.tsx",
+        "frontend/admin/src/styles/admin.css",
+        "frontend/admin/src/test/migrationHardeningTestData.ts",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/jinja_inventory.json",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/qa038.md",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/qa038_ui.md",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/.env.qa038",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/qa038_user_guide.md",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/pr_notes.md"
+      ],
+      "tests": [
+        "uv run pytest --no-cov tests/unit/admin/test_jinja_inventory_scanner.py tests/unit/admin/test_migration_hardening_service.py tests/unit/api/test_admin_migration_hardening_react_schema.py tests/contract/test_admin_migration_jinja_inventory_contract.py tests/contract/test_admin_react_contract.py tests/integration/api/test_admin_react_migration_inventory_routes.py",
+        "npm test -- --run src/components/migrationHardening/JinjaInventoryPanel.test.tsx src/components/migrationHardening/MigrationHardeningPage.test.tsx src/App.test.tsx",
+        "npm run build",
+        "uv run ruff check .",
+        "uv run ruff format --check .",
+        "uv run mypy src"
+      ],
+      "notes": "Implemented inventory-only scanner, contracts, protected tenant-scoped route, React dashboard panel, generated evidence, QA docs, and no-deletion guardrails. Dashboard embeds a constant-time inventory summary while the standalone route returns grouped tenant inventory."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/038-jinja-surface-inventory-and-deletion-plan",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/038-jinja-surface-inventory-and-deletion-plan/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/038-jinja-surface-inventory-and-deletion-plan/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "specs/038-jinja-surface-inventory-and-deletion-plan/jinja_inventory.json",
+      "specs/038-jinja-surface-inventory-and-deletion-plan/qa038.md",
+      "specs/038-jinja-surface-inventory-and-deletion-plan/qa038_ui.md",
+      "specs/038-jinja-surface-inventory-and-deletion-plan/qa038_user_guide.md",
+      "output/playwright/qa038_ui/qa038-react-ui2-smoke.png"
+    ],
+    "notes": "QA docs passed. Spec QA runner passed after Docker startup and migration dashboard performance optimization. Playwright passed after authenticating through local login and capturing the migration dashboard screenshot."
+  },
+  "blockers": []
+}

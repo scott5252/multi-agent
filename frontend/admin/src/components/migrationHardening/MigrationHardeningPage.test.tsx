@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  jinjaInventoryDashboard,
   migrationDashboard,
   migrationRollbackPlan,
   migrationRouteGroups,
@@ -22,9 +23,11 @@ describe("MigrationHardeningPage", () => {
         .mockResolvedValueOnce({ ok: true, json: async () => migrationDashboard })
         .mockResolvedValueOnce({ ok: true, json: async () => migrationRouteGroups })
         .mockResolvedValueOnce({ ok: true, json: async () => migrationRollbackPlan })
+        .mockResolvedValueOnce({ ok: true, json: async () => jinjaInventoryDashboard })
         .mockResolvedValueOnce({ ok: true, json: async () => migrationDashboard })
         .mockResolvedValueOnce({ ok: true, json: async () => migrationRouteGroups })
-        .mockResolvedValueOnce({ ok: true, json: async () => migrationRollbackPlan }),
+        .mockResolvedValueOnce({ ok: true, json: async () => migrationRollbackPlan })
+        .mockResolvedValueOnce({ ok: true, json: async () => jinjaInventoryDashboard }),
     );
 
     render(
@@ -34,12 +37,14 @@ describe("MigrationHardeningPage", () => {
     await screen.findByRole("heading", { name: "React Admin Migration Hardening" });
     expect(screen.getByText("React admin home")).toBeInTheDocument();
     expect(screen.getByText("Retained fallback")).toBeInTheDocument();
+    expect(screen.getByText("Deletion readiness")).toBeInTheDocument();
+    expect(screen.getByText("admin_shell.js")).toBeInTheDocument();
     expect(screen.getByText("Route safety plan")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Refresh" }));
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledTimes(6);
+      expect(fetch).toHaveBeenCalledTimes(8);
     });
     expect(screen.queryByText(/qa037-secret-value|raw prompt/i)).not.toBeInTheDocument();
   });

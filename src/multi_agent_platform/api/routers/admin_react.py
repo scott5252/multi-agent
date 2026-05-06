@@ -52,6 +52,7 @@ from multi_agent_platform.admin.memberships.react_memberships import (
     build_role_grant_result,
 )
 from multi_agent_platform.admin.migration_hardening import (
+    build_jinja_inventory_dashboard,
     build_migration_dashboard,
     build_migration_rollback_plan,
     build_migration_route_groups,
@@ -138,6 +139,7 @@ from multi_agent_platform.api.schemas.admin_membership_react import (
 )
 from multi_agent_platform.api.schemas.admin_migration_hardening_react import (
     AdminMigrationHardeningDashboard,
+    JinjaInventoryDashboard,
     MigrationRollbackPlan,
     MigrationRouteGroup,
 )
@@ -515,6 +517,33 @@ async def react_admin_migration_routes(
     return build_migration_route_groups(
         scope=_scope_response(shell.active_scope),
         principal=principal,
+    )
+
+
+@router.get(
+    "/admin/app/migration/jinja-inventory.json",
+    response_model=JinjaInventoryDashboard,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_migration_jinja_inventory(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> JinjaInventoryDashboard:
+    shell = await _migration_shell(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    return build_jinja_inventory_dashboard(
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        item_limit_per_group=None,
     )
 
 

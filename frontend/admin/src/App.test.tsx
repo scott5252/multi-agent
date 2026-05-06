@@ -6,6 +6,7 @@ import { channelDashboard } from "./test/channelTelegramBriefingTestData";
 import { governanceDashboardFixture } from "./test/governanceTestData";
 import { membershipDashboardFixture } from "./test/membershipTestData";
 import {
+  jinjaInventoryDashboard,
   migrationDashboard,
   migrationRollbackPlan,
   migrationRouteGroups,
@@ -56,6 +57,10 @@ describe("App", () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => migrationRollbackPlan,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => jinjaInventoryDashboard,
         }),
     );
 
@@ -77,6 +82,7 @@ describe("App", () => {
       "/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111",
     );
     expect(screen.getByText("Route safety plan")).toBeInTheDocument();
+    expect(screen.getByText("Deletion readiness")).toBeInTheDocument();
   });
 
   it("renders the channel workspace route inside the shell", async () => {

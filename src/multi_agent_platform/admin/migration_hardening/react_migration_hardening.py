@@ -27,6 +27,8 @@ from multi_agent_platform.api.schemas.admin_react import (
 )
 from multi_agent_platform.auth.principal import PrincipalContext
 
+from .jinja_inventory import build_jinja_inventory_dashboard
+
 ACME_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
 QA037_NOW = datetime(2026, 5, 5, 18, 0, tzinfo=UTC)
 
@@ -67,6 +69,11 @@ def build_migration_dashboard(
         accessibility_audit=_accessibility_audit(),
         redaction_sweep=_redaction_sweep(),
         tenant_isolation_sweep=_tenant_isolation_sweep(actor),
+        jinja_inventory=build_jinja_inventory_dashboard(
+            scope=scope,
+            principal=principal,
+            item_limit_per_group=0,
+        ),
         states=_states(entries, actor),
     )
 
