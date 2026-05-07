@@ -1,0 +1,33 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 048 - Live Data Inventory And Mock Guardrails",
+    "spec_number": "048",
+    "spec_slug": "live-data-inventory-and-mock-guardrails",
+    "feature_dir": "specs/048-live-data-inventory-and-mock-guardrails",
+    "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/048-live-data-inventory-and-mock-guardrails",
+    "branch": "codex/048-live-data-inventory-and-mock-guardrails",
+    "qa_id": "qa048",
+    "qa_label": "QA048",
+    "qa_database": "multi_agent_platform_qa048",
+    "qa_env_file": "specs/048-live-data-inventory-and-mock-guardrails/.env.qa048",
+    "artifact_root": ".data/qa048-artifacts",
+    "playwright_output_dir": "output/playwright/qa048_ui",
+    "manual_qa_user_guide": "specs/048-live-data-inventory-and-mock-guardrails/qa048_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa048-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa048-live-data-ui-api-smoke"
+    ],
+    "required_post_spec_commands": [
+      "post-ui-api-or-database-verification",
+      "multi-agent-curl-test"
+    ]
+  }
+}

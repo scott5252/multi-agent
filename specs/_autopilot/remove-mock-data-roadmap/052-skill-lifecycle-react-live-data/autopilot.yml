@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.2",
+  "roadmap_file": "remove_mock_data_specs.md",
+  "spec_number": "052",
+  "feature": {
+    "name": "skill-lifecycle-react-live-data",
+    "title": "Skill Lifecycle React Live Data",
+    "feature_directory": "specs/052-skill-lifecycle-react-live-data",
+    "branch": "codex/052-skill-lifecycle-react-live-data"
+  },
+  "phase_prompt_files": {
+    "specify": "specify.md",
+    "clarify": "clarify.md",
+    "plan": "plan.md",
+    "tasks": "tasks.md",
+    "analyze": "analyze.md",
+    "implement": "implement.md"
+  },
+  "prompt_files": [
+    "specify.md",
+    "plan.md",
+    "tasks.md"
+  ],
+  "policy_file": "policy.yml",
+  "validation_file": "validation.yml",
+  "post_spec_validation": {
+    "playwright_must_exercise_ui": true,
+    "verify_backend_persistence_via_api_or_database": true,
+    "required_curl_skill": "multi-agent-curl-test",
+    "curl_command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+  }
+}

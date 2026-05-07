@@ -1,0 +1,55 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 048 - Live Data Inventory And Mock Guardrails",
+    "spec_number": "048",
+    "spec_slug": "live-data-inventory-and-mock-guardrails",
+    "feature_dir": "specs/048-live-data-inventory-and-mock-guardrails",
+    "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/048-live-data-inventory-and-mock-guardrails",
+    "branch": "codex/048-live-data-inventory-and-mock-guardrails",
+    "qa_id": "qa048",
+    "qa_label": "QA048",
+    "qa_database": "multi_agent_platform_qa048",
+    "qa_env_file": "specs/048-live-data-inventory-and-mock-guardrails/.env.qa048",
+    "artifact_root": ".data/qa048-artifacts",
+    "playwright_output_dir": "output/playwright/qa048_ui",
+    "manual_qa_user_guide": "specs/048-live-data-inventory-and-mock-guardrails/qa048_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa048-after-spec"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa048-live-data-ui-api-smoke",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/migration"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"platform-admin\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Migration"
+          },
+          {
+            "screenshot": "qa048-live-data-ui-api-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  },
+  "post_spec_validation": {
+    "playwright_database_requirement": "Before this spec is marked complete, update this manifest or the spec status evidence with the UI action exercised by Playwright and the backend API or QA database check proving the UI reflected or persisted live backend state.",
+    "curl_test": {
+      "skill": "multi-agent-curl-test",
+      "database": "multi_agent_curl_test",
+      "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+    }
+  }
+}

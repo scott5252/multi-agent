@@ -1,0 +1,248 @@
+{
+  "schema_version": "1.0",
+  "roadmap_file": "remove_mock_data_specs.md",
+  "spec_range": "048..059",
+  "next_spec": "048",
+  "specs": [
+    {
+      "number": "048",
+      "title": "Live Data Inventory And Mock Guardrails",
+      "slug": "live-data-inventory-and-mock-guardrails",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/048-live-data-inventory-and-mock-guardrails",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/048-live-data-inventory-and-mock-guardrails/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/048-live-data-inventory-and-mock-guardrails/validation.yml",
+      "feature_dir": "specs/048-live-data-inventory-and-mock-guardrails",
+      "branch": "codex/048-live-data-inventory-and-mock-guardrails",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "049",
+      "title": "React Contract Provenance And Sample Route Retirement",
+      "slug": "react-contract-provenance-and-sample-route-retirement",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/049-react-contract-provenance-and-sample-route-retirement",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/049-react-contract-provenance-and-sample-route-retirement/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/049-react-contract-provenance-and-sample-route-retirement/validation.yml",
+      "feature_dir": "specs/049-react-contract-provenance-and-sample-route-retirement",
+      "branch": "codex/049-react-contract-provenance-and-sample-route-retirement",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "050",
+      "title": "Workflow React Live Data",
+      "slug": "workflow-react-live-data",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/050-workflow-react-live-data",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/050-workflow-react-live-data/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/050-workflow-react-live-data/validation.yml",
+      "feature_dir": "specs/050-workflow-react-live-data",
+      "branch": "codex/050-workflow-react-live-data",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "051",
+      "title": "Governance React Live Data",
+      "slug": "governance-react-live-data",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/051-governance-react-live-data",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/051-governance-react-live-data/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/051-governance-react-live-data/validation.yml",
+      "feature_dir": "specs/051-governance-react-live-data",
+      "branch": "codex/051-governance-react-live-data",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "052",
+      "title": "Skill Lifecycle React Live Data",
+      "slug": "skill-lifecycle-react-live-data",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/052-skill-lifecycle-react-live-data",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/052-skill-lifecycle-react-live-data/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/052-skill-lifecycle-react-live-data/validation.yml",
+      "feature_dir": "specs/052-skill-lifecycle-react-live-data",
+      "branch": "codex/052-skill-lifecycle-react-live-data",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "053",
+      "title": "Test Bench React Live Data",
+      "slug": "test-bench-react-live-data",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/053-test-bench-react-live-data",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/053-test-bench-react-live-data/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/053-test-bench-react-live-data/validation.yml",
+      "feature_dir": "specs/053-test-bench-react-live-data",
+      "branch": "codex/053-test-bench-react-live-data",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "054",
+      "title": "Membership And Access React Live Data",
+      "slug": "membership-and-access-react-live-data",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/054-membership-and-access-react-live-data",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/054-membership-and-access-react-live-data/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/054-membership-and-access-react-live-data/validation.yml",
+      "feature_dir": "specs/054-membership-and-access-react-live-data",
+      "branch": "codex/054-membership-and-access-react-live-data",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "055",
+      "title": "Channels, Telegram, Briefing React Live Data",
+      "slug": "channels-telegram-briefing-react-live-data",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/055-channels-telegram-briefing-react-live-data",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/055-channels-telegram-briefing-react-live-data/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/055-channels-telegram-briefing-react-live-data/validation.yml",
+      "feature_dir": "specs/055-channels-telegram-briefing-react-live-data",
+      "branch": "codex/055-channels-telegram-briefing-react-live-data",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "056",
+      "title": "Usage React Live Data",
+      "slug": "usage-react-live-data",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/056-usage-react-live-data",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/056-usage-react-live-data/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/056-usage-react-live-data/validation.yml",
+      "feature_dir": "specs/056-usage-react-live-data",
+      "branch": "codex/056-usage-react-live-data",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "057",
+      "title": "Operations And Run Debug React Live Data",
+      "slug": "operations-and-run-debug-react-live-data",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/057-operations-and-run-debug-react-live-data",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/057-operations-and-run-debug-react-live-data/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/057-operations-and-run-debug-react-live-data/validation.yml",
+      "feature_dir": "specs/057-operations-and-run-debug-react-live-data",
+      "branch": "codex/057-operations-and-run-debug-react-live-data",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "058",
+      "title": "Live-Only UI Decommission Gate",
+      "slug": "live-only-ui-decommission-gate",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/058-live-only-ui-decommission-gate",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/058-live-only-ui-decommission-gate/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/058-live-only-ui-decommission-gate/validation.yml",
+      "feature_dir": "specs/058-live-only-ui-decommission-gate",
+      "branch": "codex/058-live-only-ui-decommission-gate",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "059",
+      "title": "Admin UI Transitional React Label Removal",
+      "slug": "admin-ui-transitional-react-label-removal",
+      "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/059-admin-ui-transitional-react-label-removal",
+      "autopilot_file": "specs/_autopilot/remove-mock-data-roadmap/059-admin-ui-transitional-react-label-removal/autopilot.yml",
+      "validation_file": "specs/_autopilot/remove-mock-data-roadmap/059-admin-ui-transitional-react-label-removal/validation.yml",
+      "feature_dir": "specs/059-admin-ui-transitional-react-label-removal",
+      "branch": "codex/059-admin-ui-transitional-react-label-removal",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    }
+  ]
+}

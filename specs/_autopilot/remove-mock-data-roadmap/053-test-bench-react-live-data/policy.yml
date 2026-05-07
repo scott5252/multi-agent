@@ -1,0 +1,33 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 053 - Test Bench React Live Data",
+    "spec_number": "053",
+    "spec_slug": "test-bench-react-live-data",
+    "feature_dir": "specs/053-test-bench-react-live-data",
+    "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/053-test-bench-react-live-data",
+    "branch": "codex/053-test-bench-react-live-data",
+    "qa_id": "qa053",
+    "qa_label": "QA053",
+    "qa_database": "multi_agent_platform_qa053",
+    "qa_env_file": "specs/053-test-bench-react-live-data/.env.qa053",
+    "artifact_root": ".data/qa053-artifacts",
+    "playwright_output_dir": "output/playwright/qa053_ui",
+    "manual_qa_user_guide": "specs/053-test-bench-react-live-data/qa053_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa053-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa053-live-data-ui-api-smoke"
+    ],
+    "required_post_spec_commands": [
+      "post-ui-api-or-database-verification",
+      "multi-agent-curl-test"
+    ]
+  }
+}

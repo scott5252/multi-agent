@@ -1,0 +1,33 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 056 - Usage React Live Data",
+    "spec_number": "056",
+    "spec_slug": "usage-react-live-data",
+    "feature_dir": "specs/056-usage-react-live-data",
+    "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/056-usage-react-live-data",
+    "branch": "codex/056-usage-react-live-data",
+    "qa_id": "qa056",
+    "qa_label": "QA056",
+    "qa_database": "multi_agent_platform_qa056",
+    "qa_env_file": "specs/056-usage-react-live-data/.env.qa056",
+    "artifact_root": ".data/qa056-artifacts",
+    "playwright_output_dir": "output/playwright/qa056_ui",
+    "manual_qa_user_guide": "specs/056-usage-react-live-data/qa056_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa056-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa056-live-data-ui-api-smoke"
+    ],
+    "required_post_spec_commands": [
+      "post-ui-api-or-database-verification",
+      "multi-agent-curl-test"
+    ]
+  }
+}

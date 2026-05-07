@@ -1,0 +1,55 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 054 - Membership And Access React Live Data",
+    "spec_number": "054",
+    "spec_slug": "membership-and-access-react-live-data",
+    "feature_dir": "specs/054-membership-and-access-react-live-data",
+    "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/054-membership-and-access-react-live-data",
+    "branch": "codex/054-membership-and-access-react-live-data",
+    "qa_id": "qa054",
+    "qa_label": "QA054",
+    "qa_database": "multi_agent_platform_qa054",
+    "qa_env_file": "specs/054-membership-and-access-react-live-data/.env.qa054",
+    "artifact_root": ".data/qa054-artifacts",
+    "playwright_output_dir": "output/playwright/qa054_ui",
+    "manual_qa_user_guide": "specs/054-membership-and-access-react-live-data/qa054_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa054-after-spec"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa054-live-data-ui-api-smoke",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/memberships"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"platform-admin\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Membership"
+          },
+          {
+            "screenshot": "qa054-live-data-ui-api-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  },
+  "post_spec_validation": {
+    "playwright_database_requirement": "Before this spec is marked complete, update this manifest or the spec status evidence with the UI action exercised by Playwright and the backend API or QA database check proving the UI reflected or persisted live backend state.",
+    "curl_test": {
+      "skill": "multi-agent-curl-test",
+      "database": "multi_agent_curl_test",
+      "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+    }
+  }
+}

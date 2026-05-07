@@ -1,0 +1,55 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 050 - Workflow React Live Data",
+    "spec_number": "050",
+    "spec_slug": "workflow-react-live-data",
+    "feature_dir": "specs/050-workflow-react-live-data",
+    "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/050-workflow-react-live-data",
+    "branch": "codex/050-workflow-react-live-data",
+    "qa_id": "qa050",
+    "qa_label": "QA050",
+    "qa_database": "multi_agent_platform_qa050",
+    "qa_env_file": "specs/050-workflow-react-live-data/.env.qa050",
+    "artifact_root": ".data/qa050-artifacts",
+    "playwright_output_dir": "output/playwright/qa050_ui",
+    "manual_qa_user_guide": "specs/050-workflow-react-live-data/qa050_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa050-after-spec"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa050-live-data-ui-api-smoke",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"tenant-admin-acme\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Workflow"
+          },
+          {
+            "screenshot": "qa050-live-data-ui-api-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  },
+  "post_spec_validation": {
+    "playwright_database_requirement": "Before this spec is marked complete, update this manifest or the spec status evidence with the UI action exercised by Playwright and the backend API or QA database check proving the UI reflected or persisted live backend state.",
+    "curl_test": {
+      "skill": "multi-agent-curl-test",
+      "database": "multi_agent_curl_test",
+      "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+    }
+  }
+}

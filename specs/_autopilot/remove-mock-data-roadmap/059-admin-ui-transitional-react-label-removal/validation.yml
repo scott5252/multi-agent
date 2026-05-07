@@ -1,0 +1,55 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 059 - Admin UI Transitional React Label Removal",
+    "spec_number": "059",
+    "spec_slug": "admin-ui-transitional-react-label-removal",
+    "feature_dir": "specs/059-admin-ui-transitional-react-label-removal",
+    "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/059-admin-ui-transitional-react-label-removal",
+    "branch": "codex/059-admin-ui-transitional-react-label-removal",
+    "qa_id": "qa059",
+    "qa_label": "QA059",
+    "qa_database": "multi_agent_platform_qa059",
+    "qa_env_file": "specs/059-admin-ui-transitional-react-label-removal/.env.qa059",
+    "artifact_root": ".data/qa059-artifacts",
+    "playwright_output_dir": "output/playwright/qa059_ui",
+    "manual_qa_user_guide": "specs/059-admin-ui-transitional-react-label-removal/qa059_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa059-after-spec"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa059-live-data-ui-api-smoke",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"platform-admin\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Admin"
+          },
+          {
+            "screenshot": "qa059-live-data-ui-api-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  },
+  "post_spec_validation": {
+    "playwright_database_requirement": "Before this spec is marked complete, update this manifest or the spec status evidence with the UI action exercised by Playwright and the backend API or QA database check proving the UI reflected or persisted live backend state.",
+    "curl_test": {
+      "skill": "multi-agent-curl-test",
+      "database": "multi_agent_curl_test",
+      "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+    }
+  }
+}

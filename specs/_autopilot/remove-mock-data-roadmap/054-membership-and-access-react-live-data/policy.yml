@@ -1,0 +1,33 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 054 - Membership And Access React Live Data",
+    "spec_number": "054",
+    "spec_slug": "membership-and-access-react-live-data",
+    "feature_dir": "specs/054-membership-and-access-react-live-data",
+    "autopilot_dir": "specs/_autopilot/remove-mock-data-roadmap/054-membership-and-access-react-live-data",
+    "branch": "codex/054-membership-and-access-react-live-data",
+    "qa_id": "qa054",
+    "qa_label": "QA054",
+    "qa_database": "multi_agent_platform_qa054",
+    "qa_env_file": "specs/054-membership-and-access-react-live-data/.env.qa054",
+    "artifact_root": ".data/qa054-artifacts",
+    "playwright_output_dir": "output/playwright/qa054_ui",
+    "manual_qa_user_guide": "specs/054-membership-and-access-react-live-data/qa054_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa054-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa054-live-data-ui-api-smoke"
+    ],
+    "required_post_spec_commands": [
+      "post-ui-api-or-database-verification",
+      "multi-agent-curl-test"
+    ]
+  }
+}
