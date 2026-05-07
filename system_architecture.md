@@ -10,21 +10,24 @@ It was prepared from:
 
 - the original architecture plan in `docs/architecture.md`
 - the expansion plan in `docs/Architecture2.md`
-- Spec Kit feature directories `001` through `037`
+- Spec Kit feature directories `001` through `047`
 - the implemented Python package under `src/multi_agent_platform`
 - the React admin workspace under `frontend/admin`
-- Alembic migrations, tests, templates, static assets, generated contracts, and
+- Alembic migrations, tests, React static assets, generated contracts, and
   project settings
 
-As of this review, specs `001` through `037` have implementation artifacts in
+As of this review, specs `001` through `047` have implementation artifacts in
 source code. Specs `020` through `025` add the current graph execution worker,
 governed skill-tool execution boundary, Telegram alias delivery persistence,
 Daily Intelligence Briefing preferences, repository-backed workflow publish
 test evidence, and call-time model provider credential resolution. Specs `026`
 through `037` add the React admin foundation, shared shell, reusable data/form
 patterns, operations workbench, domain workspaces, and migration hardening
-dashboard while retaining older Jinja routes as authorized fallbacks unless
-route parity evidence explicitly proves retirement readiness.
+dashboard. Specs `038` through `047` complete the React UI migration: they
+inventory the old Jinja surfaces, move every browser workflow to React, preserve
+old links through non-Jinja redirects or safe compatibility responses, remove
+server template files and legacy static assets, remove runtime template
+renderer wiring, and remove the direct `jinja2` dependency.
 
 ## What The System Does
 
@@ -34,7 +37,8 @@ made of agents and sub-agents. A non-technical description is:
 1. Administrators configure tenants, users, model providers, prompts, agent
    profiles, skills, workflows, required tests, Telegram settings and aliases,
    briefing preferences, reliability controls, and operations dashboards through
-   the React admin console at `/admin/app` or retained legacy fallbacks.
+   the React admin console at `/admin/app`. Older browser URLs now route through
+   non-Jinja compatibility redirects or safe responses.
 2. Users send requests through Web UI, Web API, Telegram commands, or
    tenant-configured Telegram alias text such as `Morning briefing`.
 3. The channel layer normalizes those requests into workflow runs, resolves
@@ -141,9 +145,9 @@ operator visibility.
 | Area | Current implementation |
 | --- | --- |
 | Language | Python 3.12 |
-| Web framework | FastAPI with Starlette/Jinja2 template responses, JSON APIs, and React admin asset serving |
+| Web framework | FastAPI with JSON APIs, channel webhooks, selected streaming/SSE responses, non-Jinja HTML host/compatibility responses, and React admin asset serving |
 | Frontend | React 19, React Router, Vite, TypeScript strict mode, Vitest, Testing Library, generated contracts under `frontend/admin` |
-| UI style | React admin SPA mounted at `/admin/app` with backend-owned bootstrap/data contracts; retained Jinja admin pages and small JavaScript files remain authorized fallbacks |
+| UI style | React-only browser UI mounted at `/admin/app` with backend-owned bootstrap/data contracts; old admin and run links redirect or alias safely without server-rendered templates |
 | Data access | SQLAlchemy 2.x async ORM |
 | Migrations | Alembic |
 | Production database target | PostgreSQL 16+ |
@@ -161,30 +165,30 @@ operator visibility.
 | --- | --- | --- | --- |
 | `001-platform-foundation` | API app, worker bootstrap, settings, DB/session, queue, tenants, storage, secrets, health | `api/`, `bootstrap/`, `config/settings.py`, `db/`, `runtime/health/`, `runtime/queue/`, `storage/`, `secrets/`, `tenancy/`, `workers/` | `0001_platform_foundation.py` |
 | `002-platform-auth-access` | Auth0/local principals, role grants, support overrides, access audits, delegated credential metadata | `auth/`, `api/routers/auth.py`, `api/routers/admin_access.py`, `admin/support_overrides.py`, `audit/access.py` | `0002_auth_access_control.py` |
-| `003-workflow-studio-registry` | Workflow drafts, revisions, validation, published bundles, sharing | `admin/workflow_registry/`, `api/routers/admin_workflows.py`, `api/routers/admin_workflow_ui.py`, `web_admin/templates/workflows/` | `0003_workflow_registry.py` |
+| `003-workflow-studio-registry` | Workflow drafts, revisions, validation, published bundles, sharing | `admin/workflow_registry/`, `api/routers/admin_workflows.py`, `api/routers/admin_workflow_ui.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workflows/` | `0003_workflow_registry.py` |
 | `004-durable-orchestration-runtime` | Runtime runs, execution bundle pins, steps, checkpoints, handoffs, approvals, side effects, lineage, leases | `runtime/orchestration/`, `api/routers/runtime_runs.py`, `workers/orchestration.py` | `0004_durable_orchestration_runtime.py` |
 | `005-immutable-memory` | Append-only memory versions, heads, replay, diff, memory audit | `memory/`, `api/routers/memory.py` | `0005_immutable_memory.py` |
 | `006-user-interaction-channels` | Web/API/Telegram run entrypoints, status, SSE, result, prompts, artifacts, callbacks, notifications | `channels/`, `api/routers/channel_runs.py`, `api/routers/web_run_ui.py`, `api/routers/telegram_webhook.py` | `0006_user_interaction_channels.py` |
-| `007-model-skill-routing` | Versioned model routing, prompt references, skill bindings, tool/outbound/secret/credential policy, runtime pins | `config/`, `api/routers/admin_model_skill_config.py`, `web_admin/templates/model_skill_config/` | `0007_model_skill_routing.py` |
-| `008-production-audit-debugging` | Timeline, traces, replay, lineage, redacted export, inspection UI | `audit/`, `api/routers/admin_run_inspection.py`, `web_admin/templates/runs/` | `0008_production_audit_debugging.py` |
-| `009-reliability-scale-hardening` | Admission, quotas, fairness, retries, breakers, compensation, dead letters, capacity, reliability UI | `reliability/`, `api/routers/reliability_controls.py`, `web_admin/templates/reliability/` | `0009_reliability_scale_hardening.py` |
-| `010-admin-console-shell` | Shared admin shell, scope selector, navigation, saved filters, common states | `api/routers/admin_console.py`, `api/ui/admin_console.py`, `web_admin/templates/admin_shell/` | `0010_admin_console_shell.py` |
-| `011-model-provider-gateway` | Provider connections, provider tests, catalog sync, gateway invocation, adapter boundary | `model_providers/`, `api/routers/admin_model_providers.py`, `web_admin/templates/model_providers/` | `0011_model_provider_gateway.py` |
+| `007-model-skill-routing` | Versioned model routing, prompt references, skill bindings, tool/outbound/secret/credential policy, runtime pins | `config/`, `api/routers/admin_model_skill_config.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/governance/` | `0007_model_skill_routing.py` |
+| `008-production-audit-debugging` | Timeline, traces, replay, lineage, redacted export, inspection UI | `audit/`, `api/routers/admin_run_inspection.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workbench/` | `0008_production_audit_debugging.py` |
+| `009-reliability-scale-hardening` | Admission, quotas, fairness, retries, breakers, compensation, dead letters, capacity, reliability UI | `reliability/`, `api/routers/reliability_controls.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workbench/` | `0009_reliability_scale_hardening.py` |
+| `010-admin-console-shell` | Shared admin shell, scope selector, navigation, saved filters, common states | `api/routers/admin_console.py`, `api/ui/admin_console.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/shell/` | `0010_admin_console_shell.py` |
+| `011-model-provider-gateway` | Provider connections, provider tests, catalog sync, gateway invocation, adapter boundary | `model_providers/`, `api/routers/admin_model_providers.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/governance/` | `0011_model_provider_gateway.py` |
 | `012-prompt-runtime-profiles` | Prompt library, prompt versions, prompt grants, agent runtime profiles, profile resolution, V2 gateway provenance | `prompts/`, `agents/`, `api/routers/admin_prompts.py`, `api/routers/admin_agent_profiles.py` | `0012_prompt_runtime_profiles.py`, `0013_prompt_runtime_profiles_v2_gateway_operations.py` |
-| `013-admin-workflow-builder` | Guided workflow builder, graph preview, reference readiness, publish gate | `admin/workflow_registry/`, `api/schemas/workflow_registry.py`, `api/schemas/workflow_editor.py`, `web_admin/static/workflow_studio.js` | Reuses workflow tables |
-| `014-skill-registry-lifecycle` and V2 | Skill package manifests, package versions, tenant grants, installations, credential readiness, smoke evidence, browser workflows | `admin/skill_registry/`, `api/routers/admin_skill_registry.py`, `web_admin/templates/skill_registry/` | `0014_skill_registry_lifecycle.py` |
-| `015-agent-workflow-test-bench` | Test suites, cases, assertions, safe modes, run results, traces, publication evidence | `testing/agent_bench/`, `api/routers/admin_agent_tests.py`, `web_admin/templates/agent_tests/` | `0015_agent_workflow_test_bench.py` |
-| `016-token-usage-cost-analytics` | Usage capture from ModelGateway, rollups, pricing, CSV exports, usage UI | `usage/`, `api/routers/admin_usage.py`, `web_admin/templates/usage/` | `0016_token_usage_cost_analytics.py` |
-| `017-telegram-configuration-console` | Tenant Telegram enablement, link token audits, linked identity summaries, safe diagnostics | `admin/telegram_config/`, `api/routers/admin_telegram.py`, `web_admin/templates/telegram/` | `0017_telegram_configuration_console.py` |
-| `018-user-tenant-membership-administration` | User and tenant membership administration, invitations, Auth0 principal linking, tenant memberships, role grant changes, principal suspension/reactivation, access history, safe membership audit | `admin/memberships/`, `api/routers/admin_memberships.py`, `api/schemas/memberships.py`, `api/ui/memberships.py`, `db/models/user_management.py`, `db/repositories/memberships.py`, `web_admin/templates/memberships/` | `0018_user_tenant_membership_administration.py` |
-| `019-operations-console-logs-performance` | Operations dashboard, dependency status, capacity, providers, usage, redacted operational logs, exports | `operations/`, `api/routers/admin_operations.py`, `web_admin/templates/operations/` | No new tables; reuses existing records and artifact storage |
+| `013-admin-workflow-builder` | Guided workflow builder, graph preview, reference readiness, publish gate | `admin/workflow_registry/`, `api/schemas/workflow_registry.py`, `api/schemas/workflow_editor.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workflows/` | Reuses workflow tables |
+| `014-skill-registry-lifecycle` and V2 | Skill package manifests, package versions, tenant grants, installations, credential readiness, smoke evidence, browser workflows | `admin/skill_registry/`, `api/routers/admin_skill_registry.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/skills/` | `0014_skill_registry_lifecycle.py` |
+| `015-agent-workflow-test-bench` | Test suites, cases, assertions, safe modes, run results, traces, publication evidence | `testing/agent_bench/`, `api/routers/admin_agent_tests.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/testBench/` | `0015_agent_workflow_test_bench.py` |
+| `016-token-usage-cost-analytics` | Usage capture from ModelGateway, rollups, pricing, CSV exports, usage UI | `usage/`, `api/routers/admin_usage.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/usage/` | `0016_token_usage_cost_analytics.py` |
+| `017-telegram-configuration-console` | Tenant Telegram enablement, link token audits, linked identity summaries, safe diagnostics | `admin/telegram_config/`, `api/routers/admin_telegram.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/channelTelegramBriefing/` | `0017_telegram_configuration_console.py` |
+| `018-user-tenant-membership-administration` | User and tenant membership administration, invitations, Auth0 principal linking, tenant memberships, role grant changes, principal suspension/reactivation, access history, safe membership audit | `admin/memberships/`, `api/routers/admin_memberships.py`, `api/schemas/memberships.py`, `api/ui/memberships.py`, `db/models/user_management.py`, `db/repositories/memberships.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/memberships/` | `0018_user_tenant_membership_administration.py` |
+| `019-operations-console-logs-performance` | Operations dashboard, dependency status, capacity, providers, usage, redacted operational logs, exports | `operations/`, `api/routers/admin_operations.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workbench/` | No new tables; reuses existing records and artifact storage |
 | `020-workflow-graph-execution-parallel-sub-agent-runtime` | Published bundle graph execution, dependency scheduling, parallel role/sub-agent waves, join policies, checkpoints, handoffs, manual-resolution pauses, safe final outputs | `runtime/orchestration/graph_execution.py`, `runtime/orchestration/graph_roles.py`, `runtime/orchestration/graph_redaction.py`, `workers/orchestration.py`, `db/repositories/runtime_orchestration.py` | No new migration; reuses runtime and workflow bundle tables |
-| `021-real-skill-tool-execution-connectors` | `SkillExecutionGateway`, first-party read-only Daily Briefing adapters, mock diagnostics, runtime skill-tool bridge, redacted policy decisions | `skill_execution/`, `runtime/skill_tools.py`, `api/routers/admin_skill_execution.py`, `web_admin/templates/skill_execution/` | No dedicated migration; safe results are returned to runtime/admin surfaces |
+| `021-real-skill-tool-execution-connectors` | `SkillExecutionGateway`, first-party read-only Daily Briefing adapters, mock diagnostics, runtime skill-tool bridge, redacted policy decisions | `skill_execution/`, `runtime/skill_tools.py`, `api/routers/admin_skill_execution.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/skills/` | No dedicated migration; safe results are returned to runtime/admin surfaces |
 | `022-telegram-natural-language-trigger-delivery-persistence` | Tenant Telegram aliases, persistent link/update state, alias webhook routing, mocked-safe Bot API delivery, delivery attempts | `admin/telegram_config/`, `channels/telegram.py`, `channels/telegram_delivery.py`, `api/routers/admin_telegram.py`, `api/routers/telegram_webhook.py` | `0019_telegram_alias_delivery.py` |
-| `023-user-briefing-preferences-and-context` | Tenant/principal Daily Briefing preference profiles, immutable revisions, safe admin summaries, import/export, runtime resolver, Telegram context injection | `admin/briefing_preferences/`, `runtime/briefing_preferences.py`, `api/routers/admin_briefing_preferences.py`, `db/repositories/briefing_preferences.py`, `web_admin/templates/briefing_preferences/` | `0020_briefing_preferences.py` |
-| `024-automatic-test-bench-evidence-integration-workflow-publish-gates` | Repository-backed required test evidence for workflow validation, publish gates, and publish bundle pin summaries | `admin/workflow_registry/`, `testing/agent_bench/`, `db/repositories/agent_tests.py`, `web_admin/templates/workflows/publish_gate.html` | No new migration; reuses workflow registry and agent test tables |
+| `023-user-briefing-preferences-and-context` | Tenant/principal Daily Briefing preference profiles, immutable revisions, safe admin summaries, import/export, runtime resolver, Telegram context injection | `admin/briefing_preferences/`, `runtime/briefing_preferences.py`, `api/routers/admin_briefing_preferences.py`, `db/repositories/briefing_preferences.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/channelTelegramBriefing/` | `0020_briefing_preferences.py` |
+| `024-automatic-test-bench-evidence-integration-workflow-publish-gates` | Repository-backed required test evidence for workflow validation, publish gates, and publish bundle pin summaries | `admin/workflow_registry/`, `testing/agent_bench/`, `db/repositories/agent_tests.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workflows/`, `frontend/admin/src/components/testBench/` | No new migration; reuses workflow registry and agent test tables |
 | `025-live-model-credential-resolution-for-gateway-calls` | Provider secret reference validation, `ProviderSecretResolver`, call-time probe/gateway credential resolution, OpenAI fail-closed behavior, local allowlisted no-auth | `model_providers/secrets.py`, `model_providers/probes.py`, `model_providers/gateway.py`, `model_providers/validation.py`, `bootstrap/container.py` | No new migration; reuses provider and gateway tables |
-| `026-react-admin-ui-foundation` | React admin mount, static asset serving, bootstrap/config/manifest contracts, generated TypeScript contract checks, Auth0/local-principal validation, Jinja fallback links | `api/routers/admin_react.py`, `api/schemas/admin_react.py`, `web_admin/templates/admin_react/`, `web_admin/static/react/`, `frontend/admin/`, `scripts/frontend/generate_admin_react_types.py` | No new migration; reuses admin auth, tenancy, and navigation records |
+| `026-react-admin-ui-foundation` | React admin mount, static asset serving, bootstrap/config/manifest contracts, generated TypeScript contract checks, Auth0/local-principal validation | `api/routers/admin_react.py`, `api/schemas/admin_react.py`, `web_admin/static/react/`, `frontend/admin/`, `scripts/frontend/generate_admin_react_types.py` | No new migration; reuses admin auth, tenancy, and navigation records |
 | `027-modern-admin-shell-and-design-system` | React admin shell, scope display, navigation, breadcrumbs, command/search, saved-filter chips, common states, responsive design primitives | `frontend/admin/src/components/shell/`, `frontend/admin/src/components/primitives/`, `frontend/admin/src/styles/`, `api/schemas/admin_react.py`, `api/routers/admin_react.py` | Reuses `admin_saved_filters` and backend navigation policy |
 | `028-react-admin-data-contracts-and-form-patterns` | Shared admin page envelopes, safe problem details, form/mutation contracts, tables, filters, pagination, sorting, export snapshots, sample patterns page | `api/schemas/admin_patterns.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/data/`, `frontend/admin/src/components/forms/`, `frontend/admin/src/components/patterns/` | No new durable tables; sample data is deterministic |
 | `029-operations-reliability-and-run-debug-workbench` | React operations workbench for health, reliability, run debug timelines, redacted logs, safe exports, and cross-links | `operations/`, `api/schemas/admin_workbench.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workbench/` | Reuses operations, reliability, audit, runtime, provider, usage, and storage records |
@@ -196,6 +200,16 @@ operator visibility.
 | `035-react-usage-and-cost-analytics` | React usage workspace for metric cards, trends, safe rollups, bounded drilldowns, filter metadata, export creation/detail, confidence and unavailable states | `admin/usage/react_usage.py`, `api/schemas/admin_usage_react.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/usage/` | Reuses usage/pricing/export tables |
 | `036-react-channel-telegram-and-briefing-preferences` | React channel workspace for Telegram readiness/config, aliases, link tokens, identities, delivery diagnostics, safe run status, and Daily Briefing preferences | `admin/channel_telegram_briefing/react_channel_telegram_briefing.py`, `api/schemas/admin_channel_telegram_briefing_react.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/channelTelegramBriefing/` | Reuses channel, Telegram, delivery, briefing preference, audit, and artifact records |
 | `037-react-admin-migration-hardening-and-jinja-retirement` | React migration hardening dashboard, route parity matrix, route decisions, rollback plan, performance/accessibility/redaction/tenant-isolation evidence, and cautious Jinja retirement guidance | `admin/migration_hardening/react_migration_hardening.py`, `api/schemas/admin_migration_hardening_react.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/migrationHardening/` | No new tables; deterministic parity/evidence projection with filesystem/object-storage QA artifacts |
+| `038-jinja-surface-inventory-and-deletion-plan` | Inventory and deletion plan for remaining Jinja templates, routes, static assets, dependencies, direct links, and parity requirements | `admin/migration_hardening/react_migration_hardening.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/migrationHardening/`, `specs/038-jinja-surface-inventory-and-deletion-plan/` | No new tables; deterministic inventory and QA artifacts |
+| `039-no-jinja-react-host-auth-shell-utilities-and-local-login` | Non-Jinja React host, local-login HTML, shell utility compatibility, and initial template host removal | `api/routers/admin_react.py`, `api/routers/auth.py`, `frontend/admin/src/components/shell/`, `tests/integration/api/test_admin_react_no_jinja_host_routes.py` | No new tables |
+| `040-workflow-registry-full-react-parity-and-jinja-removal` | Workflow registry/create/builder browser parity, old workflow URL redirects, and workflow template/static removal | `admin/workflow_builder.py`, `api/routers/admin_workflow_ui.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workflows/` | Reuses workflow registry tables |
+| `041-governance-full-react-parity-and-jinja-removal` | Provider, prompt, profile, routing, policy, and provenance browser parity with governance redirects | `admin/governance.py`, `api/routers/admin_model_providers.py`, `api/routers/admin_prompts.py`, `api/routers/admin_agent_profiles.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/governance/` | Reuses provider, prompt/profile, routing, gateway, usage, and audit records |
+| `042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal` | Skill package lifecycle, tenant install, readiness, diagnostics, and old skill route redirects | `admin/skill_lifecycle.py`, `api/routers/admin_skill_registry.py`, `api/routers/admin_skill_execution.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/skills/` | Reuses skill registry records and in-process lifecycle service where noted |
+| `043-test-bench-full-react-parity-and-jinja-removal` | Test bench suite/case/run/artifact/publish-gate browser parity and old test-bench route redirects | `testing/agent_bench/react_test_bench.py`, `api/routers/admin_agent_tests.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/testBench/` | Reuses test-bench tables and artifact storage |
+| `044-operations-reliability-run-inspection-and-usage-full-react-parity` | Operations, reliability, run inspection, usage, exports, and old operations/debug/usage route redirects | `operations/`, `reliability/`, `usage/`, `api/routers/admin_operations.py`, `api/routers/admin_run_inspection.py`, `api/routers/admin_usage.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workbench/`, `frontend/admin/src/components/usage/` | Reuses operations, reliability, audit, runtime, usage, and storage records |
+| `045-channels-memberships-access-telegram-and-briefing-full-react-parity` | Channels, Telegram, briefing preferences, memberships, saved filters, and old people/channel route redirects | `admin/channel_telegram_briefing/`, `admin/memberships/`, `api/routers/admin_memberships.py`, `api/routers/admin_telegram.py`, `api/routers/admin_briefing_preferences.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/channelTelegramBriefing/`, `frontend/admin/src/components/memberships/` | Reuses channel, Telegram, briefing, membership, access, and audit records |
+| `046-user-facing-run-ui-react-port-and-jinja-removal` | User-facing run workspace in React, `/runs` compatibility redirects, safe run actions, status, timeline, result, artifacts, and approvals | `api/routers/web_run_ui.py`, `api/routers/channel_runs.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/userRuns/` | Reuses channel facade and runtime records where wired |
+| `047-jinja-infrastructure-decommission` | Final removal of template renderer wiring, template directory, legacy static assets, direct `jinja2` dependency, and React-only decommission evidence | `bootstrap/container.py`, `config/settings.py`, `admin/migration_hardening/react_migration_hardening.py`, `api/routers/admin_react.py`, `api/routers/auth.py`, `web_admin/static/react/`, `tests/unit/admin/test_jinja_infrastructure_decommission.py` | No new tables; final decommission evidence and QA artifacts |
 
 ## Repository Shape
 
@@ -227,7 +241,7 @@ src/multi_agent_platform/
   tenancy/                Scope context, middleware, tenant guards
   testing/agent_bench/    Agent and workflow test bench
   usage/                  Token usage and cost analytics
-  web_admin/              Jinja fallback templates plus built React assets
+  web_admin/              Built React assets and non-Jinja browser support
   workers/                Worker polling loops and orchestration worker
 
 frontend/admin/           React admin SPA, generated TypeScript contracts, tests
@@ -242,10 +256,10 @@ tests/                    Unit, integration, contract, docs, performance tests
 The FastAPI application is created by `multi_agent_platform.api.main:create_app`.
 It mounts admin static files at `/admin/static`, serves built React admin assets
 under `/admin/static/react`, installs `TenancyMiddleware`, and includes routers
-for the React admin surface, operations, auth, retained admin pages, runtime
-runs, memory, channels, Telegram, briefing preferences, skill execution
-diagnostics, model providers, prompt/profile management, workflow authoring, and
-reliability.
+for the React admin surface, operations, auth, non-Jinja compatibility
+redirects, runtime runs, memory, channels, Telegram, briefing preferences,
+skill execution diagnostics, model providers, prompt/profile management,
+workflow authoring, and reliability.
 
 ```mermaid
 flowchart TD
@@ -276,7 +290,8 @@ Important router groups:
 - `/auth/me`, `/auth/tenant-context/{tenant_id}`, local login/logout routes
 - `/admin/app`, `/admin/app/bootstrap.json`, `/admin/app/search.json`, and
   React domain workspaces
-- `/admin` shared shell, scope, and saved filter routes
+- `/admin` and older browser URLs as non-Jinja compatibility redirects into
+  React workspaces
 - `/admin/workflows`, `/admin/workflows/ui`
 - `/admin/config`
 - `/admin/model-providers`
@@ -311,7 +326,6 @@ flowchart TD
     f3n2["build_container()"] --> f3n4["Session Factory"]
     f3n2["build_container()"] --> f3n5["Secret Provider"]
     f3n2["build_container()"] --> f3n6["Storage Provider"]
-    f3n2["build_container()"] --> f3n7["Jinja2 Templates"]
     f3n2["build_container()"] --> f3n8["Auth0 Validator Or Local Principal Catalog"]
     f3n2["build_container()"] --> f3n9["ModelSkillConfigService Factory"]
     f3n2["build_container()"] --> f3n10["ModelProviderService Factory"]
@@ -403,12 +417,12 @@ level security policies.
 
 ## Admin Console Shell
 
-The admin shell now has two layers. The React shell at `/admin/app` is the
-primary browser entry for migrated admin journeys, with backend-owned bootstrap,
-navigation, active scope, breadcrumbs, command/search, notifications, common
-states, and generated TypeScript contracts. The older server-rendered Jinja
-shell remains available for retained fallbacks and direct-link compatibility
-until the migration hardening dashboard records retirement evidence for a route.
+The admin shell is now React-only in the browser. The React shell at
+`/admin/app` is the primary entry for admin journeys, with backend-owned
+bootstrap, navigation, active scope, breadcrumbs, command/search,
+notifications, common states, and generated TypeScript contracts. Older
+browser URLs are kept only as compatibility redirects or safe non-Jinja
+responses; they do not render server templates.
 
 ```mermaid
 flowchart TD
@@ -419,16 +433,16 @@ flowchart TD
     f5n14["build_react_shell"] --> f5n15["ReactAdminBootstrap"]
     f5n15["ReactAdminBootstrap"] --> f5n16["React Shell"]
     f5n16["React Shell"] --> f5n17["Domain Workspace JSON Contracts"]
-    f5n2["Admin Router"] --> f5n3["build_shell_for_request"]
-    f5n3["build_shell_for_request"] --> f5n4["resolve_admin_scope"]
+    f5n2["Admin Router"] --> f5n3["Compatibility Redirect Or Safe Response"]
+    f5n3["Compatibility Redirect Or Safe Response"] --> f5n4["resolve_admin_scope"]
     f5n4["resolve_admin_scope"] --> f5n5["Platform Scope"]
     f5n4["resolve_admin_scope"] --> f5n6["Tenant Scope"]
-    f5n3["build_shell_for_request"] --> f5n7["build_admin_shell_context"]
+    f5n14["build_react_shell"] --> f5n7["build_admin_shell_context"]
     f5n7["build_admin_shell_context"] --> f5n8["Navigation Items"]
     f5n8["Navigation Items"] --> f5n9["SURFACE_POLICIES"]
-    f5n3["build_shell_for_request"] --> f5n10["Audit Navigation Visibility"]
-    f5n3["build_shell_for_request"] --> f5n11["TemplateResponse"]
-    f5n11["TemplateResponse"] --> f5n12["admin_shell/base.html"]
+    f5n14["build_react_shell"] --> f5n10["Audit Navigation Visibility"]
+    f5n14["build_react_shell"] --> f5n11["React Host HTML"]
+    f5n11["React Host HTML"] --> f5n12["Built Vite Assets"]
 ```
 
 Main code:
@@ -441,20 +455,16 @@ Main code:
 - `db/repositories/admin_console.py`
 - `frontend/admin/src/components/shell/`
 - `frontend/admin/src/api/generated/reactAdminApi.ts`
-- `web_admin/templates/admin_shell/`
-- `web_admin/templates/admin_react/`
-- `web_admin/static/admin_shell.js`
 - `web_admin/static/react/`
 
-Both shells fail closed when authorization, tenant scope, or audit persistence is
+The shell fails closed when authorization, tenant scope, or audit persistence is
 not available. Saved filters are persisted in `admin_saved_filters`. React
 navigation is backend-authorized; the browser may render a destination only when
 the bootstrap/search contracts include it for the current principal and scope.
 
 Primary React routes:
 
-- `/admin/app` - React admin home, currently centered on migration hardening
-  evidence after Spec `037`
+- `/admin/app` - React admin home and authorized workspace shell
 - `/admin/app/operations` - operations, reliability, and run debug workbench
 - `/admin/app/workflows` - workflow builder
 - `/admin/app/governance` - model, prompt, profile, provider, routing, and
@@ -465,27 +475,27 @@ Primary React routes:
 - `/admin/app/usage` - usage and cost analytics
 - `/admin/app/channels` - channel, Telegram, safe run status, and briefing
   preferences
-- `/admin/app/migration` - route parity, fallback, rollback, performance,
-  accessibility, redaction, and tenant-isolation evidence
+- `/admin/app/migration` - React-only decommission evidence, compatibility
+  route decisions, release rollback plan, performance, accessibility,
+  redaction, and tenant-isolation evidence
 
 ## Membership Administration
 
 Membership Administration is the Spec `018` user and tenant administration
 surface, with a React workspace added by Spec `034` at
-`/admin/app/memberships` and the original `/admin/memberships` route retained
-as a fallback. It gives platform admins a cross-tenant user administration view
-and tenant admins a tenant-scoped self-service view. Production authentication
-remains Auth0-backed, local-principal mode remains available for development
-and QA, and the platform does not accept or store passwords.
+`/admin/app/memberships` and React-only parity completed by Spec `045`. Older
+membership browser links redirect safely into the React workspace. It gives
+platform admins a cross-tenant user administration view and tenant admins a
+tenant-scoped self-service view. Production authentication remains Auth0-backed,
+local-principal mode remains available for development and QA, and the platform
+does not accept or store passwords.
 
 ```mermaid
 flowchart TD
     m1["Platform Or Tenant Admin"] --> m2["/admin/app/memberships React UI"]
-    m1["Platform Or Tenant Admin"] --> m23["/admin/memberships Fallback UI"]
     m1["Platform Or Tenant Admin"] --> m3["/admin/memberships/api JSON API"]
     m2["/admin/app/memberships React UI"] --> m24["Admin React Router"]
     m24["Admin React Router"] --> m8["MembershipAdministrationService"]
-    m23["/admin/memberships Fallback UI"] --> m4["Admin Memberships Router"]
     m3["/admin/memberships/api JSON API"] --> m4["Admin Memberships Router"]
     m4["Admin Memberships Router"] --> m5["require_authorized_principal"]
     m5["require_authorized_principal"] --> m6["Membership SURFACE_POLICIES"]
@@ -561,7 +571,6 @@ Main code:
 - `db/models/user_management.py`
 - `db/repositories/memberships.py`
 - `frontend/admin/src/components/memberships/`
-- `web_admin/templates/memberships/index.html`
 
 Important tables:
 
@@ -579,9 +588,10 @@ revisions, validation results, published bundles, and sharing grants. The guided
 builder extends that same model so admins can build workflows through forms and
 graph views instead of raw JSON. Spec `030` makes `/admin/app/workflows` the
 React builder route for guided draft authoring, graph/list review, validation,
-publish readiness, revision review, and redacted JSON inspection. The existing
-Jinja workflow editor remains a retained fallback until route parity evidence
-supports retirement.
+publish readiness, revision review, and redacted JSON inspection. Spec `040`
+completes workflow registry browser parity and removes the old workflow Jinja
+templates; older workflow browser links now redirect into React or return safe
+non-Jinja responses.
 
 Spec `024` makes workflow publish readiness depend on authoritative agent
 test-bench evidence instead of manually copied status fields in a workflow
@@ -640,8 +650,6 @@ Important code:
 - `api/routers/admin_react.py`
 - `api/schemas/admin_workflow_builder.py`
 - `frontend/admin/src/components/workflows/`
-- `web_admin/templates/workflows/`
-- `web_admin/static/workflow_studio.js`
 - `testing/agent_bench/service.py`
 - `db/repositories/agent_tests.py`
 
@@ -851,8 +859,8 @@ validation, import/export, admin summaries, and runtime lookup requirements.
 
 ```mermaid
 flowchart TD
-    bp1["Tenant User"] --> bp2["/admin/briefing-preferences"]
-    bp2["/admin/briefing-preferences"] --> bp3["BriefingPreferenceService"]
+    bp1["Tenant User"] --> bp2["/admin/app/channels"]
+    bp2["/admin/app/channels"] --> bp3["BriefingPreferenceService"]
     bp3["BriefingPreferenceService"] --> bp4["Validate Profile"]
     bp4["Validate Profile"] --> bp5["BriefingPreferenceRepository"]
     bp5["BriefingPreferenceRepository"] --> bp6["briefing_preference_profiles"]
@@ -893,7 +901,8 @@ Main code:
 - `api/ui/briefing_preferences.py`
 - `db/models/briefing_preferences.py`
 - `db/repositories/briefing_preferences.py`
-- `web_admin/templates/briefing_preferences/index.html`
+- `api/routers/admin_react.py`
+- `frontend/admin/src/components/channelTelegramBriefing/`
 
 Important tables:
 
@@ -1043,8 +1052,9 @@ the configured local allowlist; if a reference is configured, the local adapter
 receives the resolved value.
 Spec `031` surfaces provider setup, health, credential-reference diagnostics,
 platform-admin probe actions, direct-call guardrail evidence, and run
-provenance in `/admin/app/governance`. Existing provider pages remain retained
-fallbacks.
+provenance in `/admin/app/governance`. Spec `041` completes governance browser
+parity and converts older provider, prompt, and profile browser URLs into
+React redirects or safe non-Jinja responses.
 
 ```mermaid
 flowchart TD
@@ -1105,7 +1115,6 @@ Main code:
 - `admin/governance.py`
 - `api/schemas/admin_governance.py`
 - `frontend/admin/src/components/governance/`
-- `web_admin/templates/model_providers/`
 
 Important tables:
 
@@ -1206,8 +1215,9 @@ them, and whether an installed skill can be bound to workflow runtime use. Spec
 `032` adds the React workspace at `/admin/app/skills` for platform package
 publication, tenant discovery/install, credential references, smoke/readiness,
 connector diagnostics, binding eligibility, quarantine/withdrawal state, and
-audit evidence. Older skill registry and skill execution diagnostic pages are
-retained fallbacks.
+audit evidence. Spec `042` completes skill registry and skill execution
+diagnostics browser parity; older skill browser URLs redirect to the React
+workspace or return safe non-Jinja responses.
 
 ```mermaid
 flowchart TD
@@ -1256,7 +1266,6 @@ Main code:
 - `api/routers/admin_react.py`
 - `api/schemas/admin_skill_lifecycle.py`
 - `frontend/admin/src/components/skills/`
-- `web_admin/templates/skill_registry/`
 
 Important tables:
 
@@ -1333,7 +1342,8 @@ Main code:
 - `skill_execution/schemas.py`
 - `runtime/skill_tools.py`
 - `api/routers/admin_skill_execution.py`
-- `web_admin/templates/skill_execution/diagnostics.html`
+- `api/routers/admin_react.py`
+- `frontend/admin/src/components/skills/`
 
 Current persistence note: Spec `021` adds no dedicated skill execution
 migration. The admin diagnostics route constructs a gateway for the request,
@@ -1388,7 +1398,6 @@ Main code:
 - `api/routers/admin_react.py`
 - `api/schemas/admin_test_bench.py`
 - `frontend/admin/src/components/testBench/`
-- `web_admin/templates/agent_tests/`
 
 Important tables:
 
@@ -1414,8 +1423,8 @@ counts, latency, pricing estimates, and attribution. It does not store raw
 prompts, completions, secrets, memory content, or unauthorized run content.
 Spec `035` adds `/admin/app/usage` for React metric cards, trends, safe
 rollups, bounded event drilldowns, export creation/detail, confidence states,
-and dependency-unavailable guidance. The older `/admin/usage` pages remain
-available as fallbacks.
+and dependency-unavailable guidance. Spec `044` completes usage browser parity;
+older usage browser URLs redirect to React or return safe non-Jinja responses.
 
 ```mermaid
 flowchart TD
@@ -1449,7 +1458,6 @@ Main code:
 - `api/routers/admin_react.py`
 - `api/schemas/admin_usage_react.py`
 - `frontend/admin/src/components/usage/`
-- `web_admin/templates/usage/`
 
 Important tables:
 
@@ -1513,7 +1521,6 @@ Main code:
 - `api/routers/admin_telegram.py`
 - `api/routers/telegram_webhook.py`
 - `frontend/admin/src/components/channelTelegramBriefing/`
-- `web_admin/templates/telegram/`
 
 Important tables:
 
@@ -1571,7 +1578,8 @@ Main code:
 - `audit/export.py`
 - `audit/access.py`
 - `api/routers/admin_run_inspection.py`
-- `web_admin/templates/runs/`
+- `api/routers/admin_react.py`
+- `frontend/admin/src/components/workbench/`
 
 Important tables:
 
@@ -1639,7 +1647,8 @@ Main code:
 - `reliability/partitioning.py`
 - `reliability/pooling.py`
 - `api/routers/reliability_controls.py`
-- `web_admin/templates/reliability/`
+- `api/routers/admin_react.py`
+- `frontend/admin/src/components/workbench/`
 
 Important tables:
 
@@ -1697,7 +1706,8 @@ Main code:
 - `operations/export.py`
 - `api/routers/admin_operations.py`
 - `api/ui/operations.py`
-- `web_admin/templates/operations/index.html`
+- `api/routers/admin_react.py`
+- `frontend/admin/src/components/workbench/`
 
 ## Persistence, Storage, And Secrets
 
@@ -2278,12 +2288,13 @@ current behavior:
 - Tenant isolation is application-enforced through scopes, guards, table
   columns, repository filters, and tests. PostgreSQL RLS is not encoded in the
   current migrations.
-- The admin frontend is now a React SPA served by FastAPI at `/admin/app`, with
-  built assets under `/admin/static/react` and generated contracts in
-  `frontend/admin/src/api/generated/reactAdminApi.ts`. Server-rendered Jinja2
-  admin pages still exist as retained fallbacks and direct-link compatibility
-  routes; Spec `037` records which routes are React-primary, retained, or
-  eligible for later retirement.
+- The admin frontend is now a React-only browser UI served by FastAPI at
+  `/admin/app`, with built assets under `/admin/static/react` and generated
+  contracts in `frontend/admin/src/api/generated/reactAdminApi.ts`. Specs `038`
+  through `047` remove server-rendered Jinja admin pages, legacy one-off static
+  scripts/styles outside `static/react`, template renderer wiring, and the
+  direct `jinja2` dependency. Older browser URLs remain only as non-Jinja
+  redirects or safe compatibility responses.
 - Spec `018` is implemented as a dedicated Membership Administration surface.
   It reuses auth/access `principal_identities`, `role_grants`, and
   `access_decision_records`, and adds `user_invitations`,
@@ -2311,10 +2322,11 @@ current behavior:
 - The admin skill registry service is currently a process-local service facade
   for active browser/API lifecycle behavior, even though persistent database
   models and repositories exist for the registry's long-term storage shape.
-- Spec `037` does not delete legacy templates by default. Use the migration
-  dashboard at `/admin/app/migration` to review parity, dual-auth evidence,
-  rollback guidance, performance/accessibility status, redaction sweeps, and
-  tenant-isolation sweeps before retiring any fallback.
+- Spec `047` is the final decommission step. Use the migration dashboard at
+  `/admin/app/migration` to review React-only readiness, compatibility route
+  decisions, release rollback guidance, runtime import/dependency scanners,
+  performance/accessibility status, redaction sweeps, and tenant-isolation
+  sweeps.
 
 ## Glossary
 

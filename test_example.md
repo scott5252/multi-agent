@@ -1,6 +1,6 @@
 # Daily Intelligence Briefing Test Example
 
-Review date: 2026-05-05
+Review date: 2026-05-07
 
 This file documents how to set up the "Daily Intelligence Briefing" scenario
 from `/Users/scottcornell/Downloads/multi-agent-testbed.md` against the current
@@ -21,6 +21,16 @@ the original test example:
 - `specs/035-react-usage-and-cost-analytics`
 - `specs/036-react-channel-telegram-and-briefing-preferences`
 - `specs/037-react-admin-migration-hardening-and-jinja-retirement`
+- `specs/038-jinja-surface-inventory-and-deletion-plan`
+- `specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login`
+- `specs/040-workflow-registry-full-react-parity-and-jinja-removal`
+- `specs/041-governance-full-react-parity-and-jinja-removal`
+- `specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal`
+- `specs/043-test-bench-full-react-parity-and-jinja-removal`
+- `specs/044-operations-reliability-run-inspection-and-usage-full-react-parity`
+- `specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity`
+- `specs/046-user-facing-run-ui-react-port-and-jinja-removal`
+- `specs/047-jinja-infrastructure-decommission`
 
 ## Implementation Verdict
 
@@ -29,7 +39,7 @@ DB-backed, and deterministic QA version of the scenario:
 
 - tenant setup
 - local-principal admin login
-- React admin shell and migration dashboard
+- React-only admin shell and migration decommission dashboard
 - React workspaces for governance, skills, workflows, test bench, usage,
   memberships, operations, channels, Telegram, and briefing preferences
 - model provider records
@@ -140,6 +150,16 @@ The scenario setup below is grounded in these current code areas:
 - `specs/035-react-usage-and-cost-analytics/*`
 - `specs/036-react-channel-telegram-and-briefing-preferences/*`
 - `specs/037-react-admin-migration-hardening-and-jinja-retirement/*`
+- `specs/038-jinja-surface-inventory-and-deletion-plan/*`
+- `specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/*`
+- `specs/040-workflow-registry-full-react-parity-and-jinja-removal/*`
+- `specs/041-governance-full-react-parity-and-jinja-removal/*`
+- `specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/*`
+- `specs/043-test-bench-full-react-parity-and-jinja-removal/*`
+- `specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/*`
+- `specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/*`
+- `specs/046-user-facing-run-ui-react-port-and-jinja-removal/*`
+- `specs/047-jinja-infrastructure-decommission/*`
 
 ## Scenario To Build
 
@@ -199,7 +219,7 @@ SUGGESTED FOCUS
 
 | Scenario requirement | Current support | Codebase used | Implementable now |
 | --- | --- | --- | --- |
-| React admin scenario setup | Primary admin setup can use `/admin/app` with domain workspaces for governance, skills, workflows, test bench, channels, usage, operations, and migration evidence; legacy routes remain fallbacks | `api/routers/admin_react.py`, `frontend/admin/src/*`, `admin/migration_hardening/*` | Yes |
+| React admin scenario setup | Primary admin setup uses `/admin/app` with domain workspaces for governance, skills, workflows, test bench, channels, usage, operations, migration evidence, and user run review; older browser URLs redirect or alias to React without Jinja rendering | `api/routers/admin_react.py`, `frontend/admin/src/*`, `admin/migration_hardening/*`, `api/routers/web_run_ui.py` | Yes |
 | Telegram account linking | Admin-issued link tokens and consumed identity links persist in PostgreSQL; the legacy channel link-token endpoint remains in-memory | `channels/telegram.py`, `admin/telegram_config/service.py`, `db/repositories/telegram_config.py`, `db/repositories/channels.py` | Yes |
 | Telegram trigger | Exact-match tenant aliases such as `Morning briefing` route to a published workflow version; slash commands such as `/run` still work | `channels/telegram.py`, `admin/telegram_config/service.py`, `api/routers/admin_telegram.py` | Yes |
 | Telegram bot reply | Alias-triggered results are formatted and sent through a mockable or real `sendMessage` client; delivery attempts persist with safe fingerprints | `channels/telegram_delivery.py`, `channels/telegram.py`, `api/routers/telegram_webhook.py` | Yes with configured Bot API secret or test-injected mock client |
@@ -224,7 +244,7 @@ SUGGESTED FOCUS
 | 024 | Required workflow test evidence is authoritative test-bench data rather than a manually copied status field. | Verify required suite evidence is bound to the current `workflow_draft_id` and current revision id, stale or cross-tenant evidence blocks publish, and UI summaries show required/passing/missing/failing/stale counts. |
 | 025 | Provider probes and gateway calls resolve credentials live from secret references. | Verify OpenAI fails closed without a resolvable reference, local OpenAI-compatible no-auth is allowed only for allowlisted local endpoints, configured references are passed to adapters, and raw secret values never render. |
 
-## Spec 030-037 React UI Updates Incorporated
+## Spec 030-047 React UI Updates Incorporated
 
 | Spec | Change to this test example | Detail to verify |
 | --- | --- | --- |
@@ -235,7 +255,17 @@ SUGGESTED FOCUS
 | 034 | Membership setup can be reviewed in `/admin/app/memberships` when local principals or tenant grants need adjustment. | Verify platform and tenant scopes, invitations, masked identity labels, role grant guardrails, access history, and audit timeline. |
 | 035 | Usage and cost review should use `/admin/app/usage`. | Verify default 7-day filters, rollups, bounded event drilldowns, export metadata, confidence labels, and tenant-only visibility for tenant admins. |
 | 036 | Telegram readiness, aliases, identity links, delivery diagnostics, safe run status, and briefing preferences should use `/admin/app/channels`. | Verify one-time link tokens show only on creation, identities are masked, delivery attempts are bounded, and preference admin summaries redact raw values. |
-| 037 | Final migration review should use `/admin/app/migration`. | Verify route parity decisions, retained fallbacks, rollback plan, dual-auth evidence, performance/accessibility evidence, redaction sweep, and tenant-isolation sweep before retiring any legacy page. |
+| 037 | Migration hardening review should use `/admin/app/migration`. | Verify route parity decisions, rollback plan, dual-auth evidence, performance/accessibility evidence, redaction sweep, and tenant-isolation sweep before the final removal specs. |
+| 038 | Jinja surface inventory should be treated as historical deletion evidence. | Verify every template, legacy static asset, direct link, dependency, route owner, and deletion blocker is accounted for before removal. |
+| 039 | React host, auth shell utilities, and local login should be non-Jinja. | Verify `/admin/app`, local login, saved-filter shell utilities, and old shell links return React host HTML or safe redirects without template rendering. |
+| 040 | Workflow registry/browser authoring should be React-only. | Verify old workflow URLs redirect to `/admin/app/workflows`, create/edit/list/publish flows work in React, and workflow Jinja/static assets are removed. |
+| 041 | Governance setup should be React-only. | Verify provider, prompt, profile, routing, policy, credential diagnostic, and provenance links use `/admin/app/governance` or safe redirects. |
+| 042 | Skill lifecycle and tool diagnostics should be React-only. | Verify package, tenant install, readiness, diagnostics, eligibility, quarantine, and audit workflows use `/admin/app/skills` or safe redirects. |
+| 043 | Test-bench authoring and run review should be React-only. | Verify suite/case authoring, run launch/progress, diagnostics, artifacts, publish-gate evidence, and old test-bench links use `/admin/app/test-bench`. |
+| 044 | Operations, reliability, run inspection, and usage should be React-only. | Verify `/admin/app/operations` and `/admin/app/usage` cover readiness, logs, run debug, reliability, exports, and cost review while old URLs redirect safely. |
+| 045 | Channels, memberships, access, Telegram, and briefing preferences should be React-only. | Verify `/admin/app/channels` and `/admin/app/memberships` cover old browser flows, saved filters, aliases, identities, delivery diagnostics, and preference admin. |
+| 046 | User-facing run UI should be React-only. | Verify `/runs` and `/runs/{run_id}` safely redirect or alias into `/admin/app/channels/runs`, and run start/status/timeline/result/action flows render in React. |
+| 047 | Final Jinja infrastructure decommission should be verified in `/admin/app/migration`. | Verify zero server-rendered inventory rows, runtime import scanners, removed template directory, removed legacy static assets, removed direct `jinja2` dependency, release rollback guidance, and React-only readiness evidence. |
 
 ## Step-By-Step Setup With Current Code
 
@@ -423,15 +453,14 @@ http://127.0.0.1:8000/admin/app/governance
 For a current-code local demo, prefer a local OpenAI-compatible endpoint:
 
 1. Review provider setup and credential readiness in React.
-2. If the deployment still creates provider records through the fallback page,
-   open `/admin/model-providers` for creation.
-3. Create a provider connection.
-4. Set provider type to `local_openai_compatible`.
-5. Set base URL to an allowlisted endpoint, for example
+2. Create a provider connection from the React governance workspace or the
+   JSON/API contract used by that workspace.
+3. Set provider type to `local_openai_compatible`.
+4. Set base URL to an allowlisted endpoint, for example
    `http://127.0.0.1:11434`.
-6. Add one model id exposed by that endpoint.
-7. Set visibility for the Acme tenant.
-8. Activate the connection after review.
+5. Add one model id exposed by that endpoint.
+6. Set visibility for the Acme tenant.
+7. Activate the connection after review.
 
 For a live OpenAI connection, create an `openai` provider record and store only
 credential references, not raw keys. Use a reference such as `OPENAI_API_KEY`
@@ -465,11 +494,9 @@ Open:
 http://127.0.0.1:8000/admin/app/governance
 ```
 
-Create and publish prompt versions for:
-
-If your deployment still creates new prompt lineages through the retained page,
-use `/admin/prompt-runtime/prompts` for creation and return to
-`/admin/app/governance` for React review, preview, and history evidence.
+Create and publish prompt versions in the React governance workspace. Older
+prompt-runtime browser URLs should redirect back into this React workspace or
+return safe non-Jinja responses.
 
 1. `daily-briefing-orchestrator`
 2. `calendar-scout`
@@ -512,11 +539,9 @@ Open:
 http://127.0.0.1:8000/admin/app/governance
 ```
 
-Create and activate these profiles:
-
-If your deployment still creates new runtime profiles through the retained page,
-use `/admin/prompt-runtime/profiles` for creation and return to
-`/admin/app/governance` for React resolution and provenance review.
+Create and activate these profiles in the React governance workspace. Older
+profile browser URLs should redirect back into this React workspace or return
+safe non-Jinja responses.
 
 | Profile | Agent key | Agent kind in profile UI | Purpose |
 | --- | --- | --- | --- |
@@ -1328,7 +1353,8 @@ After setup and mock runs, inspect:
 - `/admin/app/migration`
 - `/admin/app/operations`
 - `/admin/app/usage`
-- `/admin/runs`
+- `/admin/app/operations` run debug panels
+- `/admin/app/channels/runs` for user-facing run review
 - `/admin/app/test-bench`
 - `/admin/app/channels`
 - `/admin/app/skills`
@@ -1370,7 +1396,7 @@ flows.
 | 14. Completed channel demo | Yes as optional simulation | Uses `_channel_state=completed` for generic channel result QA |
 | 15. Operations/audit | Yes | Evidence reflects deterministic graph, connector, preference, test-bench, provider, Telegram, and channel flows |
 
-## Spec 020-037 Status And Remaining Limits
+## Spec 020-047 Status And Remaining Limits
 
 ### Spec 020 - Workflow Graph Execution And Parallel Sub-Agent Runtime
 
@@ -1418,8 +1444,8 @@ Current status:
 - Policy checks evaluate installed skill version, allowed tool, outbound
   domains, read-only side-effect behavior, execution mode, credential
   availability, and credential tenant.
-- React admin diagnostics are available in `/admin/app/skills`; the older
-  `/admin/skill-execution/ui/diagnostics` page remains a fallback.
+- React admin diagnostics are available in `/admin/app/skills`; older skill
+  execution browser URLs redirect to React or return safe non-Jinja responses.
 - Redaction removes raw email body fields, token-like strings, credential
   values, and sensitive URL query strings from summaries.
 - `runtime/skill_tools.py` provides a role-node helper that executes approved
@@ -1440,7 +1466,8 @@ Primary QA references:
 Current status:
 
 - Tenant admins can create exact normalized aliases such as `Morning briefing`
-  in `/admin/app/channels`; `/admin/telegram` remains a fallback.
+  in `/admin/app/channels`; older Telegram browser URLs redirect to React or
+  return safe non-Jinja responses.
 - Alias records include published workflow version id, protected/enabled flags,
   revision tokens, and safe metadata.
 - Admin-issued link tokens, consumed identity links, identity summaries, and
@@ -1473,8 +1500,8 @@ Primary QA references:
 Current status:
 
 - `/admin/app/channels` supports tenant-scoped Daily Briefing profile
-  save/read/update through React; `/admin/briefing-preferences` remains a
-  fallback.
+  save/read/update through React; older briefing-preference browser URLs
+  redirect to React or return safe non-Jinja responses.
 - Profiles have immutable revision rows and a current head projection.
 - Validated fields include location label, IANA timezone, news topics, VIP
   senders, workday hours, commute mode, calendar/email account references,
@@ -1562,7 +1589,7 @@ Primary QA references:
 - `specs/025-live-model-credential-resolution-for-gateway-calls/qa025_ui.md`
 - `specs/025-live-model-credential-resolution-for-gateway-calls/testing-instructions.md`
 
-### Specs 030-037 - React Admin Scenario Surface
+### Specs 030-047 - React Admin Scenario Surface
 
 Current status:
 
@@ -1580,14 +1607,15 @@ Current status:
   delivery diagnostic, safe run status, and Daily Briefing preference workspace.
 - `/admin/app/usage` and `/admin/app/operations` provide usage/cost and
   operational review for the scenario.
-- `/admin/app/migration` records route parity, retained fallbacks, rollback
-  guidance, and performance/accessibility/redaction/tenant-isolation evidence.
+- `/admin/app/migration` records React-only readiness, old-link compatibility
+  decisions, release rollback guidance, runtime scanner/dependency evidence,
+  and performance/accessibility/redaction/tenant-isolation evidence.
 
-Remaining limit: React migration hardening changes the admin route ownership and
-review workflow; it does not make the Daily Briefing runtime consume live
-Calendar, Gmail, news, weather, or commute payloads. Older Jinja routes should
-remain available unless the migration dashboard records complete retirement
-evidence for that route.
+Remaining limit: React migration hardening changes browser route ownership and
+removes the server-rendered Jinja stack; it does not make the Daily Briefing
+runtime consume live Calendar, Gmail, news, weather, or commute payloads. Old
+browser links should be tested as redirects or safe compatibility responses,
+not as template-backed pages.
 
 Primary QA references:
 
@@ -1599,6 +1627,16 @@ Primary QA references:
 - `specs/035-react-usage-and-cost-analytics/qa035.md`
 - `specs/036-react-channel-telegram-and-briefing-preferences/qa036.md`
 - `specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037.md`
+- `specs/038-jinja-surface-inventory-and-deletion-plan/qa038.md`
+- `specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/qa039.md`
+- `specs/040-workflow-registry-full-react-parity-and-jinja-removal/qa040.md`
+- `specs/041-governance-full-react-parity-and-jinja-removal/qa041.md`
+- `specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/qa042.md`
+- `specs/043-test-bench-full-react-parity-and-jinja-removal/qa043.md`
+- `specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/qa044.md`
+- `specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/qa045.md`
+- `specs/046-user-facing-run-ui-react-port-and-jinja-removal/qa046.md`
+- `specs/047-jinja-infrastructure-decommission/qa047.md`
 
 ## Final Accuracy Review
 
@@ -1609,7 +1647,8 @@ credential references, prompts, profiles, skill package metadata, mock
 connector diagnostics, user briefing preferences, workflow drafts, current
 test-bench publish evidence, published bundles, DB graph execution evidence,
 Telegram aliases, persistent link state, update receipts, delivery attempts,
-channel results, React admin route parity, and migration rollback evidence.
+channel results, React-only admin route coverage, old-link compatibility, and
+Jinja decommission evidence.
 
 The current repository still cannot produce the real sample Telegram briefing
 from live Google Calendar, Gmail, news, weather, and commute data. The remaining

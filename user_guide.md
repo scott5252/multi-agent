@@ -6,8 +6,8 @@ production-like installation. It is written for administrators and operators who
 do not write code every day, but it stays precise about the current system so
 that setup decisions are repeatable.
 
-This document reflects the repository state reviewed on May 5, 2026. It covers
-feature specifications 001 through 037, the Python code under
+This document reflects the repository state reviewed on May 7, 2026. It covers
+feature specifications 001 through 047, the Python code under
 `src/multi_agent_platform`, and the React admin workspace under
 `frontend/admin`.
 
@@ -41,9 +41,9 @@ The fastest path to a working system is:
 
 The platform is meant to be administered through the browser first. APIs are
 available for automation, but most setup steps can be completed through the
-React admin console at `/admin/app`. Older server-rendered admin routes remain
-available as authorized fallbacks until the migration dashboard records parity
-and retirement evidence for a route.
+React admin console at `/admin/app`. Older browser URLs are handled only as
+non-Jinja compatibility redirects or safe responses; the browser UI is
+React-only after Specs 038 through 047.
 
 ## Current Implementation Notes
 
@@ -60,8 +60,10 @@ Some areas are intentionally lighter in the current code:
   journeys. It is served by FastAPI at `/admin/app` from built Vite assets under
   `src/multi_agent_platform/web_admin/static/react`, and its browser contracts
   are generated from Pydantic schemas. Build or verify those assets before
-  browser QA. Retained Jinja pages still exist for fallback and direct-link
-  compatibility.
+  browser QA. Server-rendered Jinja pages, the template renderer, legacy
+  one-off static files outside `static/react`, and the direct `jinja2`
+  dependency have been removed. Old browser links should redirect or alias into
+  React without rendering templates.
 - The `/runtime/runs` API is backed by a process-local runtime service in the
   public API facade. Durable runtime database models, repositories, graph
   execution, and worker code exist, but a run started only through that facade
@@ -71,12 +73,13 @@ Some areas are intentionally lighter in the current code:
   dependency order, schedule independent role nodes in parallel waves, persist
   run steps and timeline evidence, and resume without duplicating succeeded
   steps.
-- The `/runs` Web API and Web UI channel service still has process-local pieces
-  for some user-channel run state and rate windows. Telegram command aliases,
-  link token audits, linked identity records, webhook update receipts, and
-  delivery attempts are PostgreSQL-backed, so Telegram linking, duplicate update
-  replay, alias routing evidence, and final delivery diagnostics survive API
-  restarts after migrations are applied.
+- The `/runs` Web API channel service still has process-local pieces for some
+  user-channel run state and rate windows. Browser access to `/runs` redirects
+  or aliases into the React run workspace under `/admin/app/channels/runs`.
+  Telegram command aliases, link token audits, linked identity records, webhook
+  update receipts, and delivery attempts are PostgreSQL-backed, so Telegram
+  linking, duplicate update replay, alias routing evidence, and final delivery
+  diagnostics survive API restarts after migrations are applied.
 - The current skill registry admin router uses an in-memory service for package
   and installation state even though skill registry database models and
   repository patterns exist. Complete package publication, tenant grant,
@@ -202,8 +205,41 @@ areas:
   Telegram configuration, aliases, link tokens, identity summaries, delivery
   diagnostics, safe run status, and Daily Briefing preferences.
 - Spec 037, React admin migration hardening and Jinja retirement: route parity
-  matrix, fallback/retirement decisions, rollback guidance, performance,
-  accessibility, redaction, tenant-isolation, and reviewer evidence.
+  matrix, retirement planning, rollback guidance, performance, accessibility,
+  redaction, tenant-isolation, and reviewer evidence.
+- Spec 038, Jinja surface inventory and deletion plan: inventory of remaining
+  templates, legacy static assets, browser routes, direct links, dependencies,
+  parity blockers, and deletion evidence.
+- Spec 039, no-Jinja React host, auth shell utilities, and local login:
+  non-Jinja React host HTML, local-login HTML, shell compatibility, and
+  old-link redirects.
+- Spec 040, workflow registry full React parity and Jinja removal: workflow
+  registry, creation, builder, validation, publish, and revision browser flows
+  moved fully to React.
+- Spec 041, governance full React parity and Jinja removal: provider, prompt,
+  profile, routing, policy, credential diagnostic, and provenance browser
+  flows moved fully to React.
+- Spec 042, skill registry and tool diagnostics full React parity and Jinja
+  removal: skill package, tenant installation, credential readiness, connector
+  diagnostics, eligibility, quarantine, and audit browser flows moved fully to
+  React.
+- Spec 043, test bench full React parity and Jinja removal: suite/case
+  authoring, safe run launch, diagnostics, artifacts, publish-gate evidence,
+  and audit browser flows moved fully to React.
+- Spec 044, operations, reliability, run inspection, and usage full React
+  parity: readiness, reliability, run debug, log, export, and cost review
+  browser flows moved fully to React.
+- Spec 045, channels, memberships, access, Telegram, and briefing full React
+  parity: channel readiness, Telegram, briefing preferences, memberships,
+  saved filters, identities, delivery diagnostics, and access browser flows
+  moved fully to React.
+- Spec 046, user-facing run UI React port and Jinja removal: `/runs` and
+  `/runs/{run_id}` browser links redirect or alias into the React run workspace
+  with start, status, timeline, result, artifact, and approval controls.
+- Spec 047, Jinja infrastructure decommission: template renderer wiring,
+  server template directory, legacy static assets, and direct `jinja2`
+  dependency removed, with React-only readiness evidence in
+  `/admin/app/migration`.
 
 ## 1. Overview
 
@@ -385,9 +421,8 @@ Useful health pages:
 
 After login, start at `/admin/app`. The React admin console groups the system
 by operational area while preserving backend authorization, active scope,
-breadcrumbs, search, common states, and generated browser contracts. The older
-Jinja paths remain available for direct-link compatibility until migration
-evidence supports retirement.
+breadcrumbs, search, common states, and generated browser contracts. Older
+admin browser paths are compatibility redirects or safe non-Jinja responses.
 
 Build the React assets whenever frontend code or generated contracts change:
 
@@ -400,8 +435,9 @@ cd ../..
 
 Important browser pages:
 
-- `/admin/app` - React admin home and migration-hardening summary.
-- `/admin/app/migration` - route parity matrix, fallback decisions, rollback,
+- `/admin/app` - React admin home and authorized workspace shell.
+- `/admin/app/migration` - React-only readiness, old-link compatibility
+  decisions, release rollback guidance, runtime scanner/dependency evidence,
   performance, accessibility, redaction, and tenant-isolation evidence.
 - `/admin/app/operations` - operations, reliability, and run debug workbench.
 - `/admin/app/workflows` - workflow registry and guided builder.
@@ -415,8 +451,10 @@ Important browser pages:
 - `/admin/app/channels` - channel readiness, Telegram configuration, aliases,
   identities, delivery evidence, safe run status, and Daily Briefing
   preferences.
-- `/admin` and legacy `/admin/...` pages - retained server-rendered fallbacks.
-- `/runs` - user-facing run Web UI channel.
+- `/admin` and older `/admin/...` browser links - safe redirects or non-Jinja
+  compatibility responses into React.
+- `/runs` and `/runs/{run_id}` - user-facing run links that open the React run
+  workspace under `/admin/app/channels/runs`.
 
 ### Quality Checks
 
@@ -576,7 +614,7 @@ export LOCAL_PRINCIPAL_CATALOG_JSON='{
 For browser use, open:
 
 ```text
-http://127.0.0.1:8000/auth/local-login?redirect_to=/admin
+http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app
 ```
 
 Choose a catalog key such as `platform-admin` or `tenant-admin-acme`. The login
@@ -764,9 +802,9 @@ tokens, passwords, and pasted API keys are rejected by provider validation.
 
 OpenAI provider readiness, credential references, health, and probe evidence
 are reviewed in `/admin/app/governance`. Sign in as a platform admin and keep
-provider records configured with safe secret references. Use the older
-`/admin/model-providers` fallback when you need a creation flow that is not
-available in the React workspace for your deployment.
+provider records configured with safe secret references. Older
+`/admin/model-providers` browser links should redirect into the React
+governance workspace or expose only safe JSON/API behavior.
 
 Recommended fields:
 
@@ -858,13 +896,14 @@ Set a tenant default first so every workflow has a fallback. Then add workflow,
 agent, or step overrides only where a different model is clearly needed. The
 governance workspace at `/admin/app/governance` exposes preview, history,
 rollback, and provenance views so you can verify the final resolved model before
-publishing or running. The older `/admin/config/ui` page remains a fallback.
+publishing or running. Older model-skill configuration browser links should
+redirect into React or return safe non-Jinja responses.
 
 ### Prompt Library
 
 Prompt review, safe preview, save feedback, and history live in
-`/admin/app/governance`. The older `/admin/prompt-runtime/prompts` page remains
-a fallback for creation or workflows not yet retired.
+`/admin/app/governance`. Older prompt-runtime browser links should redirect
+into React or return safe non-Jinja responses.
 
 Recommended workflow:
 
@@ -884,8 +923,8 @@ so fixing a prompt means publishing a new version, not editing the old one.
 ### Agents And Sub-Agents
 
 Agent runtime profile review, safe edits, resolution previews, and history live
-in `/admin/app/governance`. The older `/admin/prompt-runtime/profiles` page
-remains a fallback for creation or workflows not yet retired. A profile
+in `/admin/app/governance`. Older profile browser links should redirect into
+React or return safe non-Jinja responses. A profile
 describes the behavior and runtime expectations for one agent or sub-agent.
 
 Important profile fields include:
@@ -920,10 +959,11 @@ operational complexity.
 
 ### Daily Briefing Preferences
 
-Daily Intelligence Briefing preferences live in `/admin/app/channels`. The
-older `/admin/briefing-preferences` page and APIs remain fallbacks. Preferences
-store one active profile per tenant/principal, with immutable revisions and a
-current head projection for fast runtime lookup.
+Daily Intelligence Briefing preferences live in `/admin/app/channels`.
+Preferences store one active profile per tenant/principal, with immutable
+revisions and a current head projection for fast runtime lookup. API endpoints
+remain available for automation; old browser links should redirect into React
+or return safe non-Jinja responses.
 
 Useful API endpoints are:
 
@@ -958,9 +998,9 @@ preference context pinned at creation time.
 
 ### Workflow Setup From Start To Finish
 
-Use `/admin/app/workflows` for the guided React browser flow. The older
-`/admin/workflows/ui` page remains a fallback when investigating route
-compatibility or rollback behavior.
+Use `/admin/app/workflows` for the guided React browser flow. Older workflow
+browser links should redirect into this workspace or return safe non-Jinja
+responses.
 
 1. Create a new workflow draft.
 2. Fill in metadata such as name, description, owner, tenant visibility, and
@@ -1008,9 +1048,9 @@ resolution pauses the run with durable approval and timeline evidence.
 ### Skills
 
 Skills represent approved tools or MCP references that agents may use. The
-governed lifecycle is handled through `/admin/app/skills`. The older
-`/admin/skill-registry/ui/packages`, `/admin/skill-registry/ui/installations`,
-and `/admin/skill-execution/ui/diagnostics` pages remain fallback routes.
+governed lifecycle is handled through `/admin/app/skills`. Older skill registry
+and skill execution browser links should redirect into this workspace or return
+safe non-Jinja responses.
 
 Skill package setup:
 
@@ -1075,7 +1115,7 @@ The first built-in read-only tools are for the Daily Intelligence Briefing:
 Open `/admin/app/skills` and use the connector diagnostics/readiness sections
 to run safe mock diagnostics. The page should show all five tool families, mode
 `mock`, readiness, redacted credential status, allowed domains, latest safe
-summaries, and policy decisions. The fallback API endpoints are
+summaries, and policy decisions. The automation API endpoints are
 `/admin/skill-execution/api/diagnostics` and
 `/admin/skill-execution/api/diagnostics/run`.
 
@@ -1091,7 +1131,8 @@ policy allows the exact operation.
 The agent and workflow test bench lives at `/admin/app/test-bench`. It lets
 administrators create safe, tenant-scoped test suites for prompts, agent
 profiles, workflow drafts, published subworkflows, and published workflows.
-The older `/admin/agent-tests/ui` page remains a fallback.
+Older test-bench browser links should redirect into React or return safe
+non-Jinja responses.
 
 Supported target types:
 
@@ -1189,8 +1230,8 @@ tenant, the page or command, and the trace id if available.
 5. Confirm the relevant resource exists.
 6. Confirm role grants and support overrides.
 7. Check `/admin/app/operations` for platform readiness and redacted logs.
-8. Check `/admin/app/operations` or `/admin/runs` for workflow run timelines
-   and replay evidence.
+8. Check `/admin/app/operations` for workflow run timelines and replay
+   evidence, or `/admin/app/channels/runs` for user-facing run state.
 9. Check `/admin/app/usage` if the issue is model invocation or cost related.
 10. Check `/admin/app/channels` if the issue came from Telegram.
 
@@ -1199,8 +1240,8 @@ tenant, the page or command, and the trace id if available.
 The operations console at `/admin/app/operations` is intended for platform
 admins and auditors. It summarizes health, dependency readiness, capacity,
 provider and channel status, reliability pressure, throughput, redacted logs,
-and exportable evidence. The older `/admin/operations`, `/admin/reliability/ui/`,
-and `/admin/runs` pages remain fallbacks for direct route checks.
+and exportable evidence. Older operations, reliability, and run-inspection
+browser links should redirect into React or return safe non-Jinja responses.
 
 Use log filters for:
 
@@ -1221,10 +1262,11 @@ provider credentials.
 
 ### Run Inspection
 
-Use `/admin/app/operations` for React run-debug summaries and `/admin/runs` for
-the retained production audit debugging fallback. The debug surfaces support run
-search, timeline, replay, lineage, bundle snapshots, notification state,
-secret-access metadata, and redacted exports.
+Use `/admin/app/operations` for React run-debug summaries. The debug surfaces
+support run search, timeline, replay, lineage, bundle snapshots, notification
+state, secret-access metadata, and redacted exports. Older `/admin/runs`
+browser links should redirect into React; the listed API patterns remain
+automation/debug endpoints.
 
 Useful API patterns:
 
@@ -1262,9 +1304,8 @@ When reviewing a run, look for:
 
 ### Reliability Debugging
 
-Use `/admin/app/operations` and the retained `/admin/reliability/ui/` fallback
-when work is queued, delayed, or failing repeatedly. The reliability layer
-tracks admission controls, tenant
+Use `/admin/app/operations` when work is queued, delayed, or failing
+repeatedly. The reliability layer tracks admission controls, tenant
 quotas, queue state, worker leases, retry budgets, circuit breakers,
 compensation requests, dead letters, operational snapshots, and artifact
 throughput.
@@ -1326,8 +1367,7 @@ the current draft revision and validate again.
 ### Skill Tool Debugging
 
 Use `/admin/app/skills` when Daily Briefing tools do not appear ready or a role
-node reports a tool denial. The older `/admin/skill-execution/ui/diagnostics`
-page remains a fallback. Check:
+node reports a tool denial. Check:
 
 - The requested tool name is one of the installed and supported tools.
 - The tenant has the skill installation and exact version required by the
@@ -1342,7 +1382,7 @@ page remains a fallback. Check:
 ### Briefing Preference Debugging
 
 Use `/admin/app/channels` when a Daily Intelligence Briefing is missing personal
-context. The older `/admin/briefing-preferences` page remains a fallback. Check:
+context. Check:
 
 - The profile exists for the linked tenant/principal.
 - Timezone is a valid IANA value.
@@ -1398,7 +1438,8 @@ For Telegram:
 
 ## 6. Token Usage And Cost Analytics
 
-Usage analytics live at `/admin/app/usage`; `/admin/usage` remains a fallback.
+Usage analytics live at `/admin/app/usage`; older usage browser links should
+redirect into React or return safe non-Jinja responses.
 The platform records normalized LLM usage when model calls pass through the
 model gateway usage capture path.
 
@@ -1495,9 +1536,10 @@ Telegram webhooks, callbacks, artifacts, and model/tool providers.
 
 ### Web UI
 
-Users can start and inspect workflow runs at `/runs`. Admins use `/admin/app`
-and its domain workspaces. Retained `/admin` pages remain fallbacks for legacy
-links and rollback validation. The browser UI is the best first integration for
+Users can start and inspect workflow runs through `/runs`, which opens the
+React run workspace under `/admin/app/channels/runs`. Admins use `/admin/app`
+and its domain workspaces. Older browser links are compatibility redirects or
+safe non-Jinja responses. The browser UI is the best first integration for
 operations teams because it exposes scope, validation messages, readiness
 checks, audit links, and safe diagnostics.
 
@@ -1516,8 +1558,8 @@ External systems should store the returned `run_id` and the response trace id.
 Telegram support has two parts:
 
 - Runtime webhook: `/channels/telegram/webhook/{secret}`.
-- Admin configuration console: `/admin/app/channels`, with `/admin/telegram`
-  retained as a fallback.
+- Admin configuration console: `/admin/app/channels`; older Telegram browser
+  links should redirect into React or return safe non-Jinja responses.
 
 Supported runtime commands include:
 
@@ -2055,8 +2097,9 @@ behavior.
 #### `REACT_ADMIN_ENABLED`
 
 Enables the React admin entry at `/admin/app`. It defaults to `true`. Set it to
-`false` only for rollback or fallback validation; retained Jinja routes still
-require normal authentication and authorization.
+`false` only for explicit asset-host troubleshooting. The supported browser
+interface is React; old links are handled by redirects or safe compatibility
+responses and do not restore server-rendered Jinja pages.
 
 #### `REACT_ADMIN_ASSET_BASE_PATH`
 
@@ -2777,7 +2820,7 @@ Create an alias for the published briefing workflow:
 - Protected: enabled.
 - Enabled: enabled.
 
-The admin page shows alias management. The fallback API endpoint is
+The admin page shows alias management. The automation API endpoint is
 `/admin/telegram/api/aliases`. Alias matching is exact after trimming,
 whitespace normalization, and case folding, so `morning   briefing` routes like
 `Morning briefing`, but fuzzy intent matching is not part of this flow.

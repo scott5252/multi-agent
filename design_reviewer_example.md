@@ -1,6 +1,6 @@
 # Design Reviewer Workflow Example
 
-Review date: 2026-05-05
+Review date: 2026-05-07
 
 This file documents how to set up and develop a "Design Reviewer Council"
 scenario against the current `multi-agent-platform` codebase. It follows the
@@ -67,6 +67,16 @@ The scenario setup below is grounded in these current code areas:
 - `specs/031-model-prompt-profile-and-provider-governance/plan.md`
 - `specs/033-react-agent-and-workflow-test-bench/plan.md`
 - `specs/037-react-admin-migration-hardening-and-jinja-retirement/plan.md`
+- `specs/038-jinja-surface-inventory-and-deletion-plan/plan.md`
+- `specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/plan.md`
+- `specs/040-workflow-registry-full-react-parity-and-jinja-removal/plan.md`
+- `specs/041-governance-full-react-parity-and-jinja-removal/plan.md`
+- `specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/plan.md`
+- `specs/043-test-bench-full-react-parity-and-jinja-removal/plan.md`
+- `specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/plan.md`
+- `specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/plan.md`
+- `specs/046-user-facing-run-ui-react-port-and-jinja-removal/plan.md`
+- `specs/047-jinja-infrastructure-decommission/plan.md`
 - `src/multi_agent_platform/api/schemas/workflow_registry.py`
 - `src/multi_agent_platform/admin/workflow_registry/validation.py`
 - `src/multi_agent_platform/admin/workflow_registry/publish_gate.py`
@@ -83,6 +93,12 @@ The scenario setup below is grounded in these current code areas:
 - `frontend/admin/src/components/workflows/*`
 - `frontend/admin/src/components/governance/*`
 - `frontend/admin/src/components/testBench/*`
+
+Specs `038` through `047` make the React interface the only browser
+administration surface. Older browser URLs are compatibility redirects or safe
+non-Jinja responses, and the runtime no longer includes server-rendered Jinja
+templates or a direct `jinja2` dependency. The design reviewer scenario should
+therefore be validated only through React workspaces and JSON/API contracts.
 
 ## Scenario To Build
 
@@ -190,6 +206,7 @@ Development handoff:
 | Review evidence and QA gates | Test bench suites, runs, artifacts, and publish gate evidence are available and can validate the review workflow itself | `testing/agent_bench/*`, `admin/workflow_registry/publish_gate.py`, `api/routers/admin_agent_tests.py` | Yes |
 | Browser review surface | Existing workflow builder, governance, test bench, operations, and migration workspaces can administer the pieces; a dedicated design-review workspace would be additive | `frontend/admin/src/*`, `api/routers/admin_react.py` | Partially |
 | Redaction and tenant isolation | Existing platform conventions require safe summaries, artifact references, tenant guards, and no raw prompts, completions, secrets, connector payloads, or unauthorized tenant data in UI or QA artifacts | `auth/*`, `audit/*`, `model_providers/redaction.py`, `runtime/orchestration/graph_redaction.py` | Yes |
+| React-only browser routing | React workspaces are the canonical browser interface; old admin and run links must redirect or alias to React without rendering server templates | `api/routers/admin_react.py`, `api/routers/auth.py`, `api/routers/web_run_ui.py`, `frontend/admin/src/App.tsx` | Yes |
 
 ## Recommended Workflow Shape
 
