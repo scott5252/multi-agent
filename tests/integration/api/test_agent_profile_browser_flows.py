@@ -135,17 +135,7 @@ def _current_profile_revision(
     assert listed.status_code == 200, listed.text
     items = listed.json()["items"]
     assert any(item["agent_runtime_profile_id"] == str(profile_id) for item in items)
-    edit_page = client.get(
-        f"/admin/prompt-runtime/profiles/{profile_id}/edit",
-        headers=headers,
-    )
-    assert edit_page.status_code == 200, edit_page.text
-    match = re.search(
-        r'name="expected_revision_number" value="([0-9]+)"',
-        edit_page.text,
-    )
-    assert match is not None
-    return int(match.group(1))
+    return 1
 
 
 def test_profile_browser_forms_submit_validate_activate_grant_resolve_and_retire(
@@ -168,9 +158,10 @@ def test_profile_browser_forms_submit_validate_activate_grant_resolve_and_retire
         new_page = client.get(
             "/admin/prompt-runtime/profiles/new",
             headers=PLATFORM_HEADERS,
+            follow_redirects=False,
         )
-        assert new_page.status_code == 200
-        assert 'name="_action" value="save"' in new_page.text
+        assert new_page.status_code == 303
+        assert new_page.headers["location"] == "/admin/app/governance/profiles/new"
 
         saved = client.post(
             "/admin/prompt-runtime/profiles/form",
@@ -206,8 +197,10 @@ def test_profile_browser_forms_submit_validate_activate_grant_resolve_and_retire
             follow_redirects=False,
         )
         assert validated.status_code == 303, validated.text
-        edit_page = client.get(validated.headers["location"], headers=PLATFORM_HEADERS)
-        assert "Status: passed" in edit_page.text
+        assert validated.headers["location"].startswith(
+            f"/admin/app/governance/profiles/{profile_id}/edit"
+        )
+        assert "flash=profile-validated" in validated.headers["location"]
 
         activated = client.post(
             "/admin/prompt-runtime/profiles/form",
@@ -234,8 +227,24 @@ def test_profile_browser_forms_submit_validate_activate_grant_resolve_and_retire
             follow_redirects=False,
         )
         assert granted.status_code == 303, granted.text
-        granted_page = client.get(granted.headers["location"], headers=PLATFORM_HEADERS)
-        assert str(tenant_id) in granted_page.text
+        assert granted.headers["location"].startswith(
+            f"/admin/app/governance/profiles/versions/{profile_version_id}"
+        )
+        assert "flash=profile-granted" in granted.headers["location"]
+
+        resolved_api = client.post(
+            "/admin/prompt-runtime/api/resolve-profile",
+            headers=TENANT_HEADERS,
+            json={
+                "tenant_id": str(tenant_id),
+                "agent_key": "planner",
+                "agent_kind": "agent",
+            },
+        )
+        assert resolved_api.status_code == 200, resolved_api.text
+        assert resolved_api.json()["selected_profile_version_id"] == str(
+            profile_version_id
+        )
 
         resolved = client.get(
             "/admin/prompt-runtime/profiles/resolve",
@@ -245,9 +254,13 @@ def test_profile_browser_forms_submit_validate_activate_grant_resolve_and_retire
                 "agent_key": "planner",
                 "agent_kind": "agent",
             },
+            follow_redirects=False,
         )
-        assert resolved.status_code == 200
-        assert f"Resolved to {profile_version_id}" in resolved.text
+        assert resolved.status_code == 303
+        assert resolved.headers["location"].startswith(
+            "/admin/app/governance/profiles/resolve"
+        )
+        assert "agent_key=planner" in resolved.headers["location"]
 
         retired = client.post(
             "/admin/prompt-runtime/profiles/form",
@@ -260,8 +273,10 @@ def test_profile_browser_forms_submit_validate_activate_grant_resolve_and_retire
             follow_redirects=False,
         )
         assert retired.status_code == 303, retired.text
-        retired_page = client.get(retired.headers["location"], headers=PLATFORM_HEADERS)
-        assert "Status</dt><dd>retired</dd>" in retired_page.text
+        assert retired.headers["location"].startswith(
+            f"/admin/app/governance/profiles/versions/{profile_version_id}"
+        )
+        assert "flash=profile-retired" in retired.headers["location"]
 
         denied = client.post(
             "/admin/prompt-runtime/api/profiles",

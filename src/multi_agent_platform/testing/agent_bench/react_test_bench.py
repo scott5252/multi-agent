@@ -342,7 +342,8 @@ def build_artifact_reference(
     *,
     artifact_reference_id: str,
 ) -> ArtifactReferenceSummary:
-    _ = artifact_reference_id
+    if "unavailable" in artifact_reference_id:
+        return _unavailable_artifact()
     return _artifact()
 
 
@@ -355,7 +356,8 @@ def build_publish_gate_evidence(*, scope: ReactAdminScope) -> PublishGateEvidenc
             _gate_evidence(TestBenchStatus.RUNNING),
             _gate_evidence(TestBenchStatus.FAILED),
             _gate_evidence(TestBenchStatus.PASSED),
-            _gate_evidence(TestBenchStatus.UNAVAILABLE),
+            _gate_evidence(TestBenchStatus.AUDIT_UNAVAILABLE),
+            _gate_evidence(TestBenchStatus.REDACTION_UNAVAILABLE),
         ),
     )
 
@@ -897,6 +899,24 @@ def _artifact() -> ArtifactReferenceSummary:
     )
 
 
+def _unavailable_artifact() -> ArtifactReferenceSummary:
+    return ArtifactReferenceSummary(
+        artifact_reference_id="artifact-qa033-unavailable",
+        label="Unavailable redacted artifact metadata",
+        content_class="diagnostic_summary",
+        checksum="sha256:qa033artifactunavailable",
+        size_label="0 KB",
+        retention_state=TestBenchStatus.ARTIFACT_UNAVAILABLE,
+        redaction_class="safe-summary",
+        access_status=TestBenchStatus.ARTIFACT_UNAVAILABLE,
+        safe_summary=(
+            "Artifact metadata is unavailable; payload access remains blocked."
+        ),
+        authorized_href=None,
+        audit_reference_id="audit-artifact-qa033-unavailable",
+    )
+
+
 def _gate_evidence(status: TestBenchStatus) -> PublishGateEvidence:
     latest_run_id = "run-qa033-passing" if status is TestBenchStatus.PASSED else None
     latest_revision = (
@@ -923,7 +943,11 @@ def _gate_evidence(status: TestBenchStatus) -> PublishGateEvidence:
         reason=_gate_reason(status),
         remediation=_gate_remediation(status),
         audit_reference_id=f"audit-gate-qa033-{status.value}",
-        artifact_references=(_artifact(),) if status is TestBenchStatus.PASSED else (),
+        artifact_references=(_artifact(),)
+        if status is TestBenchStatus.PASSED
+        else (_unavailable_artifact(),)
+        if status is TestBenchStatus.REDACTION_UNAVAILABLE
+        else (),
         authorized_actions=(
             AdminAction(
                 action_id="run-suite",
@@ -951,6 +975,10 @@ def _gate_reason(status: TestBenchStatus) -> str:
         TestBenchStatus.FAILED: "Latest current run did not meet the pass threshold.",
         TestBenchStatus.PASSED: "Current target revision has passing evidence.",
         TestBenchStatus.UNAVAILABLE: "Audit or redaction evidence is unavailable.",
+        TestBenchStatus.AUDIT_UNAVAILABLE: "Audit evidence is unavailable.",
+        TestBenchStatus.REDACTION_UNAVAILABLE: (
+            "Redaction evidence is unavailable for the latest run."
+        ),
     }
     return reasons.get(status, "Gate evidence is being summarized.")
 
@@ -963,6 +991,10 @@ def _gate_remediation(status: TestBenchStatus) -> str:
         TestBenchStatus.FAILED: "Open diagnostics and fix the failing assertion.",
         TestBenchStatus.PASSED: "Publication can use this current evidence.",
         TestBenchStatus.UNAVAILABLE: "Restore audit and redaction evidence first.",
+        TestBenchStatus.AUDIT_UNAVAILABLE: "Restore audit evidence before publishing.",
+        TestBenchStatus.REDACTION_UNAVAILABLE: (
+            "Regenerate redaction evidence before publishing."
+        ),
     }
     return remediations.get(status, "Review gate evidence.")
 

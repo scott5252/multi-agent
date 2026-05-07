@@ -1,0 +1,149 @@
+openapi: 3.1.0
+info:
+  title: Test Bench React Parity And Legacy Route Compatibility
+  version: 0.1.0
+paths:
+  /admin/app/test-bench:
+    get:
+      summary: Serve the React test bench workspace.
+      responses:
+        "200": { description: React app shell }
+        "302": { description: Auth redirect when unauthenticated }
+        "403": { description: Safe problem for denied scope }
+  /admin/app/test-bench/bootstrap.json:
+    get:
+      summary: Return backend-owned React test bench dashboard.
+      responses:
+        "200": { description: TestBenchDashboard }
+        "403": { description: SafeProblemDetail }
+  /admin/app/test-bench/suites:
+    get:
+      summary: Return safe suite list.
+      responses:
+        "200": { description: TestSuiteList }
+    post:
+      summary: Save suite through React contract.
+      responses:
+        "200": { description: TestBenchMutationResult }
+        "409": { description: Safe stale conflict }
+  /admin/app/test-bench/suites/{suite_id}:
+    get:
+      summary: Return safe suite detail.
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: TestSuiteDetail }
+        "404": { description: SafeProblemDetail }
+  /admin/app/test-bench/suites/{suite_id}/cases:
+    post:
+      summary: Save suite case and assertion descriptors.
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: TestBenchMutationResult }
+        "409": { description: Safe stale conflict }
+  /admin/app/test-bench/suites/{suite_id}/runs:
+    post:
+      summary: Launch a safe deterministic run.
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: TestBenchMutationResult }
+        "403": { description: Safe policy denial }
+  /admin/app/test-bench/runs.json:
+    get:
+      summary: Return bounded run list.
+      responses:
+        "200": { description: TestRunList }
+  /admin/app/test-bench/runs/{run_id}.json:
+    get:
+      summary: Return run detail with progress, diagnostics, traces, artifacts, and gates.
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: TestRunDetail }
+        "404": { description: SafeProblemDetail }
+  /admin/app/test-bench/artifacts/{artifact_reference_id}.json:
+    get:
+      summary: Return artifact metadata only.
+      parameters:
+        - name: artifact_reference_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: ArtifactReferenceSummary }
+        "404": { description: SafeProblemDetail }
+  /admin/app/test-bench/gates.json:
+    get:
+      summary: Return publish-gate evidence for authorized targets.
+      responses:
+        "200": { description: PublishGateEvidenceList }
+  /admin/app/test-bench/gates/{gate_id}/refresh:
+    post:
+      summary: Refresh backend-owned gate evidence.
+      parameters:
+        - name: gate_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: TestBenchMutationResult }
+  /admin/app/test-bench/audit.json:
+    get:
+      summary: Return redaction-safe audit timeline.
+      responses:
+        "200": { description: TestBenchAuditList }
+  /admin/agent-tests/ui:
+    get:
+      summary: Legacy browser route redirecting to React.
+      responses:
+        "303": { description: Redirect to /admin/app/test-bench }
+        "403": { description: SafeProblemDetail }
+  /admin/agent-tests/ui/suites/new:
+    get:
+      summary: Legacy create-suite browser route redirecting to React.
+      responses:
+        "303": { description: Redirect to React create mode }
+  /admin/agent-tests/ui/suites/{suite_id}:
+    get:
+      summary: Legacy suite detail browser route redirecting to React.
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "303": { description: Redirect to React suite detail }
+  /admin/agent-tests/ui/runs/{run_id}:
+    get:
+      summary: Legacy run detail browser route redirecting to React.
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "303": { description: Redirect to React run detail }
+components:
+  schemas:
+    SafeProblemDetail:
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

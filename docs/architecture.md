@@ -14,7 +14,7 @@ The platform is a single Python 3.12 distribution with:
 - Auth0 and deterministic local-principal authentication modes,
 - tenant-aware workflow, memory, channel, audit, configuration, and reliability
   subsystems,
-- server-rendered admin and run-inspection UI pages,
+- React admin and run-inspection browser UI backed by JSON contracts,
 - filesystem or S3-compatible artifact storage providers,
 - static, environment, or secret-manager-backed secret providers.
 
@@ -295,13 +295,13 @@ tests/
 | --- | --- | --- |
 | `001-platform-foundation` | API and worker spine, settings, database, queue, artifacts, secrets, tenancy, health checks | `api/main.py`, `api/lifespan.py`, `api/routers/ops.py`, `bootstrap/`, `config/settings.py`, `db/base.py`, `db/session.py`, `runtime/health/`, `runtime/queue/`, `secrets/`, `storage/`, `tenancy/`, `workers/loops.py`, `workers/main.py`, `alembic/versions/0001_platform_foundation.py` |
 | `002-platform-auth-access` | Auth0/local auth, role grants, support overrides, delegated credentials, access audit | `auth/`, `api/routers/auth.py`, `api/routers/admin_access.py`, `api/schemas/auth.py`, `admin/support_overrides.py`, `audit/access.py`, `db/models/access_control.py`, `db/models/delegated_credential.py`, `db/repositories/access_control.py`, `db/repositories/delegated_credential.py`, `alembic/versions/0002_auth_access_control.py` |
-| `003-workflow-studio-registry` | Admin workflow registry, drafts, validation, publish bundles, workflow UI | `admin/workflow_registry/`, `api/routers/admin_workflows.py`, `api/routers/admin_workflow_ui.py`, `api/schemas/workflow_registry.py`, `api/schemas/workflow_editor.py`, `api/ui/admin_workflows.py`, `runtime/workflow_bundle.py`, `web_admin/templates/workflows/`, `web_admin/static/workflow_studio.*`, `db/models/workflow_registry.py`, `db/repositories/workflow_registry.py`, `alembic/versions/0003_workflow_registry.py` |
+| `003-workflow-studio-registry` | Admin workflow registry, drafts, validation, publish bundles, workflow UI | `admin/workflow_registry/`, `api/routers/admin_workflows.py`, `api/routers/admin_workflow_ui.py`, `api/schemas/workflow_registry.py`, `api/schemas/workflow_editor.py`, `api/ui/admin_workflows.py`, `runtime/workflow_bundle.py`, `frontend/admin/src/components/workflows/`, `web_admin/static/react/`, `db/models/workflow_registry.py`, `db/repositories/workflow_registry.py`, `alembic/versions/0003_workflow_registry.py` |
 | `004-durable-orchestration-runtime` | Durable run model, execution bundle pinning, handoffs, checkpoints, leases, approvals, lineage, side-effect intents, worker polling | `runtime/orchestration/`, `api/routers/runtime_runs.py`, `api/schemas/runtime_runs.py`, `workers/orchestration.py`, `bootstrap/worker.py`, `db/models/runtime_orchestration.py`, `db/repositories/runtime_orchestration.py`, `alembic/versions/0004_durable_orchestration_runtime.py` |
 | `005-immutable-memory` | Append-only memory scopes, versions, heads, replay/diff, read/write audit | `memory/`, `api/routers/memory.py`, `api/schemas/memory.py`, `db/models/memory.py`, `db/repositories/memory.py`, `alembic/versions/0005_immutable_memory.py` |
-| `006-user-interaction-channels` | Web/API/Telegram channel normalization, run status/result APIs, artifact grants, notifications, callbacks, SSE formatting | `channels/`, `api/routers/channel_runs.py`, `api/routers/web_run_ui.py`, `api/routers/telegram_webhook.py`, `api/schemas/channel_runs.py`, `api/ui/run_details.py`, `web_admin/templates/runs/`, `web_admin/static/run_details.js`, `db/models/channels.py`, `db/repositories/channels.py`, `alembic/versions/0006_user_interaction_channels.py` |
-| `007-model-skill-routing` | Versioned model, prompt, skill, tool, outbound, secret-reference, credential policy configuration and runtime pinning | `config/`, `api/routers/admin_model_skill_config.py`, `api/schemas/model_skill_config.py`, `api/ui/model_skill_config.py`, `web_admin/templates/model_skill_config/`, `web_admin/static/model_skill_config.js`, `db/models/model_skill_config.py`, `db/repositories/model_skill_config.py`, `alembic/versions/0007_model_skill_routing.py` |
-| `008-production-audit-debugging` | Timeline capture, runtime traces, capture gaps, lineage projections, version-bundle snapshots, redacted export, run inspection UI | `audit/`, `api/routers/admin_run_inspection.py`, `api/schemas/audit_debugging.py`, `web_admin/templates/runs/`, `web_admin/static/run_inspection.js`, `db/models/audit_debugging.py`, `db/repositories/audit_debugging.py`, `alembic/versions/0008_production_audit_debugging.py` |
-| `009-reliability-scale-hardening` | Admission/backpressure, quotas, fairness, retries, circuit breakers, compensation, dead letters, autoscaling signals, partitions, artifact throughput, reliability UI | `reliability/`, `api/routers/reliability_controls.py`, `api/schemas/reliability.py`, `api/ui/reliability_controls.py`, `runtime/queue/service.py`, `storage/throughput.py`, `web_admin/templates/reliability/`, `web_admin/static/reliability_controls.js`, `db/models/reliability.py`, `db/repositories/reliability.py`, `alembic/versions/0009_reliability_scale_hardening.py` |
+| `006-user-interaction-channels` | Web/API/Telegram channel normalization, run status/result APIs, artifact grants, notifications, callbacks, SSE formatting | `channels/`, `api/routers/channel_runs.py`, `api/routers/web_run_ui.py`, `api/routers/telegram_webhook.py`, `api/schemas/channel_runs.py`, `api/ui/run_details.py`, `frontend/admin/src/components/userRuns/`, `db/models/channels.py`, `db/repositories/channels.py`, `alembic/versions/0006_user_interaction_channels.py` |
+| `007-model-skill-routing` | Versioned model, prompt, skill, tool, outbound, secret-reference, credential policy configuration and runtime pinning | `config/`, `api/routers/admin_model_skill_config.py`, `api/schemas/model_skill_config.py`, `api/ui/model_skill_config.py`, `frontend/admin/src/components/governance/`, `db/models/model_skill_config.py`, `db/repositories/model_skill_config.py`, `alembic/versions/0007_model_skill_routing.py` |
+| `008-production-audit-debugging` | Timeline capture, runtime traces, capture gaps, lineage projections, version-bundle snapshots, redacted export, run inspection UI | `audit/`, `api/routers/admin_run_inspection.py`, `api/schemas/audit_debugging.py`, `frontend/admin/src/components/operations/`, `db/models/audit_debugging.py`, `db/repositories/audit_debugging.py`, `alembic/versions/0008_production_audit_debugging.py` |
+| `009-reliability-scale-hardening` | Admission/backpressure, quotas, fairness, retries, circuit breakers, compensation, dead letters, autoscaling signals, partitions, artifact throughput, reliability UI | `reliability/`, `api/routers/reliability_controls.py`, `api/schemas/reliability.py`, `api/ui/reliability_controls.py`, `runtime/queue/service.py`, `storage/throughput.py`, `frontend/admin/src/components/operations/`, `db/models/reliability.py`, `db/repositories/reliability.py`, `alembic/versions/0009_reliability_scale_hardening.py` |
 
 ## 6. FastAPI Application And Router Map
 
@@ -403,7 +403,7 @@ guards, table schemas, tests, and query paths.
 ## 9. Workflow Registry And Admin Studio
 
 The workflow registry is implemented under `admin/workflow_registry/` and
-exposed through JSON APIs plus server-rendered admin pages.
+exposed through JSON APIs plus React browser pages.
 
 Responsibilities:
 
@@ -432,11 +432,8 @@ Durable workflow registry tables:
 - `workflow_version_bundles`
 - `registry_sharing_grants`
 
-Admin UI assets live under:
-
-- `web_admin/templates/workflows/`
-- `web_admin/static/workflow_studio.js`
-- `web_admin/static/workflow_studio.css`
+Admin UI assets live under `frontend/admin/src/components/workflows/` and are
+served from built React assets under `web_admin/static/react/`.
 
 ## 10. Durable Runtime And Workers
 
@@ -543,13 +540,10 @@ Channel tables:
 - `artifact_access_grants`
 - `interaction_audit_records`
 
-Run UI templates and scripts:
-
-- `web_admin/templates/runs/index.html`
-- `web_admin/templates/runs/detail.html`
-- `web_admin/templates/runs/replay.html`
-- `web_admin/static/run_details.js`
-- `web_admin/static/run_inspection.js`
+Run browser UI lives in React components under
+`frontend/admin/src/components/userRuns/` and React operations views; legacy
+`/runs` browser links redirect to React while JSON APIs remain under
+`api/routers/channel_runs.py`.
 
 ## 12. Immutable Memory
 
@@ -640,12 +634,8 @@ Configuration tables:
 - `configuration_rollback_records`
 - `run_configuration_migration_records`
 
-Admin UI assets:
-
-- `web_admin/templates/model_skill_config/index.html`
-- `web_admin/templates/model_skill_config/history.html`
-- `web_admin/templates/model_skill_config/run_provenance.html`
-- `web_admin/static/model_skill_config.js`
+Admin UI assets live in React governance components under
+`frontend/admin/src/components/governance/`.
 
 ## 14. Audit, Observability, Replay, And Debugging
 
@@ -756,12 +746,8 @@ Reliability tables:
 - `reliability_artifact_throughput_windows`
 - `reliability_failure_injection_records`
 
-Admin UI assets:
-
-- `web_admin/templates/reliability/index.html`
-- `web_admin/templates/reliability/breakers.html`
-- `web_admin/templates/reliability/dead_letters.html`
-- `web_admin/static/reliability_controls.js`
+Admin UI assets live in the React operations workspace under
+`frontend/admin/src/components/operations/`.
 
 ## 16. Persistence Overview
 
@@ -850,8 +836,8 @@ uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fai
   than by independently deployed services.
 - PostgreSQL is the production system of record, but local/test defaults use
   SQLite through the same SQLAlchemy model layer.
-- The admin UI is server-rendered with Jinja2 templates and small static
-  JavaScript files under `web_admin/`; there is no separate frontend build.
+- The browser UI is React-only, built from `frontend/admin` and served through
+  FastAPI static assets under `web_admin/static/react/`.
 - Tenant isolation is explicit in domain models, table columns, middleware,
   dependencies, and repository methods. PostgreSQL RLS is not currently encoded
   in migrations.

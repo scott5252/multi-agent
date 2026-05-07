@@ -34,7 +34,7 @@ function toneFor(status: string): "info" | "success" | "warning" | "critical" {
   if (["ready", "passed"].includes(status)) {
     return "success";
   }
-  if (["blocked", "denied", "failed", "unavailable"].includes(status)) {
+  if (["blocked", "denied", "failed", "unavailable", "artifact_unavailable", "audit_unavailable", "redaction_unavailable"].includes(status)) {
     return "critical";
   }
   if (["warning", "queued", "running", "stale", "missing"].includes(status)) {

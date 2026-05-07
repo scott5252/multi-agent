@@ -37,7 +37,7 @@ describe("App", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders safe principal scope and Jinja fallback links", async () => {
+  it("renders safe principal scope and React-only migration evidence", async () => {
     vi.stubGlobal(
       "fetch",
       vi
@@ -69,7 +69,7 @@ describe("App", () => {
     expect(screen.getByText("Loading admin shell")).toBeInTheDocument();
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "React Admin Migration Hardening" }),
+        screen.getByRole("heading", { name: "React-only browser UI" }),
       ).toBeInTheDocument();
     });
 
@@ -82,7 +82,7 @@ describe("App", () => {
       "/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111",
     );
     expect(screen.getByText("Route safety plan")).toBeInTheDocument();
-    expect(screen.getByText("Deletion readiness")).toBeInTheDocument();
+    expect(screen.getByText("React-only readiness")).toBeInTheDocument();
   });
 
   it("renders the channel workspace route inside the shell", async () => {
@@ -111,6 +111,86 @@ describe("App", () => {
       ).toBeInTheDocument();
     });
     expect(screen.getAllByText("Morning briefing")[0]).toBeInTheDocument();
+  });
+
+  it("renders the user-facing run route inside the shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => bootstrapFixture,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            artifact_availability: "none",
+            latest_timeline_cursor: "1",
+            permitted_actions: ["cancel"],
+            progress_summary: "Run accepted through channel facade.",
+            result_availability: "unavailable",
+            run_id: "00000000-0000-0000-0000-000000000046",
+            state: "queued",
+            subscribed: true,
+            terminal_outcome: "none",
+            trace_id: "trace-app-qa046",
+            waiting_prompt: null,
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            items: [
+              {
+                event_id: "33333333-3333-3333-3333-333333333046",
+                event_type: "run_queued",
+                occurred_at: "2026-05-07T12:00:00Z",
+                sequence: 1,
+                severity: "info",
+                state: "queued",
+                summary: "Run accepted through channel facade.",
+                trace_id: "trace-app-qa046",
+              },
+            ],
+            next_cursor: null,
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            availability: "unavailable",
+            run_id: "00000000-0000-0000-0000-000000000046",
+            state: "queued",
+            structured_result: null,
+            summary: null,
+            trace_id: "trace-app-qa046",
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            items: [],
+            run_id: "00000000-0000-0000-0000-000000000046",
+          }),
+        }),
+    );
+    window.history.pushState(
+      {},
+      "",
+      "/admin/app/channels/runs/00000000-0000-0000-0000-000000000046",
+    );
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Run workspace" })).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("Run accepted through channel facade.").length,
+      ).toBeGreaterThan(0);
+    });
   });
 
   it("renders the usage analytics route inside the shell", async () => {
@@ -303,7 +383,9 @@ describe("App", () => {
       expect(screen.getByText("React admin unavailable")).toBeInTheDocument();
     });
     expect(screen.getByText("insufficient_role")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open existing admin console" }))
-      .toHaveAttribute("href", "/admin");
+    expect(screen.getByRole("link", { name: "Open local login" })).toHaveAttribute(
+      "href",
+      "/auth/local-login?redirect_to=/admin/app",
+    );
   });
 });

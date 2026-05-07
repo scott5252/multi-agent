@@ -110,6 +110,36 @@ def test_artifact_and_gate_payloads_are_reference_only() -> None:
 
     assert gate.artifact_references[0].authorized_href.endswith(".json")
 
+    unavailable_artifact = ArtifactReferenceSummary(
+        artifact_reference_id="artifact-qa043-unavailable",
+        label="Unavailable redacted artifact metadata",
+        content_class="diagnostic_summary",
+        checksum="sha256:qa043unavailable",
+        size_label="0 KB",
+        retention_state=TestBenchStatus.ARTIFACT_UNAVAILABLE,
+        redaction_class="safe-summary",
+        access_status=TestBenchStatus.ARTIFACT_UNAVAILABLE,
+        safe_summary="Artifact metadata is unavailable by governed reference.",
+        authorized_href=None,
+        audit_reference_id="audit-artifact-qa043-unavailable",
+    )
+    redaction_gate = PublishGateEvidence(
+        gate_id="gate-qa043-redaction-unavailable",
+        target_type="workflow_draft",
+        target_label="Daily briefing draft",
+        target_revision="workflow-draft-rev-qa033-current",
+        required_suite_id="suite-qa033-daily-briefing",
+        required_suite_label="Daily briefing release gate",
+        evidence_status=TestBenchStatus.REDACTION_UNAVAILABLE,
+        reason="Redaction evidence is unavailable.",
+        remediation="Regenerate redaction evidence before publishing.",
+        audit_reference_id="audit-gate-qa043-redaction",
+        artifact_references=(unavailable_artifact,),
+    )
+
+    assert redaction_gate.evidence_status == "redaction_unavailable"
+    assert redaction_gate.artifact_references[0].authorized_href is None
+
     with pytest.raises(ValidationError):
         ArtifactReferenceSummary(
             artifact_reference_id="artifact-unsafe",

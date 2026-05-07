@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
-from typing import Annotated, cast
+from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,7 +22,6 @@ from multi_agent_platform.admin.briefing_preferences.service import (
     BriefingPreferenceService,
 )
 from multi_agent_platform.api.deps import get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.briefing_preferences import (
     BriefingPreferenceExportResponse,
     BriefingPreferenceImportRequest,
@@ -34,14 +34,7 @@ from multi_agent_platform.api.schemas.briefing_preferences import (
     BriefingPreferenceSummaryResponse,
 )
 from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    CommonStateType,
-    build_common_state,
     is_platform_admin,
-)
-from multi_agent_platform.api.ui.briefing_preferences import (
-    BriefingPreferencesPage,
-    redaction_notice,
 )
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
@@ -58,6 +51,19 @@ router = APIRouter(
 )
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+SEE_OTHER = status.HTTP_303_SEE_OTHER
+BRIEFING_QUERY_KEYS = frozenset(
+    {
+        "tenant_id",
+        "principal_id",
+        "timezone",
+        "ready",
+        "revision",
+        "revision_token",
+        "saved_filter_id",
+        "panel",
+    }
+)
 
 
 def _service(session: AsyncSession) -> BriefingPreferenceService:
@@ -184,68 +190,20 @@ async def briefing_preference_resolve_api(
     return _resolve_response(context)
 
 
-@router.get("", response_class=HTMLResponse, include_in_schema=False)
+@router.get("", response_model=None, include_in_schema=False)
 async def briefing_preferences_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     tenant_id: UUID | None = None,
-) -> HTMLResponse:
-    service = _service(session)
-    scope = _access_scope(principal, tenant_id)
-    tenant_scope = scope if scope.tenant_id is not None else None
-    profile = await service.get_own_profile(tenant_scope) if tenant_scope else None
-    summaries = await service.list_summaries(scope)
-    page = BriefingPreferencesPage(
-        profile=_profile_response(profile) if profile else None,
-        summaries=tuple(_summary_response(item) for item in summaries),
-        can_edit=bool(
-            tenant_scope
-            and principal.tenant_id is not None
-            and principal.tenant_id == tenant_scope.tenant_id
-        ),
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Briefing Preferences",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(
-                label="Briefing Preferences",
-                href="/admin/briefing-preferences",
-            ),
-        ),
-        common_state=None
-        if profile or summaries
-        else build_common_state(
-            CommonStateType.EMPTY,
-            title="No briefing preferences yet",
-            summary=(
-                "Save a profile to make Daily Intelligence Briefing runs context-aware."
-            ),
-            trace_id=principal.trace_id,
-        ),
-    )
-    return cast(
-        HTMLResponse,
-        request.app.state.container.workflow_ui_templates.TemplateResponse(
-            request,
-            "briefing_preferences/index.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": page,
-                "redaction_notice": redaction_notice(),
-            },
-        ),
-    )
+) -> RedirectResponse:
+    _ = session
+    _access_scope(principal, tenant_id)
+    return _react_redirect(request, panel="briefing")
 
 
-@router.post("", response_class=HTMLResponse, include_in_schema=False)
+@router.post("", response_model=None, include_in_schema=False)
 async def save_briefing_preferences_page(
-    request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     tenant_id: Annotated[UUID | None, Form()] = None,
@@ -262,7 +220,7 @@ async def save_briefing_preferences_page(
     scheduled_enabled: Annotated[bool, Form()] = False,
     scheduled_time: Annotated[str | None, Form()] = None,
     revision_token: Annotated[str | None, Form()] = None,
-) -> Response:
+) -> RedirectResponse:
     service = _service(session)
     scope = _tenant_access_scope(principal, tenant_id)
     try:
@@ -286,44 +244,27 @@ async def save_briefing_preferences_page(
             ),
             revision_token=revision_token,
         )
-    except BriefingPreferenceStaleRevisionError:
-        return await _page_error(
-            request=request,
-            principal=principal,
-            session=session,
-            scope=scope,
-            status_code=status.HTTP_409_CONFLICT,
-            title="Stale briefing preference form",
-            summary=(
-                "The current profile changed. Review current values before "
-                "saving again."
-            ),
-        )
+    except BriefingPreferenceStaleRevisionError as exc:
+        raise HTTPException(status_code=409, detail="stale revision") from exc
     except ValidationError as exc:
-        return await _page_error(
-            request=request,
-            principal=principal,
-            session=session,
-            scope=scope,
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            title="Briefing preference validation failed",
-            summary=str(exc.errors()[0]["msg"]),
-        )
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc.errors()[0]["msg"]),
+        ) from exc
     return RedirectResponse(
-        f"/admin/briefing-preferences?tenant_id={scope.tenant_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(scope, panel="briefing"),
+        status_code=SEE_OTHER,
     )
 
 
-@router.post("/import", response_class=HTMLResponse, include_in_schema=False)
+@router.post("/import", response_model=None, include_in_schema=False)
 async def import_briefing_preferences_page(
-    request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     tenant_id: Annotated[UUID | None, Form()] = None,
     import_document: Annotated[str, Form()] = "",
     revision_token: Annotated[str | None, Form()] = None,
-) -> Response:
+) -> RedirectResponse:
     service = _service(session)
     scope = _tenant_access_scope(principal, tenant_id)
     try:
@@ -341,86 +282,24 @@ async def import_briefing_preferences_page(
         ValueError,
         json.JSONDecodeError,
     ) as exc:
-        return await _page_error(
-            request=request,
-            principal=principal,
-            session=session,
-            scope=scope,
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            title="Briefing preference import failed",
-            summary=str(exc),
-        )
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return RedirectResponse(
-        f"/admin/briefing-preferences?tenant_id={scope.tenant_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(scope, panel="briefing-import"),
+        status_code=SEE_OTHER,
     )
 
 
-@router.get("/export", include_in_schema=False)
+@router.get("/export", response_model=None, include_in_schema=False)
 async def export_briefing_preferences_page(
     principal: PrincipalDep,
     session: SessionDep,
     tenant_id: UUID | None = None,
-) -> JSONResponse:
-    try:
-        exported = await _service(session).export_own_profile(
-            _tenant_access_scope(principal, tenant_id)
-        )
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail="profile not found") from exc
-    return JSONResponse(content=exported.document)
-
-
-async def _page_error(
-    *,
-    request: Request,
-    principal: PrincipalContext,
-    session: AsyncSession,
-    scope: BriefingPreferenceAccessScope,
-    status_code: int,
-    title: str,
-    summary: str,
-) -> HTMLResponse:
-    service = _service(session)
-    profile = await service.get_own_profile(scope)
-    summaries = await service.list_summaries(scope)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Briefing Preferences",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(
-                label="Briefing Preferences",
-                href="/admin/briefing-preferences",
-            ),
-        ),
-        common_state=build_common_state(
-            CommonStateType.VALIDATION_ERROR,
-            title=title,
-            summary=summary,
-            trace_id=principal.trace_id,
-        ),
-    )
-    return cast(
-        HTMLResponse,
-        request.app.state.container.workflow_ui_templates.TemplateResponse(
-            request,
-            "briefing_preferences/index.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": BriefingPreferencesPage(
-                    profile=_profile_response(profile) if profile else None,
-                    summaries=tuple(_summary_response(item) for item in summaries),
-                    error_message=summary,
-                    can_edit=True,
-                ),
-                "redaction_notice": redaction_notice(),
-            },
-            status_code=status_code,
-        ),
+) -> RedirectResponse:
+    _ = session
+    scope = _tenant_access_scope(principal, tenant_id)
+    return RedirectResponse(
+        _redirect_target(scope, panel="briefing-export"),
+        status_code=SEE_OTHER,
     )
 
 
@@ -458,6 +337,46 @@ def _tenant_access_scope(
     if scope.tenant_id is None:
         raise HTTPException(status_code=403, detail="tenant scope required")
     return scope
+
+
+def _redirect_target(
+    scope: BriefingPreferenceAccessScope,
+    *,
+    panel: str | None = None,
+    extra: dict[str, object] | None = None,
+) -> str:
+    query: dict[str, str] = {}
+    if scope.tenant_id is not None:
+        query["tenant_id"] = str(scope.tenant_id)
+    if panel:
+        query["panel"] = panel
+    if extra:
+        for key, value in extra.items():
+            if value is not None:
+                query[key] = str(value)
+    suffix = f"?{urlencode(query)}" if query else ""
+    return f"/admin/app/channels{suffix}"
+
+
+def _react_redirect(
+    request: Request,
+    *,
+    panel: str | None = None,
+    extra: dict[str, object] | None = None,
+) -> RedirectResponse:
+    query: dict[str, str] = {
+        key: value
+        for key, value in request.query_params.items()
+        if key in BRIEFING_QUERY_KEYS and value
+    }
+    if panel:
+        query.setdefault("panel", panel)
+    if extra:
+        for key, value in extra.items():
+            if value is not None:
+                query[key] = str(value)
+    suffix = f"?{urlencode(query)}" if query else ""
+    return RedirectResponse(f"/admin/app/channels{suffix}", status_code=SEE_OTHER)
 
 
 def _profile_response(

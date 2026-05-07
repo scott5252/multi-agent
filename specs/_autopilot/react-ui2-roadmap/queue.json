@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "roadmap_file": "react_ui2.md",
   "spec_range": "038..047",
-  "next_spec": "038",
+  "next_spec": null,
   "specs": [
     {
       "number": "038",
@@ -13,16 +13,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/038-jinja-surface-inventory-and-deletion-plan/validation.yml",
       "feature_dir": "specs/038-jinja-surface-inventory-and-deletion-plan",
       "branch": "codex/038-jinja-surface-inventory-and-deletion-plan",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "039",
@@ -33,16 +33,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/039-no-jinja-react-host-auth-shell-utilities-and-local-login/validation.yml",
       "feature_dir": "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
       "branch": "codex/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "040",
@@ -53,16 +53,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/040-workflow-registry-full-react-parity-and-jinja-removal/validation.yml",
       "feature_dir": "specs/040-workflow-registry-full-react-parity-and-jinja-removal",
       "branch": "codex/040-workflow-registry-full-react-parity-and-jinja-removal",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "041",
@@ -73,16 +73,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/041-governance-full-react-parity-and-jinja-removal/validation.yml",
       "feature_dir": "specs/041-governance-full-react-parity-and-jinja-removal",
       "branch": "codex/041-governance-full-react-parity-and-jinja-removal",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "042",
@@ -93,16 +93,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/validation.yml",
       "feature_dir": "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
       "branch": "codex/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "043",
@@ -113,16 +113,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/043-test-bench-full-react-parity-and-jinja-removal/validation.yml",
       "feature_dir": "specs/043-test-bench-full-react-parity-and-jinja-removal",
       "branch": "codex/043-test-bench-full-react-parity-and-jinja-removal",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "044",
@@ -133,16 +133,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/044-operations-reliability-run-inspection-and-usage-full-react-parity/validation.yml",
       "feature_dir": "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity",
       "branch": "codex/044-operations-reliability-run-inspection-and-usage-full-react-parity",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "045",
@@ -153,16 +153,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/045-channels-memberships-access-telegram-and-briefing-full-react-parity/validation.yml",
       "feature_dir": "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
       "branch": "codex/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "046",
@@ -173,16 +173,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal/validation.yml",
       "feature_dir": "specs/046-user-facing-run-ui-react-port-and-jinja-removal",
       "branch": "codex/046-user-facing-run-ui-react-port-and-jinja-removal",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "047",
@@ -193,16 +193,16 @@
       "validation_file": "specs/_autopilot/react-ui2-roadmap/047-jinja-infrastructure-decommission/validation.yml",
       "feature_dir": "specs/047-jinja-infrastructure-decommission",
       "branch": "codex/047-jinja-infrastructure-decommission",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     }
   ]
 }

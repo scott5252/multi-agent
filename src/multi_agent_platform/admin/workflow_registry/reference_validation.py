@@ -72,7 +72,7 @@ def validate_reference_readiness(
         status = reference.readiness_status
         blocking = status not in {"ready", "active"}
         profile_url = (
-            "/admin/prompt-runtime/profiles/resolve?agent_key="
+            "/admin/app/governance/profiles/resolve?agent_key="
             f"{reference.agent_key or ''}"
         )
         snapshots.append(
@@ -368,7 +368,7 @@ def _lookup_groups(
                 tenant_id=tenant_id,
                 status=reference.readiness_status,
                 detail_url=(
-                    "/admin/prompt-runtime/profiles/resolve?agent_key="
+                    "/admin/app/governance/profiles/resolve?agent_key="
                     f"{reference.agent_key or ''}"
                 ),
             )

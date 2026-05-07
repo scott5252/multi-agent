@@ -257,10 +257,6 @@ class Settings(BaseSettings):
         return Path(__file__).resolve().parents[1] / "web_admin"
 
     @cached_property
-    def web_admin_templates_dir(self) -> Path:
-        return self.web_admin_root / "templates"
-
-    @cached_property
     def web_admin_static_dir(self) -> Path:
         return self.web_admin_root / "static"
 

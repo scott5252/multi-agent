@@ -279,6 +279,161 @@ class WorkflowRevisionSummary(BaseModel):
         return safe_builder_text(value, max_length=180)
 
 
+class WorkflowRegistryItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    workflow_lineage_id: str
+    workflow_draft_id: str | None = None
+    workflow_version_bundle_id: str | None = None
+    name: str
+    workflow_kind: str
+    status: WorkflowBuilderStatus
+    owner_label: str
+    tenant_label: str | None = None
+    updated_at_label: str
+    sharing_summary: str
+    required_evidence_summary: str
+    href: str
+    actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
+
+    @field_validator(
+        "name",
+        "workflow_kind",
+        "owner_label",
+        "tenant_label",
+        "updated_at_label",
+        "sharing_summary",
+        "required_evidence_summary",
+    )
+    @classmethod
+    def optional_text_is_safe(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return safe_builder_text(value, max_length=180)
+
+
+class WorkflowRegistryEnvelope(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    page_id: str
+    title: str
+    summary: str
+    scope: ReactAdminScope
+    filters: dict[str, str] = Field(default_factory=dict)
+    items: tuple[WorkflowRegistryItem, ...] = Field(default_factory=tuple)
+    create_action: AdminAction | None = None
+
+    @field_validator("title", "summary")
+    @classmethod
+    def text_is_safe(cls, value: str) -> str:
+        return safe_builder_text(value, max_length=220)
+
+    @field_validator("filters")
+    @classmethod
+    def filters_are_safe(cls, value: dict[str, str]) -> dict[str, str]:
+        return {
+            safe_builder_text(key, max_length=60): safe_builder_text(
+                detail, max_length=120
+            )
+            for key, detail in value.items()
+        }
+
+
+class WorkflowCreateTemplate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    template_id: str
+    label: str
+    summary: str
+    workflow_kind: str
+    href: str
+
+    @field_validator("label", "summary", "workflow_kind")
+    @classmethod
+    def text_is_safe(cls, value: str) -> str:
+        return safe_builder_text(value, max_length=180)
+
+
+class WorkflowCreateEnvelope(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    page_id: str
+    title: str
+    summary: str
+    templates: tuple[WorkflowCreateTemplate, ...] = Field(default_factory=tuple)
+    create_action: AdminAction
+
+    @field_validator("title", "summary")
+    @classmethod
+    def text_is_safe(cls, value: str) -> str:
+        return safe_builder_text(value, max_length=220)
+
+
+class WorkflowSharingSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: WorkflowBuilderStatus
+    summary: str
+    grants_label: str
+    actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
+
+    @field_validator("summary", "grants_label")
+    @classmethod
+    def text_is_safe(cls, value: str) -> str:
+        return safe_builder_text(value, max_length=180)
+
+
+class WorkflowVersionDetail(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    workflow_version_bundle_id: str
+    display_name: str
+    display_version: str
+    digest_label: str
+    summary: str
+    href: str
+
+    @field_validator("display_name", "display_version", "digest_label", "summary")
+    @classmethod
+    def text_is_safe(cls, value: str) -> str:
+        return safe_builder_text(value, max_length=180)
+
+
+class WorkflowLegacyRouteMapping(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    legacy_path: str
+    methods: tuple[str, ...]
+    react_path: str | None = None
+    preserved_parameters: tuple[str, ...] = Field(default_factory=tuple)
+    redirect_status: str
+    compatibility_response: str | None = None
+    authorization_behavior: str
+    inventory_item_id: str
+    evidence_references: tuple[str, ...] = Field(default_factory=tuple)
+    retirement_outcome: str
+
+    @field_validator(
+        "legacy_path",
+        "react_path",
+        "redirect_status",
+        "compatibility_response",
+        "authorization_behavior",
+        "inventory_item_id",
+        "retirement_outcome",
+    )
+    @classmethod
+    def optional_text_is_safe(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return safe_builder_text(value, max_length=220)
+
+    @field_validator("methods", "preserved_parameters", "evidence_references")
+    @classmethod
+    def text_tuple_is_safe(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        return tuple(safe_builder_text(item, max_length=160) for item in value)
+
+
 class WorkflowJsonInspector(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -388,12 +543,17 @@ class WorkflowBuilderEnvelope(BaseModel):
     title: str
     description: str
     scope: ReactAdminScope
+    registry: WorkflowRegistryEnvelope
+    create_state: WorkflowCreateEnvelope
     draft: WorkflowDraftDocument
     sections: tuple[BuilderSection, ...] = Field(default_factory=tuple)
     reference_catalog: WorkflowReferenceCatalog
     validation: WorkflowValidationSummary
     publish_readiness: WorkflowPublishReadiness
     revisions: tuple[WorkflowRevisionSummary, ...] = Field(default_factory=tuple)
+    version_detail: WorkflowVersionDetail
+    sharing: WorkflowSharingSummary
+    legacy_routes: tuple[WorkflowLegacyRouteMapping, ...] = Field(default_factory=tuple)
     json_inspector: WorkflowJsonInspector
     actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
     state: ReactAdminShellState | None = None

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from multi_agent_platform.api.schemas.admin_governance import (
     GovernanceDashboard,
+    GovernanceLegacyRouteMapping,
     GovernanceMutationResult,
     GovernanceSection,
     GovernanceStatus,
@@ -79,6 +80,7 @@ def build_governance_dashboard(
         ),
         policy_history=build_policy_history(scope=scope).history,
         run_provenance=build_run_provenance(scope=scope),
+        legacy_routes=build_governance_legacy_route_mappings(scope=scope),
         actions=_dashboard_actions(scope=scope, platform_admin=platform_admin),
     )
 
@@ -533,6 +535,98 @@ def build_run_provenance(*, scope: ReactAdminScope) -> tuple[RunProvenanceSummar
             usage_evidence="Usage summary is available as token and cost metadata.",
             audit_reference_id="audit-run-provenance-qa031",
         ),
+    )
+
+
+def build_governance_legacy_route_mappings(
+    *,
+    scope: ReactAdminScope,
+) -> tuple[GovernanceLegacyRouteMapping, ...]:
+    _ = scope
+    mappings = (
+        ("/admin/model-providers", "/admin/app/governance/providers"),
+        ("/admin/model-providers/new", "/admin/app/governance/providers/new"),
+        ("/admin/model-providers/catalog", "/admin/app/governance/providers"),
+        (
+            "/admin/model-providers/{connection_id}",
+            "/admin/app/governance/providers/{connection_id}",
+        ),
+        (
+            "/admin/model-providers/{connection_id}/edit",
+            "/admin/app/governance/providers/{connection_id}/edit",
+        ),
+        (
+            "/admin/prompt-runtime/prompts",
+            "/admin/app/governance/prompts",
+        ),
+        (
+            "/admin/prompt-runtime/prompts/new",
+            "/admin/app/governance/prompts/new",
+        ),
+        (
+            "/admin/prompt-runtime/prompts/{prompt_lineage_id}/edit",
+            "/admin/app/governance/prompts/{prompt_lineage_id}/edit",
+        ),
+        (
+            "/admin/prompt-runtime/prompts/{prompt_lineage_id}/history",
+            "/admin/app/governance/prompts/{prompt_lineage_id}/history",
+        ),
+        (
+            "/admin/prompt-runtime/prompts/{prompt_lineage_id}/preview",
+            "/admin/app/governance/prompts/{prompt_lineage_id}/preview",
+        ),
+        (
+            "/admin/prompt-runtime/profiles",
+            "/admin/app/governance/profiles",
+        ),
+        (
+            "/admin/prompt-runtime/profiles/new",
+            "/admin/app/governance/profiles/new",
+        ),
+        (
+            "/admin/prompt-runtime/profiles/{profile_id}/edit",
+            "/admin/app/governance/profiles/{profile_id}/edit",
+        ),
+        (
+            "/admin/prompt-runtime/profiles/{profile_id}/history",
+            "/admin/app/governance/profiles/{profile_id}/history",
+        ),
+        (
+            "/admin/prompt-runtime/profiles/resolve",
+            "/admin/app/governance/profiles/resolve",
+        ),
+        ("/admin/config/ui", "/admin/app/governance/routing"),
+        (
+            "/admin/config/ui/history",
+            "/admin/app/governance/history",
+        ),
+        (
+            "/admin/config/ui/runs/{workflow_run_id}/provenance",
+            "/admin/app/governance/provenance/{workflow_run_id}",
+        ),
+    )
+    return tuple(
+        GovernanceLegacyRouteMapping(
+            legacy_path=legacy_path,
+            react_path=react_path,
+            preserved_params=(
+                "tenant_id",
+                "q",
+                "status",
+                "revision",
+                "agent_key",
+                "agent_kind",
+                "config_kind",
+                "workflow_run_id",
+            ),
+            compatibility_status="redirected",
+            authorization_behavior="authenticated redirect with backend JSON denial",
+            evidence_summary=(
+                "Legacy governance browser route redirects to React and no "
+                "longer renders a governance Jinja template."
+            ),
+        )
+        for legacy_path, react_path in mappings
     )
 
 

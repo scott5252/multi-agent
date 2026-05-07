@@ -43,17 +43,20 @@ export function TestBenchPage({ testBenchUrl }: { testBenchUrl: string }) {
 
   useEffect(() => {
     let alive = true;
+    const searchParams = new URLSearchParams(window.location.search);
+    const runId = searchParams.get("run_id") ?? "run-qa033-failing";
+    const tenantSearch = tenantQuerySuffix(searchParams);
     fetchTestBenchDashboard(testBenchUrl)
       .then(async (payload) => {
         const selectedSuite = payload.selected_suite;
         const detail = await fetchTestRunDetail(
-          `/admin/app/test-bench/runs/run-qa033-failing.json${window.location.search}`,
+          `/admin/app/test-bench/runs/${encodeURIComponent(runId)}.json${tenantSearch}`,
         );
         if (alive) {
           setDashboard(payload);
           setSuite(selectedSuite);
           setActiveRun(detail);
-          setActiveSection(payload.sections[0]?.section_id ?? "suites");
+          setActiveSection(sectionFromQuery(searchParams, payload));
           setLoadError(null);
         }
       })
@@ -160,6 +163,8 @@ export function TestBenchPage({ testBenchUrl }: { testBenchUrl: string }) {
     );
   }
 
+  const legacyContext = legacyRouteContext();
+
   return (
     <div className="governance-page testbench-page">
       <section className="patterns-hero governance-hero testbench-hero">
@@ -168,6 +173,12 @@ export function TestBenchPage({ testBenchUrl }: { testBenchUrl: string }) {
         <p>{dashboard.description}</p>
       </section>
       {loadError ? <p className="safe-error">{loadError}</p> : null}
+      {legacyContext ? (
+        <article className="governance-card legacy-route-card">
+          <strong>Legacy route restored</strong>
+          <p>{legacyContext}</p>
+        </article>
+      ) : null}
       <TestBenchSectionNav
         activeSection={activeSection}
         onChange={setActiveSection}
@@ -209,4 +220,56 @@ export function TestBenchPage({ testBenchUrl }: { testBenchUrl: string }) {
       <TestBenchAuditPanel auditTimeline={dashboard.audit_timeline} />
     </div>
   );
+}
+
+function tenantQuerySuffix(searchParams: URLSearchParams): string {
+  const tenantId = searchParams.get("tenant_id");
+  if (!tenantId) {
+    return "";
+  }
+  return `?tenant_id=${encodeURIComponent(tenantId)}`;
+}
+
+function sectionFromQuery(
+  searchParams: URLSearchParams,
+  payload: TestBenchDashboard,
+): string {
+  if (searchParams.get("run_id")) {
+    return "runs";
+  }
+  if (searchParams.get("gate_id")) {
+    return "gates";
+  }
+  if (searchParams.get("artifact_reference_id")) {
+    return "diagnostics";
+  }
+  if (searchParams.get("mode")?.includes("case")) {
+    return "suites";
+  }
+  return payload.sections[0]?.section_id ?? "suites";
+}
+
+function legacyRouteContext(): string | null {
+  const searchParams = new URLSearchParams(window.location.search);
+  const mutation = searchParams.get("mutation");
+  if (mutation === "created") {
+    return "Suite creation completed in the previous browser route and now continues in React.";
+  }
+  if (mutation === "case-created") {
+    return "Case creation completed in the previous browser route and now continues in React.";
+  }
+  if (mutation === "run-launched") {
+    return "Run launch completed in the previous browser route and now continues in React.";
+  }
+  const mode = searchParams.get("mode");
+  if (mode === "create-suite") {
+    return "Old create-suite links now open the React suite authoring flow.";
+  }
+  if (searchParams.get("suite_id")) {
+    return "Old suite links now open React with the authorized suite context preserved.";
+  }
+  if (searchParams.get("run_id")) {
+    return "Old run links now open React with backend-owned run evidence preserved.";
+  }
+  return null;
 }

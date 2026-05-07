@@ -1,21 +1,28 @@
 # Admin Console Shell
 
-The admin console shell gives operators one server-rendered frame for the
-existing workflow registry, model-skill configuration, run inspection, and
-reliability pages. The shell adds active scope display, authorization-aware
-navigation, breadcrumbs, common states, safe messages, and saved filters while
-preserving the original destination routes.
+The admin console shell gives operators one React frame for workflow registry,
+model/provider governance, run inspection, reliability, channels, memberships,
+usage, skills, and test-bench workspaces. The shell adds active scope display,
+authorization-aware navigation, breadcrumbs, common states, safe messages, and
+saved filters while preserving older browser URLs through safe redirects.
 
 ## Entry Points
 
 - `/admin` opens the shared console landing page.
 - `/admin/scope` validates a platform or tenant scope and redirects back to a
   safe admin destination.
-- `/admin/workflows/ui` keeps the workflow registry route.
-- `/admin/config/ui` and `/admin/config/ui/history` expose the model-skill UI.
-- `/admin/runs` keeps the run inspection route.
+- `/admin/app/workflows` is the React workflow registry route; old workflow
+  browser URLs redirect there.
+- `/admin/app/governance/routing` and `/admin/app/governance/history` expose
+  model-skill routing and history through React; old `/admin/config/ui` routes
+  redirect there.
+- `/admin/app/skills`, `/admin/app/skills/installations`, and
+  `/admin/app/skills/diagnostics` expose skill registry lifecycle and
+  diagnostics through React; old skill registry and diagnostics browser URLs
+  redirect there.
+- `/admin/runs` redirects to the React operations run inspection workspace.
 - `/admin/reliability/ui/`, `/admin/reliability/ui/breakers`, and
-  `/admin/reliability/ui/dead-letters` keep reliability UI route identities.
+  `/admin/reliability/ui/dead-letters` redirect to React reliability views.
 
 Tenant scope is carried with `tenant_id=<uuid>`. Platform scope omits
 `tenant_id`.
@@ -34,7 +41,7 @@ reuse saved filters or flash messages across scopes.
 ## Navigation
 
 Navigation metadata lives in Python in
-`multi_agent_platform.api.ui.admin_console`. Templates render only the filtered
+`multi_agent_platform.api.ui.admin_console`. React renders only the filtered
 navigation groups. The current groups are Workflows, Model And Skill Config,
 Run Inspection, Reliability, and Access.
 
@@ -65,11 +72,11 @@ breakers, and reliability dead letters.
 Saved-filter criteria are validated before save and before restore. Unsupported
 criteria are rejected. Tenant criteria must match the active tenant scope.
 
-## No-JS Fallback
+## Compatibility
 
-All critical behavior is server-rendered. `admin_shell.js` only enhances scope
-switching and saved-filter deletion prompts. Navigation, breadcrumbs, common
-states, saved-filter forms, and page content work without JavaScript.
+The browser UI is React-only. Older bookmarked URLs remain as authenticated
+redirects or safe compatibility responses, and the React host has a small
+non-template HTML fallback if built assets are unavailable.
 
 ## Troubleshooting
 

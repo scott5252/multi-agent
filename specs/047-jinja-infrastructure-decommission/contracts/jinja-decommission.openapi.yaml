@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info:
+  title: Spec 047 Jinja Infrastructure Decommission
+  version: 0.1.0
+paths:
+  /admin/app/migration/bootstrap.json:
+    get:
+      summary: Return React-only decommission evidence
+      responses:
+        "200":
+          description: Safe decommission dashboard
+  /admin/app/migration/routes.json:
+    get:
+      summary: Return route compatibility evidence
+      responses:
+        "200":
+          description: Safe route groups
+  /admin/app/migration/decommission-inventory.json:
+    get:
+      summary: Return final decommission inventory summary
+      responses:
+        "200":
+          description: Safe inventory with zero server-rendered template blockers
+  /auth/local-login:
+    get:
+      summary: Serve non-Jinja local login HTML
+      responses:
+        "200":
+          description: Safe local-principal login page
+  /runs:
+    get:
+      summary: Redirect legacy user run list/start browser links to React
+      responses:
+        "303":
+          description: Redirect to React run workspace
+  /runs/{run_id}:
+    get:
+      summary: Redirect legacy user run detail browser links to React after safe access check
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "303":
+          description: Redirect to React run detail
+        "404":
+          description: Safe unavailable problem

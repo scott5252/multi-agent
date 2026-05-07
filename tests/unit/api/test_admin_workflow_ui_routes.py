@@ -1,348 +1,99 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from pathlib import Path
-from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException
 from starlette.requests import Request
-from starlette.templating import Jinja2Templates
 
-from multi_agent_platform.admin.workflow_registry.service import (
-    WorkflowAccessError,
-    WorkflowNotFoundError,
-)
 from multi_agent_platform.api.routers import admin_workflow_ui
-from multi_agent_platform.api.schemas.workflow_editor import (
-    EditorLookupResponse,
-    GraphPreviewResponse,
-    PublishGateResponse,
-    RequiredTestSummary,
-    WorkflowEditorMetadataResponse,
-)
-from multi_agent_platform.api.schemas.workflow_registry import (
-    DraftRevisionListResponse,
-    WorkflowDraftResponse,
-    WorkflowDraftRevisionResponse,
-    WorkflowScopeType,
-    WorkflowVersionResponse,
-)
-from multi_agent_platform.api.ui.admin_console import (
-    AdminScope,
-    build_admin_shell_context,
-)
 from multi_agent_platform.auth.principal import PrincipalContext
 
 
-def build_request(path: str) -> Request:
+def build_request(path: str, query_string: bytes = b"") -> Request:
     return Request(
         {
             "type": "http",
             "method": "GET",
             "path": path,
             "headers": [],
-            "query_string": b"",
+            "query_string": query_string,
         }
     )
 
 
-def build_container() -> SimpleNamespace:
-    templates_dir = (
-        Path(__file__).resolve().parents[3]
-        / "src"
-        / "multi_agent_platform"
-        / "web_admin"
-        / "templates"
-    )
-    return SimpleNamespace(
-        workflow_ui_templates=Jinja2Templates(directory=str(templates_dir))
-    )
-
-
-class FakeUIService:
-    def __init__(
-        self, *, draft=None, version=None, items=None, exc: Exception | None = None
-    ):
-        self.draft = draft
-        self.version = version
-        self.items = items or []
-        self.exc = exc
-
-    async def list_workflows(self, **kwargs):
-        if self.exc is not None:
-            raise self.exc
-        return self.items
-
-    async def get_workflow_draft(self, **kwargs):
-        if self.exc is not None:
-            raise self.exc
-        return self.draft
-
-    async def get_workflow_version(self, **kwargs):
-        if self.exc is not None:
-            raise self.exc
-        return self.version
-
-    async def get_workflow_graph_preview(self, **kwargs):
-        return GraphPreviewResponse()
-
-    async def get_workflow_editor_lookups(self, **kwargs):
-        return EditorLookupResponse()
-
-    async def list_workflow_draft_revisions(self, **kwargs):
-        return DraftRevisionListResponse(
-            workflow_draft_id=self.draft.workflow_draft_id,
-            current_revision_number=self.draft.current_revision_number,
-            revisions=[self.draft.latest_revision],
-        )
-
-    async def evaluate_workflow_publish_gate(self, **kwargs):
-        return PublishGateResponse(
-            publish_gate_id="gate",
-            workflow_draft_id=str(self.draft.workflow_draft_id),
-            workflow_draft_revision_id=str(
-                self.draft.latest_revision.workflow_draft_revision_id
-            ),
-            document_sha256=self.draft.latest_revision.document_sha256,
-            validation_result_id=None,
-            status="blocked",
-            required_test_summary=RequiredTestSummary(),
-            digest="digest",
-        )
-
-    def workflow_registry_service(self):
-        return SimpleNamespace(
-            get_editor_metadata=lambda: WorkflowEditorMetadataResponse()
-        )
-
-
-class FakeSavedFilterRepository:
-    def __init__(self, session) -> None:
-        self.session = session
-
-    async def list_filters(self, **kwargs) -> list[object]:
-        return []
-
-
-async def fake_resolve_scope_for_request(**kwargs) -> AdminScope:
-    return AdminScope.platform()
-
-
-async def fake_build_shell_for_request(**kwargs):
-    principal = PrincipalContext(
-        principal_id="platform-admin",
-        role_codes=("platform_admin",),
-    )
-    request = kwargs["request"]
-    title = kwargs["title"]
-    return build_admin_shell_context(
-        principal=principal,
-        active_scope=AdminScope.platform(),
-        current_path=request.url.path,
-        title=title,
-    )
-
-
 @pytest.mark.asyncio
-async def test_admin_workflow_ui_routes_render_templates(
-    monkeypatch, sample_workflow_document
-) -> None:
-    now = datetime.now(UTC)
-    draft = WorkflowDraftResponse(
-        workflow_draft_id=uuid4(),
-        workflow_lineage_id=uuid4(),
-        slug="customer-intake",
-        display_name="Customer Intake",
-        scope_type=WorkflowScopeType.TENANT,
-        workflow_kind="main_workflow",
-        status="active",
-        current_revision_number=1,
-        latest_revision=WorkflowDraftRevisionResponse(
-            workflow_draft_revision_id=uuid4(),
-            revision_number=1,
-            document_sha256="abc123",
-            created_at=now,
-        ),
-        document=sample_workflow_document,
-        updated_at=now,
-    )
-    version = WorkflowVersionResponse(
-        workflow_version_bundle_id=uuid4(),
-        workflow_lineage_id=uuid4(),
-        slug="customer-intake",
-        display_name="Customer Intake",
-        display_version="v1",
-        scope_type=WorkflowScopeType.PLATFORM,
-        status="published",
-        compiled_bundle_digest="digest-123",
-        compiler_version="workflow-registry-0.1",
-        published_from_draft_id=uuid4(),
-        published_from_revision_id=uuid4(),
-        published_at=now,
-    )
+async def test_admin_workflow_ui_get_routes_redirect_to_react() -> None:
     principal = PrincipalContext(principal_id="tenant-admin")
-    container = build_container()
+    session = object()
+    draft_id = uuid4()
+    version_id = uuid4()
 
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "_build_admin_service",
-        lambda session, container: FakeUIService(items=[]),
-    )
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "AdminSavedFilterRepository",
-        FakeSavedFilterRepository,
-    )
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "resolve_scope_for_request",
-        fake_resolve_scope_for_request,
-    )
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "build_shell_for_request",
-        fake_build_shell_for_request,
-    )
     registry = await admin_workflow_ui.workflow_registry_page(
-        request=build_request("/admin/workflows/ui"),
+        request=build_request(
+            "/admin/workflows/ui",
+            b"tenant_id=11111111-1111-1111-1111-111111111111&status=draft&q=UI",
+        ),
         principal=principal,
-        session=object(),
-        container=container,
+        session=session,
     )
-    assert registry.status_code == 200
     create = await admin_workflow_ui.workflow_draft_create_page(
         request=build_request("/admin/workflows/new"),
         principal=principal,
-        session=object(),
-        container=container,
-    )
-    assert create.status_code == 200
-
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "_build_admin_service",
-        lambda session, container: FakeUIService(draft=draft),
+        session=session,
     )
     editor = await admin_workflow_ui.workflow_draft_editor_page(
-        workflow_draft_id=draft.workflow_draft_id,
-        request=build_request("/admin/workflows/drafts/editor"),
+        workflow_draft_id=draft_id,
+        request=build_request(
+            "/admin/workflows/drafts/editor",
+            b"conflict=stale-save",
+        ),
         principal=principal,
-        session=object(),
-        container=container,
+        session=session,
     )
-    assert editor.status_code == 200
     revisions = await admin_workflow_ui.workflow_draft_revision_history_page(
-        workflow_draft_id=draft.workflow_draft_id,
+        workflow_draft_id=draft_id,
         request=build_request("/admin/workflows/drafts/revisions"),
         principal=principal,
-        session=object(),
-        container=container,
+        session=session,
     )
     publish_gate = await admin_workflow_ui.workflow_publish_gate_page(
-        workflow_draft_id=draft.workflow_draft_id,
+        workflow_draft_id=draft_id,
         request=build_request("/admin/workflows/drafts/publish-gate"),
         principal=principal,
-        session=object(),
-        container=container,
-    )
-    assert revisions.status_code == 200
-    assert publish_gate.status_code == 200
-
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "_build_admin_service",
-        lambda session, container: FakeUIService(version=version),
+        session=session,
     )
     detail = await admin_workflow_ui.workflow_version_detail_page(
-        workflow_version_bundle_id=version.workflow_version_bundle_id,
+        workflow_version_bundle_id=version_id,
         request=build_request("/admin/workflows/versions/detail"),
         principal=principal,
-        session=object(),
-        container=container,
-    )
-    assert detail.status_code == 200
-
-
-@pytest.mark.asyncio
-async def test_workflow_registry_ui_route_applies_filter_query(monkeypatch) -> None:
-    captured: dict[str, object] = {}
-
-    class CapturingUIService(FakeUIService):
-        async def list_workflows(self, **kwargs):
-            captured.update(kwargs)
-            return []
-
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "_build_admin_service",
-        lambda session, container: CapturingUIService(items=[]),
-    )
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "AdminSavedFilterRepository",
-        FakeSavedFilterRepository,
-    )
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "resolve_scope_for_request",
-        fake_resolve_scope_for_request,
-    )
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "build_shell_for_request",
-        fake_build_shell_for_request,
+        session=session,
     )
 
-    response = await admin_workflow_ui.workflow_registry_page(
-        request=build_request("/admin/workflows/ui"),
-        principal=PrincipalContext(principal_id="tenant-admin"),
-        session=object(),
-        container=build_container(),
-        scope_filter="tenant",
-        status_filter="publish_ready",
-        search_query="triage",
+    assert registry.status_code == 303
+    assert registry.headers["location"] == (
+        "/admin/app/workflows?"
+        "tenant_id=11111111-1111-1111-1111-111111111111&status=draft&q=UI"
     )
-
-    assert response.status_code == 200
-    assert captured["scope_filter"] == "tenant"
-    assert captured["status"] == "publish_ready"
-    assert captured["search_query"] == "triage"
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "exc,status_code",
-    [(WorkflowNotFoundError("missing"), 404), (WorkflowAccessError("forbidden"), 403)],
-)
-async def test_admin_workflow_ui_routes_translate_service_errors(
-    monkeypatch, exc, status_code
-) -> None:
-    principal = PrincipalContext(principal_id="tenant-admin")
-    container = build_container()
-    monkeypatch.setattr(
-        admin_workflow_ui,
-        "_build_admin_service",
-        lambda session, container: FakeUIService(exc=exc),
+    assert create.headers["location"] == "/admin/app/workflows/new"
+    assert editor.headers["location"] == (
+        f"/admin/app/workflows/drafts/{draft_id}?conflict=stale-save"
     )
+    assert revisions.headers["location"] == (
+        f"/admin/app/workflows/drafts/{draft_id}/revisions"
+    )
+    assert publish_gate.headers["location"] == (
+        f"/admin/app/workflows/drafts/{draft_id}/publish-gate"
+    )
+    assert detail.headers["location"] == f"/admin/app/workflows/versions/{version_id}"
 
-    with pytest.raises(HTTPException) as editor_error:
-        await admin_workflow_ui.workflow_draft_editor_page(
-            workflow_draft_id=uuid4(),
-            request=build_request("/admin/workflows/drafts/editor"),
-            principal=principal,
-            session=object(),
-            container=container,
+
+def test_react_workflow_redirect_filters_unsafe_query() -> None:
+    response = admin_workflow_ui._react_workflow_redirect(
+        build_request(
+            "/admin/workflows/ui",
+            b"q=briefing&next=https%3A%2F%2Fexample.com&debug=/Users/example",
         )
-    with pytest.raises(HTTPException) as version_error:
-        await admin_workflow_ui.workflow_version_detail_page(
-            workflow_version_bundle_id=uuid4(),
-            request=build_request("/admin/workflows/versions/detail"),
-            principal=principal,
-            session=object(),
-            container=container,
-        )
+    )
 
-    assert editor_error.value.status_code == status_code
-    assert version_error.value.status_code == status_code
+    assert response.status_code == 303
+    assert response.headers["location"] == "/admin/app/workflows?q=briefing"

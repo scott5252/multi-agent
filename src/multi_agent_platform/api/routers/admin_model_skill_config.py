@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import (
-    build_shell_for_request,
-    resolve_scope_for_request,
-)
+from multi_agent_platform.api.deps import get_session
 from multi_agent_platform.api.schemas.model_skill_config import (
     ActivationRequest,
     ActivationResponse,
@@ -32,17 +29,6 @@ from multi_agent_platform.api.schemas.model_skill_config import (
     ToolPreviewRequest,
     ToolPreviewResponse,
 )
-from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    CommonStateType,
-    build_common_state,
-    build_saved_filter_summary,
-)
-from multi_agent_platform.api.ui.model_skill_config import (
-    build_history_page_model,
-    build_model_routing_page_model,
-    build_run_provenance_page_model,
-)
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.config.model_skill import ConfigKind, ScopeSelector
@@ -52,9 +38,6 @@ from multi_agent_platform.config.service import (
     ModelSkillServiceError,
 )
 from multi_agent_platform.config.validation import ModelSkillValidationError
-from multi_agent_platform.db.repositories.admin_console import (
-    AdminSavedFilterRepository,
-)
 from multi_agent_platform.db.repositories.model_skill_config import (
     ModelSkillConfigRepository,
 )
@@ -67,6 +50,10 @@ OptionalWorkflowQuery = Annotated[UUID | None, Query()]
 OptionalConfigKindQuery = Annotated[ConfigKind | None, Query()]
 LimitQuery = Annotated[int, Query(ge=1, le=100)]
 OptionalTextQuery = Annotated[str | None, Query()]
+REACT_GOVERNANCE_PATH = "/admin/app/governance"
+LEGACY_QUERY_PRESERVE_KEYS = frozenset(
+    {"tenant_id", "q", "status", "revision", "config_kind", "agent_key", "flash"}
+)
 
 
 def _service(session: AsyncSession) -> ModelSkillConfigService:
@@ -96,102 +83,53 @@ def _to_http_error(exc: Exception) -> HTTPException:
     return HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/ui", response_class=HTMLResponse, include_in_schema=False)
+def _redirect(path: str) -> RedirectResponse:
+    return RedirectResponse(url=path, status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _react_governance_redirect(
+    request: Request,
+    suffix: str = "",
+    *,
+    extra_query: dict[str, str] | None = None,
+) -> RedirectResponse:
+    clean_suffix = suffix if not suffix or suffix.startswith("/") else f"/{suffix}"
+    query_params = getattr(request, "query_params", {})
+    query = {
+        key: value
+        for key, value in query_params.items()
+        if key in LEGACY_QUERY_PRESERVE_KEYS and len(value) <= 240
+    }
+    if extra_query:
+        query.update(extra_query)
+    target = f"{REACT_GOVERNANCE_PATH}{clean_suffix}"
+    if query:
+        target = f"{target}?{urlencode(query)}"
+    return _redirect(target)
+
+
+@router.get("/ui", include_in_schema=False)
 async def model_skill_config_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
-    active_scope = await resolve_scope_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-    )
-    if active_scope.scope_type != "tenant" or active_scope.tenant_id is None:
-        raise HTTPException(status_code=403, detail="tenant scope required")
-    page = build_model_routing_page_model(missing_default=True)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Configuration", href="/admin/config/ui"),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "model_skill_config/index.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session
+    return _react_governance_redirect(request, "/routing")
 
 
-@router.get("/ui/history", response_class=HTMLResponse, include_in_schema=False)
+@router.get("/ui/history", include_in_schema=False)
 async def model_skill_history_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
-    active_scope = await resolve_scope_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-    )
-    if active_scope.scope_type != "tenant" or active_scope.tenant_id is None:
-        raise HTTPException(status_code=403, detail="tenant scope required")
-    try:
-        history = await _service(session).list_history(
-            principal=principal,
-            tenant_id=active_scope.tenant_id,
-            kind=None,
-            limit=100,
-        )
-    except Exception:
-        history = HistoryResponse(items=[])
-    page = build_history_page_model(history)
-    records = await AdminSavedFilterRepository(session).list_filters(
-        principal=principal,
-        admin_area="model_skill_history",
-        scope=active_scope,
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Configuration", href="/admin/config/ui"),
-            BreadcrumbItem(label="History", href="/admin/config/ui/history"),
-        ),
-        common_state=build_common_state(
-            CommonStateType.EMPTY,
-            title="No configuration history",
-            summary=(
-                "No model or skill configuration changes are visible in this scope."
-            ),
-            trace_id=principal.trace_id,
-        )
-        if not history.items
-        else None,
-        saved_filters=tuple(
-            build_saved_filter_summary(record, active_scope=active_scope)
-            for record in records
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "model_skill_config/history.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session
+    return _react_governance_redirect(request, "/history")
 
 
 @router.get(
     "/ui/runs/{workflow_run_id}/provenance",
-    response_class=HTMLResponse,
     include_in_schema=False,
 )
 async def model_skill_run_provenance_page(
@@ -199,40 +137,9 @@ async def model_skill_run_provenance_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
-    active_scope = await resolve_scope_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-    )
-    if active_scope.scope_type != "tenant" or active_scope.tenant_id is None:
-        raise HTTPException(status_code=403, detail="tenant scope required")
-    try:
-        provenance = await _service(session).run_provenance(
-            principal=principal,
-            tenant_id=active_scope.tenant_id,
-            workflow_run_id=workflow_run_id,
-        )
-    except Exception:
-        provenance = RunProvenanceResponse(workflow_run_id=workflow_run_id)
-    page = build_run_provenance_page_model(provenance)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Configuration", href="/admin/config/ui"),
-            BreadcrumbItem(label="Run Provenance", href=request.url.path),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "model_skill_config/run_provenance.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session
+    return _react_governance_redirect(request, f"/provenance/{workflow_run_id}")
 
 
 @router.post(

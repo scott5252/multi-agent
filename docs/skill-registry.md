@@ -8,7 +8,7 @@ ready installations to existing model-skill binding policy.
 
 ## Platform Flow
 
-1. Open `/admin/skill-registry/ui/packages`.
+1. Open `/admin/app/skills/packages`.
 2. Create a package with a stable slug, owner, description, and safe summary.
 3. Validate a manifest that references approved tool or MCP integrations only.
 4. Publish the version after validation returns no blocking findings.
@@ -22,7 +22,7 @@ requires a new semantic version.
 
 ## Tenant Flow
 
-1. Open `/admin/skill-registry/ui/installations` in tenant scope.
+1. Open `/admin/app/skills/installations` in tenant scope.
 2. Install an authorized package version.
 3. Configure required credentials using existing secret references or
    delegated credential links.
@@ -52,8 +52,11 @@ installation versions; existing bindings never float automatically.
 - JSON API: `/admin/skill-registry/packages`,
   `/admin/skill-registry/packages/{slug}/versions`,
   `/admin/skill-registry/installations`, and installation eligibility routes.
-- UI: `/admin/skill-registry/ui/packages` and
-  `/admin/skill-registry/ui/installations`.
+- React UI: `/admin/app/skills/packages` and
+  `/admin/app/skills/installations`.
+- Legacy browser URLs under `/admin/skill-registry/ui/*` are authenticated
+  redirects to the React skill workspace and no longer render skill registry
+  Jinja templates.
 - Runtime adapter: `multi_agent_platform.runtime.skill_registry`.
 - Policy adapter:
   `multi_agent_platform.admin.skill_registry.eligibility`.
@@ -80,7 +83,8 @@ non-local environment, matching tenant credential metadata, and outbound
 allowlist policy. Raw external provider payloads and raw secret values are not
 stored inline; diagnostics show only redacted request and response summaries.
 
-Operators can review connector readiness at
-`/admin/skill-execution/ui/diagnostics`. The JSON diagnostics endpoints are
+Operators can review connector readiness at `/admin/app/skills/diagnostics`.
+The legacy `/admin/skill-execution/ui/diagnostics` URL redirects to the React
+diagnostics workspace. The JSON diagnostics endpoints are
 `/admin/skill-execution/api/diagnostics` and
 `/admin/skill-execution/api/diagnostics/run`.

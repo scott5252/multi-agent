@@ -36,11 +36,13 @@ def test_direct_destination_uses_shell_frame_when_authorized(
         response = client.get(
             f"/admin/reliability/ui/breakers?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
+            follow_redirects=False,
         )
 
-    assert response.status_code == 200
-    assert 'aria-label="Admin"' in response.text
-    assert "Circuit Breakers" in response.text
+    assert response.status_code == 303
+    assert response.headers["location"] == (
+        f"/admin/app/operations?tenant_id={tenant_id}&panel=breakers"
+    )
 
 
 def test_reliability_dashboard_and_dead_letter_views_share_shell(
@@ -54,14 +56,19 @@ def test_reliability_dashboard_and_dead_letter_views_share_shell(
         dashboard = client.get(
             f"/admin/reliability/ui/?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
+            follow_redirects=False,
         )
         dead_letters = client.get(
             f"/admin/reliability/ui/dead-letters?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
+            follow_redirects=False,
         )
 
-    assert dashboard.status_code == 200
-    assert "Reliability" in dashboard.text
-    assert dead_letters.status_code == 200
-    assert "Dead Letters" in dead_letters.text
-    assert 'data-state-type="empty"' in dead_letters.text
+    assert dashboard.status_code == 303
+    assert dashboard.headers["location"] == (
+        f"/admin/app/operations?tenant_id={tenant_id}&panel=reliability"
+    )
+    assert dead_letters.status_code == 303
+    assert dead_letters.headers["location"] == (
+        f"/admin/app/operations?tenant_id={tenant_id}&panel=dead-letters"
+    )

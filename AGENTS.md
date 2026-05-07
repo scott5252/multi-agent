@@ -7,9 +7,9 @@ Auto-generated from all feature plans. Last updated: 2026-05-05
 - Python 3.12 across the platform.
 - TypeScript strict mode and Node.js `>=20.19.0 <26` for the React admin UI
   foundation under `frontend/admin`.
-- FastAPI control-plane application with Starlette/Jinja2 server-rendered admin
-  pages, JSON APIs, channel webhooks, selected streaming/SSE responses, and a
-  worker process.
+- FastAPI control-plane application with React-served browser UI, static HTML
+  compatibility helpers, JSON APIs, channel webhooks, selected streaming/SSE
+  responses, and a worker process.
 - Pydantic v2 and Pydantic Settings for request/response schemas, domain
   contracts, settings, and validation.
 - SQLAlchemy 2.x async ORM, Alembic, PostgreSQL 16+, and psycopg 3 for durable
@@ -66,9 +66,9 @@ Auto-generated from all feature plans. Last updated: 2026-05-05
   windows, retry schedules, circuit breakers, compensation/dead-letter records,
   operational snapshots, and platform operations console exports.
 - Admin console, membership administration, and saved filters (010, 018):
-  server-rendered admin shell navigation, tenant-scope handling,
-  authorization-aware destinations, persisted saved filters, invitations,
-  tenant memberships, role-grant refresh, and membership audit records.
+  React admin shell navigation, tenant-scope handling, authorization-aware
+  destinations, persisted saved filters, invitations, tenant memberships,
+  role-grant refresh, and membership audit records.
 - Skill registry lifecycle (014, 014-v2): package manifests, immutable package
   versions, tenant availability and installation state, credential readiness,
   validation evidence, smoke-test evidence, quarantine decisions, upgrade
@@ -88,7 +88,7 @@ src/multi_agent_platform/
 - api/
   - routers/              # Admin APIs/UI routes, channel webhooks, runtime endpoints, auth, ops
   - schemas/              # Pydantic API schemas
-  - ui/                   # View models for server-rendered admin pages
+  - ui/                   # Safe admin view helpers and redirect utilities
 - audit/                  # Audit capture, inspection, classification, exports
 - auth/                   # Auth0/local-principal auth, policies, dependencies
 - bootstrap/              # API/worker container wiring
@@ -108,7 +108,7 @@ src/multi_agent_platform/
 - tenancy/                # Tenant context and guards
 - testing/                # Agent/workflow test bench helpers
 - usage/                  # Token usage and cost analytics
-- web_admin/              # Jinja2 templates and static assets
+- web_admin/              # React static assets and non-Jinja browser support
 - workers/                # Worker loop entrypoints
 
 alembic/versions/           # Migrations 0001 through 0020 as of 2026-05-04
@@ -207,13 +207,12 @@ admin workflows.
 - 027-modern-admin-shell-and-design-system: Completed the shared React admin
   shell and design system with backend-authorized navigation, persistent
   scope awareness, breadcrumbs, saved-filter chips, command/search over safe
-  destinations, responsive shell layouts, WCAG-oriented primitives, Jinja
-  fallback coexistence, QA docs, and Playwright evidence.
-- 026-react-admin-ui-foundation: Completed additive React admin UI foundation
+  destinations, responsive shell layouts, WCAG-oriented primitives, QA docs,
+  and Playwright evidence.
+- 026-react-admin-ui-foundation: Completed React admin UI foundation
   with `/admin/app`, backend-owned bootstrap/navigation contracts,
   generated TypeScript types, Vite/npm tooling, FastAPI-served built assets,
-  dual Auth0/local-principal validation, QA docs, Playwright evidence, and
-  Jinja fallback guardrails.
+  dual Auth0/local-principal validation, QA docs, and Playwright evidence.
 - 025-live-model-credential-resolution-for-gateway-calls: Completed live
   credential resolution for provider probes and ModelGateway calls using
   `ProviderSecretResolver`, safe secret reference selection, fail-closed OpenAI
@@ -262,5 +261,5 @@ admin workflows.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the latest plan:
-`specs/038-jinja-surface-inventory-and-deletion-plan/plan.md`
+`specs/047-jinja-infrastructure-decommission/plan.md`
 <!-- SPECKIT END -->

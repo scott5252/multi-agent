@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 from uuid import UUID
 
 from fastapi.testclient import TestClient
@@ -189,6 +190,7 @@ def test_agent_test_bench_ui_renders_and_runs_suite(tmp_path, monkeypatch) -> No
         index = client.get(
             f"/admin/agent-tests/ui?tenant_id={ACME_TENANT_ID}",
             headers=ACME_HEADERS,
+            follow_redirects=False,
         )
         created = client.post(
             "/admin/agent-tests/ui/suites",
@@ -205,10 +207,15 @@ def test_agent_test_bench_ui_renders_and_runs_suite(tmp_path, monkeypatch) -> No
             },
             follow_redirects=False,
         )
-        suite_path = created.headers["location"]
-        suite = client.get(suite_path, headers=ACME_HEADERS)
+        suite_location = created.headers["location"]
+        suite_id = parse_qs(urlparse(suite_location).query)["suite_id"][0]
+        suite = client.get(
+            f"/admin/agent-tests/ui/suites/{suite_id}?tenant_id={ACME_TENANT_ID}",
+            headers=ACME_HEADERS,
+            follow_redirects=False,
+        )
         case = client.post(
-            f"{suite_path}/cases",
+            f"/admin/agent-tests/ui/suites/{suite_id}/cases",
             headers=ACME_HEADERS,
             data={
                 "name": "Passing browser case",
@@ -222,23 +229,33 @@ def test_agent_test_bench_ui_renders_and_runs_suite(tmp_path, monkeypatch) -> No
             follow_redirects=False,
         )
         run = client.post(
-            f"{suite_path}/runs",
+            f"/admin/agent-tests/ui/suites/{suite_id}/runs",
             headers=ACME_HEADERS,
             data={"safe_mode": "mock_tools", "target_version": "draft-rev-1"},
             follow_redirects=False,
         )
-        run_detail = client.get(run.headers["location"], headers=ACME_HEADERS)
+        run_id = parse_qs(urlparse(run.headers["location"]).query)["run_id"][0]
+        run_detail = client.get(
+            f"/admin/agent-tests/ui/runs/{run_id}?tenant_id={ACME_TENANT_ID}",
+            headers=ACME_HEADERS,
+            follow_redirects=False,
+        )
 
-    assert index.status_code == 200
-    assert "No agent test suites are visible" in index.text
+    assert index.status_code == 303
+    assert index.headers["location"] == (
+        f"/admin/app/test-bench?tenant_id={ACME_TENANT_ID}"
+    )
     assert created.status_code == 303
-    assert suite.status_code == 200
-    assert "QA015 Browser Guard" in suite.text
+    assert suite_location.startswith("/admin/app/test-bench?")
+    assert "mutation=created" in suite_location
+    assert suite.status_code == 303
+    assert suite.headers["location"].startswith("/admin/app/test-bench?")
     assert case.status_code == 303
+    assert "mutation=case-created" in case.headers["location"]
     assert run.status_code == 303
-    assert run_detail.status_code == 200
-    assert "mock_tools" in run_detail.text
-    assert "external_dependency.write blocked" in run_detail.text
+    assert "mutation=run-launched" in run.headers["location"]
+    assert run_detail.status_code == 303
+    assert run_detail.headers["location"].startswith("/admin/app/test-bench?")
 
 
 def test_agent_test_bench_api_and_ui_cover_error_and_update_paths(
@@ -249,10 +266,15 @@ def test_agent_test_bench_api_and_ui_cover_error_and_update_paths(
     app = create_app()
 
     with TestClient(app) as client:
-        platform_index = client.get("/admin/agent-tests/ui", headers=PLATFORM_HEADERS)
+        platform_index = client.get(
+            "/admin/agent-tests/ui",
+            headers=PLATFORM_HEADERS,
+            follow_redirects=False,
+        )
         new_form = client.get(
             f"/admin/agent-tests/ui/suites/new?tenant_id={ACME_TENANT_ID}",
             headers=ACME_HEADERS,
+            follow_redirects=False,
         )
         missing_tenant = client.post(
             "/admin/agent-tests/ui/suites",
@@ -368,10 +390,12 @@ def test_agent_test_bench_api_and_ui_cover_error_and_update_paths(
             },
         )
 
-    assert platform_index.status_code == 200
-    assert "Create Suite" in platform_index.text
-    assert new_form.status_code == 200
-    assert "QA015 Draft Workflow Guard" in new_form.text
+    assert platform_index.status_code == 303
+    assert platform_index.headers["location"] == "/admin/app/test-bench"
+    assert new_form.status_code == 303
+    assert new_form.headers["location"] == (
+        f"/admin/app/test-bench?tenant_id={ACME_TENANT_ID}&mode=create-suite"
+    )
     assert missing_tenant.status_code == 400
     assert created.status_code == 201
     assert listed.status_code == 200

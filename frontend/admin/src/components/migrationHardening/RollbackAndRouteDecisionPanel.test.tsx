@@ -14,10 +14,10 @@ describe("rollback and route decisions", () => {
     render(<RollbackPlanPanel plan={migrationRollbackPlan} />);
 
     expect(screen.getByRole("heading", { name: "Route safety plan" })).toBeInTheDocument();
-    expect(screen.getByText("React admin primary routing flag")).toBeInTheDocument();
+    expect(screen.getByText("Release rollback")).toBeInTheDocument();
     expect(screen.getByText("Platform operations")).toBeInTheDocument();
-    expect(screen.getByText("Set React admin primary routing flag to fallback mode.")).toBeInTheDocument();
-    expect(screen.getByText("audit-qa037-rollback-plan")).toBeInTheDocument();
+    expect(screen.getByText("Redeploy the previous reviewed release if rollback is required.")).toBeInTheDocument();
+    expect(screen.getByText("audit-qa047-rollback-plan")).toBeInTheDocument();
   });
 
   it("labels every migration decision without exposing unsafe evidence", () => {
@@ -32,9 +32,9 @@ describe("rollback and route decisions", () => {
       </>,
     );
 
-    expect(screen.getByText("Redirect")).toBeInTheDocument();
+    expect(screen.getAllByText("Redirect").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Alias").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Retained fallback").length).toBeGreaterThan(0);
+    expect(screen.getByText("Retained fallback")).toBeInTheDocument();
     expect(screen.getByText("Retirement candidate")).toBeInTheDocument();
     expect(screen.getByText("Blocked")).toBeInTheDocument();
     expect(screen.getAllByText("Retirement evidence complete").length).toBeGreaterThan(0);

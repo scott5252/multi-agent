@@ -1,0 +1,194 @@
+openapi: 3.1.0
+info:
+  title: Spec 039 No-Jinja Host Auth Shell Contracts
+  version: 0.1.0
+paths:
+  /admin/app:
+    get:
+      summary: Serve non-Jinja React admin host
+      responses:
+        "200":
+          description: React host HTML generated without TemplateResponse
+          content:
+            text/html:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/bootstrap.json:
+    get:
+      summary: Return authorized React shell bootstrap
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Authorized shell bootstrap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactAdminBootstrap"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /auth/local-login.json:
+    get:
+      summary: Return local-principal login envelope
+      parameters:
+        - name: redirect_to
+          in: query
+          schema:
+            type: string
+            default: /admin/app
+      responses:
+        "200":
+          description: Local-principal login metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocalLoginEnvelope"
+        "404":
+          $ref: "#/components/responses/SafeProblem"
+  /auth/local-login:
+    post:
+      summary: Create local-principal session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocalLoginSubmission"
+      responses:
+        "303":
+          description: Redirect to sanitized admin path
+        "400":
+          $ref: "#/components/responses/SafeProblem"
+        "404":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/filters/{admin_area}.json:
+    get:
+      summary: Return React saved-filter management envelope
+      parameters:
+        - name: admin_area
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Saved-filter envelope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedFilterReactEnvelope"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+components:
+  responses:
+    SafeProblem:
+      description: Redaction-safe problem response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SafeProblem"
+  schemas:
+    SafeProblem:
+      type: object
+      required: [detail, reason]
+      additionalProperties: false
+      properties:
+        detail:
+          type: string
+        reason:
+          type: string
+        trace_id:
+          type: string
+          nullable: true
+    ReactAdminBootstrap:
+      type: object
+      description: Existing generated React admin bootstrap contract.
+      additionalProperties: true
+    LocalLoginEnvelope:
+      type: object
+      required: [auth_mode, principals, redirect_to, action_token]
+      additionalProperties: false
+      properties:
+        auth_mode:
+          type: string
+          enum: [local_principal]
+        principals:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalPrincipalOption"
+        current_principal_key:
+          type: string
+          nullable: true
+        redirect_to:
+          type: string
+        action_token:
+          type: string
+    LocalPrincipalOption:
+      type: object
+      required: [catalog_key, label, scope_type, role_codes]
+      additionalProperties: false
+      properties:
+        catalog_key:
+          type: string
+        label:
+          type: string
+        scope_type:
+          type: string
+          enum: [platform, tenant]
+        tenant_label:
+          type: string
+          nullable: true
+        role_codes:
+          type: array
+          items:
+            type: string
+    LocalLoginSubmission:
+      type: object
+      required: [principal_key, redirect_to, action_token]
+      additionalProperties: false
+      properties:
+        principal_key:
+          type: string
+        redirect_to:
+          type: string
+        action_token:
+          type: string
+    SavedFilterReactEnvelope:
+      type: object
+      required: [admin_area, active_scope, saved_filters, action_tokens]
+      additionalProperties: false
+      properties:
+        admin_area:
+          type: string
+        active_scope:
+          type: object
+          additionalProperties: true
+        saved_filters:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        action_tokens:
+          type: object
+          additionalProperties: true
+        mutation_result:
+          type: object
+          nullable: true
+          additionalProperties: true

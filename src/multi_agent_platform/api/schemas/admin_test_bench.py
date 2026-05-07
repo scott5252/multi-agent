@@ -68,6 +68,9 @@ class TestBenchStatus(StrEnum):
     TIMED_OUT = "timed_out"
     PARTIAL = "partial"
     SUMMARIZED = "summarized"
+    ARTIFACT_UNAVAILABLE = "artifact_unavailable"
+    AUDIT_UNAVAILABLE = "audit_unavailable"
+    REDACTION_UNAVAILABLE = "redaction_unavailable"
 
 
 class TestBenchSection(BaseModel):

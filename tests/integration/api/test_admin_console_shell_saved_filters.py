@@ -27,7 +27,7 @@ def test_saved_filter_save_restore_delete_is_scope_bound(tmp_path, monkeypatch) 
             follow_redirects=False,
         )
         listed = client.get(
-            f"/admin/filters/workflows?tenant_id={tenant_id}",
+            f"/admin/filters/workflows.json?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
         )
         invalid = client.post(
@@ -62,7 +62,7 @@ def test_saved_filter_save_restore_delete_is_scope_bound(tmp_path, monkeypatch) 
             follow_redirects=False,
         )
         after_delete = client.get(
-            f"/admin/filters/workflows?tenant_id={tenant_id}",
+            f"/admin/filters/workflows.json?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
         )
 

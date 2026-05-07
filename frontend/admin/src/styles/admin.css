@@ -1527,6 +1527,31 @@ textarea {
   padding: var(--admin-space-3);
 }
 
+.legacy-route-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+
+.legacy-route-card {
+  align-content: start;
+  min-width: 0;
+}
+
+.legacy-route-card h3,
+.legacy-route-card p,
+.legacy-route-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.legacy-route-path {
+  display: block;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .skill-step {
   align-content: start;
   min-height: 8rem;

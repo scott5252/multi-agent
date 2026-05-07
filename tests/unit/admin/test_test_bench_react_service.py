@@ -14,7 +14,9 @@ from multi_agent_platform.api.schemas.admin_test_bench import (
 from multi_agent_platform.auth.principal import AuthMode, AuthProvider, PrincipalContext
 from multi_agent_platform.testing.agent_bench.react_test_bench import (
     CURRENT_TARGET_REVISION,
+    build_artifact_reference,
     build_gate_refresh_result,
+    build_publish_gate_evidence,
     build_run_launch_result,
     build_suite_save_result,
     build_test_bench_dashboard,
@@ -132,6 +134,21 @@ def test_run_detail_distinguishes_passing_failing_and_artifact_metadata() -> Non
     assert failing.assertion_diagnostics[0].category == "failed_assertion"
     assert failing.artifacts[0].authorized_href is not None
     assert "raw" not in failing.redaction_summary.lower()
+
+
+def test_artifact_and_gate_unavailable_states_are_metadata_only() -> None:
+    artifact = build_artifact_reference(artifact_reference_id="artifact-unavailable")
+    gates = build_publish_gate_evidence(scope=_tenant_scope())
+    statuses = {gate.evidence_status for gate in gates.gates}
+
+    assert artifact.access_status == "artifact_unavailable"
+    assert artifact.authorized_href is None
+    assert "payload" in artifact.safe_summary.lower()
+    assert "audit_unavailable" in statuses
+    assert "redaction_unavailable" in statuses
+    serialized = json.dumps(gates.model_dump(mode="json")).lower()
+    assert "storage path" not in serialized
+    assert "raw transcript" not in serialized
 
 
 def test_publish_gate_refresh_rejects_stale_evidence() -> None:

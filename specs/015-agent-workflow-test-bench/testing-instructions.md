@@ -59,7 +59,7 @@ uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fai
 
 ## Manual Browser Path
 
-1. Open `http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/agent-tests/ui?tenant_id=11111111-1111-1111-1111-111111111111`.
+1. Open `http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/test-bench?tenant_id=11111111-1111-1111-1111-111111111111`.
 2. Sign in as `tenant-admin-acme`.
 3. Create `QA015 Draft Workflow Guard`.
 4. Add `Passing intake case` with the fixture and assertions from `qa015_ui.md`.
@@ -67,7 +67,9 @@ uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fai
 6. Run once with `real_model_side_effects_disabled`.
 7. Confirm blocked side effects, redaction notice, trace steps, usage, latency,
    and publish gate readiness.
-8. Sign in as `tenant-admin-globex` and confirm Acme suite data is denied.
+8. Open `/admin/agent-tests/ui?tenant_id=11111111-1111-1111-1111-111111111111`
+   and confirm the legacy browser URL redirects to `/admin/app/test-bench`.
+9. Sign in as `tenant-admin-globex` and confirm Acme suite data is denied.
 
 ## Acceptance Criteria
 
@@ -78,3 +80,5 @@ uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fai
 - The current target version has ready publish gate evidence after a passing
   run.
 - A stale target version remains blocked.
+- Legacy `/admin/agent-tests/ui...` browser URLs redirect to React or return
+  safe non-Jinja problems.

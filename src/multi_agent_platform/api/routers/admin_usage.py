@@ -1,32 +1,22 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, cast
+from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.usage import (
     UsageEventsResponse,
     UsageExportCreateRequest,
     UsageExportResponse,
     UsageSummaryResponse,
 )
-from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    CommonStateType,
-    build_common_state,
-    is_platform_admin,
-)
-from multi_agent_platform.api.ui.usage import (
-    UsageDashboardPage,
-    UsageExportPage,
-    redaction_notice,
-)
+from multi_agent_platform.api.ui.admin_console import is_platform_admin
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.db.models.usage import UsageExportRequest
@@ -48,6 +38,28 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 OptionalTenantForm = Form(default=None)
 OptionalStringForm = Form(default=None)
 GroupByForm = Form(default="day")
+SEE_OTHER = status.HTTP_303_SEE_OTHER
+USAGE_QUERY_KEYS = frozenset(
+    {
+        "tenant_id",
+        "start",
+        "end",
+        "provider_key",
+        "model_id",
+        "workflow_lineage_id",
+        "workflow_version_id",
+        "workflow_run_id",
+        "workflow_run_step_id",
+        "agent_key",
+        "sub_agent_key",
+        "prompt_version_id",
+        "execution_mode",
+        "usage_status",
+        "principal_id",
+        "group_by",
+        "saved_filter_id",
+    }
+)
 
 
 @router.get("/api/summary", response_model=UsageSummaryResponse)
@@ -151,72 +163,21 @@ async def create_usage_export_api(
     return _export_response(export)
 
 
-@router.get("", response_class=HTMLResponse, include_in_schema=False)
+@router.get("", response_model=None, include_in_schema=False)
 async def usage_dashboard_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
     tenant_id: UUID | None = None,
     provider_key: str | None = None,
     model_id: str | None = None,
     group_by: str = "day",
-) -> HTMLResponse:
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Usage Analytics",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Usage Analytics", href="/admin/usage"),
-        ),
-    )
-    selected_tenant = tenant_id or shell.active_scope.tenant_id
-    filters = UsageFilters(
-        tenant_id=selected_tenant,
-        provider_key=provider_key,
-        model_id=model_id,
-        group_by=group_by,  # type: ignore[arg-type]
-    )
-    scope = _access_scope(principal, selected_tenant)
-    summary = await UsageAnalyticsService(UsageRepository(session)).summarize_usage(
-        access_scope=scope,
-        filters=filters,
-    )
-    page = UsageDashboardPage(
-        filters=filters,
-        totals=summary.totals,
-        rollups=summary.rollups,
-        events=summary.events,
-        can_export=True,
-    )
-    shell.common_state = (
-        build_common_state(
-            CommonStateType.EMPTY,
-            title="No usage events",
-            summary="No token usage events match the current filters.",
-            trace_id=principal.trace_id,
-        )
-        if not page.has_events
-        else None
-    )
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "usage/index.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": page,
-                "redaction_notice": redaction_notice(),
-            },
-        ),
-    )
+) -> RedirectResponse:
+    _ = (principal, session, tenant_id, provider_key, model_id, group_by)
+    return _react_redirect(request, "/admin/app/usage")
 
 
-@router.post("/exports", response_class=HTMLResponse, include_in_schema=False)
+@router.post("/exports", response_model=None, include_in_schema=False)
 async def create_usage_export_page(
     request: Request,
     principal: PrincipalDep,
@@ -245,14 +206,14 @@ async def create_usage_export_page(
     except UsageAccessDeniedError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return RedirectResponse(
-        f"/admin/usage/exports/{export.usage_export_request_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
+        _react_usage_export_href(export.usage_export_request_id, tenant_id=tenant_id),
+        status_code=SEE_OTHER,
     )
 
 
 @router.get(
     "/exports/{usage_export_request_id}",
-    response_class=HTMLResponse,
+    response_model=None,
     include_in_schema=False,
 )
 async def usage_export_detail_page(
@@ -260,20 +221,9 @@ async def usage_export_detail_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Usage Export",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Usage Analytics", href="/admin/usage"),
-            BreadcrumbItem(label="Export", href=request.url.path),
-        ),
-    )
-    scope = _access_scope(principal, shell.active_scope.tenant_id)
+) -> RedirectResponse:
+    tenant_id = _query_tenant_id(request)
+    scope = _access_scope(principal, tenant_id)
     try:
         export = await UsageRepository(session).get_export_request(
             usage_export_request_id,
@@ -283,25 +233,13 @@ async def usage_export_detail_page(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     if export is None:
         raise HTTPException(status_code=404, detail="usage export not found")
-    page = UsageExportPage(
-        status=export.status.value,
-        row_count=export.row_count,
-        artifact_uri=export.artifact_uri,
-        denial_reason=export.denial_reason,
-        failure_reason=export.failure_reason,
-    )
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "usage/export_detail.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": page,
-                "redaction_notice": redaction_notice(),
-            },
+    return RedirectResponse(
+        _react_usage_export_href(
+            usage_export_request_id,
+            tenant_id=tenant_id,
+            request=request,
         ),
+        status_code=SEE_OTHER,
     )
 
 
@@ -346,3 +284,39 @@ def _export_response(export: UsageExportRequest) -> UsageExportResponse:
         created_at=export.created_at,
         completed_at=export.completed_at,
     )
+
+
+def _query_tenant_id(request: Request) -> UUID | None:
+    raw = request.query_params.get("tenant_id")
+    return UUID(raw) if raw else None
+
+
+def _react_redirect(request: Request, destination: str) -> RedirectResponse:
+    query = {
+        key: value
+        for key, value in request.query_params.items()
+        if key in USAGE_QUERY_KEYS and value
+    }
+    suffix = f"?{urlencode(query)}" if query else ""
+    return RedirectResponse(f"{destination}{suffix}", status_code=SEE_OTHER)
+
+
+def _react_usage_export_href(
+    usage_export_request_id: UUID,
+    *,
+    tenant_id: UUID | None,
+    request: Request | None = None,
+) -> str:
+    query: dict[str, str] = {}
+    if request is not None:
+        query.update(
+            {
+                key: value
+                for key, value in request.query_params.items()
+                if key in USAGE_QUERY_KEYS and value
+            }
+        )
+    if tenant_id is not None:
+        query["tenant_id"] = str(tenant_id)
+    suffix = f"?{urlencode(query)}" if query else ""
+    return f"/admin/app/usage/exports/{usage_export_request_id}{suffix}"

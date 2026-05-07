@@ -133,7 +133,12 @@ def build_run_debug_envelope(
                 },
                 trace_id="trace-qa029-run",
                 audit_reference_id="audit-run-qa029",
-                links=(WorkbenchLink(label="Open run inspection", href="/admin/runs"),),
+                links=(
+                    WorkbenchLink(
+                        label="Open run inspection",
+                        href="/admin/app/operations?panel=runs",
+                    ),
+                ),
             ),
             TimelineEventSummary(
                 event_id="timeline-join-waiting",
@@ -217,21 +222,21 @@ def build_run_debug_envelope(
         lineage=(
             WorkbenchLink(
                 label="Parent run lineage",
-                href=f"/admin/runs/{run_id}/lineage",
+                href=f"/admin/app/operations?run_id={run_id}&panel=lineage",
             ),
         ),
         replay_links=(
             WorkbenchLink(
                 label="Open safe replay",
-                href=f"/admin/runs/{run_id}/replay",
+                href=f"/admin/app/operations?run_id={run_id}&panel=replay",
             ),
         ),
         bundle_summary=(
             "Pinned workflow, prompt, profile, provider, and tool policy versions."
         ),
         fallback_links=(
-            WorkbenchLink(label="Run search", href="/admin/runs"),
-            WorkbenchLink(label="Operations console", href="/admin/operations"),
+            WorkbenchLink(label="Run search", href="/admin/app/operations?panel=runs"),
+            WorkbenchLink(label="Operations console", href="/admin/app/operations"),
         ),
     )
 
@@ -272,7 +277,7 @@ def _platform_cards() -> tuple[WorkbenchSummaryCard, ...]:
             summary="One dependency is degraded while core API readiness is available.",
             freshness_label="Checked within 1 minute",
             trend="stable",
-            href="/admin/operations",
+            href="/admin/app/operations",
             evidence_reference_id="health-qa029",
         ),
         WorkbenchSummaryCard(
@@ -283,7 +288,7 @@ def _platform_cards() -> tuple[WorkbenchSummaryCard, ...]:
             severity=WorkbenchSeverity.WARNING,
             summary="Runnable work is elevated and retries are accumulating.",
             freshness_label="Last 60 minutes",
-            href="/admin/reliability/ui/",
+            href="/admin/app/operations?panel=reliability",
             evidence_reference_id="queue-qa029",
         ),
         WorkbenchSummaryCard(
@@ -294,7 +299,7 @@ def _platform_cards() -> tuple[WorkbenchSummaryCard, ...]:
             severity=WorkbenchSeverity.WARNING,
             summary="A model provider has retryable timeout evidence.",
             freshness_label="Last probe 4 minutes ago",
-            href="/admin/model-providers",
+            href="/admin/app/governance/providers",
             evidence_reference_id="provider-qa029",
         ),
     )
@@ -310,7 +315,7 @@ def _tenant_cards(scope: ReactAdminScope) -> tuple[WorkbenchSummaryCard, ...]:
             severity=WorkbenchSeverity.WARNING,
             summary=f"{scope.label} has one run waiting for a safe retry.",
             freshness_label="Last 60 minutes",
-            href=_with_tenant_query("/admin/runs", scope),
+            href=_with_tenant_query("/admin/app/operations?panel=runs", scope),
             evidence_reference_id="tenant-run-qa029",
         ),
         WorkbenchSummaryCard(
@@ -355,7 +360,7 @@ def _platform_panels() -> tuple[HealthPressurePanel, ...]:
             links=(
                 WorkbenchLink(
                     label="Existing operations console",
-                    href="/admin/operations",
+                    href="/admin/app/operations",
                 ),
             ),
         ),
@@ -389,7 +394,7 @@ def _tenant_panels(scope: ReactAdminScope) -> tuple[HealthPressurePanel, ...]:
             links=(
                 WorkbenchLink(
                     label="Run search",
-                    href=_with_tenant_query("/admin/runs", scope),
+                    href=_with_tenant_query("/admin/app/operations?panel=runs", scope),
                 ),
             ),
         ),
@@ -418,7 +423,7 @@ def _likely_causes(*, is_platform: bool) -> tuple[LikelyCauseSummary, ...]:
             symptom="Provider attempt latency and retry counts increased.",
             likely_cause_category="retryable_timeout",
             recommended_next_step="Open provider health and gateway diagnostics.",
-            href="/admin/model-providers",
+            href="/admin/app/governance/providers",
             evidence_reference_id="gateway-evidence-qa029",
         ),
     )
@@ -437,7 +442,7 @@ def _reliability(*, is_platform: bool) -> ReliabilityRecoverySummary:
                 ),
                 severity=WorkbenchSeverity.INFO,
                 summary="Breaker is closed with retryable timeout evidence summarized.",
-                href="/admin/reliability/ui/breakers" if is_platform else None,
+                href="/admin/app/operations?panel=breakers" if is_platform else None,
             ),
         ),
         retries=(
@@ -447,7 +452,7 @@ def _reliability(*, is_platform: bool) -> ReliabilityRecoverySummary:
                 status=WorkbenchStatus.WARNING,
                 severity=WorkbenchSeverity.WARNING,
                 summary="Retry is scheduled before the graph join completes.",
-                href="/admin/reliability/ui/",
+                href="/admin/app/operations?panel=reliability",
             ),
         ),
         dead_letters=(
@@ -457,7 +462,9 @@ def _reliability(*, is_platform: bool) -> ReliabilityRecoverySummary:
                 status=WorkbenchStatus.READY,
                 severity=WorkbenchSeverity.INFO,
                 summary="No dead-letter records match the active workbench scope.",
-                href="/admin/reliability/ui/dead-letters" if is_platform else None,
+                href="/admin/app/operations?panel=dead-letters"
+                if is_platform
+                else None,
             ),
         ),
         confirmations=(
@@ -498,7 +505,7 @@ def _logs(
             links=(
                 WorkbenchLink(
                     label="Provider diagnostics",
-                    href="/admin/model-providers",
+                    href="/admin/app/governance/providers",
                 ),
             ),
         ),
@@ -564,19 +571,26 @@ def _filters(*, scope: ReactAdminScope) -> FilterProfile:
 
 def _fallback_links(*, is_platform: bool) -> tuple[WorkbenchLink, ...]:
     links = [
-        WorkbenchLink(label="Existing operations console", href="/admin/operations"),
-        WorkbenchLink(label="Run inspection", href="/admin/runs"),
-        WorkbenchLink(label="Reliability controls", href="/admin/reliability/ui/"),
+        WorkbenchLink(
+            label="Existing operations console", href="/admin/app/operations"
+        ),
+        WorkbenchLink(label="Run inspection", href="/admin/app/operations?panel=runs"),
+        WorkbenchLink(
+            label="Reliability controls", href="/admin/app/operations?panel=reliability"
+        ),
         WorkbenchLink(
             label="Skill tool diagnostics",
-            href="/admin/skill-execution/ui/diagnostics",
+            href="/admin/app/skills/diagnostics",
         ),
     ]
     if is_platform:
         links.extend(
             [
-                WorkbenchLink(label="Model providers", href="/admin/model-providers"),
-                WorkbenchLink(label="Usage analytics", href="/admin/usage"),
+                WorkbenchLink(
+                    label="Model providers",
+                    href="/admin/app/governance/providers",
+                ),
+                WorkbenchLink(label="Usage analytics", href="/admin/app/usage"),
             ]
         )
     return tuple(links)

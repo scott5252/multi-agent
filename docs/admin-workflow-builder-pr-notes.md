@@ -10,8 +10,8 @@
   observability helpers.
 - Added JSON routes for editor lookups, graph preview, revision history,
   restore, copy, publish gate, and publish-gate-aware publication.
-- Added server-rendered create, editor, revision history, publish gate, and
-  published version detail views.
+- Added browser create, editor, revision history, publish gate, and published
+  version detail views, later replaced by React-only routes.
 - Added published bundle summaries for source revision, publish gate digest,
   prompt/profile pins, routing provenance, skill pins, subworkflow pins,
   contract compatibility, approval summary, graph summary, and test evidence.

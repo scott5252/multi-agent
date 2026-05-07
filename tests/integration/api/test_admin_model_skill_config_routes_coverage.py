@@ -36,9 +36,13 @@ def test_admin_model_skill_config_routes_submit_ui_and_api_flows(
             "/admin/config/ui/history",
             f"/admin/config/ui/runs/{uuid4()}/provenance",
         ):
-            response = client.get(path, headers=TENANT_HEADERS)
-            assert response.status_code == 200, response.text
-            assert "<html" in response.text
+            response = client.get(
+                path,
+                headers=TENANT_HEADERS,
+                follow_redirects=False,
+            )
+            assert response.status_code == 303, response.text
+            assert response.headers["location"].startswith("/admin/app/governance")
 
         model_routing = client.post(
             "/admin/config/model-routing",

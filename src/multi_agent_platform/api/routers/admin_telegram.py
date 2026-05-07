@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import Annotated, cast
+from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.admin.telegram_config.models import (
-    PROTECTED_TELEGRAM_COMMANDS,
     TelegramAccessScope,
     TelegramConfigScopeType,
     TelegramConfigStaleRevisionError,
@@ -22,7 +22,6 @@ from multi_agent_platform.admin.telegram_config.service import (
     TelegramConfigurationService,
 )
 from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.telegram_config import (
     TelegramCommandAliasListResponse,
     TelegramCommandAliasResponse,
@@ -40,15 +39,7 @@ from multi_agent_platform.api.schemas.telegram_config import (
     TenantTelegramConfigUpdateRequest,
 )
 from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    CommonState,
-    CommonStateType,
-    build_common_state,
     is_platform_admin,
-)
-from multi_agent_platform.api.ui.telegram_config import (
-    TelegramConfigurationPage,
-    redaction_notice,
 )
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
@@ -67,6 +58,20 @@ from multi_agent_platform.db.repositories.telegram_config import (
 router = APIRouter(prefix="/admin/telegram", tags=["telegram-config"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+SEE_OTHER = status.HTTP_303_SEE_OTHER
+TELEGRAM_QUERY_KEYS = frozenset(
+    {
+        "tenant_id",
+        "alias_id",
+        "identity_id",
+        "token_audit_id",
+        "status",
+        "category",
+        "enabled",
+        "saved_filter_id",
+        "panel",
+    }
+)
 
 
 def _channel_service(container: ContainerDep) -> ChannelService:
@@ -322,49 +327,21 @@ async def telegram_snapshot_api(
     )
 
 
-@router.get("", response_class=HTMLResponse, include_in_schema=False)
+@router.get("", response_model=None, include_in_schema=False)
 async def telegram_configuration_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
     tenant_id: UUID | None = None,
-) -> HTMLResponse:
-    service = _service(session=session, container=container)
-    scope = _access_scope(principal, tenant_id)
-    page = await _page_for_scope(service, scope)
-    shell = await _shell(
-        request=request,
-        principal=principal,
-        session=session,
-        common_state=None
-        if page.tenant_config is not None
-        else build_common_state(
-            CommonStateType.EMPTY,
-            title="No tenant selected",
-            summary="Select a tenant scope to manage tenant Telegram enablement.",
-            trace_id=principal.trace_id,
-        ),
-    )
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "telegram/index.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": page,
-                "protected_commands": PROTECTED_TELEGRAM_COMMANDS,
-                "redaction_notice": redaction_notice(),
-            },
-        ),
-    )
+) -> RedirectResponse:
+    _ = (session, container)
+    _access_scope(principal, tenant_id)
+    return _react_redirect(request, panel="telegram")
 
 
-@router.post("/config", response_class=HTMLResponse, include_in_schema=False)
+@router.post("/config", response_model=None, include_in_schema=False)
 async def update_telegram_config_page(
-    request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
@@ -373,7 +350,7 @@ async def update_telegram_config_page(
     protected_commands: Annotated[list[str] | None, Form()] = None,
     status_note: Annotated[str | None, Form()] = None,
     revision_token: Annotated[str | None, Form()] = None,
-) -> Response:
+) -> RedirectResponse:
     service = _service(session=session, container=container)
     scope = _tenant_access_scope(principal, tenant_id)
     try:
@@ -384,44 +361,15 @@ async def update_telegram_config_page(
             status_note=status_note,
             revision_token=revision_token,
         )
-    except TelegramConfigStaleRevisionError:
-        page = await _page_for_scope(service, scope, conflict=True)
-        shell = await _shell(
-            request=request,
-            principal=principal,
-            session=session,
-            common_state=build_common_state(
-                CommonStateType.VALIDATION_ERROR,
-                title="Stale Telegram form",
-                summary=(
-                    "The current tenant configuration changed. Review current "
-                    "values before saving again."
-                ),
-                trace_id=principal.trace_id,
-            ),
-        )
-        return cast(
-            HTMLResponse,
-            container.workflow_ui_templates.TemplateResponse(
-                request,
-                "telegram/index.html",
-                {
-                    "shell": shell,
-                    "principal": principal,
-                    "page": page,
-                    "protected_commands": PROTECTED_TELEGRAM_COMMANDS,
-                    "redaction_notice": redaction_notice(),
-                },
-                status_code=status.HTTP_409_CONFLICT,
-            ),
-        )
+    except TelegramConfigStaleRevisionError as exc:
+        raise HTTPException(status_code=409, detail="stale revision") from exc
     return RedirectResponse(
-        f"/admin/telegram?tenant_id={scope.tenant_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(scope, panel="telegram"),
+        status_code=SEE_OTHER,
     )
 
 
-@router.post("/webhook/validate", response_class=HTMLResponse, include_in_schema=False)
+@router.post("/webhook/validate", response_model=None, include_in_schema=False)
 async def validate_telegram_webhook_page(
     principal: PrincipalDep,
     session: SessionDep,
@@ -431,16 +379,14 @@ async def validate_telegram_webhook_page(
     service = _service(session=session, container=container)
     scope = _access_scope(principal, tenant_id)
     await service.validate_webhook(scope)
-    suffix = f"?tenant_id={scope.tenant_id}" if scope.tenant_id else ""
     return RedirectResponse(
-        f"/admin/telegram{suffix}",
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(scope, panel="webhook"),
+        status_code=SEE_OTHER,
     )
 
 
-@router.post("/aliases", response_class=HTMLResponse, include_in_schema=False)
+@router.post("/aliases", response_model=None, include_in_schema=False)
 async def upsert_telegram_alias_page(
-    request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
@@ -451,7 +397,7 @@ async def upsert_telegram_alias_page(
     protected: Annotated[bool, Form()] = True,
     enabled: Annotated[bool, Form()] = True,
     revision_token: Annotated[str | None, Form()] = None,
-) -> Response:
+) -> RedirectResponse:
     if published_workflow_version_id is None:
         raise HTTPException(
             status_code=422, detail="published workflow version required"
@@ -468,75 +414,37 @@ async def upsert_telegram_alias_page(
             enabled=enabled,
             revision_token=revision_token,
         )
-    except TelegramConfigStaleRevisionError:
-        page = await _page_for_scope(service, scope, conflict=True)
-        shell = await _shell(
-            request=request,
-            principal=principal,
-            session=session,
-            common_state=build_common_state(
-                CommonStateType.VALIDATION_ERROR,
-                title="Stale Telegram alias",
-                summary=(
-                    "The current alias changed. Review current values before "
-                    "saving again."
-                ),
-                trace_id=principal.trace_id,
-            ),
-        )
-        return cast(
-            HTMLResponse,
-            container.workflow_ui_templates.TemplateResponse(
-                request,
-                "telegram/index.html",
-                {
-                    "shell": shell,
-                    "principal": principal,
-                    "page": page,
-                    "protected_commands": PROTECTED_TELEGRAM_COMMANDS,
-                    "redaction_notice": redaction_notice(),
-                },
-                status_code=status.HTTP_409_CONFLICT,
-            ),
-        )
+    except TelegramConfigStaleRevisionError as exc:
+        raise HTTPException(status_code=409, detail="stale revision") from exc
     return RedirectResponse(
-        f"/admin/telegram?tenant_id={scope.tenant_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(scope, panel="aliases"),
+        status_code=SEE_OTHER,
     )
 
 
-@router.post("/link-tokens", response_class=HTMLResponse, include_in_schema=False)
+@router.post("/link-tokens", response_model=None, include_in_schema=False)
 async def issue_telegram_link_token_page(
-    request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
     tenant_id: Annotated[UUID | None, Form()] = None,
-) -> HTMLResponse:
+) -> JSONResponse:
     service = _service(session=session, container=container)
     scope = _tenant_access_scope(principal, tenant_id)
     issued = await service.issue_link_token(scope)
-    page = await _page_for_scope(service, scope, issued_token=issued.raw_token)
-    shell = await _shell(request=request, principal=principal, session=session)
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "telegram/index.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": page,
-                "protected_commands": PROTECTED_TELEGRAM_COMMANDS,
-                "redaction_notice": redaction_notice(),
-            },
-        ),
+    response = TelegramLinkTokenIssueResponse(
+        link_token=issued.raw_token,
+        token_audit=_token_response(issued.audit),
+    )
+    return JSONResponse(
+        content=response.model_dump(mode="json"),
+        status_code=status.HTTP_201_CREATED,
     )
 
 
 @router.post(
     "/link-tokens/{token_audit_id}/revoke",
-    response_class=HTMLResponse,
+    response_model=None,
     include_in_schema=False,
 )
 async def revoke_telegram_link_token_page(
@@ -555,14 +463,14 @@ async def revoke_telegram_link_token_page(
     if audit is None:
         raise HTTPException(status_code=404, detail="Telegram link token not found")
     return RedirectResponse(
-        f"/admin/telegram?tenant_id={scope.tenant_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(scope, panel="link-tokens"),
+        status_code=SEE_OTHER,
     )
 
 
 @router.post(
     "/identities/{identity_id}/revoke",
-    response_class=HTMLResponse,
+    response_model=None,
     include_in_schema=False,
 )
 async def revoke_telegram_identity_page(
@@ -581,54 +489,8 @@ async def revoke_telegram_identity_page(
     if identity is None:
         raise HTTPException(status_code=404, detail="Telegram identity not found")
     return RedirectResponse(
-        f"/admin/telegram?tenant_id={scope.tenant_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
-    )
-
-
-async def _page_for_scope(
-    service: TelegramConfigurationService,
-    scope: TelegramAccessScope,
-    *,
-    issued_token: str | None = None,
-    conflict: bool = False,
-) -> TelegramConfigurationPage:
-    tenant_scope = scope if scope.tenant_id is not None else None
-    readiness = service.provider_readiness()
-    config = await service.tenant_config(tenant_scope) if tenant_scope else None
-    aliases = await service.list_aliases(tenant_scope) if tenant_scope else ()
-    tokens = await service.list_link_tokens(tenant_scope) if tenant_scope else ()
-    identities = await service.list_identities(tenant_scope) if tenant_scope else ()
-    diagnostics = await service.list_diagnostics(scope)
-    return TelegramConfigurationPage(
-        readiness=_readiness_from_model(readiness),
-        tenant_config=_config_response(config, readiness) if config else None,
-        aliases=tuple(_alias_response(item) for item in aliases),
-        token_audits=tuple(_token_response(item) for item in tokens),
-        identities=tuple(_identity_response(item) for item in identities),
-        diagnostics=tuple(_diagnostic_response(item) for item in diagnostics),
-        issued_token=issued_token,
-        conflict=conflict,
-    )
-
-
-async def _shell(
-    *,
-    request: Request,
-    principal: PrincipalContext,
-    session: AsyncSession,
-    common_state: CommonState | None = None,
-) -> object:
-    return await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Telegram Configuration",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Telegram Configuration", href="/admin/telegram"),
-        ),
-        common_state=common_state,
+        _redirect_target(scope, panel="identities"),
+        status_code=SEE_OTHER,
     )
 
 
@@ -664,6 +526,46 @@ def _tenant_access_scope(
     if scope.tenant_id is None:
         raise HTTPException(status_code=403, detail="tenant Telegram scope required")
     return scope
+
+
+def _redirect_target(
+    scope: TelegramAccessScope,
+    *,
+    panel: str | None = None,
+    extra: dict[str, object] | None = None,
+) -> str:
+    query: dict[str, str] = {}
+    if scope.tenant_id is not None:
+        query["tenant_id"] = str(scope.tenant_id)
+    if panel:
+        query["panel"] = panel
+    if extra:
+        for key, value in extra.items():
+            if value is not None:
+                query[key] = str(value)
+    suffix = f"?{urlencode(query)}" if query else ""
+    return f"/admin/app/channels{suffix}"
+
+
+def _react_redirect(
+    request: Request,
+    *,
+    panel: str | None = None,
+    extra: dict[str, object] | None = None,
+) -> RedirectResponse:
+    query: dict[str, str] = {
+        key: value
+        for key, value in request.query_params.items()
+        if key in TELEGRAM_QUERY_KEYS and value
+    }
+    if panel:
+        query.setdefault("panel", panel)
+    if extra:
+        for key, value in extra.items():
+            if value is not None:
+                query[key] = str(value)
+    suffix = f"?{urlencode(query)}" if query else ""
+    return RedirectResponse(f"/admin/app/channels{suffix}", status_code=SEE_OTHER)
 
 
 def _readiness_response(

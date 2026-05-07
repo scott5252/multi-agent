@@ -29,6 +29,7 @@ import {
   assertExportSnapshot,
   assertMutationResult,
   assertOperationsWorkbenchEnvelope,
+  assertLocalLoginEnvelope,
   assertReactAdminBootstrap,
   assertReactAdminCommandSearch,
   assertRunStatusSummary,
@@ -51,8 +52,21 @@ import {
   assertWorkbenchExportSnapshot,
   assertWorkflowBuilderEnvelope,
   assertWorkflowReferenceCatalog,
+  assertArtifactDownloadUrlResponse,
+  assertArtifactListResponse,
+  assertCallbackRegistrationResponse,
+  assertNotificationSubscriptionResponse,
+  assertPromptDecisionResponse,
+  assertRunInvocationResponse,
+  assertRunResultResponse,
+  assertRunStatusResponse,
+  assertTimelineResponse,
   type AdminPageEnvelope,
+  type ArtifactDownloadUrlResponse,
+  type ArtifactListResponse,
   type BuilderMutationResult,
+  type CallbackRegistrationRequest,
+  type CallbackRegistrationResponse,
   type ExportSnapshot,
   type GovernanceDashboard,
   type GovernanceMutationResult,
@@ -74,6 +88,7 @@ import {
   type DeliveryDiagnosticList,
   type LinkTokenCreateRequest,
   type LinkTokenResult,
+  type LocalLoginEnvelope,
   type MigrationRollbackPlan,
   type MigrationRouteGroup,
   type UsageReactDashboard,
@@ -95,6 +110,16 @@ import {
   type ReactAdminBootstrap,
   type ReactAdminCommandSearch,
   type RunStatusSummary,
+  type CancelRunRequest,
+  type NotificationSubscriptionRequest,
+  type NotificationSubscriptionResponse,
+  type PromptDecisionRequest,
+  type PromptDecisionResponse,
+  type RunInvocationRequest,
+  type RunInvocationResponse,
+  type RunResultResponse,
+  type RunStatusResponse,
+  type TimelineResponse,
   type TelegramAliasActionRequest,
   type TelegramAliasSaveRequest,
   type TelegramConfigSaveRequest,
@@ -150,6 +175,57 @@ export async function fetchBootstrap(
     throw new Error(detail);
   }
   return assertReactAdminBootstrap(await response.json());
+}
+
+export async function fetchLocalLoginEnvelope(
+  localLoginUrl: string,
+): Promise<LocalLoginEnvelope> {
+  const response = await fetch(localLoginUrl, {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertLocalLoginEnvelope(await response.json());
+}
+
+export interface SavedFilterEnvelope {
+  admin_area: string;
+  active_scope: {
+    scope_type: string;
+    tenant_id: string | null;
+    label: string;
+  };
+  saved_filters: Array<{
+    filter_id: string;
+    display_name: string;
+    admin_area: string;
+    filter_key: string;
+    safe_summary: Record<string, string>;
+    restore_href: string;
+    delete_href: string;
+    last_restored_at: string | null;
+  }>;
+  actions: {
+    save_url: string;
+    return_url: string;
+  };
+}
+
+export async function fetchSavedFilterEnvelope(
+  savedFiltersUrl: string,
+): Promise<SavedFilterEnvelope> {
+  const response = await fetch(savedFiltersUrl, {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return (await response.json()) as SavedFilterEnvelope;
 }
 
 export async function fetchCommandSearch(
@@ -837,6 +913,86 @@ export async function fetchChannelRunStatus(
   return assertRunStatusSummary(await response.json());
 }
 
+export async function startUserRun(
+  payload: RunInvocationRequest,
+  idempotencyKey: string,
+): Promise<RunInvocationResponse> {
+  const response = await postChannelJson("/runs", payload, idempotencyKey);
+  return assertRunInvocationResponse(await response.json());
+}
+
+export async function fetchUserRunStatus(
+  statusUrl: string,
+): Promise<RunStatusResponse> {
+  const response = await getJson(statusUrl);
+  return assertRunStatusResponse(await response.json());
+}
+
+export async function fetchUserRunTimeline(
+  timelineUrl: string,
+): Promise<TimelineResponse> {
+  const response = await getJson(timelineUrl);
+  return assertTimelineResponse(await response.json());
+}
+
+export async function fetchUserRunResult(
+  resultUrl: string,
+): Promise<RunResultResponse> {
+  const response = await getJson(resultUrl);
+  return assertRunResultResponse(await response.json());
+}
+
+export async function fetchUserRunArtifacts(
+  artifactsUrl: string,
+): Promise<ArtifactListResponse> {
+  const response = await getJson(artifactsUrl);
+  return assertArtifactListResponse(await response.json());
+}
+
+export async function decideUserRunPrompt(
+  decisionUrl: string,
+  payload: PromptDecisionRequest,
+  idempotencyKey: string,
+): Promise<PromptDecisionResponse> {
+  const response = await postChannelJson(decisionUrl, payload, idempotencyKey);
+  return assertPromptDecisionResponse(await response.json());
+}
+
+export async function cancelUserRun(
+  cancelUrl: string,
+  payload: CancelRunRequest,
+  idempotencyKey: string,
+): Promise<RunStatusResponse> {
+  const response = await postChannelJson(cancelUrl, payload, idempotencyKey);
+  return assertRunStatusResponse(await response.json());
+}
+
+export async function subscribeUserRun(
+  subscriptionUrl: string,
+  payload: NotificationSubscriptionRequest,
+  idempotencyKey: string,
+): Promise<NotificationSubscriptionResponse> {
+  const response = await postChannelJson(subscriptionUrl, payload, idempotencyKey);
+  return assertNotificationSubscriptionResponse(await response.json());
+}
+
+export async function registerUserRunCallback(
+  callbackUrl: string,
+  payload: CallbackRegistrationRequest,
+  idempotencyKey: string,
+): Promise<CallbackRegistrationResponse> {
+  const response = await postChannelJson(callbackUrl, payload, idempotencyKey);
+  return assertCallbackRegistrationResponse(await response.json());
+}
+
+export async function createUserRunArtifactGrant(
+  grantUrl: string,
+  idempotencyKey: string,
+): Promise<ArtifactDownloadUrlResponse> {
+  const response = await postChannelJson(grantUrl, undefined, idempotencyKey);
+  return assertArtifactDownloadUrlResponse(await response.json());
+}
+
 export async function fetchBriefingPreferences(
   preferencesUrl: string,
 ): Promise<BriefingPreferenceList> {
@@ -1121,11 +1277,57 @@ async function postJson(url: string, payload?: unknown): Promise<Response> {
   return response;
 }
 
+async function getJson(url: string): Promise<Response> {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return response;
+}
+
+async function postChannelJson(
+  url: string,
+  payload: unknown,
+  idempotencyKey: string,
+): Promise<Response> {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "X-Idempotency-Key": idempotencyKey,
+  };
+  if (payload !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+  const response = await fetch(url, {
+    body: payload === undefined ? undefined : JSON.stringify(payload),
+    credentials: "same-origin",
+    headers,
+    method: "POST",
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return response;
+}
+
 async function safeErrorDetail(response: Response): Promise<string> {
   try {
-    const payload = (await response.json()) as { detail?: unknown };
+    const payload = (await response.json()) as {
+      detail?: unknown;
+      error?: { message?: unknown };
+    };
     if (typeof payload.detail === "string" && payload.detail.length <= 120) {
       return payload.detail;
+    }
+    if (
+      typeof payload.error?.message === "string" &&
+      payload.error.message.length <= 120
+    ) {
+      return payload.error.message;
     }
   } catch {
     return `React admin request failed with ${response.status}`;

@@ -443,6 +443,43 @@ class SkillLifecycleAuditRecord(BaseModel):
         return safe_skill_lifecycle_text(value, max_length=200)
 
 
+class SkillLegacyRouteMapping(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    legacy_path: str
+    react_path: str
+    compatibility_status: str
+    preserved_params: tuple[str, ...] = Field(default_factory=tuple)
+    authorization_behavior: str
+    evidence: tuple[str, ...] = Field(default_factory=tuple)
+    notes: str
+
+    @field_validator("legacy_path", "react_path")
+    @classmethod
+    def route_path_is_safe(cls, value: str) -> str:
+        normalized = safe_text(value, max_length=240)
+        lowered = normalized.lower()
+        if any(marker in lowered for marker in SKILL_LIFECYCLE_UNSAFE_MARKERS):
+            raise ValueError("unsafe skill lifecycle path cannot be rendered")
+        if not normalized.startswith("/admin/"):
+            raise ValueError("legacy route mappings must stay on admin routes")
+        return normalized
+
+    @field_validator(
+        "compatibility_status",
+        "authorization_behavior",
+        "notes",
+    )
+    @classmethod
+    def text_is_safe(cls, value: str) -> str:
+        return safe_skill_lifecycle_text(value, max_length=240)
+
+    @field_validator("preserved_params", "evidence")
+    @classmethod
+    def tuple_text_is_safe(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        return tuple(safe_skill_lifecycle_text(item, max_length=180) for item in value)
+
+
 class SkillLifecycleDashboard(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -465,6 +502,7 @@ class SkillLifecycleDashboard(BaseModel):
     )
     binding_preview: BindingEligibilityPreview
     audit_timeline: tuple[SkillLifecycleAuditRecord, ...] = Field(default_factory=tuple)
+    legacy_routes: tuple[SkillLegacyRouteMapping, ...] = Field(default_factory=tuple)
     actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
     state: ReactAdminShellState | None = None
     refresh: RefreshHint | None = None

@@ -18,6 +18,7 @@ def test_membership_admin_page_renders_safe_scoped_forms(tmp_path, monkeypatch) 
         page = client.get(
             f"/admin/memberships?tenant_id={ACME_TENANT_ID}",
             headers=PLATFORM_HEADERS,
+            follow_redirects=False,
         )
         posted = client.post(
             "/admin/memberships/invitations",
@@ -31,14 +32,18 @@ def test_membership_admin_page_renders_safe_scoped_forms(tmp_path, monkeypatch) 
             follow_redirects=False,
         )
         updated = client.get(
-            f"/admin/memberships?tenant_id={ACME_TENANT_ID}",
+            f"/admin/memberships/api/users?tenant_id={ACME_TENANT_ID}",
             headers=PLATFORM_HEADERS,
         )
 
-    assert page.status_code == 200
-    assert "Membership Administration" in page.text
-    assert "Create Invitation" in page.text
+    assert page.status_code == 303
+    assert page.headers["location"] == (
+        f"/admin/app/memberships?tenant_id={ACME_TENANT_ID}&panel=memberships"
+    )
     assert posted.status_code == 303
+    assert posted.headers["location"] == (
+        f"/admin/app/memberships?tenant_id={ACME_TENANT_ID}&panel=invitations"
+    )
     assert "re***r@e***.com" in updated.text
     assert "Reviewer@Example.com" not in updated.text
 
@@ -120,12 +125,24 @@ def test_membership_admin_page_post_actions_and_errors(tmp_path, monkeypatch) ->
         )
 
     assert role_post.status_code == 303
+    assert role_post.headers["location"].startswith(
+        f"/admin/app/memberships?tenant_id={ACME_TENANT_ID}&panel=role-grants"
+    )
     assert role_revoke.status_code == 303
+    assert role_revoke.headers["location"].startswith(
+        f"/admin/app/memberships?tenant_id={ACME_TENANT_ID}&panel=role-grants"
+    )
     assert role_revoke_missing.status_code == 404
     assert suspend.status_code == 303
+    assert suspend.headers["location"].startswith(
+        "/admin/app/memberships?panel=principals"
+    )
     assert reactivate.status_code == 303
     assert unknown_principal_action.status_code == 404
     assert missing_principal.status_code == 404
     assert membership_suspend.status_code == 303
+    assert membership_suspend.headers["location"].startswith(
+        f"/admin/app/memberships?tenant_id={ACME_TENANT_ID}&panel=memberships"
+    )
     assert membership_restore.status_code == 303
     assert missing_membership.status_code == 404

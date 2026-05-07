@@ -1,0 +1,118 @@
+{
+  "spec": "039",
+  "title": "No-Jinja React Host, Auth, Shell Utilities, And Local Login",
+  "feature_dir": "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
+  "branch": "codex/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/spec.md",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/checklists/requirements.md"
+      ],
+      "notes": "Created the active Spec 039 specification from the generated roadmap prompt. Scope covers non-Jinja React host serving, local-principal login, Auth0 preservation, shell utility redirects, saved-filter React parity, denied/unavailable states, and bounded shell/auth template retirement."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/spec.md"
+      ],
+      "auto_clarifications": [
+        "Serve the built Vite index or minimal Python-generated HTML response with safe asset manifest handling, CSP/cache headers, and no Jinja TemplateResponse.",
+        "Use a React/local-auth route backed by server-owned JSON contracts for local-principal selection, action tokens, session creation, audit, and redirects.",
+        "Keep Auth0 redirect decisions server-owned with allowlisted safe admin return URLs and fail-closed unsafe or cross-tenant intent.",
+        "Move saved-filter management, scope switching, breadcrumbs, command/search, denied, unavailable, and mutation-result presentation into React or non-Jinja compatibility responses.",
+        "Redirect /admin and redirectable shell URLs to /admin/app or the closest React route while preserving tenant, route, filter, and saved-filter intent; otherwise return a documented non-Jinja problem/retirement response."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/plan.md",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/research.md",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/data-model.md",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/contracts/no-jinja-host-auth-react-ui.md",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/contracts/no-jinja-host-auth.openapi.yaml",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned a non-Jinja React host renderer, local-principal React/auth contracts, shell utility redirects, React saved-filter management, safe denied/unavailable states, route/import scanners, bounded shell/auth template deletion, QA evidence, and rollback notes."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/tasks.md"
+      ],
+      "task_count": 45,
+      "notes": "Generated dependency-ordered, file-specific tasks covering setup, tests-first coverage, non-Jinja host serving, React/local-principal login, shell utility redirects, React saved filters, bounded deletion, QA docs, and validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "notes": "Spec, plan, and tasks cover non-Jinja host serving, local-principal login, Auth0 redirects, action tokens, saved-filter parity, tenant scope, denied/unavailable states, direct-link redirects, route/import scanners, bounded deletion, QA docs, Playwright evidence, and rollback guidance. No CRITICAL findings remain."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/api/routers/admin_console.py",
+        "src/multi_agent_platform/api/routers/auth.py",
+        "src/multi_agent_platform/api/schemas/auth.py",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/components/savedFilters/SavedFilterManagementPage.tsx",
+        "frontend/admin/src/routes.tsx",
+        "scripts/frontend/generate_admin_react_types.py",
+        "src/multi_agent_platform/web_admin/templates/admin_react/app.html",
+        "src/multi_agent_platform/web_admin/templates/auth/local_login.html",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/tasks.md",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/pr_notes.md",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/qa039.md",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/qa039_ui.md",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/.env.qa039",
+        "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/qa039_user_guide.md"
+      ],
+      "tests": [
+        "tests/integration/api/test_admin_react_no_jinja_host_routes.py",
+        "tests/integration/api/test_auth_routes.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/integration/api/test_admin_console_shell_routes.py",
+        "tests/integration/api/test_admin_console_shell_saved_filters.py",
+        "tests/integration/test_admin_react_routes.py",
+        "frontend/admin/src/App.test.tsx"
+      ],
+      "notes": "Implemented a Python-generated non-Jinja React admin host, redirected /admin and saved-filter utility routes to React/non-Jinja JSON compatibility responses, replaced local-principal login template rendering with non-Jinja HTML plus JSON/action-token contracts, generated TypeScript contracts, deleted the bounded admin_react/app.html and auth/local_login.html templates, rebuilt React assets, and retained shared admin_shell templates/static with documented blocker evidence because later domain Jinja pages still extend the shared shell."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login",
+      "uv run pytest --no-cov tests/integration/api/test_admin_react_no_jinja_host_routes.py tests/integration/api/test_auth_routes.py tests/integration/api/test_admin_console_shell_routes.py tests/integration/api/test_admin_console_shell_saved_filters.py tests/contract/test_admin_react_contract.py tests/unit/admin/test_jinja_inventory_scanner.py tests/unit/api/test_admin_migration_hardening_react_schema.py tests/contract/test_admin_migration_jinja_inventory_contract.py tests/integration/api/test_admin_react_migration_inventory_routes.py -q",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "cd frontend/admin && npm test -- --run src/App.test.tsx",
+      "cd frontend/admin && npm run build",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/039-no-jinja-react-host-auth-shell-utilities-and-local-login/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/039-no-jinja-react-host-auth-shell-utilities-and-local-login/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/qa039.md",
+      "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/qa039_ui.md",
+      "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/qa039_user_guide.md",
+      "specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/pr_notes.md",
+      "output/playwright/qa039_ui/qa039-react-ui2-smoke.png"
+    ],
+    "notes": "All Spec 039 QA documents, focused backend tests, type/lint checks, frontend tests/build, generated-contract check, Spec QA, and Playwright validation passed. Docker was initially unavailable during the first Spec QA attempt; Docker was started and the command was rerun successfully."
+  },
+  "blockers": []
+}

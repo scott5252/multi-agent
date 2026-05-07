@@ -106,9 +106,10 @@ def _publish_prompt_from_form(
         follow_redirects=False,
     )
     assert validated.status_code == 303, validated.text
-    edit_page = client.get(validated.headers["location"], headers=headers)
-    assert edit_page.status_code == 200
-    assert "Status: passed" in edit_page.text
+    assert validated.headers["location"].startswith(
+        f"/admin/app/governance/prompts/{lineage_id}/edit"
+    )
+    assert "flash=prompt-validated" in validated.headers["location"]
 
     revision_number = _current_prompt_revision(client, headers, lineage_id)
     preview = client.post(
@@ -126,8 +127,10 @@ def _publish_prompt_from_form(
         follow_redirects=False,
     )
     assert preview.status_code == 303, preview.text
-    preview_page = client.get(preview.headers["location"], headers=headers)
-    assert "Hello Ada" in preview_page.text
+    assert preview.headers["location"].startswith(
+        f"/admin/app/governance/prompts/{lineage_id}/preview"
+    )
+    assert "fixture_set_id=default" in preview.headers["location"]
 
     revision_number = _current_prompt_revision(client, headers, lineage_id)
     revalidated = client.post(
@@ -145,14 +148,9 @@ def _publish_prompt_from_form(
         follow_redirects=False,
     )
     assert revalidated.status_code == 303, revalidated.text
-    revalidated_edit_page = client.get(revalidated.headers["location"], headers=headers)
-    assert revalidated_edit_page.status_code == 200
-    publish_button = re.search(
-        r'<button[^>]+name="_action"[^>]+value="publish"[^>]*>',
-        revalidated_edit_page.text,
+    assert revalidated.headers["location"].startswith(
+        f"/admin/app/governance/prompts/{lineage_id}/edit"
     )
-    assert publish_button is not None
-    assert "disabled" not in publish_button.group(0)
 
     published = client.post(
         "/admin/prompt-runtime/prompts/form",
@@ -166,9 +164,9 @@ def _publish_prompt_from_form(
     )
     assert published.status_code == 303, published.text
     version_id = _location_uuid(published, r"/versions/([^?]+)")
-    detail = client.get(published.headers["location"], headers=headers)
-    assert detail.status_code == 200
-    assert "Status</dt><dd>active</dd>" in detail.text
+    assert published.headers["location"].startswith(
+        f"/admin/app/governance/prompts/versions/{version_id}"
+    )
     return lineage_id, version_id
 
 
@@ -185,9 +183,10 @@ def test_prompt_browser_forms_submit_save_validate_preview_publish_retire_and_gr
         new_page = client.get(
             "/admin/prompt-runtime/prompts/new",
             headers=TENANT_HEADERS,
+            follow_redirects=False,
         )
-        assert new_page.status_code == 200
-        assert 'name="_action" value="save"' in new_page.text
+        assert new_page.status_code == 303
+        assert new_page.headers["location"] == "/admin/app/governance/prompts/new"
 
         lineage_id, version_id = _publish_prompt_from_form(
             client,
@@ -209,8 +208,10 @@ def test_prompt_browser_forms_submit_save_validate_preview_publish_retire_and_gr
             follow_redirects=False,
         )
         assert retired.status_code == 303, retired.text
-        retired_page = client.get(retired.headers["location"], headers=TENANT_HEADERS)
-        assert "Status</dt><dd>retired</dd>" in retired_page.text
+        assert retired.headers["location"].startswith(
+            f"/admin/app/governance/prompts/versions/{version_id}"
+        )
+        assert "flash=prompt-retired" in retired.headers["location"]
 
         _, platform_version_id = _publish_prompt_from_form(
             client,
@@ -232,8 +233,10 @@ def test_prompt_browser_forms_submit_save_validate_preview_publish_retire_and_gr
             follow_redirects=False,
         )
         assert granted.status_code == 303, granted.text
-        granted_page = client.get(granted.headers["location"], headers=PLATFORM_HEADERS)
-        assert str(tenant_id) in granted_page.text
+        assert granted.headers["location"].startswith(
+            f"/admin/app/governance/prompts/versions/{platform_version_id}"
+        )
+        assert "flash=prompt-granted" in granted.headers["location"]
 
         denied = client.post(
             "/admin/prompt-runtime/prompts/form",

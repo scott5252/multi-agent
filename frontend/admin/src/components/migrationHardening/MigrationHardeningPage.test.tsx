@@ -34,11 +34,11 @@ describe("MigrationHardeningPage", () => {
       <MigrationHardeningPage dashboardUrl="/admin/app/migration/bootstrap.json" />,
     );
 
-    await screen.findByRole("heading", { name: "React Admin Migration Hardening" });
+    await screen.findByRole("heading", { name: "React-only browser UI" });
     expect(screen.getByText("React admin home")).toBeInTheDocument();
-    expect(screen.getByText("Retained fallback")).toBeInTheDocument();
-    expect(screen.getByText("Deletion readiness")).toBeInTheDocument();
-    expect(screen.getByText("admin_shell.js")).toBeInTheDocument();
+    expect(screen.getAllByText("Redirect").length).toBeGreaterThan(0);
+    expect(screen.getByText("React-only readiness")).toBeInTheDocument();
+    expect(screen.getByText("Final decommission summary")).toBeInTheDocument();
     expect(screen.getByText("Route safety plan")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Refresh" }));

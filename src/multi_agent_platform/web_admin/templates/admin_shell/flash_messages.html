@@ -1,9 +1,0 @@
-{% if shell.messages %}
-  <section class="admin-messages" aria-label="Messages">
-    {% for message in shell.messages %}
-      <article class="admin-message admin-message--{{ message.level }}" role="{% if message.level == 'error' %}alert{% else %}status{% endif %}">
-        {{ message.summary }}
-      </article>
-    {% endfor %}
-  </section>
-{% endif %}

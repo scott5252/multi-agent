@@ -70,17 +70,31 @@ def test_skill_execution_diagnostics_page_and_api(tmp_path, monkeypatch) -> None
         page = client.get(
             "/admin/skill-execution/ui/diagnostics",
             headers=PLATFORM_HEADERS,
+            follow_redirects=False,
         )
         payload = client.get(
             "/admin/skill-execution/api/diagnostics",
             headers=PLATFORM_HEADERS,
         )
+        refresh = client.post(
+            "/admin/skill-execution/api/diagnostics/run",
+            headers=PLATFORM_HEADERS,
+            json={"tool_names": ["weather.forecast.read"]},
+        )
+        unknown_tool = client.post(
+            "/admin/skill-execution/api/diagnostics/run",
+            headers=PLATFORM_HEADERS,
+            json={"tool_names": ["provider.raw.payload"]},
+        )
 
-    assert page.status_code == 200, page.text
-    assert "Skill Tool Diagnostics" in page.text
-    assert "Google Calendar Events" in page.text
-    assert "Gmail Messages" in page.text
-    assert "Weather Forecast" in page.text
-    assert "[redacted" in page.text
+    assert page.status_code == 303, page.text
+    assert page.headers["location"] == "/admin/app/skills/diagnostics"
     assert payload.status_code == 200
     assert len(payload.json()["items"]) == 5
+    assert "connector request" not in payload.text.lower()
+    assert refresh.status_code == 200
+    assert len(refresh.json()["items"]) == 1
+    assert refresh.json()["items"][0]["tool_name"] == "weather.forecast.read"
+    assert "connector request" not in refresh.text.lower()
+    assert unknown_tool.status_code == 422
+    assert "provider.raw.payload" in unknown_tool.text

@@ -24,9 +24,13 @@ def test_run_started_in_api_can_be_recovered_in_web_ui(tmp_path, monkeypatch) ->
             },
         )
         run_id = start.json()["run_id"]
-        web_detail = client.get(f"/runs/{run_id}", headers=acme_headers())
+        web_detail = client.get(
+            f"/runs/{run_id}",
+            headers=acme_headers(),
+            follow_redirects=False,
+        )
         api_status = client.get(f"/runs/{run_id}/status", headers=acme_headers())
 
-    assert web_detail.status_code == 200
-    assert run_id in web_detail.text
+    assert web_detail.status_code == 303
+    assert web_detail.headers["location"] == f"/admin/app/channels/runs/{run_id}"
     assert api_status.json()["state"] == "queued"

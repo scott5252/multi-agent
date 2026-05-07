@@ -37,6 +37,9 @@ describe("SkillLifecyclePage", () => {
     await screen.findByRole("heading", { name: "Skill lifecycle" });
     expect(screen.getByText("Package publication")).toBeInTheDocument();
     expect(screen.getByText("Credential reference fingerprint changed.")).toBeInTheDocument();
+    expect(screen.getByText("Legacy route redirects")).toBeInTheDocument();
+    expect(screen.getByText("/admin/skill-registry/ui/packages")).toBeInTheDocument();
+    expect(screen.getByText("/admin/app/skills/diagnostics")).toBeInTheDocument();
     expect(screen.queryByText(/qa032-secret-value/)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Save candidate/ }));

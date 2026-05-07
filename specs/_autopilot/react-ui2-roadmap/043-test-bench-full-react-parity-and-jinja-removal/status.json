@@ -1,0 +1,103 @@
+{
+  "spec": "043",
+  "title": "Test Bench Full React Parity And Jinja Removal",
+  "feature_dir": "specs/043-test-bench-full-react-parity-and-jinja-removal",
+  "branch": "codex/043-test-bench-full-react-parity-and-jinja-removal",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/spec.md",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/checklists/requirements.md"
+      ],
+      "notes": "Created the active Spec 043 specification from the generated roadmap prompt. Scope covers full React parity and Jinja removal for test bench suites, cases, assertions, target selection, run launch/progress/results, artifacts, publish-gate evidence, audit timeline, safe execution modes, stale evidence prevention, and legacy direct-link behavior."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/spec.md"
+      ],
+      "auto_clarifications": [
+        "Backend-owned polling snapshots remain acceptable for run progress; React never infers pass/fail or terminal state from timers or partial client state.",
+        "Legacy artifact links redirect to React artifact metadata panels when authorized; raw payloads, storage paths, and local paths are never rendered.",
+        "Old suite, case, create, edit, and launch URLs redirect to React with tenant scope, ids, filters, saved-filter intent, breadcrumbs, and conflict state preserved when safe.",
+        "Suite runs and publish-gate evidence bind to backend-supplied current target revisions, and stale or copied evidence cannot satisfy publication.",
+        "Workflow builder and publish-gate panels link only to authorized React test bench evidence for the exact suite, run, target revision, and artifact references.",
+        "React may display approved probe summaries and policy evidence only; local and CI validation keep real probes denied or mocked unless an existing policy approval explicitly permits them.",
+        "Routes that cannot safely redirect return a non-Jinja safe problem or documented retirement response without revealing whether protected data exists."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/plan.md",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/research.md",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/data-model.md",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/contracts/test-bench-react-parity-ui.md",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/contracts/test-bench-react-parity.openapi.yaml",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned test bench React-only parity by retaining JSON APIs, converting legacy /admin/agent-tests/ui browser routes to React redirects or safe non-Jinja problems, preserving mutation form behavior with React redirects, deleting only agent_tests templates after evidence, and validating with dual-auth tests, route/import scanners, frontend tests, Spec QA, and Playwright."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/tasks.md"
+      ],
+      "task_count": 68,
+      "notes": "Generated dependency-ordered, file-specific tasks covering legacy test bench redirect/form-post compatibility, suite/case/run React parity, progress/result/trace/artifact/gate/audit safety, test-bench template deletion, docs, QA artifacts, generated assets, Spec QA, and Playwright validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "remediations": [],
+      "notes": "Spec, plan, and tasks cover test bench suite/case authoring, run launch/progress, result diagnostics, trace/artifact metadata, publish-gate evidence, audit timeline, safe execution modes, stale evidence rejection, legacy route redirects/form-post compatibility, template deletion evidence, dual-auth tests, QA docs, and Playwright validation. No CRITICAL or HIGH findings remain."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/routers/admin_agent_tests.py",
+        "src/multi_agent_platform/api/schemas/admin_test_bench.py",
+        "src/multi_agent_platform/testing/agent_bench/react_test_bench.py",
+        "frontend/admin/src/components/testBench/TestBenchPage.tsx",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "tests/integration/api/test_admin_agent_tests_legacy_redirects.py",
+        "tests/unit/admin/test_test_bench_jinja_retirement.py",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/qa043.md",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/qa043_ui.md",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/qa043_user_guide.md",
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/pr_notes.md",
+        "output/playwright/qa043_ui/qa043-react-ui2-smoke.png"
+      ],
+      "notes": "Converted legacy /admin/agent-tests/ui browser routes and form posts to React redirects, removed agent_tests Jinja templates, added redirect and retirement tests, extended React query-state handling, added unavailable artifact/gate states, regenerated TypeScript contracts, refreshed docs, and validated QA043 end to end."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/043-test-bench-full-react-parity-and-jinja-removal",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "uv run pytest --no-cov tests/integration/api/test_admin_agent_tests_legacy_redirects.py tests/integration/api/test_admin_agent_tests_api.py tests/integration/test_admin_react_routes.py tests/contract/test_admin_react_contract.py tests/unit/admin/test_test_bench_jinja_retirement.py tests/unit/admin/test_test_bench_react_service.py tests/unit/api/test_admin_test_bench_schema.py tests/performance/test_bench/test_react_test_bench_queries.py tests/docs/test_agent_test_bench_docs.py -q",
+      "cd frontend/admin && npm test -- --run src/components/testBench src/App.test.tsx",
+      "cd frontend/admin && npm run build",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/043-test-bench-full-react-parity-and-jinja-removal/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/043-test-bench-full-react-parity-and-jinja-removal/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "output/playwright/qa043_ui/qa043-react-ui2-smoke.png",
+      "/tmp/qa043-api.log",
+      "/tmp/qa043-worker.log"
+    ]
+  },
+  "blockers": []
+}

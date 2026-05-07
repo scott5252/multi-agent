@@ -1,0 +1,110 @@
+{
+  "spec": "042",
+  "title": "Skill Registry And Tool Diagnostics Full React Parity And Jinja Removal",
+  "feature_dir": "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+  "branch": "codex/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/spec.md",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/checklists/requirements.md"
+      ],
+      "notes": "Created the active Spec 042 specification from the generated roadmap prompt. Scope covers full React parity and Jinja removal for skill package, package-version, tenant grant, installation, credential, smoke-test, readiness, binding eligibility, audit timeline, stale conflict, available-version, and SkillExecutionGateway diagnostics workflows."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/spec.md"
+      ],
+      "auto_clarifications": [
+        "Uploaded manifest content takes precedence over pasted manifest content, with selected source recorded in safe audit evidence.",
+        "Raw manifest text is not re-rendered after submission; only safe summaries, metadata, findings, fingerprints, revision tokens, and artifact references may appear.",
+        "Old package, version, grant, installation, configure, and diagnostics routes redirect to React with safe ids, conflict state, filters, and return intent preserved.",
+        "Smoke-test and connector diagnostic refresh actions are explicit user actions and remain mocked-safe in local/CI validation.",
+        "Tenant users see authorized safe availability/readiness/binding summaries while platform-only mutation controls remain hidden and denied.",
+        "Process-local service limits render as safe readiness or unavailable states with remediation and rollback guidance."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/plan.md",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/research.md",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/data-model.md",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/contracts/skill-registry-react-parity-ui.md",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/contracts/skill-registry-react-parity.openapi.yaml",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned skill registry and SkillExecutionGateway diagnostics React parity by extending Spec 032 contracts, adding stable React child routes and legacy redirect mappings for packages, versions, grants, available versions, installations, credentials, smoke tests, eligibility, audit, and diagnostics; preserving backend-owned authorization/redaction; and blocking template deletion until route/scanner/QA/Playwright evidence passes."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/tasks.md"
+      ],
+      "task_count": 72,
+      "notes": "Generated dependency-ordered, file-specific tasks covering shared skill lifecycle contracts, package publication parity, tenant installation parity, SkillExecutionGateway diagnostics parity, legacy redirect/form-post compatibility, skill-owned template deletion, docs, QA docs, generated assets, Spec QA, and Playwright validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "remediations": [],
+      "notes": "Spec, plan, and tasks cover skill package, package-version, tenant grant, installation, credential, smoke-test, readiness, binding eligibility, audit timeline, SkillExecutionGateway diagnostics, raw manifest safety, upload precedence, stale conflicts, tenant isolation, explicit refresh actions, old route redirects/form-post compatibility, skill-owned template deletion, QA docs, Playwright evidence, and rollback notes. No CRITICAL or HIGH findings remain."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/routers/admin_skill_registry.py",
+        "src/multi_agent_platform/api/routers/admin_skill_execution.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/api/schemas/admin_skill_lifecycle.py",
+        "src/multi_agent_platform/admin/skill_lifecycle.py",
+        "frontend/admin/src/components/skills/SkillLifecyclePage.tsx",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "tests/integration/api/test_admin_skill_registry_legacy_redirects.py",
+        "tests/integration/api/test_admin_skill_registry_browser_flows.py",
+        "tests/integration/api/test_admin_skill_execution_legacy_redirects.py",
+        "tests/unit/admin/test_skill_jinja_retirement.py",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/qa042.md",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/qa042_ui.md",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/.env.qa042",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/qa042_user_guide.md",
+        "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/pr_notes.md"
+      ],
+      "notes": "Converted skill registry and SkillExecutionGateway diagnostics browser routes to React redirects or safe non-Jinja problems, retained backend form behavior with React redirects, added legacy route contracts, deleted skill-owned templates, refreshed generated React types/assets, updated docs, and generated QA artifacts."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "uv run pytest --no-cov tests/integration/api/test_admin_skill_registry_legacy_redirects.py tests/integration/api/test_admin_skill_registry_browser_flows.py tests/integration/api/test_admin_skill_execution_legacy_redirects.py tests/integration/api/test_admin_skill_execution_ui.py tests/integration/test_admin_react_routes.py tests/contract/test_admin_react_contract.py tests/unit/admin/test_skill_jinja_retirement.py tests/unit/api/test_admin_skill_lifecycle_schema.py tests/docs/test_skill_registry_docs.py",
+      "cd frontend/admin && npm test -- --run src/components/skills src/App.test.tsx",
+      "cd frontend/admin && npm run build",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/qa042.md",
+      "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/qa042_ui.md",
+      "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/.env.qa042",
+      "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/qa042_user_guide.md",
+      "specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/pr_notes.md",
+      "output/playwright/qa042_ui/qa042-react-ui2-smoke.png"
+    ],
+    "notes": "QA docs, Python quality gates, focused backend tests, frontend skill tests, React production build, Spec QA, and Playwright UI validation passed. Screenshot was inspected and legacy-route card wrapping was tightened before the final Playwright rerun."
+  },
+  "blockers": []
+}

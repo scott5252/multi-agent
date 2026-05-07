@@ -1,0 +1,131 @@
+{
+  "spec": "040",
+  "title": "Workflow Registry Full React Parity And Jinja Removal",
+  "feature_dir": "specs/040-workflow-registry-full-react-parity-and-jinja-removal",
+  "branch": "codex/040-workflow-registry-full-react-parity-and-jinja-removal",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/spec.md",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/checklists/requirements.md"
+      ],
+      "notes": "Created the active Spec 040 specification from the generated roadmap prompt. Scope covers full React workflow registry parity, old workflow route compatibility, workflow-owned Jinja deletion evidence, dual-auth validation, redaction, and retention of non-workflow/shared Jinja infrastructure for later specs."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/spec.md"
+      ],
+      "auto_clarifications": [
+        "Redirect /admin/workflows and /admin/workflows/ui to /admin/app/workflows with authorized tenant/query/filter/saved-filter/return intent preservation.",
+        "Use stable React workflow routes for create, draft editing, revision history, and published version detail, backed by server-owned workflow contracts.",
+        "Preserve workflow lineage, draft, revision, published version, publish-gate, evidence, and stale-conflict identifiers when old URLs redirect; return non-Jinja safe problems when unsafe or unauthorized.",
+        "Validate both graph preview and keyboard-readable/list alternatives for nodes, edges, validation findings, and publish blockers.",
+        "Convert legacy workflow form posts to backend JSON or redirect compatibility handlers; delete workflow_studio.js or workflow-only assets only after scanner and route tests prove no references remain."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/plan.md",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/research.md",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/data-model.md",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/contracts/workflow-react-parity-ui.md",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/contracts/workflow-react-parity.openapi.yaml",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned workflow React parity by extending the Spec 030 builder contracts, adding workflow list/create/detail/version/revision/publish-gate direct-link coverage, legacy URL redirects/non-Jinja compatibility responses, scanner-backed workflow template/static deletion, dual-auth tests, Playwright evidence, QA docs, and rollback notes."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/tasks.md"
+      ],
+      "task_count": 54,
+      "notes": "Generated dependency-ordered, file-specific tasks covering setup, tests-first workflow React parity, legacy redirect/compatibility handling, workflow-owned Jinja template/static deletion or retained blockers, QA docs, Spec QA, and Playwright validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "remediations": [
+        "Tightened task file references for workflow direct-link docs and workflow template/component deletion tasks before recording analysis completion."
+      ],
+      "notes": "Spec, plan, and tasks cover workflow React list/create/draft/detail/version/revision/publish-gate/sharing parity, old route redirects and compatibility responses, graph accessibility, legacy form post handling, dual-auth validation, cross-tenant denial, redaction, scanner-backed workflow template/static deletion, QA docs, Playwright evidence, and rollback notes. No CRITICAL or HIGH findings remain."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_workflow_builder.py",
+        "src/multi_agent_platform/admin/workflow_builder.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/api/routers/admin_workflow_ui.py",
+        "src/multi_agent_platform/api/ui/admin_console.py",
+        "frontend/admin/src/components/workflows/WorkflowRegistryPage.tsx",
+        "frontend/admin/src/components/workflows/WorkflowCreatePage.tsx",
+        "frontend/admin/src/components/workflows/WorkflowSharingPanel.tsx",
+        "frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "tests/integration/api/test_admin_workflow_ui.py",
+        "tests/unit/api/test_admin_workflow_ui_routes.py",
+        "tests/contract/test_admin_react_contract.py",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/qa040.md",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/qa040_ui.md",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/.env.qa040",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/qa040_user_guide.md",
+        "specs/040-workflow-registry-full-react-parity-and-jinja-removal/pr_notes.md"
+      ],
+      "deleted": [
+        "src/multi_agent_platform/web_admin/templates/workflows/index.html",
+        "src/multi_agent_platform/web_admin/templates/workflows/create.html",
+        "src/multi_agent_platform/web_admin/templates/workflows/draft_editor.html",
+        "src/multi_agent_platform/web_admin/templates/workflows/publish_gate.html",
+        "src/multi_agent_platform/web_admin/templates/workflows/revision_history.html",
+        "src/multi_agent_platform/web_admin/templates/workflows/version_detail.html",
+        "src/multi_agent_platform/web_admin/templates/workflows/components/field_help_modal.html",
+        "src/multi_agent_platform/web_admin/templates/workflows/components/graph_preview.html",
+        "src/multi_agent_platform/web_admin/templates/workflows/components/reference_picker.html",
+        "src/multi_agent_platform/web_admin/templates/workflows/components/validation_panel.html",
+        "src/multi_agent_platform/web_admin/static/workflow_studio.js"
+      ],
+      "retained_with_blocker": [
+        "src/multi_agent_platform/web_admin/static/workflow_studio.css",
+        "src/multi_agent_platform/api/ui/admin_workflows.py"
+      ],
+      "notes": "Implemented React workflow registry/create/draft/publish/revision/version/sharing parity, redirected old workflow browser routes to React, kept legacy form posts as backend-owned compatibility handlers, deleted workflow-owned templates and workflow_studio.js, and documented retained shared CSS/helper blockers."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/040-workflow-registry-full-react-parity-and-jinja-removal",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "uv run pytest --no-cov tests/integration/api/test_admin_workflow_ui.py tests/unit/api/test_admin_workflow_ui_routes.py tests/contract/test_admin_react_contract.py tests/integration/api/test_local_browser_login.py tests/integration/test_admin_react_routes.py -q",
+      "cd frontend/admin && npm test -- --run src/App.test.tsx src/components/workflows",
+      "cd frontend/admin && npm run build",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/040-workflow-registry-full-react-parity-and-jinja-removal/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/040-workflow-registry-full-react-parity-and-jinja-removal/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "output/playwright/qa040_ui/qa040-react-ui2-smoke.png",
+      "specs/040-workflow-registry-full-react-parity-and-jinja-removal/qa040.md",
+      "specs/040-workflow-registry-full-react-parity-and-jinja-removal/qa040_ui.md",
+      "specs/040-workflow-registry-full-react-parity-and-jinja-removal/qa040_user_guide.md",
+      "specs/040-workflow-registry-full-react-parity-and-jinja-removal/pr_notes.md"
+    ],
+    "notes": "QA docs, focused backend/frontend tests, generated contract check, Vite build, full Spec QA with coverage, and Playwright UI validation all passed for qa040."
+  },
+  "blockers": []
+}

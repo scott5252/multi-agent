@@ -1,0 +1,191 @@
+openapi: 3.1.0
+info:
+  title: Skill Registry React Parity Contracts
+  version: 0.1.0
+paths:
+  /admin/app/skills/bootstrap.json:
+    get:
+      summary: Fetch skill lifecycle dashboard envelope
+      responses:
+        "200":
+          description: Backend-owned skill lifecycle dashboard
+  /admin/app/skills/legacy-routes.json:
+    get:
+      summary: Fetch legacy skill route mapping and retirement evidence
+      responses:
+        "200":
+          description: Legacy route mappings
+  /admin/app/skills/packages:
+    post:
+      summary: Create a skill package from React or compatibility form flow
+      responses:
+        "200":
+          description: Safe mutation result
+  /admin/app/skills/packages/candidates:
+    post:
+      summary: Save a manifest candidate with upload-over-paste precedence
+      responses:
+        "200":
+          description: Safe mutation result with manifest summary only
+  /admin/app/skills/packages/candidates/{candidate_id}/validate:
+    post:
+      summary: Validate a saved manifest candidate
+      parameters:
+        - name: candidate_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe validation result
+  /admin/app/skills/packages/candidates/{candidate_id}/publish:
+    post:
+      summary: Publish a validated skill package candidate
+      parameters:
+        - name: candidate_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe publish result or stale conflict
+  /admin/app/skills/packages/{package_slug}/versions/{semantic_version}/grants:
+    post:
+      summary: Update tenant availability grants for a package version
+      parameters:
+        - name: package_slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semantic_version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe grant mutation result
+  /admin/app/skills/installations:
+    post:
+      summary: Install an available tenant skill version
+      responses:
+        "200":
+          description: Safe installation mutation result
+  /admin/app/skills/installations/{installation_id}/credentials:
+    post:
+      summary: Configure credential references for a tenant installation
+      parameters:
+        - name: installation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe credential mutation result or stale conflict
+  /admin/app/skills/installations/{installation_id}/readiness:
+    post:
+      summary: Explicitly refresh installation readiness
+      parameters:
+        - name: installation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe readiness mutation result
+  /admin/app/skills/installations/{installation_id}/smoke-tests:
+    post:
+      summary: Explicitly refresh mocked-safe smoke tests
+      parameters:
+        - name: installation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe smoke-test mutation result
+  /admin/app/skills/installations/{installation_id}/eligibility-preview:
+    post:
+      summary: Preview workflow binding eligibility for an installation
+      parameters:
+        - name: installation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe binding eligibility result
+  /admin/app/skills/diagnostics/run:
+    post:
+      summary: Explicitly run mocked-safe SkillExecutionGateway diagnostics
+      responses:
+        "200":
+          description: Safe diagnostic mutation result
+components:
+  schemas:
+    SkillLegacyRouteMapping:
+      type: object
+      required:
+        - legacy_path
+        - react_path
+        - compatibility_status
+      properties:
+        legacy_path:
+          type: string
+        react_path:
+          type: string
+        compatibility_status:
+          type: string
+          enum:
+            - redirected
+            - converted
+            - gone
+            - retained_with_blocker
+            - outside_scope
+        preserved_params:
+          type: array
+          items:
+            type: string
+        authorization_behavior:
+          type: string
+        evidence:
+          type: array
+          items:
+            type: string
+    SafeSkillMutationResult:
+      type: object
+      required:
+        - status
+        - summary
+      properties:
+        status:
+          type: string
+        summary:
+          type: string
+        revision:
+          type:
+            - string
+            - "null"
+        audit_reference_id:
+          type:
+            - string
+            - "null"
+        diagnostics:
+          type: array
+          items:
+            type: string
+        stale_conflict:
+          type:
+            - object
+            - "null"
+        toast:
+          type:
+            - object
+            - "null"

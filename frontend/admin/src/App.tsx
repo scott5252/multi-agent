@@ -3,16 +3,17 @@ import { useEffect, useState } from "react";
 import { fetchBootstrap } from "./api/client";
 import { PatternsPage } from "./components/patterns/PatternsPage";
 import { ChannelTelegramBriefingPage } from "./components/channelTelegramBriefing/ChannelTelegramBriefingPage";
-import { RunStatusSummaryPage } from "./components/channelTelegramBriefing/RunStatusSummaryPage";
 import { GovernancePage } from "./components/governance/GovernancePage";
 import { MembershipPage } from "./components/memberships/MembershipPage";
 import { MigrationHardeningPage } from "./components/migrationHardening/MigrationHardeningPage";
+import { SavedFilterManagementPage } from "./components/savedFilters/SavedFilterManagementPage";
 import { AdminShell } from "./components/shell/AdminShell";
 import { SkillLifecyclePage } from "./components/skills/SkillLifecyclePage";
 import { StatePanel } from "./components/StatePanel";
 import { TestBenchPage } from "./components/testBench/TestBenchPage";
 import { UsageExportDetailPage } from "./components/usage/UsageExportDetailPage";
 import { UsagePage } from "./components/usage/UsagePage";
+import { UserRunPage } from "./components/userRuns/UserRunPage";
 import { WorkbenchPage } from "./components/workbench/WorkbenchPage";
 import { WorkflowBuilderPage } from "./components/workflows/WorkflowBuilderPage";
 import { currentDisabledRoute, disabledRouteFallbacks } from "./routes";
@@ -51,8 +52,8 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
       <StatePanel
         title="React admin unavailable"
         summary={error}
-        actionHref="/admin"
-        actionLabel="Open existing admin console"
+        actionHref="/auth/local-login?redirect_to=/admin/app"
+        actionLabel="Open local login"
       />
     );
   }
@@ -106,7 +107,7 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
     );
   }
 
-  if (window.location.pathname === "/admin/app/workflows") {
+  if (window.location.pathname.startsWith("/admin/app/workflows")) {
     return (
       <AdminShell bootstrap={bootstrap}>
         <WorkflowBuilderPage
@@ -157,6 +158,17 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
     );
   }
 
+  if (window.location.pathname.startsWith("/admin/app/saved-filters/")) {
+    const adminArea = window.location.pathname.split("/").at(-1) ?? "workflows";
+    return (
+      <AdminShell bootstrap={bootstrap}>
+        <SavedFilterManagementPage
+          savedFiltersUrl={`/admin/filters/${adminArea}.json${window.location.search}`}
+        />
+      </AdminShell>
+    );
+  }
+
   if (window.location.pathname.startsWith("/admin/app/usage/exports/")) {
     const exportId = window.location.pathname.split("/").at(-1) ?? "";
     return (
@@ -176,13 +188,15 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
     );
   }
 
-  if (window.location.pathname.startsWith("/admin/app/channels/runs/")) {
-    const runId = window.location.pathname.split("/").at(-1) ?? "";
+  if (window.location.pathname.startsWith("/admin/app/channels/runs")) {
+    const pathParts = window.location.pathname.split("/");
+    const runId =
+      window.location.pathname === "/admin/app/channels/runs"
+        ? null
+        : (pathParts.at(-1) ?? null);
     return (
       <AdminShell bootstrap={bootstrap}>
-        <RunStatusSummaryPage
-          runStatusUrl={`/admin/app/channels/runs/${runId}/status.json${window.location.search}`}
-        />
+        <UserRunPage runId={runId} search={window.location.search} />
       </AdminShell>
     );
   }

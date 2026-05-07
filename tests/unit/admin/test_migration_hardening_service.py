@@ -40,12 +40,13 @@ def test_platform_dashboard_includes_all_route_groups_and_evidence() -> None:
         "governance-skills-tests-qa037",
         "people-usage-channels-qa037",
     }
-    assert any(
+    assert not any(
         entry.decision == MigrationRouteDecision.RETAINED_FALLBACK for entry in entries
     )
     assert all(entry.parity_evidence for entry in entries if entry.retirement_allowed)
     assert "qa037-secret-value" not in dashboard.model_dump_json()
-    assert dashboard.jinja_inventory.summary.template_count > 0
+    assert dashboard.title == "React-only browser UI"
+    assert dashboard.jinja_inventory.summary.template_count == 0
     assert "qa038-secret-value" not in dashboard.model_dump_json()
 
 

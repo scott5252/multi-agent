@@ -1,0 +1,151 @@
+openapi: 3.1.0
+info:
+  title: Governance React Parity Contracts
+  version: 0.1.0
+paths:
+  /admin/app/governance/bootstrap.json:
+    get:
+      summary: Governance dashboard envelope
+      responses:
+        "200":
+          description: GovernanceDashboard
+        "401":
+          description: SafeProblemDetail
+        "403":
+          description: SafeProblemDetail
+  /admin/app/governance/providers.json:
+    get:
+      summary: Provider governance list and catalog readiness
+      responses:
+        "200":
+          description: ProviderGovernanceList
+  /admin/app/governance/providers/{provider_id}.json:
+    get:
+      summary: Provider governance detail
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ProviderGovernanceDetail
+  /admin/app/governance/providers/{provider_id}/probe:
+    post:
+      summary: Explicit mocked-safe provider probe
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: GovernanceMutationResult
+        "403":
+          description: SafeProblemDetail
+  /admin/app/governance/providers/{provider_id}/credential-reference:
+    post:
+      summary: Provider credential reference mutation
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: GovernanceMutationResult
+        "403":
+          description: SafeProblemDetail
+  /admin/app/governance/prompts.json:
+    get:
+      summary: Prompt governance list and detail state
+      responses:
+        "200":
+          description: PromptGovernanceList
+  /admin/app/governance/prompts/{prompt_lineage_id}/save:
+    post:
+      summary: Prompt draft save
+      parameters:
+        - name: prompt_lineage_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: GovernanceMutationResult
+  /admin/app/governance/prompts/{prompt_lineage_id}/preview:
+    post:
+      summary: Safe prompt preview
+      parameters:
+        - name: prompt_lineage_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: SafePromptPreview
+  /admin/app/governance/profiles.json:
+    get:
+      summary: Runtime profile governance list and detail state
+      responses:
+        "200":
+          description: ProfileGovernanceList
+  /admin/app/governance/profiles/{profile_id}/save:
+    post:
+      summary: Runtime profile save
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: GovernanceMutationResult
+  /admin/app/governance/profiles/{profile_id}/resolve:
+    post:
+      summary: Read-only profile resolution preview
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ProfileResolutionPreview
+  /admin/app/governance/routing/preview:
+    post:
+      summary: Read-only routing preview
+      responses:
+        "200":
+          description: ProfileResolutionPreview
+  /admin/app/governance/history.json:
+    get:
+      summary: Policy and model-skill config history
+      responses:
+        "200":
+          description: PolicyHistoryList
+  /admin/app/governance/provenance/{run_id}.json:
+    get:
+      summary: Run provenance summary
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: RunProvenanceSummary
+  /admin/app/governance/legacy-routes.json:
+    get:
+      summary: Legacy governance route mappings and retirement evidence
+      responses:
+        "200":
+          description: GovernanceLegacyRouteMappingList

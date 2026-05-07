@@ -2,7 +2,8 @@
 
 Spec 011 adds platform-admin-managed provider connections and a shared
 `ModelGateway` path for model calls. The admin UI lives at
-`/admin/model-providers` inside the shared admin shell.
+`/admin/app/governance/providers` inside the React admin shell; old
+`/admin/model-providers` browser routes redirect there.
 
 ## Admin Workflow
 

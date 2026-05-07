@@ -21,13 +21,43 @@
         "id": "qa047-react-ui2-smoke",
         "steps": [
           {
-            "goto": "/admin/app/migration"
+            "goto": "/auth/local-login?redirect_to=/admin/app/migration"
           },
           {
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Jinja"
+            "click": "form:has(input[value=\"platform-admin\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "React-only browser UI"
+          },
+          {
+            "expect_text": "React-only readiness"
+          },
+          {
+            "goto": "/auth/local-login?redirect_to=/runs"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"tenant-admin-acme\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Run workspace"
+          },
+          {
+            "click": "button:has-text(\"Start Run\")"
+          },
+          {
+            "expect_text": "Run accepted through channel facade."
           },
           {
             "screenshot": "qa047-react-ui2-smoke.png",

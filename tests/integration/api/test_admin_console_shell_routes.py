@@ -12,11 +12,6 @@ from multi_agent_platform.api.main import create_app
 from multi_agent_platform.db.base import Base
 from multi_agent_platform.db.models import import_models
 from multi_agent_platform.db.models.tenant import Tenant
-from tests.fixtures.admin_console import (
-    assert_nav_item,
-    assert_scope_label,
-    assert_shell_landmarks,
-)
 
 
 def _configure_env(monkeypatch, tmp_path: Path, tenant_id) -> None:
@@ -89,16 +84,11 @@ def test_admin_landing_renders_scope_navigation_and_tenant_links(
         response = client.get(
             f"/admin?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
+            follow_redirects=False,
         )
 
-    assert response.status_code == 200
-    assert_shell_landmarks(response.text)
-    assert_scope_label(response.text, "Tenant")
-    assert_nav_item(response.text, "Workflow Registry")
-    assert 'action="/auth/local-logout"' in response.text
-    assert 'name="redirect_to" value="/auth/local-login"' in response.text
-    assert ">Log out</button>" in response.text
-    assert "tenant_id=" in response.text
+    assert response.status_code == 303
+    assert response.headers["location"] == f"/admin/app?tenant_id={tenant_id}"
 
 
 def test_platform_admin_landing_offers_active_tenant_scope_dropdown(
@@ -112,14 +102,11 @@ def test_platform_admin_landing_offers_active_tenant_scope_dropdown(
         response = client.get(
             "/admin",
             headers={"X-Local-Principal": "platform-admin"},
+            follow_redirects=False,
         )
 
-    assert response.status_code == 200
-    assert_scope_label(response.text, "Platform")
-    assert 'id="admin-scope-select"' in response.text
-    assert "Switch scope" in response.text
-    assert "Tenant scope Acme" in response.text
-    assert f'value="{tenant_id}"' in response.text
+    assert response.status_code == 303
+    assert response.headers["location"] == "/admin/app"
 
 
 def test_scope_selector_audits_and_sanitizes_redirects(tmp_path, monkeypatch) -> None:
@@ -139,5 +126,5 @@ def test_scope_selector_audits_and_sanitizes_redirects(tmp_path, monkeypatch) ->
         )
 
     assert response.status_code == 303
-    assert response.headers["location"] == f"/admin?tenant_id={tenant_id}"
+    assert response.headers["location"] == f"/admin/app?tenant_id={tenant_id}"
     assert forbidden.status_code == 403

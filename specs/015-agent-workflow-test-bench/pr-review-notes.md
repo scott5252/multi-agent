@@ -2,16 +2,18 @@
 
 ## Scope
 
-Spec 015 adds a tenant-scoped agent and workflow test bench for admins. The
-slice introduces durable suite, case, assertion, run, run-step, and publication
-requirement metadata; deterministic sandbox execution; safe redaction helpers;
-admin JSON APIs; server-rendered admin UI pages; local-principal permissions;
-and publish gate evidence summaries.
+Spec 015 added a tenant-scoped agent and workflow test bench for admins. The
+slice introduced durable suite, case, assertion, run, run-step, and
+publication requirement metadata; deterministic sandbox execution; safe
+redaction helpers; admin JSON APIs; local-principal permissions; and publish
+gate evidence summaries. Spec 043 moves the browser experience fully to React
+at `/admin/app/test-bench`; legacy `/admin/agent-tests/ui...` URLs are safe
+compatibility redirects.
 
 ## Reviewer Focus
 
-- Confirm `/admin/agent-tests/ui` is reachable from the admin shell in tenant
-  scope.
+- Confirm `/admin/app/test-bench` is reachable from the admin shell in tenant
+  scope, and `/admin/agent-tests/ui...` legacy links redirect there safely.
 - Confirm `/admin/agent-tests` APIs enforce tenant isolation for suites, cases,
   runs, and gate evaluation.
 - Confirm mock model, mock tools, and real-model-side-effects-disabled modes do
@@ -50,7 +52,8 @@ and publish gate evidence summaries.
 - `src/multi_agent_platform/db/models/agent_tests.py`
 - `src/multi_agent_platform/db/repositories/agent_tests.py`
 - `src/multi_agent_platform/api/routers/admin_agent_tests.py`
-- `src/multi_agent_platform/web_admin/templates/agent_tests/`
+- `tests/integration/api/test_admin_agent_tests_legacy_redirects.py`
+- `tests/unit/admin/test_test_bench_jinja_retirement.py`
 - `src/multi_agent_platform/auth/policy.py`
 - `src/multi_agent_platform/admin/workflow_registry/publish_gate.py`
 - `tests/integration/api/test_admin_agent_tests_api.py`

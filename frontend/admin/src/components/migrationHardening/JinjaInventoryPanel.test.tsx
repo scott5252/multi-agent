@@ -5,15 +5,12 @@ import { jinjaInventoryDashboard } from "../../test/migrationHardeningTestData";
 import { JinjaInventoryPanel } from "./JinjaInventoryPanel";
 
 describe("JinjaInventoryPanel", () => {
-  it("renders grouped deletion readiness without unsafe evidence", () => {
+  it("renders final decommission readiness without unsafe evidence", () => {
     render(<JinjaInventoryPanel inventory={jinjaInventoryDashboard} />);
 
-    expect(screen.getByRole("heading", { name: "Deletion readiness" })).toBeInTheDocument();
-    expect(screen.getByText("Spec 039: Shell Auth")).toBeInTheDocument();
-    expect(screen.getByText("app.html")).toBeInTheDocument();
-    expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0);
-    expect(screen.getByText("Compatibility needed")).toBeInTheDocument();
-    expect(screen.getAllByText("scanner-qa038").length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "React-only readiness" })).toBeInTheDocument();
+    expect(screen.getByText("Final decommission summary")).toBeInTheDocument();
+    expect(screen.getByText("runtime-import-scan-qa047")).toBeInTheDocument();
     expect(
       screen.queryByText(/qa038-secret-value|raw prompt|\/Users\//i),
     ).not.toBeInTheDocument();
@@ -40,6 +37,8 @@ describe("JinjaInventoryPanel", () => {
       />,
     );
 
-    expect(screen.getByText("No inventory rows are visible for this scope.")).toBeInTheDocument();
+    expect(
+      screen.getByText("No server-rendered inventory rows remain for this scope."),
+    ).toBeInTheDocument();
   });
 });

@@ -8,6 +8,7 @@ from multi_agent_platform.api.schemas.admin_skill_lifecycle import (
     ConnectorReadinessSummary,
     CredentialReferenceOption,
     SkillExecutionDiagnosticSummary,
+    SkillLegacyRouteMapping,
     SkillLifecycleStatus,
     SkillPackageCandidate,
     safe_skill_lifecycle_text,
@@ -129,4 +130,30 @@ def test_credential_connector_diagnostic_and_binding_payloads_are_redacted() -> 
             redaction_summary="Attempt details were summarized.",
             audit_reference_id="audit-gateway-diagnostic-qa032-calendar",
             remediation="No action needed.",
+        )
+
+
+def test_skill_legacy_route_mapping_is_redaction_safe() -> None:
+    mapping = SkillLegacyRouteMapping(
+        legacy_path="/admin/skill-registry/ui/packages/{package_slug}",
+        react_path="/admin/app/skills/packages/{package_slug}",
+        compatibility_status="redirected",
+        preserved_params=("package_slug", "query"),
+        authorization_behavior="authenticated redirect with backend React denial",
+        evidence=(
+            "tests/integration/api/test_admin_skill_registry_legacy_redirects.py",
+        ),
+        notes="Legacy route redirects to React without rendering Jinja.",
+    )
+
+    assert mapping.compatibility_status == "redirected"
+    assert "query" in mapping.preserved_params
+
+    with pytest.raises(ValidationError):
+        SkillLegacyRouteMapping(
+            legacy_path="/admin/skill-registry/ui/packages",
+            react_path="/admin/app/skills/packages",
+            compatibility_status="redirected",
+            authorization_behavior="raw tool output rendered",
+            notes="Unsafe diagnostics.",
         )

@@ -260,8 +260,10 @@ def test_operations_service_helpers_cover_filter_and_reference_edges(settings) -
     assert _dependency_from_details({"other": "value"}) is None
     assert _ensure_aware(datetime(2026, 5, 3)).tzinfo is UTC
     assert _ensure_aware(datetime(2026, 5, 3, tzinfo=UTC)).tzinfo is UTC
-    assert _run_href(run_id, tenant_id).endswith(f"?tenant_id={tenant_id}")
-    assert _usage_href(None) == "/admin/usage"
+    assert _run_href(run_id, tenant_id) == (
+        f"/admin/app/operations?run_id={run_id}&tenant_id={tenant_id}"
+    )
+    assert _usage_href(None) == "/admin/app/usage"
     assert _usage_href(tenant_id).endswith(f"?tenant_id={tenant_id}")
     assert _p95([None, 10, 20, 30]) == 30
 

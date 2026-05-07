@@ -21,13 +21,31 @@
         "id": "qa042-react-ui2-smoke",
         "steps": [
           {
+            "goto": "/auth/local-login?redirect_to=/admin/app/skills"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"platform-admin\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
             "goto": "/admin/app/skills"
           },
           {
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Skill"
+            "expect_text": "Skill lifecycle"
+          },
+          {
+            "expect_text": "Legacy route redirects"
+          },
+          {
+            "expect_text": "/admin/skill-registry/ui/packages"
           },
           {
             "screenshot": "qa042-react-ui2-smoke.png",

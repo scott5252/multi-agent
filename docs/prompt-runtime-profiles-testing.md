@@ -56,9 +56,9 @@ blocked by guardrail tests.
 
 ## Captured Evidence
 
-- Completion pass for server-rendered prompt/profile workflows
+- Completion pass for legacy prompt/profile browser workflows
   (2026-04-28):
-  - `uv run pytest --no-cov tests/integration/api/test_prompt_runtime_browser_flows.py tests/integration/api/test_agent_profile_browser_flows.py`: 2 passed. These tests submit the real HTML forms for prompt save, validation, preview, publish, retire, grants, profile policy sections, activation, grants, resolution, retire, and cross-tenant denial paths.
+  - `uv run pytest --no-cov tests/integration/api/test_prompt_runtime_browser_flows.py tests/integration/api/test_agent_profile_browser_flows.py`: 2 passed. These historical tests covered prompt save, validation, preview, publish, retire, grants, profile policy sections, activation, grants, resolution, retire, and cross-tenant denial paths before the React-only browser decommission.
   - `uv run pytest --no-cov tests/unit/api/test_prompt_runtime_ui_routes.py tests/unit/api/test_admin_agent_profiles_routes.py tests/integration/api/test_admin_prompts_api.py tests/integration/api/test_prompt_runtime_browser_flows.py tests/integration/api/test_agent_profile_browser_flows.py tests/contract/test_prompt_runtime_profiles_contract.py tests/contract/test_prompt_library_contract.py tests/contract/test_agent_profiles_contract.py tests/contract/test_prompt_lifecycle_contract.py tests/unit/auth/test_prompt_runtime_policy.py tests/unit/agents/test_profile_service.py tests/unit/agents/test_prompt_reference_validation.py tests/unit/agents/test_profile_resolution.py tests/unit/prompts/test_tenant_isolation.py`: 23 passed.
   - `uv run ruff check .`: passed.
   - `uv run ruff format --check .`: passed, 643 files already formatted.

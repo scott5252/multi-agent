@@ -21,13 +21,34 @@
         "id": "qa046-react-ui2-smoke",
         "steps": [
           {
+            "goto": "/auth/local-login?redirect_to=/runs"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"tenant-admin-acme\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
             "goto": "/runs"
           },
           {
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Run"
+            "expect_text": "Run workspace"
+          },
+          {
+            "click": "button:has-text(\"Start Run\")"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Run accepted through channel facade."
           },
           {
             "screenshot": "qa046-react-ui2-smoke.png",

@@ -1005,6 +1005,10 @@ def test_react_admin_skill_lifecycle_platform_tenant_and_auth0_are_safe(
             f"/admin/app/skills/diagnostics.json?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
         )
+        legacy_routes = client.get(
+            f"/admin/app/skills/legacy-routes.json?tenant_id={tenant_id}",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
         html = client.get(
             f"/admin/app/skills?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
@@ -1043,6 +1047,11 @@ def test_react_admin_skill_lifecycle_platform_tenant_and_auth0_are_safe(
     assert (
         diagnostics.json()["diagnostics"][0]["gateway_decision"] == "allowed_read_only"
     )
+    assert legacy_routes.status_code == 200
+    assert legacy_routes.json()[0]["legacy_path"] == (
+        "/admin/skill-registry/ui/packages"
+    )
+    assert legacy_routes.json()[-1]["react_path"] == "/admin/app/skills/diagnostics"
     assert html.status_code == 200
     assert "React Admin" in html.text
     assert missing.status_code == 401
@@ -1769,7 +1778,7 @@ def test_bootstrap_fails_closed_when_navigation_audit_is_unavailable(
     assert response.json()["detail"] == "audit_unavailable"
 
 
-def test_manifest_and_jinja_fallbacks_remain_safe(
+def test_manifest_and_non_jinja_fallbacks_remain_safe(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1799,7 +1808,9 @@ def test_manifest_and_jinja_fallbacks_remain_safe(
     assert manifest.json()["available"] is False
     assert "src/multi_agent_platform" not in manifest.text
     assert fallback.status_code == 200
-    assert "Admin Console" in fallback.text
+    assert fallback.headers["X-React-Admin-Host"] == "non-jinja"
+    assert "React admin built assets are unavailable" in fallback.text
+    assert "Admin Console" not in fallback.text
     assert disabled_route.status_code == 200
     assert "React Admin" in disabled_route.text
 
@@ -1826,6 +1837,10 @@ def test_react_channels_platform_and_tenant_dashboards_are_scoped(
             f"/admin/app/channels?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
         )
+        runs_html = client.get(
+            f"/admin/app/channels/runs?tenant_id={tenant_id}",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
         cross_tenant = client.get(
             f"/admin/app/channels/bootstrap.json?tenant_id={other_tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
@@ -1841,6 +1856,8 @@ def test_react_channels_platform_and_tenant_dashboards_are_scoped(
     assert "pair-code" not in json.dumps(tenant_payload)
     assert html.status_code == 200
     assert "React Admin" in html.text
+    assert runs_html.status_code == 200
+    assert "React Admin" in runs_html.text
     assert cross_tenant.status_code == 403
     assert "Globex" not in cross_tenant.text
 
@@ -2038,11 +2055,13 @@ def test_react_migration_hardening_platform_tenant_and_user_scopes(
     platform_payload = platform_dashboard.json()
     assert platform_payload["summary"]["total_destinations"] >= 8
     assert "qa037-secret-value" not in json.dumps(platform_payload)
-    assert any(
+    assert platform_payload["title"] == "React-only browser UI"
+    assert not any(
         entry["decision"] == "retained_fallback"
         for group in platform_payload["route_groups"]
         for entry in group["entries"]
     )
+    assert platform_payload["jinja_inventory"]["summary"]["template_count"] == 0
     assert tenant_dashboard.status_code == 200
     tenant_payload = tenant_dashboard.json()
     assert all(

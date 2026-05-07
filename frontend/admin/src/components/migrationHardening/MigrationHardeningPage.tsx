@@ -24,7 +24,7 @@ import { RollbackPlanPanel } from "./RollbackPlanPanel";
 
 export function MigrationHardeningPage({
   dashboardUrl,
-  inventoryUrl = withSearch("/admin/app/migration/jinja-inventory.json"),
+  inventoryUrl = withSearch("/admin/app/migration/decommission-inventory.json"),
   rollbackUrl = withSearch("/admin/app/migration/rollback.json"),
   routesUrl = withSearch("/admin/app/migration/routes.json"),
 }: {

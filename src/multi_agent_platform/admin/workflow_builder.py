@@ -23,6 +23,8 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     WorkflowBuilderEnvelope,
     WorkflowBuilderSeverity,
     WorkflowBuilderStatus,
+    WorkflowCreateEnvelope,
+    WorkflowCreateTemplate,
     WorkflowDraftDocument,
     WorkflowDraftSaveRequest,
     WorkflowEvidenceSummary,
@@ -31,12 +33,17 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     WorkflowGraphPreview,
     WorkflowJoinPolicySummary,
     WorkflowJsonInspector,
+    WorkflowLegacyRouteMapping,
     WorkflowPublishReadiness,
     WorkflowPublishRequest,
     WorkflowReferenceCatalog,
     WorkflowReferenceOption,
+    WorkflowRegistryEnvelope,
+    WorkflowRegistryItem,
     WorkflowRevisionSummary,
+    WorkflowSharingSummary,
     WorkflowValidationSummary,
+    WorkflowVersionDetail,
 )
 from multi_agent_platform.auth.principal import PrincipalContext
 
@@ -69,6 +76,8 @@ def build_workflow_builder_envelope(
             "required evidence, and publish gates."
         ),
         scope=scope,
+        registry=build_workflow_registry_envelope(scope=scope),
+        create_state=build_workflow_create_envelope(scope=scope),
         draft=WorkflowDraftDocument(
             workflow_draft_id=draft_id,
             workflow_lineage_id=DEFAULT_LINEAGE_ID,
@@ -89,6 +98,9 @@ def build_workflow_builder_envelope(
         validation=validation,
         publish_readiness=publish_readiness,
         revisions=_revisions(),
+        version_detail=build_workflow_version_detail(scope=scope),
+        sharing=build_workflow_sharing_summary(scope=scope),
+        legacy_routes=build_workflow_legacy_route_mappings(scope=scope),
         json_inspector=_json_inspector(),
         actions=(
             AdminAction(
@@ -126,6 +138,270 @@ def build_workflow_builder_envelope(
     )
 
 
+def build_workflow_registry_envelope(
+    *,
+    scope: ReactAdminScope,
+) -> WorkflowRegistryEnvelope:
+    draft_href = _with_tenant_query(
+        f"/admin/app/workflows/drafts/{DEFAULT_DRAFT_ID}",
+        scope,
+    )
+    version_href = _with_tenant_query(
+        "/admin/app/workflows/versions/22222222-2222-2222-2222-000000000030",
+        scope,
+    )
+    return WorkflowRegistryEnvelope(
+        page_id="workflow-registry-react",
+        title="Workflow registry",
+        summary=(
+            "React workflow registry with draft, published version, required "
+            "evidence, and sharing summaries."
+        ),
+        scope=scope,
+        filters={
+            "status": "all",
+            "scope_filter": "active",
+            "sort": "updated",
+        },
+        items=(
+            WorkflowRegistryItem(
+                workflow_lineage_id=DEFAULT_LINEAGE_ID,
+                workflow_draft_id=DEFAULT_DRAFT_ID,
+                name="Daily briefing workflow",
+                workflow_kind="main_workflow",
+                status=WorkflowBuilderStatus.READY,
+                owner_label="Tenant Admin",
+                tenant_label=(
+                    scope.label
+                    if scope.scope_type == ReactAdminScopeType.TENANT
+                    else None
+                ),
+                updated_at_label="Current revision",
+                sharing_summary="Visible to authorized workflow reviewers.",
+                required_evidence_summary="Required Daily briefing suite is stale.",
+                href=draft_href,
+                actions=(
+                    AdminAction(
+                        action_id="open-draft",
+                        label="Open draft",
+                        method=AdminActionMethod.GET,
+                        href=draft_href,
+                        variant=ReactAdminPageActionVariant.PRIMARY,
+                    ),
+                    AdminAction(
+                        action_id="open-publish-gate",
+                        label="Publish gate",
+                        method=AdminActionMethod.GET,
+                        href=_with_tenant_query(
+                            f"/admin/app/workflows/drafts/{DEFAULT_DRAFT_ID}/publish-gate",
+                            scope,
+                        ),
+                        variant=ReactAdminPageActionVariant.SECONDARY,
+                    ),
+                ),
+            ),
+            WorkflowRegistryItem(
+                workflow_lineage_id=DEFAULT_LINEAGE_ID,
+                workflow_version_bundle_id="22222222-2222-2222-2222-000000000030",
+                name="Daily briefing workflow",
+                workflow_kind="main_workflow",
+                status=WorkflowBuilderStatus.PUBLISHED,
+                owner_label="Platform Admin",
+                tenant_label=None,
+                updated_at_label="Published bundle",
+                sharing_summary="Published bundle pins runtime versions.",
+                required_evidence_summary="Evidence references are retained.",
+                href=version_href,
+                actions=(
+                    AdminAction(
+                        action_id="open-version",
+                        label="View version",
+                        method=AdminActionMethod.GET,
+                        href=version_href,
+                        variant=ReactAdminPageActionVariant.SECONDARY,
+                    ),
+                ),
+            ),
+        ),
+        create_action=AdminAction(
+            action_id="workflow-create",
+            label="Create workflow",
+            method=AdminActionMethod.GET,
+            href=_with_tenant_query("/admin/app/workflows/new", scope),
+            variant=ReactAdminPageActionVariant.PRIMARY,
+        ),
+    )
+
+
+def build_workflow_create_envelope(
+    *,
+    scope: ReactAdminScope,
+) -> WorkflowCreateEnvelope:
+    return WorkflowCreateEnvelope(
+        page_id="workflow-create-react",
+        title="Create workflow",
+        summary=(
+            "Start from a minimal ready workflow or a blocked-readiness fixture "
+            "that exercises publish gates."
+        ),
+        templates=(
+            WorkflowCreateTemplate(
+                template_id="minimal_ready",
+                label="Minimal ready workflow",
+                summary="Creates a small workflow with a terminal node.",
+                workflow_kind="main_workflow",
+                href=_with_tenant_query(
+                    "/admin/app/workflows/new?template=minimal_ready",
+                    scope,
+                ),
+            ),
+            WorkflowCreateTemplate(
+                template_id="qa013_blocked_readiness",
+                label="Blocked readiness workflow",
+                summary="Creates a draft with deliberate publish blockers.",
+                workflow_kind="main_workflow",
+                href=_with_tenant_query(
+                    "/admin/app/workflows/new?template=qa013_blocked_readiness",
+                    scope,
+                ),
+            ),
+        ),
+        create_action=AdminAction(
+            action_id="workflow-create-submit",
+            label="Create draft",
+            method=AdminActionMethod.POST,
+            href=_with_tenant_query("/admin/workflows", scope),
+            variant=ReactAdminPageActionVariant.PRIMARY,
+        ),
+    )
+
+
+def build_workflow_version_detail(
+    *,
+    scope: ReactAdminScope,
+) -> WorkflowVersionDetail:
+    _ = scope
+    return WorkflowVersionDetail(
+        workflow_version_bundle_id="22222222-2222-2222-2222-000000000030",
+        display_name="Daily briefing workflow",
+        display_version="v1",
+        digest_label="Compiled bundle digest qa030",
+        summary=(
+            "Published bundle pins workflow, prompt, profile, provider, skill, "
+            "subworkflow, and evidence references."
+        ),
+        href="/admin/app/workflows/versions/22222222-2222-2222-2222-000000000030",
+    )
+
+
+def build_workflow_sharing_summary(
+    *,
+    scope: ReactAdminScope,
+) -> WorkflowSharingSummary:
+    return WorkflowSharingSummary(
+        status=WorkflowBuilderStatus.READY,
+        summary="Sharing decisions are enforced by backend tenant grants.",
+        grants_label=(
+            "Tenant grant active"
+            if scope.scope_type == ReactAdminScopeType.TENANT
+            else "Platform-owned workflow"
+        ),
+        actions=(
+            AdminAction(
+                action_id="workflow-sharing-review",
+                label="Review sharing",
+                method=AdminActionMethod.GET,
+                href=_with_tenant_query("/admin/app/workflows", scope),
+                variant=ReactAdminPageActionVariant.SECONDARY,
+            ),
+        ),
+    )
+
+
+def build_workflow_legacy_route_mappings(
+    *,
+    scope: ReactAdminScope,
+) -> tuple[WorkflowLegacyRouteMapping, ...]:
+    preserved = (
+        "tenant_id",
+        "scope_filter",
+        "status",
+        "q",
+        "saved_filter",
+        "workflow_draft_id",
+        "workflow_version_bundle_id",
+        "revision",
+        "conflict",
+    )
+    return (
+        WorkflowLegacyRouteMapping(
+            legacy_path="/admin/workflows/ui",
+            methods=("GET",),
+            react_path=_with_tenant_query("/admin/app/workflows", scope),
+            preserved_parameters=preserved[:5],
+            redirect_status="303",
+            authorization_behavior="Backend authorization before redirect.",
+            inventory_item_id="workflow-registry-index",
+            evidence_references=("tests/integration/api/test_admin_workflow_ui.py",),
+            retirement_outcome="redirected",
+        ),
+        WorkflowLegacyRouteMapping(
+            legacy_path="/admin/workflows/new",
+            methods=("GET", "POST"),
+            react_path=_with_tenant_query("/admin/app/workflows/new", scope),
+            preserved_parameters=preserved[:5],
+            redirect_status="303",
+            compatibility_response="POST create returns the created React draft link.",
+            authorization_behavior="Backend create authorization remains required.",
+            inventory_item_id="workflow-create",
+            evidence_references=("tests/integration/api/test_admin_workflow_ui.py",),
+            retirement_outcome="converted",
+        ),
+        WorkflowLegacyRouteMapping(
+            legacy_path="/admin/workflows/drafts/{workflow_draft_id}/editor",
+            methods=("GET",),
+            react_path=_with_tenant_query(
+                f"/admin/app/workflows/drafts/{DEFAULT_DRAFT_ID}",
+                scope,
+            ),
+            preserved_parameters=preserved,
+            redirect_status="303",
+            authorization_behavior="Draft visibility is checked by JSON APIs.",
+            inventory_item_id="workflow-draft-editor",
+            evidence_references=("tests/integration/api/test_admin_workflow_ui.py",),
+            retirement_outcome="redirected",
+        ),
+        WorkflowLegacyRouteMapping(
+            legacy_path="/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui",
+            methods=("GET",),
+            react_path=_with_tenant_query(
+                f"/admin/app/workflows/drafts/{DEFAULT_DRAFT_ID}/publish-gate",
+                scope,
+            ),
+            preserved_parameters=preserved,
+            redirect_status="303",
+            authorization_behavior="Publish readiness remains backend-owned.",
+            inventory_item_id="workflow-publish-gate",
+            evidence_references=("tests/integration/api/test_admin_workflow_ui.py",),
+            retirement_outcome="redirected",
+        ),
+        WorkflowLegacyRouteMapping(
+            legacy_path="/admin/workflows/versions/{workflow_version_bundle_id}/detail",
+            methods=("GET",),
+            react_path=_with_tenant_query(
+                "/admin/app/workflows/versions/22222222-2222-2222-2222-000000000030",
+                scope,
+            ),
+            preserved_parameters=preserved,
+            redirect_status="303",
+            authorization_behavior="Version visibility is checked by JSON APIs.",
+            inventory_item_id="workflow-version-detail",
+            evidence_references=("tests/integration/api/test_admin_workflow_ui.py",),
+            retirement_outcome="redirected",
+        ),
+    )
+
+
 def build_reference_catalog(*, scope: ReactAdminScope) -> WorkflowReferenceCatalog:
     tenant_eligible = scope.scope_type == ReactAdminScopeType.TENANT
     return WorkflowReferenceCatalog(
@@ -139,7 +415,7 @@ def build_reference_catalog(*, scope: ReactAdminScope) -> WorkflowReferenceCatal
                 safe_summary=(
                     "Prompt version is published and granted to the active scope."
                 ),
-                href=_with_tenant_query("/admin/prompt-runtime/prompts", scope),
+                href=_with_tenant_query("/admin/app/governance/prompts", scope),
             ),
         ),
         profile_options=(
@@ -150,7 +426,7 @@ def build_reference_catalog(*, scope: ReactAdminScope) -> WorkflowReferenceCatal
                 readiness_status=WorkflowBuilderStatus.READY,
                 version_label="v2",
                 safe_summary="Profile pins provider routing and tool policy versions.",
-                href=_with_tenant_query("/admin/prompt-runtime/profiles", scope),
+                href=_with_tenant_query("/admin/app/governance/profiles", scope),
             ),
         ),
         provider_options=(
@@ -163,7 +439,7 @@ def build_reference_catalog(*, scope: ReactAdminScope) -> WorkflowReferenceCatal
                 safe_summary=(
                     "Provider route is configured with safe reference diagnostics."
                 ),
-                href="/admin/model-providers",
+                href="/admin/app/governance/providers",
             ),
         ),
         skill_options=(
@@ -176,7 +452,7 @@ def build_reference_catalog(*, scope: ReactAdminScope) -> WorkflowReferenceCatal
                     "Installed read-only connector is eligible for workflow binding."
                 ),
                 href=_with_tenant_query(
-                    "/admin/skill-registry/ui/installations",
+                    "/admin/app/skills/installations",
                     scope,
                 ),
             ),
@@ -198,7 +474,7 @@ def build_reference_catalog(*, scope: ReactAdminScope) -> WorkflowReferenceCatal
                 kind="subworkflow",
                 readiness_status=WorkflowBuilderStatus.READY,
                 safe_summary="Published subworkflow is visible to the active scope.",
-                href=_with_tenant_query("/admin/workflows/ui", scope),
+                href=_with_tenant_query("/admin/app/workflows", scope),
             ),
         ),
     )

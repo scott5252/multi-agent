@@ -109,6 +109,27 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     WorkflowBuilderEnvelope,
     WorkflowReferenceCatalog,
 )
+from multi_agent_platform.api.schemas.auth import (
+    LocalLoginEnvelope,
+    LocalLoginRequest,
+)
+from multi_agent_platform.api.schemas.channel_runs import (
+    ArtifactDownloadUrlResponse,
+    ArtifactListResponse,
+    CallbackRegistrationRequest,
+    CallbackRegistrationResponse,
+    CancelRunRequest,
+    ChannelErrorResponse,
+    NotificationSubscriptionRequest,
+    NotificationSubscriptionResponse,
+    PromptDecisionRequest,
+    PromptDecisionResponse,
+    RunInvocationRequest,
+    RunInvocationResponse,
+    RunResultResponse,
+    RunStatusResponse,
+    TimelineResponse,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = REPO_ROOT / "frontend/admin/src/api/generated/reactAdminApi.ts"
@@ -232,6 +253,33 @@ def schema_payload() -> dict[str, Any]:
             ReactAdminAssetManifestSummary.model_json_schema()
         ),
         "SafeProblem": SafeProblem.model_json_schema(),
+        "LocalLoginEnvelope": LocalLoginEnvelope.model_json_schema(),
+        "LocalLoginRequest": LocalLoginRequest.model_json_schema(),
+        "ChannelErrorResponse": ChannelErrorResponse.model_json_schema(),
+        "RunInvocationRequest": RunInvocationRequest.model_json_schema(),
+        "RunInvocationResponse": RunInvocationResponse.model_json_schema(),
+        "RunStatusResponse": RunStatusResponse.model_json_schema(),
+        "TimelineResponse": TimelineResponse.model_json_schema(),
+        "RunResultResponse": RunResultResponse.model_json_schema(),
+        "PromptDecisionRequest": PromptDecisionRequest.model_json_schema(),
+        "PromptDecisionResponse": PromptDecisionResponse.model_json_schema(),
+        "CancelRunRequest": CancelRunRequest.model_json_schema(),
+        "ArtifactListResponse": ArtifactListResponse.model_json_schema(),
+        "ArtifactDownloadUrlResponse": (
+            ArtifactDownloadUrlResponse.model_json_schema()
+        ),
+        "NotificationSubscriptionRequest": (
+            NotificationSubscriptionRequest.model_json_schema()
+        ),
+        "NotificationSubscriptionResponse": (
+            NotificationSubscriptionResponse.model_json_schema()
+        ),
+        "CallbackRegistrationRequest": (
+            CallbackRegistrationRequest.model_json_schema()
+        ),
+        "CallbackRegistrationResponse": (
+            CallbackRegistrationResponse.model_json_schema()
+        ),
     }
 
 
@@ -474,6 +522,55 @@ export type BriefingOutputStyle =
   | "executive"
   | "detailed"
   | "action_first";
+export type ChannelType = "web_ui" | "web_api" | "telegram";
+export type UserVisibleRunState =
+  | "queued"
+  | "running"
+  | "waiting-for-input"
+  | "completed"
+  | "failed"
+  | "canceled";
+export type TerminalOutcome = "none" | "completed" | "failed" | "canceled";
+export type ResultAvailability =
+  | "available"
+  | "failed"
+  | "canceled"
+  | "unavailable"
+  | "expired"
+  | "unauthorized";
+export type ArtifactAvailability =
+  | "none"
+  | "available"
+  | "unavailable"
+  | "expired"
+  | "unauthorized";
+export type ChannelErrorCategory =
+  | "unauthorized"
+  | "missing_input"
+  | "invalid_run_id"
+  | "unavailable_channel_delivery"
+  | "invalid_lifecycle_action"
+  | "idempotency_conflict"
+  | "rate_limited"
+  | "artifact_unavailable"
+  | "callback_delivery_failed"
+  | "platform_failure";
+export type PromptAction = "approve" | "reject" | "resume" | "cancel";
+export type PromptType = "approval" | "resume_input";
+export type TimelineEventType =
+  | "run_queued"
+  | "run_started"
+  | "progress"
+  | "waiting_prompt_created"
+  | "waiting_prompt_answered"
+  | "artifact_ready"
+  | "result_ready"
+  | "run_completed"
+  | "run_failed"
+  | "run_canceled"
+  | "notification_attempted"
+  | "callback_attempted";
+export type TimelineSeverity = "info" | "warning" | "error";
 export type MigrationOverallStatus = "ready" | "partial" | "blocked" | "rollback";
 export type MigrationRouteDecision =
   | "react_primary"
@@ -1139,17 +1236,93 @@ export interface BuilderMutationResult extends MutationResult {{
   publish_readiness: WorkflowPublishReadiness | null;
 }}
 
+export interface WorkflowRegistryItem {{
+  workflow_lineage_id: string;
+  workflow_draft_id: string | null;
+  workflow_version_bundle_id: string | null;
+  name: string;
+  workflow_kind: string;
+  status: WorkflowBuilderStatus;
+  owner_label: string;
+  tenant_label: string | null;
+  updated_at_label: string;
+  sharing_summary: string;
+  required_evidence_summary: string;
+  href: string;
+  actions: AdminAction[];
+}}
+
+export interface WorkflowRegistryEnvelope {{
+  page_id: string;
+  title: string;
+  summary: string;
+  scope: ReactAdminScope;
+  filters: Record<string, string>;
+  items: WorkflowRegistryItem[];
+  create_action: AdminAction | null;
+}}
+
+export interface WorkflowCreateTemplate {{
+  template_id: string;
+  label: string;
+  summary: string;
+  workflow_kind: string;
+  href: string;
+}}
+
+export interface WorkflowCreateEnvelope {{
+  page_id: string;
+  title: string;
+  summary: string;
+  templates: WorkflowCreateTemplate[];
+  create_action: AdminAction;
+}}
+
+export interface WorkflowSharingSummary {{
+  status: WorkflowBuilderStatus;
+  summary: string;
+  grants_label: string;
+  actions: AdminAction[];
+}}
+
+export interface WorkflowVersionDetail {{
+  workflow_version_bundle_id: string;
+  display_name: string;
+  display_version: string;
+  digest_label: string;
+  summary: string;
+  href: string;
+}}
+
+export interface WorkflowLegacyRouteMapping {{
+  legacy_path: string;
+  methods: string[];
+  react_path: string | null;
+  preserved_parameters: string[];
+  redirect_status: string;
+  compatibility_response: string | null;
+  authorization_behavior: string;
+  inventory_item_id: string;
+  evidence_references: string[];
+  retirement_outcome: string;
+}}
+
 export interface WorkflowBuilderEnvelope {{
   page_id: string;
   title: string;
   description: string;
   scope: ReactAdminScope;
+  registry: WorkflowRegistryEnvelope;
+  create_state: WorkflowCreateEnvelope;
   draft: WorkflowDraftDocument;
   sections: BuilderSection[];
   reference_catalog: WorkflowReferenceCatalog;
   validation: WorkflowValidationSummary;
   publish_readiness: WorkflowPublishReadiness;
   revisions: WorkflowRevisionSummary[];
+  version_detail: WorkflowVersionDetail;
+  sharing: WorkflowSharingSummary;
+  legacy_routes: WorkflowLegacyRouteMapping[];
   json_inspector: WorkflowJsonInspector;
   actions: AdminAction[];
   state: ReactAdminShellState | null;
@@ -1324,6 +1497,15 @@ export interface RunProvenanceSummary {{
   links: AdminAction[];
 }}
 
+export interface GovernanceLegacyRouteMapping {{
+  legacy_path: string;
+  react_path: string;
+  preserved_params: string[];
+  compatibility_status: string;
+  authorization_behavior: string;
+  evidence_summary: string;
+}}
+
 export interface GovernanceDashboard {{
   page_id: string;
   title: string;
@@ -1339,6 +1521,7 @@ export interface GovernanceDashboard {{
   prompt_preview: SafePromptPreview;
   policy_history: PolicyHistoryRecord[];
   run_provenance: RunProvenanceSummary[];
+  legacy_routes: GovernanceLegacyRouteMapping[];
   actions: AdminAction[];
   state: ReactAdminShellState | null;
   refresh: RefreshHint | null;
@@ -1568,6 +1751,16 @@ export interface SkillLifecycleAuditRecord {{
   links: AdminAction[];
 }}
 
+export interface SkillLegacyRouteMapping {{
+  legacy_path: string;
+  react_path: string;
+  compatibility_status: string;
+  preserved_params: string[];
+  authorization_behavior: string;
+  evidence: string[];
+  notes: string;
+}}
+
 export interface SkillLifecycleDashboard {{
   page_id: string;
   title: string;
@@ -1582,6 +1775,7 @@ export interface SkillLifecycleDashboard {{
   skill_execution_diagnostics: SkillExecutionDiagnosticSummary[];
   binding_preview: BindingEligibilityPreview;
   audit_timeline: SkillLifecycleAuditRecord[];
+  legacy_routes: SkillLegacyRouteMapping[];
   actions: AdminAction[];
   state: ReactAdminShellState | null;
   refresh: RefreshHint | null;
@@ -2530,6 +2724,142 @@ export interface RunStatusSummary {{
   audit_reference: string;
 }}
 
+export interface ChannelErrorDetail {{
+  category: ChannelErrorCategory;
+  message: string;
+  latest_status: RunStatusResponse | null;
+}}
+
+export interface ChannelErrorResponse {{
+  error: ChannelErrorDetail;
+  trace_id: string;
+}}
+
+export interface RunInvocationRequest {{
+  workflow_id: string;
+  inputs: Record<string, unknown>;
+  channel: ChannelType;
+  client_session_id: string | null;
+  callback_url: string | null;
+}}
+
+export interface RunInvocationResponse {{
+  run_id: string;
+  state: UserVisibleRunState;
+  status_url: string;
+  timeline_url: string | null;
+  events_url: string | null;
+  trace_id: string;
+}}
+
+export interface WaitingPromptResponse {{
+  prompt_id: string;
+  prompt_type: PromptType;
+  prompt_version: number;
+  summary: string;
+  context: Record<string, unknown>;
+  allowed_actions: PromptAction[];
+  deadline_at: string | null;
+}}
+
+export interface RunStatusResponse {{
+  run_id: string;
+  state: UserVisibleRunState;
+  progress_summary: string;
+  latest_timeline_cursor: string;
+  permitted_actions: string[];
+  trace_id: string;
+  waiting_prompt: WaitingPromptResponse | null;
+  terminal_outcome: TerminalOutcome;
+  result_availability: ResultAvailability;
+  artifact_availability: ArtifactAvailability;
+  subscribed: boolean;
+}}
+
+export interface TimelineEventResponse {{
+  event_id: string;
+  sequence: number;
+  event_type: TimelineEventType;
+  state: UserVisibleRunState;
+  summary: string;
+  severity: TimelineSeverity;
+  occurred_at: string;
+  trace_id: string;
+}}
+
+export interface TimelineResponse {{
+  items: TimelineEventResponse[];
+  next_cursor: string | null;
+}}
+
+export interface RunResultResponse {{
+  run_id: string;
+  availability: ResultAvailability;
+  state: UserVisibleRunState;
+  trace_id: string;
+  summary: string | null;
+  structured_result: Record<string, unknown> | null;
+}}
+
+export interface PromptDecisionRequest {{
+  action: PromptAction;
+  prompt_version: number;
+  decision_payload: Record<string, unknown>;
+}}
+
+export interface PromptDecisionResponse {{
+  accepted: boolean;
+  run_status: RunStatusResponse;
+  trace_id: string;
+  decision_id: string | null;
+  rejection_category: ChannelErrorCategory | null;
+}}
+
+export interface CancelRunRequest {{
+  reason: string;
+}}
+
+export interface ArtifactMetadataResponse {{
+  artifact_id: string;
+  name: string;
+  user_facing_type: string;
+  status: string;
+  download_url_available: boolean;
+  size_bytes: number | null;
+}}
+
+export interface ArtifactListResponse {{
+  run_id: string;
+  items: ArtifactMetadataResponse[];
+}}
+
+export interface ArtifactDownloadUrlResponse {{
+  artifact_id: string;
+  download_url: string;
+  expires_at: string;
+  trace_id: string;
+}}
+
+export interface NotificationSubscriptionRequest {{
+  channel: ChannelType;
+  event_types: string[];
+}}
+
+export interface NotificationSubscriptionResponse {{
+  subscription_id: string;
+  status: string;
+}}
+
+export interface CallbackRegistrationRequest {{
+  callback_url: string;
+  event_types: string[];
+}}
+
+export interface CallbackRegistrationResponse {{
+  callback_registration_id: string;
+  status: string;
+}}
+
 export interface BriefingPreferenceProfile {{
   profile_id: string;
   tenant_label: string;
@@ -2937,6 +3267,29 @@ export interface SafeProblem {{
   trace_id: string | null;
 }}
 
+export interface LocalPrincipalOption {{
+  catalog_key: string;
+  label: string;
+  scope_type: ReactAdminScopeType;
+  tenant_id: string | null;
+  tenant_label: string | null;
+  role_codes: string[];
+}}
+
+export interface LocalLoginEnvelope {{
+  auth_mode: "local_principal";
+  principals: LocalPrincipalOption[];
+  current_principal_key: string | null;
+  redirect_to: string;
+  action_token: string;
+}}
+
+export interface LocalLoginRequest {{
+  principal_key: string;
+  redirect_to: string;
+  action_token: string;
+}}
+
 function isObject(value: unknown): value is Record<string, unknown> {{
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }}
@@ -2966,6 +3319,22 @@ export function assertReactAdminBootstrap(
     throw new Error("React admin bootstrap is missing shell metadata");
   }}
   return value as unknown as ReactAdminBootstrap;
+}}
+
+export function assertLocalLoginEnvelope(value: unknown): LocalLoginEnvelope {{
+  if (!isObject(value)) {{
+    throw new Error("Local login envelope must be an object");
+  }}
+  if (value.auth_mode !== "local_principal") {{
+    throw new Error("Local login envelope auth mode is invalid");
+  }}
+  if (!Array.isArray(value.principals)) {{
+    throw new Error("Local login principals must be an array");
+  }}
+  if (!hasString(value, "redirect_to") || !hasString(value, "action_token")) {{
+    throw new Error("Local login envelope is missing redirect or action token");
+  }}
+  return value as unknown as LocalLoginEnvelope;
 }}
 
 export function assertReactAdminCommandSearch(
@@ -3206,6 +3575,9 @@ export function assertSkillLifecycleDashboard(
   if (!isObject(value.binding_preview) || !Array.isArray(value.audit_timeline)) {{
     throw new Error("Skill lifecycle dashboard is missing binding or audit evidence");
   }}
+  if (!Array.isArray(value.legacy_routes)) {{
+    throw new Error("Skill lifecycle dashboard is missing legacy route evidence");
+  }}
   return value as unknown as SkillLifecycleDashboard;
 }}
 
@@ -3401,6 +3773,100 @@ export function assertRunStatusSummary(value: unknown): RunStatusSummary {{
     throw new Error("Run status summary is missing safe metadata");
   }}
   return value as unknown as RunStatusSummary;
+}}
+
+export function assertChannelErrorResponse(value: unknown): ChannelErrorResponse {{
+  if (!isObject(value) || !isObject(value.error) || !hasString(value, "trace_id")) {{
+    throw new Error("Channel error response is missing safe metadata");
+  }}
+  return value as unknown as ChannelErrorResponse;
+}}
+
+export function assertRunInvocationResponse(
+  value: unknown,
+): RunInvocationResponse {{
+  if (!isObject(value)) {{
+    throw new Error("Run invocation response must be an object");
+  }}
+  if (!hasString(value, "run_id") || !hasString(value, "status_url")) {{
+    throw new Error("Run invocation response is missing run links");
+  }}
+  return value as unknown as RunInvocationResponse;
+}}
+
+export function assertRunStatusResponse(value: unknown): RunStatusResponse {{
+  if (!isObject(value)) {{
+    throw new Error("Run status response must be an object");
+  }}
+  if (!hasString(value, "run_id") || !hasString(value, "state")) {{
+    throw new Error("Run status response is missing state metadata");
+  }}
+  return value as unknown as RunStatusResponse;
+}}
+
+export function assertTimelineResponse(value: unknown): TimelineResponse {{
+  if (!isObject(value) || !Array.isArray(value.items)) {{
+    throw new Error("Timeline response is missing safe events");
+  }}
+  return value as unknown as TimelineResponse;
+}}
+
+export function assertRunResultResponse(value: unknown): RunResultResponse {{
+  if (!isObject(value)) {{
+    throw new Error("Run result response must be an object");
+  }}
+  if (!hasString(value, "run_id") || !hasString(value, "availability")) {{
+    throw new Error("Run result response is missing safe metadata");
+  }}
+  return value as unknown as RunResultResponse;
+}}
+
+export function assertPromptDecisionResponse(
+  value: unknown,
+): PromptDecisionResponse {{
+  if (!isObject(value) || !isObject(value.run_status)) {{
+    throw new Error("Prompt decision response is missing run status");
+  }}
+  return value as unknown as PromptDecisionResponse;
+}}
+
+export function assertArtifactListResponse(
+  value: unknown,
+): ArtifactListResponse {{
+  if (!isObject(value) || !Array.isArray(value.items)) {{
+    throw new Error("Artifact list response is missing artifacts");
+  }}
+  return value as unknown as ArtifactListResponse;
+}}
+
+export function assertArtifactDownloadUrlResponse(
+  value: unknown,
+): ArtifactDownloadUrlResponse {{
+  if (!isObject(value)) {{
+    throw new Error("Artifact download response must be an object");
+  }}
+  if (!hasString(value, "artifact_id") || !hasString(value, "download_url")) {{
+    throw new Error("Artifact download response is missing grant metadata");
+  }}
+  return value as unknown as ArtifactDownloadUrlResponse;
+}}
+
+export function assertNotificationSubscriptionResponse(
+  value: unknown,
+): NotificationSubscriptionResponse {{
+  if (!isObject(value) || !hasString(value, "status")) {{
+    throw new Error("Subscription response is missing status");
+  }}
+  return value as unknown as NotificationSubscriptionResponse;
+}}
+
+export function assertCallbackRegistrationResponse(
+  value: unknown,
+): CallbackRegistrationResponse {{
+  if (!isObject(value) || !hasString(value, "status")) {{
+    throw new Error("Callback response is missing status");
+  }}
+  return value as unknown as CallbackRegistrationResponse;
 }}
 
 export function assertBriefingPreferenceList(

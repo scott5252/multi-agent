@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import parse_qs, urlparse
+
 from fastapi.testclient import TestClient
 
 from multi_agent_platform.api.main import create_app
@@ -18,6 +20,7 @@ def test_usage_ui_renders_dashboard_and_export(tmp_path, monkeypatch) -> None:
         dashboard = client.get(
             f"/admin/usage?tenant_id={ACME_TENANT_ID}",
             headers=ACME_HEADERS,
+            follow_redirects=False,
         )
         export = client.post(
             "/admin/usage/exports",
@@ -25,12 +28,21 @@ def test_usage_ui_renders_dashboard_and_export(tmp_path, monkeypatch) -> None:
             data={"tenant_id": ACME_TENANT_ID, "model_id": "gpt-test"},
             follow_redirects=False,
         )
-        detail = client.get(export.headers["location"], headers=ACME_HEADERS)
+        export_id = urlparse(export.headers["location"]).path.rsplit("/", 1)[-1]
+        detail = client.get(
+            f"/admin/usage/exports/{export_id}?tenant_id={ACME_TENANT_ID}",
+            headers=ACME_HEADERS,
+            follow_redirects=False,
+        )
 
-    assert dashboard.status_code == 200
-    assert "Usage Analytics" in dashboard.text
-    assert "gpt-test" in dashboard.text
-    assert "Raw prompts" in dashboard.text
+    assert dashboard.status_code == 303
+    assert dashboard.headers["location"] == (
+        f"/admin/app/usage?tenant_id={ACME_TENANT_ID}"
+    )
     assert export.status_code == 303
-    assert detail.status_code == 200
-    assert "Usage Export" in detail.text
+    assert export.headers["location"].startswith("/admin/app/usage/exports/")
+    assert parse_qs(urlparse(export.headers["location"]).query)["tenant_id"] == [
+        ACME_TENANT_ID
+    ]
+    assert detail.status_code == 303
+    assert detail.headers["location"].startswith("/admin/app/usage/exports/")

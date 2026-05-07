@@ -17,16 +17,32 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "/admin/app/config.json" in schema["paths"]
     assert "/admin/app/manifest.json" in schema["paths"]
     assert "/admin/app/search.json" in schema["paths"]
+    assert "/auth/local-login.json" in schema["paths"]
     assert "/admin/app/patterns" in schema["paths"]
     assert "/admin/app/patterns.json" in schema["paths"]
     assert "/admin/app/patterns/actions/sample" in schema["paths"]
     assert "/admin/app/patterns/export" in schema["paths"]
     assert "/admin/app/workflows" in schema["paths"]
+    assert "/admin/app/workflows/new" in schema["paths"]
+    assert "/admin/app/workflows/registry.json" in schema["paths"]
+    assert "/admin/app/workflows/create.json" in schema["paths"]
+    assert "/admin/app/workflows/legacy-routes.json" in schema["paths"]
     assert "/admin/app/workflows/builder.json" in schema["paths"]
     assert "/admin/app/workflows/lookups.json" in schema["paths"]
+    assert (
+        "/admin/app/workflows/drafts/{workflow_draft_id}/detail.json" in schema["paths"]
+    )
+    assert (
+        "/admin/app/workflows/drafts/{workflow_draft_id}/publish-gate.json"
+        in schema["paths"]
+    )
     assert "/admin/app/workflows/drafts/{workflow_draft_id}/save" in schema["paths"]
     assert "/admin/app/workflows/drafts/{workflow_draft_id}/validate" in schema["paths"]
     assert "/admin/app/workflows/drafts/{workflow_draft_id}/publish" in schema["paths"]
+    assert (
+        "/admin/app/workflows/versions/{workflow_version_bundle_id}/detail.json"
+        in schema["paths"]
+    )
     assert "/admin/app/governance" in schema["paths"]
     assert "/admin/app/governance/bootstrap.json" in schema["paths"]
     assert "/admin/app/governance/providers.json" in schema["paths"]
@@ -48,6 +64,7 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "/admin/app/governance/provenance/{run_id}.json" in schema["paths"]
     assert "/admin/app/skills" in schema["paths"]
     assert "/admin/app/skills/bootstrap.json" in schema["paths"]
+    assert "/admin/app/skills/legacy-routes.json" in schema["paths"]
     assert "/admin/app/skills/packages/candidates" in schema["paths"]
     assert (
         "/admin/app/skills/packages/candidates/{candidate_id}/validate"
@@ -89,6 +106,10 @@ def test_openapi_contains_react_admin_contracts() -> None:
         in schema["paths"]
     )
     assert "/admin/app/test-bench/audit.json" in schema["paths"]
+    assert "/admin/agent-tests/ui" in schema["paths"]
+    assert "/admin/agent-tests/ui/suites/new" in schema["paths"]
+    assert "/admin/agent-tests/ui/suites/{suite_id}" in schema["paths"]
+    assert "/admin/agent-tests/ui/runs/{run_id}" in schema["paths"]
     assert "/admin/app/memberships" in schema["paths"]
     assert "/admin/app/memberships/bootstrap.json" in schema["paths"]
     assert "/admin/app/memberships/invitations" in schema["paths"]
@@ -121,6 +142,7 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "/admin/app/channels/telegram/aliases/{alias_id}/{action}" in schema["paths"]
     assert "/admin/app/channels/telegram/link-tokens" in schema["paths"]
     assert "/admin/app/channels/telegram/deliveries.json" in schema["paths"]
+    assert "/admin/app/channels/runs" in schema["paths"]
     assert "/admin/app/channels/runs/{workflow_run_id}" in schema["paths"]
     assert "/admin/app/channels/runs/{workflow_run_id}/status.json" in schema["paths"]
     assert "/admin/app/channels/briefing/preferences.json" in schema["paths"]
@@ -131,13 +153,14 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "/admin/app/migration/shell.json" in schema["paths"]
     assert "/admin/app/migration/bootstrap.json" in schema["paths"]
     assert "/admin/app/migration/routes.json" in schema["paths"]
-    assert "/admin/app/migration/jinja-inventory.json" in schema["paths"]
+    assert "/admin/app/migration/decommission-inventory.json" in schema["paths"]
     assert "/admin/app/migration/rollback.json" in schema["paths"]
     assert "/admin/app/operations" in schema["paths"]
     assert "/admin/app/operations.json" in schema["paths"]
     assert "/admin/app/operations/runs/{workflow_run_id}.json" in schema["paths"]
     assert "/admin/app/operations/export" in schema["paths"]
     assert "ReactAdminBootstrap" in schema["components"]["schemas"]
+    assert "LocalLoginEnvelope" in schema["components"]["schemas"]
     assert "ReactAdminPrincipal" in schema["components"]["schemas"]
     assert "ReactAdminShellChrome" in schema["components"]["schemas"]
     assert "ReactAdminCommandSearch" in schema["components"]["schemas"]
@@ -150,6 +173,10 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "WorkbenchExportSnapshot" in schema["components"]["schemas"]
     assert "WorkflowBuilderEnvelope" in schema["components"]["schemas"]
     assert "WorkflowReferenceCatalog" in schema["components"]["schemas"]
+    assert "WorkflowRegistryEnvelope" in schema["components"]["schemas"]
+    assert "WorkflowCreateEnvelope" in schema["components"]["schemas"]
+    assert "WorkflowLegacyRouteMapping" in schema["components"]["schemas"]
+    assert "WorkflowVersionDetail" in schema["components"]["schemas"]
     assert "BuilderMutationResult" in schema["components"]["schemas"]
     assert "GovernanceDashboard" in schema["components"]["schemas"]
     assert "ProviderGovernanceList" in schema["components"]["schemas"]
@@ -159,6 +186,7 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "SafePromptPreview" in schema["components"]["schemas"]
     assert "ProfileResolutionPreview" in schema["components"]["schemas"]
     assert "SkillLifecycleDashboard" in schema["components"]["schemas"]
+    assert "SkillLegacyRouteMapping" in schema["components"]["schemas"]
     assert "SkillLifecycleMutationResult" in schema["components"]["schemas"]
     assert "TenantSkillDiscoveryList" in schema["components"]["schemas"]
     assert "TenantSkillInstallationList" in schema["components"]["schemas"]
@@ -185,6 +213,20 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "LinkTokenResult" in schema["components"]["schemas"]
     assert "DeliveryDiagnosticList" in schema["components"]["schemas"]
     assert "RunStatusSummary" in schema["components"]["schemas"]
+    assert "RunInvocationResponse" in schema["components"]["schemas"]
+    assert any(
+        key.endswith("RunStatusResponse") for key in schema["components"]["schemas"]
+    )
+    assert "TimelineResponse" in schema["components"]["schemas"]
+    assert "RunResultResponse" in schema["components"]["schemas"]
+    assert "PromptDecisionRequest" in schema["components"]["schemas"]
+    assert "PromptDecisionResponse" in schema["components"]["schemas"]
+    assert "ArtifactListResponse" in schema["components"]["schemas"]
+    assert "ArtifactDownloadUrlResponse" in schema["components"]["schemas"]
+    assert "NotificationSubscriptionRequest" in schema["components"]["schemas"]
+    assert "NotificationSubscriptionResponse" in schema["components"]["schemas"]
+    assert "CallbackRegistrationRequest" in schema["components"]["schemas"]
+    assert "CallbackRegistrationResponse" in schema["components"]["schemas"]
     assert "BriefingPreferenceList" in schema["components"]["schemas"]
     assert "BriefingPreferenceMutationResult" in schema["components"]["schemas"]
     assert "AdminMigrationHardeningDashboard" in schema["components"]["schemas"]
@@ -303,18 +345,18 @@ def test_skill_lifecycle_contract_document_lists_safe_actions() -> None:
 
 def test_test_bench_contract_document_lists_safe_actions() -> None:
     contract = Path(
-        "specs/033-react-agent-and-workflow-test-bench/contracts/"
-        "test-bench.openapi.yaml"
+        "specs/043-test-bench-full-react-parity-and-jinja-removal/contracts/"
+        "test-bench-react-parity.openapi.yaml"
     ).read_text(encoding="utf-8")
 
-    assert "React Agent And Workflow Test Bench Contracts" in contract
-    assert "TestSuiteSaveRequest" in contract
-    assert "TestRunLaunchRequest" in contract
+    assert "Test Bench React Parity And Legacy Route Compatibility" in contract
     assert "/admin/app/test-bench/bootstrap.json" in contract
     assert "/admin/app/test-bench/suites/{suite_id}/runs" in contract
     assert "/admin/app/test-bench/runs/{run_id}.json" in contract
     assert "/admin/app/test-bench/gates.json" in contract
     assert "/admin/app/test-bench/artifacts/{artifact_reference_id}.json" in contract
+    assert "/admin/agent-tests/ui/suites/{suite_id}" in contract
+    assert "Legacy browser route redirecting to React" in contract
 
 
 def test_membership_contract_document_lists_safe_actions() -> None:

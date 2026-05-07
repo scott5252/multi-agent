@@ -1,0 +1,60 @@
+openapi: 3.1.0
+info:
+  title: Channels People React Parity Legacy Redirect Contract
+  version: 1.0.0
+paths:
+  /admin/memberships:
+    get:
+      summary: Redirect legacy memberships browser route to React
+      responses:
+        "303":
+          description: Redirects to /admin/app/memberships with safe query state
+  /admin/telegram:
+    get:
+      summary: Redirect legacy Telegram browser route to React channels
+      responses:
+        "303":
+          description: Redirects to /admin/app/channels with panel=telegram
+  /admin/briefing-preferences:
+    get:
+      summary: Redirect legacy briefing preference browser route to React channels
+      responses:
+        "303":
+          description: Redirects to /admin/app/channels with panel=briefing
+  /admin/app/memberships/bootstrap.json:
+    get:
+      summary: Retained React membership dashboard contract
+      responses:
+        "200":
+          description: Safe membership dashboard
+  /admin/app/channels/bootstrap.json:
+    get:
+      summary: Retained React channel Telegram briefing dashboard contract
+      responses:
+        "200":
+          description: Safe channel, Telegram, and briefing dashboard
+components:
+  schemas:
+    LegacyRedirectContext:
+      type: object
+      required:
+        - source_route
+        - react_destination
+      properties:
+        source_route:
+          type: string
+        react_destination:
+          type: string
+        tenant_id:
+          type:
+            - string
+            - "null"
+          format: uuid
+        panel:
+          type:
+            - string
+            - "null"
+        safe_query:
+          type: object
+          additionalProperties:
+            type: string

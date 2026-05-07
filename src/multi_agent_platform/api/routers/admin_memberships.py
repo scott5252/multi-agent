@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Annotated, cast
+from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.admin.memberships.models import (
@@ -23,7 +24,6 @@ from multi_agent_platform.admin.memberships.service import (
     MembershipSnapshot,
 )
 from multi_agent_platform.api.deps import get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.memberships import (
     MembershipAccessHistoryResponse,
     MembershipAuditResponse,
@@ -37,14 +37,7 @@ from multi_agent_platform.api.schemas.memberships import (
     TenantMembershipResponse,
 )
 from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    CommonStateType,
-    build_common_state,
     is_platform_admin,
-)
-from multi_agent_platform.api.ui.memberships import (
-    MembershipAdministrationPage,
-    redaction_notice,
 )
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
@@ -65,6 +58,22 @@ from multi_agent_platform.db.repositories.memberships import MembershipRepositor
 router = APIRouter(prefix="/admin/memberships", tags=["memberships"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+SEE_OTHER = status.HTTP_303_SEE_OTHER
+MEMBERSHIP_QUERY_KEYS = frozenset(
+    {
+        "tenant_id",
+        "q",
+        "status",
+        "role",
+        "principal_id",
+        "principal_identity_id",
+        "membership_id",
+        "tenant_membership_id",
+        "role_grant_id",
+        "saved_filter_id",
+        "panel",
+    }
+)
 
 
 def _service(session: AsyncSession) -> MembershipAdministrationService:
@@ -269,58 +278,20 @@ async def update_membership_status_api(
     return _membership_response(record)
 
 
-@router.get("", response_class=HTMLResponse, include_in_schema=False)
+@router.get("", response_model=None, include_in_schema=False)
 async def memberships_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     tenant_id: UUID | None = None,
     q: str | None = None,
-) -> HTMLResponse:
-    service = _service(session)
-    scope = _access_scope(principal, tenant_id)
-    snapshot = await service.snapshot(scope, query=q)
-    page = _page_from_snapshot(snapshot, scope)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Membership Administration",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(
-                label="Membership Administration",
-                href="/admin/memberships",
-            ),
-        ),
-        common_state=None
-        if page.principals or page.invitations or page.memberships
-        else build_common_state(
-            CommonStateType.EMPTY,
-            title="No memberships yet",
-            summary="Create an invitation or link an Auth0 principal to begin.",
-            trace_id=principal.trace_id,
-        ),
-    )
-    return cast(
-        HTMLResponse,
-        request.app.state.container.workflow_ui_templates.TemplateResponse(
-            request,
-            "memberships/index.html",
-            {
-                "shell": shell,
-                "page": page,
-                "principal": principal,
-                "redaction_notice": redaction_notice(),
-                "tenant_roles": [RoleCode.TENANT_USER, RoleCode.TENANT_ADMIN],
-                "role_codes": list(RoleCode),
-                "scope_types": list(RoleScopeType),
-            },
-        ),
-    )
+) -> RedirectResponse:
+    _ = (session, q)
+    _access_scope(principal, tenant_id)
+    return _react_redirect(request, panel="memberships")
 
 
-@router.post("/invitations", response_class=HTMLResponse, include_in_schema=False)
+@router.post("/invitations", response_model=None, include_in_schema=False)
 async def create_invitation_page(
     principal: PrincipalDep,
     session: SessionDep,
@@ -349,12 +320,12 @@ async def create_invitation_page(
         )
         raise HTTPException(status_code=403, detail="membership action denied") from exc
     return RedirectResponse(
-        _redirect_target(scope),
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(scope, panel="invitations"),
+        status_code=SEE_OTHER,
     )
 
 
-@router.post("/role-grants", response_class=HTMLResponse, include_in_schema=False)
+@router.post("/role-grants", response_model=None, include_in_schema=False)
 async def create_role_grant_page(
     principal: PrincipalDep,
     session: SessionDep,
@@ -381,14 +352,18 @@ async def create_role_grant_page(
         )
         raise HTTPException(status_code=403, detail="membership action denied") from exc
     return RedirectResponse(
-        _redirect_target(scope),
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(
+            scope,
+            panel="role-grants",
+            extra={"principal_identity_id": principal_identity_id},
+        ),
+        status_code=SEE_OTHER,
     )
 
 
 @router.post(
     "/role-grants/{role_grant_id}/revoke",
-    response_class=HTMLResponse,
+    response_model=None,
     include_in_schema=False,
 )
 async def revoke_role_grant_page(
@@ -409,14 +384,18 @@ async def revoke_role_grant_page(
     if record is None:
         raise HTTPException(status_code=404, detail="role grant not found")
     return RedirectResponse(
-        _redirect_target(scope),
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(
+            scope,
+            panel="role-grants",
+            extra={"role_grant_id": role_grant_id},
+        ),
+        status_code=SEE_OTHER,
     )
 
 
 @router.post(
     "/principals/{principal_identity_id}/{principal_action}",
-    response_class=HTMLResponse,
+    response_model=None,
     include_in_schema=False,
 )
 async def principal_status_page(
@@ -425,7 +404,7 @@ async def principal_status_page(
     principal: PrincipalDep,
     session: SessionDep,
     tenant_id: Annotated[UUID | None, Form()] = None,
-) -> Response:
+) -> RedirectResponse:
     service = _service(session)
     scope = _access_scope(principal, tenant_id)
     try:
@@ -446,14 +425,21 @@ async def principal_status_page(
     if record is None:
         raise HTTPException(status_code=404, detail="principal not found")
     return RedirectResponse(
-        _redirect_target(scope),
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(
+            scope,
+            panel="principals",
+            extra={
+                "principal_identity_id": principal_identity_id,
+                "status": principal_action,
+            },
+        ),
+        status_code=SEE_OTHER,
     )
 
 
 @router.post(
     "/memberships/{tenant_membership_id}/{membership_status}",
-    response_class=HTMLResponse,
+    response_model=None,
     include_in_schema=False,
 )
 async def membership_status_page(
@@ -462,7 +448,7 @@ async def membership_status_page(
     principal: PrincipalDep,
     session: SessionDep,
     tenant_id: Annotated[UUID | None, Form()] = None,
-) -> Response:
+) -> RedirectResponse:
     service = _service(session)
     scope = _tenant_access_scope(principal, tenant_id)
     record = await service.update_membership_status(
@@ -473,8 +459,15 @@ async def membership_status_page(
     if record is None:
         raise HTTPException(status_code=404, detail="membership not found")
     return RedirectResponse(
-        _redirect_target(scope),
-        status_code=status.HTTP_303_SEE_OTHER,
+        _redirect_target(
+            scope,
+            panel="memberships",
+            extra={
+                "tenant_membership_id": tenant_membership_id,
+                "status": membership_status.value,
+            },
+        ),
+        status_code=SEE_OTHER,
     )
 
 
@@ -514,27 +507,44 @@ def _tenant_access_scope(
     return scope
 
 
-def _redirect_target(scope: MembershipAccessScope) -> str:
-    if scope.tenant_id is None:
-        return "/admin/memberships"
-    return f"/admin/memberships?tenant_id={scope.tenant_id}"
-
-
-def _page_from_snapshot(
-    snapshot: MembershipSnapshot,
+def _redirect_target(
     scope: MembershipAccessScope,
-) -> MembershipAdministrationPage:
-    response = _snapshot_response(snapshot)
-    return MembershipAdministrationPage(
-        tenant_id=scope.tenant_id,
-        platform_scope=scope.scope_type is MembershipScopeType.PLATFORM,
-        principals=response.principals,
-        invitations=response.invitations,
-        memberships=response.memberships,
-        role_grants=response.role_grants,
-        access_history=response.access_history,
-        audit_records=response.audit_records,
-    )
+    *,
+    panel: str | None = None,
+    extra: dict[str, object] | None = None,
+) -> str:
+    query: dict[str, str] = {}
+    if scope.tenant_id is not None:
+        query["tenant_id"] = str(scope.tenant_id)
+    if panel:
+        query["panel"] = panel
+    if extra:
+        for key, value in extra.items():
+            if value is not None:
+                query[key] = str(value)
+    suffix = f"?{urlencode(query)}" if query else ""
+    return f"/admin/app/memberships{suffix}"
+
+
+def _react_redirect(
+    request: Request,
+    *,
+    panel: str | None = None,
+    extra: dict[str, object] | None = None,
+) -> RedirectResponse:
+    query: dict[str, str] = {
+        key: value
+        for key, value in request.query_params.items()
+        if key in MEMBERSHIP_QUERY_KEYS and value
+    }
+    if panel:
+        query.setdefault("panel", panel)
+    if extra:
+        for key, value in extra.items():
+            if value is not None:
+                query[key] = str(value)
+    suffix = f"?{urlencode(query)}" if query else ""
+    return RedirectResponse(f"/admin/app/memberships{suffix}", status_code=SEE_OTHER)
 
 
 def _snapshot_response(snapshot: MembershipSnapshot) -> MembershipSnapshotResponse:

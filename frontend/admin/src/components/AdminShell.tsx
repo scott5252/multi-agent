@@ -24,7 +24,7 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
                   key={item.item_id}
                 >
                   <span>{item.label}</span>
-                  <small>{item.fallback_kind === "jinja" ? "Existing page" : item.fallback_kind}</small>
+                  <small>{item.fallback_kind === "jinja" ? "Retired link" : item.fallback_kind}</small>
                 </a>
               ))}
             </section>
@@ -47,7 +47,7 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
             <h2>Foundation ready</h2>
             <p>
               This React shell is authenticated through the existing FastAPI admin service.
-              Domain pages remain on their current Jinja routes until their migration specs pass.
+              Browser pages now use React routes with safe compatibility links for older URLs.
             </p>
           </div>
           <dl>

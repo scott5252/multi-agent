@@ -24,6 +24,7 @@ def test_briefing_preferences_ui_saves_profile_and_masks_admin_summary(
         page = client.get(
             f"/admin/briefing-preferences?tenant_id={ACME_TENANT_ID}",
             headers=ACME_HEADERS,
+            follow_redirects=False,
         )
         saved = client.post(
             "/admin/briefing-preferences",
@@ -46,14 +47,18 @@ def test_briefing_preferences_ui_saves_profile_and_masks_admin_summary(
             follow_redirects=False,
         )
         admin_summary = client.get(
-            f"/admin/briefing-preferences?tenant_id={ACME_TENANT_ID}",
+            f"/admin/briefing-preferences/api/summaries?tenant_id={ACME_TENANT_ID}",
             headers=PLATFORM_HEADERS,
         )
 
-    assert page.status_code == 200
-    assert "Briefing Preferences" in page.text
+    assert page.status_code == 303
+    assert page.headers["location"] == (
+        f"/admin/app/channels?tenant_id={ACME_TENANT_ID}&panel=briefing"
+    )
     assert saved.status_code == 303
-    assert "Safe Admin Summaries" in admin_summary.text
+    assert saved.headers["location"] == (
+        f"/admin/app/channels?tenant_id={ACME_TENANT_ID}&panel=briefing"
+    )
     assert "sarah@example.com" not in admin_summary.text
     assert "s***@example.com" in admin_summary.text
     assert "delegated:calendar:primary" not in admin_summary.text
@@ -70,6 +75,7 @@ def test_briefing_preferences_ui_export_import_and_error_states(
         platform_page = client.get(
             "/admin/briefing-preferences",
             headers=PLATFORM_HEADERS,
+            follow_redirects=False,
         )
         saved = client.post(
             "/admin/briefing-preferences",
@@ -92,10 +98,15 @@ def test_briefing_preferences_ui_export_import_and_error_states(
             follow_redirects=False,
         )
         exported = client.get(
-            f"/admin/briefing-preferences/export?tenant_id={ACME_TENANT_ID}",
+            f"/admin/briefing-preferences/api/export?tenant_id={ACME_TENANT_ID}",
             headers=ACME_HEADERS,
         )
-        document = exported.json()
+        old_export = client.get(
+            f"/admin/briefing-preferences/export?tenant_id={ACME_TENANT_ID}",
+            headers=ACME_HEADERS,
+            follow_redirects=False,
+        )
+        document = exported.json()["document"]
         document["preferences"]["output_style"] = "executive"
         imported = client.post(
             "/admin/briefing-preferences/import",
@@ -126,10 +137,18 @@ def test_briefing_preferences_ui_export_import_and_error_states(
             },
         )
 
-    assert platform_page.status_code == 200
+    assert platform_page.status_code == 303
+    assert platform_page.headers["location"] == "/admin/app/channels?panel=briefing"
     assert saved.status_code == 303
     assert exported.status_code == 200
+    assert old_export.status_code == 303
+    assert old_export.headers["location"] == (
+        f"/admin/app/channels?tenant_id={ACME_TENANT_ID}&panel=briefing-export"
+    )
     assert imported.status_code == 303
+    assert imported.headers["location"] == (
+        f"/admin/app/channels?tenant_id={ACME_TENANT_ID}&panel=briefing-import"
+    )
     assert invalid_form.status_code == 422
     assert "timezone must be a valid IANA timezone" in invalid_form.text
     assert invalid_import.status_code == 422

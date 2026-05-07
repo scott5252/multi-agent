@@ -9,19 +9,8 @@ import pytest
 from multi_agent_platform.api.routers import admin_agent_profiles, admin_prompts
 
 
-class _Templates:
-    def TemplateResponse(  # noqa: N802
-        self,
-        request: object,
-        template: str,
-        context: dict[str, object],
-        **kwargs: object,
-    ) -> dict[str, object]:
-        return {"request": request, "template": template, "context": context, **kwargs}
-
-
 def _container() -> SimpleNamespace:
-    return SimpleNamespace(workflow_ui_templates=_Templates())
+    return SimpleNamespace()
 
 
 def _principal() -> SimpleNamespace:
@@ -29,14 +18,6 @@ def _principal() -> SimpleNamespace:
         principal_id="tenant-admin-acme",
         tenant_id=uuid4(),
         role_codes=("tenant_admin",),
-    )
-
-
-async def _fake_shell_for_request(**kwargs: object) -> SimpleNamespace:
-    title = str(kwargs.get("title", "Admin"))
-    return SimpleNamespace(
-        title=title,
-        active_scope=SimpleNamespace(scope_type="tenant", tenant_id=uuid4()),
     )
 
 
@@ -220,21 +201,16 @@ class _FakeAgentProfileRepository:
 
 
 @pytest.mark.asyncio
-async def test_prompt_html_route_handlers_render_expected_templates(
+async def test_prompt_browser_route_handlers_redirect_to_react(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        admin_prompts,
-        "build_shell_for_request",
-        _fake_shell_for_request,
-    )
     monkeypatch.setattr(admin_prompts, "PromptRepository", _FakePromptRepository)
     monkeypatch.setattr(
         admin_prompts,
         "_require_prompt_scope_mutation",
         lambda *args, **kwargs: None,
     )
-    request = SimpleNamespace()
+    request = SimpleNamespace(query_params={"tenant_id": str(uuid4()), "q": "triage"})
     principal = _principal()
     session = SimpleNamespace()
     container = _container()
@@ -284,27 +260,23 @@ async def test_prompt_html_route_handlers_render_expected_templates(
         ),
     ]
 
-    assert [response["template"] for response in responses] == [
-        "prompts/index.html",
-        "prompts/edit.html",
-        "prompts/edit.html",
-        "prompts/detail.html",
-        "prompts/history.html",
-        "prompts/preview.html",
+    assert [response.status_code for response in responses] == [303] * 6
+    assert [response.headers["location"].split("?")[0] for response in responses] == [
+        "/admin/app/governance/prompts",
+        "/admin/app/governance/prompts/new",
+        f"/admin/app/governance/prompts/{lineage_id}/edit",
+        f"/admin/app/governance/prompts/versions/{version_id}",
+        f"/admin/app/governance/prompts/{lineage_id}/history",
+        f"/admin/app/governance/prompts/{lineage_id}/preview",
     ]
-    assert responses[2]["context"]["page"].prompt_lineage_id == lineage_id
-    assert responses[3]["context"]["page"].prompt_version_id == version_id
+    assert "tenant_id=" in responses[0].headers["location"]
+    assert "q=triage" in responses[0].headers["location"]
 
 
 @pytest.mark.asyncio
-async def test_agent_profile_html_route_handlers_render_expected_templates(
+async def test_agent_profile_browser_route_handlers_redirect_to_react(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        admin_agent_profiles,
-        "build_shell_for_request",
-        _fake_shell_for_request,
-    )
     monkeypatch.setattr(
         admin_agent_profiles,
         "AgentProfileRepository",
@@ -315,7 +287,7 @@ async def test_agent_profile_html_route_handlers_render_expected_templates(
         "_require_profile_scope_mutation",
         lambda *args, **kwargs: None,
     )
-    request = SimpleNamespace()
+    request = SimpleNamespace(query_params={"agent_key": "planner"})
     principal = _principal()
     session = SimpleNamespace()
     container = _container()
@@ -364,13 +336,13 @@ async def test_agent_profile_html_route_handlers_render_expected_templates(
         ),
     ]
 
-    assert [response["template"] for response in responses] == [
-        "agent_profiles/index.html",
-        "agent_profiles/edit.html",
-        "agent_profiles/edit.html",
-        "agent_profiles/detail.html",
-        "agent_profiles/history.html",
-        "agent_profiles/resolve.html",
+    assert [response.status_code for response in responses] == [303] * 6
+    assert [response.headers["location"].split("?")[0] for response in responses] == [
+        "/admin/app/governance/profiles",
+        "/admin/app/governance/profiles/new",
+        f"/admin/app/governance/profiles/{profile_id}/edit",
+        f"/admin/app/governance/profiles/versions/{version_id}",
+        f"/admin/app/governance/profiles/{profile_id}/history",
+        "/admin/app/governance/profiles/resolve",
     ]
-    assert responses[2]["context"]["page"].agent_runtime_profile_id == profile_id
-    assert responses[3]["context"]["page"].agent_profile_version_id == version_id
+    assert "agent_key=planner" in responses[-1].headers["location"]

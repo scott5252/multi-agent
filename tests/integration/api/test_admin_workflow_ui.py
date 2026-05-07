@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -54,7 +53,13 @@ def configure_env(monkeypatch, tmp_path, tenant_id) -> None:
                     "org_id": "org-acme",
                     "role_codes": ["tenant_user", "tenant_admin"],
                     "permission_codes": ["tenant:read", "tenant:admin"],
-                }
+                },
+                "platform-admin": {
+                    "catalog_key": "platform-admin",
+                    "display_name": "Platform Admin",
+                    "role_codes": ["platform_admin"],
+                    "permission_codes": ["tenant:admin"],
+                },
             }
         ),
     )
@@ -103,181 +108,52 @@ def sample_document() -> dict[str, object]:
     }
 
 
-def test_registry_and_editor_pages_render_help_metadata(tmp_path, monkeypatch) -> None:
+def test_legacy_workflow_get_routes_redirect_to_react(tmp_path, monkeypatch) -> None:
     tenant_id = uuid4()
     configure_env(monkeypatch, tmp_path, tenant_id)
+    draft_id = uuid4()
+    version_id = uuid4()
     app = create_app()
+
     with TestClient(app) as client:
-        created = client.post(
-            "/admin/workflows",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
-            json={
-                "scope_type": "tenant",
-                "workflow_kind": "main_workflow",
-                "slug": "ui-flow",
-                "display_name": "UI Flow",
-                "document": sample_document(),
-            },
-        )
-        draft_id = created.json()["workflow_draft_id"]
-        registry = client.get(
-            "/admin/workflows/ui",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
-        )
-        filtered_registry = client.get(
-            "/admin/workflows/ui?scope_filter=tenant&status=draft&q=UI",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
-        )
-        empty_filtered_registry = client.get(
-            "/admin/workflows/ui?scope_filter=tenant&status=draft&q=missing",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
-        )
-        editor = client.get(
-            f"/admin/workflows/drafts/{draft_id}/editor",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
-        )
-        conflict = client.get(
-            f"/admin/workflows/drafts/{draft_id}/editor?conflict=stale-save",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
-        )
+        requests = {
+            "/admin/workflows/ui?scope_filter=tenant&status=draft&q=UI": (
+                "/admin/app/workflows?scope_filter=tenant&status=draft&q=UI"
+            ),
+            "/admin/workflows/new": "/admin/app/workflows/new",
+            f"/admin/workflows/drafts/{draft_id}/editor?conflict=stale-save": (
+                f"/admin/app/workflows/drafts/{draft_id}?conflict=stale-save"
+            ),
+            f"/admin/workflows/drafts/{draft_id}/revisions/ui": (
+                f"/admin/app/workflows/drafts/{draft_id}/revisions"
+            ),
+            f"/admin/workflows/drafts/{draft_id}/publish-gate/ui": (
+                f"/admin/app/workflows/drafts/{draft_id}/publish-gate"
+            ),
+            f"/admin/workflows/versions/{version_id}/detail": (
+                f"/admin/app/workflows/versions/{version_id}"
+            ),
+        }
+        responses = {
+            path: client.get(
+                path,
+                headers={"X-Local-Principal": "tenant-admin-acme"},
+                follow_redirects=False,
+            )
+            for path in requests
+        }
 
-    assert registry.status_code == 200
-    assert "Workflow Registry" in registry.text
-    assert "Open Draft" in registry.text
-    assert filtered_registry.status_code == 200
-    assert 'value="tenant" selected' in filtered_registry.text
-    assert 'value="draft" selected' in filtered_registry.text
-    assert 'name="q" value="UI"' in filtered_registry.text
-    assert "Open Draft" in filtered_registry.text
-    assert empty_filtered_registry.status_code == 200
-    assert "Open Draft" not in empty_filtered_registry.text
-    assert editor.status_code == 200
-    assert 'aria-haspopup="dialog"' in editor.text
-    match = re.search(
-        r'<script id="field-help-data" type="application/json">(.+?)</script>',
-        editor.text,
-        re.S,
-    )
-    assert match is not None
-    metadata = json.loads(match.group(1))
-    assert "&#34;" not in match.group(1)
-    assert "roles[].input_contract_key" in metadata["field_help"]
-    assert "validation-panel-placeholder" in editor.text
-    assert conflict.status_code == 200
-    assert "newer draft revision already exists" in conflict.text
+    for path, response in responses.items():
+        assert response.status_code == 303
+        assert response.headers["location"] == requests[path]
+        assert "workflows/" not in response.text
 
 
-def test_editor_and_version_pages_render_validation_and_publish_details(
-    tmp_path, monkeypatch
-) -> None:
+def test_create_form_posts_redirect_to_react_draft(tmp_path, monkeypatch) -> None:
     tenant_id = uuid4()
     configure_env(monkeypatch, tmp_path, tenant_id)
-    monkeypatch.setenv(
-        "LOCAL_PRINCIPAL_CATALOG_JSON",
-        json.dumps(
-            {
-                "tenant-admin-acme": {
-                    "catalog_key": "tenant-admin-acme",
-                    "display_name": "Tenant Admin",
-                    "tenant_id": str(tenant_id),
-                    "org_id": "org-acme",
-                    "role_codes": ["tenant_user", "tenant_admin"],
-                    "permission_codes": ["tenant:read", "tenant:admin"],
-                },
-                "platform-admin": {
-                    "catalog_key": "platform-admin",
-                    "display_name": "Platform Admin",
-                    "role_codes": ["platform_admin"],
-                    "permission_codes": ["tenant:admin"],
-                },
-            }
-        ),
-    )
     app = create_app()
-    with TestClient(app) as client:
-        created = client.post(
-            "/admin/workflows",
-            headers={"X-Local-Principal": "platform-admin"},
-            json={
-                "scope_type": "platform",
-                "workflow_kind": "main_workflow",
-                "slug": "ui-publish",
-                "display_name": "UI Publish",
-                "document": {
-                    **sample_document(),
-                    "workflow_key": "ui-publish",
-                    "display_name": "UI Publish",
-                },
-            },
-        )
-        draft_id = created.json()["workflow_draft_id"]
-        validated = client.post(
-            f"/admin/workflows/drafts/{draft_id}/validate",
-            headers={"X-Local-Principal": "platform-admin"},
-        )
-        publish_gate = client.get(
-            f"/admin/workflows/drafts/{draft_id}/publish-gate/ui",
-            headers={"X-Local-Principal": "platform-admin"},
-        )
-        published = client.post(
-            f"/admin/workflows/drafts/{draft_id}/publish",
-            headers={"X-Local-Principal": "platform-admin"},
-            json={
-                "validation_result_id": validated.json()["validation_result_id"],
-            },
-        )
-        version_id = published.json()["workflow_version_bundle_id"]
-        editor = client.get(
-            f"/admin/workflows/drafts/{draft_id}/editor",
-            headers={"X-Local-Principal": "platform-admin"},
-        )
-        registry = client.get(
-            "/admin/workflows/ui",
-            headers={"X-Local-Principal": "platform-admin"},
-        )
-        version = client.get(
-            f"/admin/workflows/versions/{version_id}/detail",
-            headers={"X-Local-Principal": "platform-admin"},
-        )
 
-    assert editor.status_code == 200
-    assert "Validation passed" in editor.text
-    assert "Publish ready" in editor.text
-    assert registry.status_code == 200
-    assert "View Version" in registry.text
-    assert version.status_code == 200
-    assert "Compiled Bundle Digest" in version.text
-    assert "v1" in version.text
-    assert publish_gate.status_code == 200
-    assert "Required Test Evidence" in publish_gate.text
-    assert "0 passing" in publish_gate.text
-
-
-def test_create_form_posts_platform_draft(tmp_path, monkeypatch) -> None:
-    tenant_id = uuid4()
-    configure_env(monkeypatch, tmp_path, tenant_id)
-    monkeypatch.setenv(
-        "LOCAL_PRINCIPAL_CATALOG_JSON",
-        json.dumps(
-            {
-                "tenant-admin-acme": {
-                    "catalog_key": "tenant-admin-acme",
-                    "display_name": "Tenant Admin",
-                    "tenant_id": str(tenant_id),
-                    "org_id": "org-acme",
-                    "role_codes": ["tenant_user", "tenant_admin"],
-                    "permission_codes": ["tenant:read", "tenant:admin"],
-                },
-                "platform-admin": {
-                    "catalog_key": "platform-admin",
-                    "display_name": "Platform Admin",
-                    "role_codes": ["platform_admin"],
-                    "permission_codes": ["tenant:admin"],
-                },
-            }
-        ),
-    )
-    app = create_app()
     with TestClient(app) as client:
         created = client.post(
             "/admin/workflows/new",
@@ -292,62 +168,24 @@ def test_create_form_posts_platform_draft(tmp_path, monkeypatch) -> None:
             },
             follow_redirects=False,
         )
-        editor = client.get(
+        react_host = client.get(
             created.headers["location"],
             headers={"X-Local-Principal": "platform-admin"},
         )
 
     assert created.status_code == 303
-    assert "/admin/workflows/drafts/" in created.headers["location"]
-    assert editor.status_code == 200
-    assert "UI Form Platform" in editor.text
+    assert created.headers["location"].startswith("/admin/app/workflows/drafts/")
+    assert react_host.status_code == 200
+    assert react_host.headers["X-React-Admin-Host"] == "non-jinja"
 
 
-def test_editor_and_version_pages_return_expected_404s(tmp_path, monkeypatch) -> None:
-    tenant_id = uuid4()
-    configure_env(monkeypatch, tmp_path, tenant_id)
-    app = create_app()
-    with TestClient(app) as client:
-        missing_editor = client.get(
-            f"/admin/workflows/drafts/{uuid4()}/editor",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
-        )
-        missing_version = client.get(
-            f"/admin/workflows/versions/{uuid4()}/detail",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
-        )
-
-    assert missing_editor.status_code == 404
-    assert missing_version.status_code == 404
-
-
-def test_editor_and_version_pages_enforce_scope_visibility(
+def test_legacy_workflow_post_routes_redirect_without_jinja(
     tmp_path, monkeypatch
 ) -> None:
     tenant_id = uuid4()
     configure_env(monkeypatch, tmp_path, tenant_id)
-    monkeypatch.setenv(
-        "LOCAL_PRINCIPAL_CATALOG_JSON",
-        json.dumps(
-            {
-                "tenant-admin-acme": {
-                    "catalog_key": "tenant-admin-acme",
-                    "display_name": "Tenant Admin",
-                    "tenant_id": str(tenant_id),
-                    "org_id": "org-acme",
-                    "role_codes": ["tenant_user", "tenant_admin"],
-                    "permission_codes": ["tenant:read", "tenant:admin"],
-                },
-                "platform-admin": {
-                    "catalog_key": "platform-admin",
-                    "display_name": "Platform Admin",
-                    "role_codes": ["platform_admin"],
-                    "permission_codes": ["tenant:admin"],
-                },
-            }
-        ),
-    )
     app = create_app()
+
     with TestClient(app) as client:
         created = client.post(
             "/admin/workflows",
@@ -355,36 +193,33 @@ def test_editor_and_version_pages_enforce_scope_visibility(
             json={
                 "scope_type": "platform",
                 "workflow_kind": "main_workflow",
-                "slug": "ui-forbidden",
-                "display_name": "UI Forbidden",
+                "slug": "ui-posts",
+                "display_name": "UI Posts",
                 "document": {
                     **sample_document(),
-                    "workflow_key": "ui-forbidden",
-                    "display_name": "UI Forbidden",
+                    "workflow_key": "ui-posts",
+                    "display_name": "UI Posts",
                 },
             },
         )
         draft_id = created.json()["workflow_draft_id"]
-        validated = client.post(
-            f"/admin/workflows/drafts/{draft_id}/validate",
+        save = client.post(
+            f"/admin/workflows/drafts/{draft_id}/save-ui",
             headers={"X-Local-Principal": "platform-admin"},
-        )
-        published = client.post(
-            f"/admin/workflows/drafts/{draft_id}/publish",
-            headers={"X-Local-Principal": "platform-admin"},
-            json={
-                "validation_result_id": validated.json()["validation_result_id"],
+            data={
+                "base_revision_number": 1,
+                "description": "Updated from compatibility form.",
+                "change_summary": "Compatibility save",
             },
+            follow_redirects=False,
         )
-        version_id = published.json()["workflow_version_bundle_id"]
-        forbidden_editor = client.get(
-            f"/admin/workflows/drafts/{draft_id}/editor",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
-        )
-        forbidden_version = client.get(
-            f"/admin/workflows/versions/{version_id}/detail",
-            headers={"X-Local-Principal": "tenant-admin-acme"},
+        validate = client.post(
+            f"/admin/workflows/drafts/{draft_id}/validate/ui",
+            headers={"X-Local-Principal": "platform-admin"},
+            follow_redirects=False,
         )
 
-    assert forbidden_editor.status_code == 403
-    assert forbidden_version.status_code == 403
+    assert save.status_code == 303
+    assert save.headers["location"] == f"/admin/app/workflows/drafts/{draft_id}"
+    assert validate.status_code == 303
+    assert validate.headers["location"] == f"/admin/app/workflows/drafts/{draft_id}"

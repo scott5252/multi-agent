@@ -1,0 +1,131 @@
+{
+  "spec": "041",
+  "title": "Governance Full React Parity And Jinja Removal",
+  "feature_dir": "specs/041-governance-full-react-parity-and-jinja-removal",
+  "branch": "codex/041-governance-full-react-parity-and-jinja-removal",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/041-governance-full-react-parity-and-jinja-removal/spec.md",
+        "specs/041-governance-full-react-parity-and-jinja-removal/checklists/requirements.md"
+      ],
+      "notes": "Created the active Spec 041 specification from the generated roadmap prompt. Scope covers full React governance parity for providers, prompts, profiles, model-skill config, routing, policy history, provenance, old route compatibility, governance-owned Jinja deletion evidence, dual-auth validation, redaction, and retention of non-governance/shared Jinja infrastructure for later specs."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/041-governance-full-react-parity-and-jinja-removal/spec.md"
+      ],
+      "auto_clarifications": [
+        "Add React routes, panels, or modals backed by backend-owned contracts for missing provider, prompt, and profile create/edit flows before deleting matching templates.",
+        "Keep existing backend services authoritative for provider, prompt, profile, credential, probe, routing, and guardrail mutation decisions.",
+        "Keep provider create/edit/catalog sync/probe/test, credential-reference mutation, and direct-call guardrail mutation platform-admin only; tenant admins receive read-only authorized readiness and provenance views.",
+        "Redirect old provider, prompt, profile, and model-skill config browser URLs to stable React governance paths when safe ids and tenant scope can be preserved; otherwise return a non-Jinja safe problem or documented gone response.",
+        "Use deterministic mocked-safe validation only, with no live provider, Auth0, Telegram, credential, connector, external tool, or direct SDK calls."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/041-governance-full-react-parity-and-jinja-removal/plan.md",
+        "specs/041-governance-full-react-parity-and-jinja-removal/research.md",
+        "specs/041-governance-full-react-parity-and-jinja-removal/data-model.md",
+        "specs/041-governance-full-react-parity-and-jinja-removal/contracts/governance-react-parity-ui.md",
+        "specs/041-governance-full-react-parity-and-jinja-removal/contracts/governance-react-parity.openapi.yaml",
+        "specs/041-governance-full-react-parity-and-jinja-removal/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned governance React parity by extending Spec 031 contracts, adding stable React child routes and legacy redirect mappings for provider, prompt, profile, model-skill config, routing, history, and provenance surfaces, preserving backend-owned authorization/redaction, and blocking template deletion until route/scanner/QA/Playwright evidence passes."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/041-governance-full-react-parity-and-jinja-removal/tasks.md"
+      ],
+      "task_count": 60,
+      "notes": "Generated dependency-ordered, file-specific tasks covering setup, tests-first governance React parity, legacy redirect/form-post compatibility handling, governance-owned Jinja template/static deletion or retained blockers, README/docs impact, QA docs, Spec QA, and Playwright validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "remediations": [
+        "Added explicit tasks for legacy governance form-post compatibility, README/docs impact, and all governance UI helper modules before recording analysis completion."
+      ],
+      "notes": "Spec, plan, and tasks cover governance React parity for provider, prompt, profile, model-skill config, routing, policy history, provenance, credential diagnostics, direct-call guardrail evidence, old route redirects/form-post compatibility, dual-auth validation, tenant isolation, redaction, scanner-backed governance template deletion, QA docs, Playwright evidence, and rollback notes. No CRITICAL or HIGH findings remain."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_governance.py",
+        "src/multi_agent_platform/admin/governance.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/api/routers/admin_model_providers.py",
+        "src/multi_agent_platform/api/routers/admin_prompts.py",
+        "src/multi_agent_platform/api/routers/admin_agent_profiles.py",
+        "src/multi_agent_platform/api/routers/admin_model_skill_config.py",
+        "frontend/admin/src/components/governance/GovernancePage.tsx",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "tests/integration/api/test_admin_governance_legacy_redirects.py",
+        "tests/unit/admin/test_governance_jinja_retirement.py",
+        "specs/041-governance-full-react-parity-and-jinja-removal/qa041.md",
+        "specs/041-governance-full-react-parity-and-jinja-removal/qa041_ui.md",
+        "specs/041-governance-full-react-parity-and-jinja-removal/.env.qa041",
+        "specs/041-governance-full-react-parity-and-jinja-removal/qa041_user_guide.md",
+        "specs/041-governance-full-react-parity-and-jinja-removal/pr_notes.md"
+      ],
+      "deleted_templates": [
+        "src/multi_agent_platform/web_admin/templates/model_providers/catalog.html",
+        "src/multi_agent_platform/web_admin/templates/model_providers/detail.html",
+        "src/multi_agent_platform/web_admin/templates/model_providers/edit.html",
+        "src/multi_agent_platform/web_admin/templates/model_providers/index.html",
+        "src/multi_agent_platform/web_admin/templates/model_providers/test_results.html",
+        "src/multi_agent_platform/web_admin/templates/prompts/detail.html",
+        "src/multi_agent_platform/web_admin/templates/prompts/edit.html",
+        "src/multi_agent_platform/web_admin/templates/prompts/history.html",
+        "src/multi_agent_platform/web_admin/templates/prompts/index.html",
+        "src/multi_agent_platform/web_admin/templates/prompts/preview.html",
+        "src/multi_agent_platform/web_admin/templates/agent_profiles/detail.html",
+        "src/multi_agent_platform/web_admin/templates/agent_profiles/edit.html",
+        "src/multi_agent_platform/web_admin/templates/agent_profiles/history.html",
+        "src/multi_agent_platform/web_admin/templates/agent_profiles/index.html",
+        "src/multi_agent_platform/web_admin/templates/agent_profiles/resolve.html",
+        "src/multi_agent_platform/web_admin/templates/model_skill_config/history.html",
+        "src/multi_agent_platform/web_admin/templates/model_skill_config/index.html",
+        "src/multi_agent_platform/web_admin/templates/model_skill_config/run_provenance.html"
+      ],
+      "notes": "Governance browser routes now redirect to React destinations, legacy form posts still execute backend services before redirecting to React, React governance exposes backend-owned legacy route evidence, governance-owned templates are deleted, helper modules are retained with blocker evidence, navigation/docs point to React governance, and QA/reviewer artifacts are present."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/041-governance-full-react-parity-and-jinja-removal",
+      "uv run pytest tests/integration/api/test_local_browser_login.py::test_local_browser_login_sets_cookie_and_unlocks_ui --no-cov -q",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "uv run pytest --no-cov tests/unit/admin/test_governance_jinja_retirement.py tests/unit/api/test_admin_governance_schema.py tests/integration/api/test_admin_governance_legacy_redirects.py tests/contract/test_admin_react_contract.py tests/integration/test_admin_react_routes.py -q",
+      "cd frontend/admin && npm test -- --run src/App.test.tsx src/components/governance",
+      "cd frontend/admin && npm run build",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/041-governance-full-react-parity-and-jinja-removal/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/041-governance-full-react-parity-and-jinja-removal/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "output/playwright/qa041_ui/qa041-react-ui2-smoke.png",
+      "specs/041-governance-full-react-parity-and-jinja-removal/qa041.md",
+      "specs/041-governance-full-react-parity-and-jinja-removal/qa041_ui.md",
+      "specs/041-governance-full-react-parity-and-jinja-removal/qa041_user_guide.md",
+      "specs/041-governance-full-react-parity-and-jinja-removal/pr_notes.md"
+    ],
+    "notes": "QA docs, focused local-login regression check, focused governance backend/frontend tests, generated-contract check, Vite build, full Spec QA with coverage, and Playwright UI validation all passed for qa041. A qa041 env cookie-name drift was corrected to the stable map_local_principal contract before rerunning validation."
+  },
+  "blockers": []
+}

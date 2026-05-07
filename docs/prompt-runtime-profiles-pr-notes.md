@@ -32,7 +32,7 @@ retire, grants, and history without raw database access. Profile authoring
 should complete under ten minutes and expose prompt references, policy
 sections, validation, activation, resolution preview, retirement, and history.
 
-Automated browser-flow coverage now submits the real server-rendered forms
+Historical browser-flow coverage submitted the real prompt/profile forms
 rather than checking template strings. On 2026-04-28,
 `uv run pytest --no-cov tests/integration/api/test_prompt_runtime_browser_flows.py tests/integration/api/test_agent_profile_browser_flows.py`
 passed with 2 tests covering prompt save, validation, safe preview, publish,

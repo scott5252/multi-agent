@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.admin.service import AdminService
@@ -16,15 +17,6 @@ from multi_agent_platform.admin.workflow_registry.service import (
     WorkflowNotFoundError,
 )
 from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import (
-    build_shell_for_request,
-    resolve_scope_for_request,
-)
-from multi_agent_platform.api.schemas.workflow_editor import (
-    EditorLookupResponse,
-    GraphPreviewResponse,
-    PublishGateRequest,
-)
 from multi_agent_platform.api.schemas.workflow_registry import (
     CopyDraftRequest,
     PublishDraftRequest,
@@ -35,26 +27,9 @@ from multi_agent_platform.api.schemas.workflow_registry import (
     WorkflowKind,
     WorkflowScopeType,
 )
-from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    CommonStateType,
-    build_common_state,
-    build_saved_filter_summary,
-)
-from multi_agent_platform.api.ui.admin_workflows import (
-    build_workflow_draft_create_page_model,
-    build_workflow_draft_editor_model,
-    build_workflow_publish_gate_model,
-    build_workflow_registry_page_model,
-    build_workflow_revision_history_model,
-    build_workflow_version_detail_model,
-)
 from multi_agent_platform.audit.service import AuditService
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
-from multi_agent_platform.db.repositories.admin_console import (
-    AdminSavedFilterRepository,
-)
 from multi_agent_platform.db.repositories.artifact import ArtifactRepository
 from multi_agent_platform.db.repositories.audit import AuditRepository
 from multi_agent_platform.db.repositories.workflow_registry import (
@@ -65,6 +40,18 @@ router = APIRouter(tags=["workflow-registry-ui"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 ACME_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
+REACT_WORKFLOWS_PATH = "/admin/app/workflows"
+LEGACY_QUERY_PRESERVE_KEYS = frozenset(
+    {
+        "tenant_id",
+        "scope_filter",
+        "status",
+        "q",
+        "saved_filter",
+        "revision",
+        "conflict",
+    }
+)
 
 
 def _build_admin_service(
@@ -82,6 +69,26 @@ def _build_admin_service(
 
 def _redirect(path: str) -> RedirectResponse:
     return RedirectResponse(url=path, status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _react_workflow_redirect(
+    request: Request,
+    suffix: str = "",
+    *,
+    extra_query: dict[str, str] | None = None,
+) -> RedirectResponse:
+    clean_suffix = suffix if not suffix or suffix.startswith("/") else f"/{suffix}"
+    query: dict[str, str] = {
+        key: value
+        for key, value in request.query_params.items()
+        if key in LEGACY_QUERY_PRESERVE_KEYS and len(value) <= 240
+    }
+    if extra_query:
+        query.update(extra_query)
+    target = f"{REACT_WORKFLOWS_PATH}{clean_suffix}"
+    if query:
+        target = f"{target}?{urlencode(query)}"
+    return _redirect(target)
 
 
 def _tenant_id_for_ui_create(
@@ -253,104 +260,24 @@ def _document_for_template(
     )
 
 
-@router.get("/admin/workflows/ui", response_class=HTMLResponse, include_in_schema=False)
+@router.get("/admin/workflows/ui", include_in_schema=False)
 async def workflow_registry_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-    scope_filter: Annotated[str, Query()] = "all",
-    status_filter: Annotated[str | None, Query(alias="status")] = None,
-    search_query: Annotated[str | None, Query(alias="q")] = None,
-) -> HTMLResponse:
-    service = _build_admin_service(session, container)
-    items = await service.list_workflows(
-        principal=principal,
-        scope_filter=scope_filter,
-        status=status_filter,
-        search_query=search_query,
-    )
-    page = build_workflow_registry_page_model(
-        items,
-        scope_filter=scope_filter,
-        status_filter=status_filter,
-        search_query=search_query,
-    )
-    active_scope = await resolve_scope_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-    )
-    saved_filter_records = await AdminSavedFilterRepository(session).list_filters(
-        principal=principal,
-        admin_area="workflows",
-        scope=active_scope,
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Workflow Registry",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Workflow Registry", href="/admin/workflows/ui"),
-        ),
-        common_state=build_common_state(
-            CommonStateType.EMPTY,
-            title="No workflow records",
-            summary="No workflow drafts or versions are visible in this scope.",
-            trace_id=principal.trace_id,
-        )
-        if not items
-        else None,
-        saved_filters=tuple(
-            build_saved_filter_summary(record, active_scope=active_scope)
-            for record in saved_filter_records
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "workflows/index.html",
-        {
-            "page": page,
-            "principal": principal,
-            "shell": shell,
-        },
-    )
+) -> RedirectResponse:
+    _ = principal, session
+    return _react_workflow_redirect(request)
 
 
-@router.get(
-    "/admin/workflows/new", response_class=HTMLResponse, include_in_schema=False
-)
+@router.get("/admin/workflows/new", include_in_schema=False)
 async def workflow_draft_create_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
-    service = _build_admin_service(session, container)
-    metadata = service.workflow_registry_service().get_editor_metadata()
-    page = build_workflow_draft_create_page_model(metadata)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Create Workflow Draft",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Workflow Registry", href="/admin/workflows/ui"),
-            BreadcrumbItem(label="Create", href=request.url.path),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "workflows/create.html",
-        {
-            "page": page,
-            "principal": principal,
-            "shell": shell,
-        },
-    )
+) -> RedirectResponse:
+    _ = principal, session
+    return _react_workflow_redirect(request, "/new")
 
 
 @router.post("/admin/workflows/new", include_in_schema=False)
@@ -366,7 +293,6 @@ async def workflow_draft_create_submit(
     starter_template: Annotated[str, Form()] = "minimal_ready",
     description: Annotated[str, Form()] = "",
 ) -> RedirectResponse:
-    _ = request
     service = _build_admin_service(session, container)
     scope = WorkflowScopeType(scope_type)
     kind = WorkflowKind(workflow_kind)
@@ -394,12 +320,11 @@ async def workflow_draft_create_submit(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return _redirect(f"/admin/workflows/drafts/{draft.workflow_draft_id}/editor")
+    return _react_workflow_redirect(request, f"/drafts/{draft.workflow_draft_id}")
 
 
 @router.get(
     "/admin/workflows/drafts/{workflow_draft_id}/editor",
-    response_class=HTMLResponse,
     include_in_schema=False,
 )
 async def workflow_draft_editor_page(
@@ -407,66 +332,9 @@ async def workflow_draft_editor_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
-    service = _build_admin_service(session, container)
-    try:
-        draft = await service.get_workflow_draft(
-            principal=principal,
-            workflow_draft_id=workflow_draft_id,
-        )
-    except WorkflowNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except WorkflowAccessError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    metadata = service.workflow_registry_service().get_editor_metadata()
-    graph_preview = (
-        await service.get_workflow_graph_preview(
-            principal=principal,
-            workflow_draft_id=workflow_draft_id,
-        )
-        if hasattr(service, "get_workflow_graph_preview")
-        else GraphPreviewResponse()
-    )
-    lookups = (
-        await service.get_workflow_editor_lookups(
-            principal=principal,
-            workflow_draft_id=workflow_draft_id,
-        )
-        if hasattr(service, "get_workflow_editor_lookups")
-        else EditorLookupResponse()
-    )
-    page = build_workflow_draft_editor_model(
-        draft=draft,
-        metadata=metadata,
-        graph_preview=graph_preview,
-        lookups=lookups,
-        conflict_message=(
-            "A newer draft revision already exists. Refresh before saving again."
-            if request.query_params.get("conflict") == "stale-save"
-            else None
-        ),
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.draft.display_name,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Workflow Registry", href="/admin/workflows/ui"),
-            BreadcrumbItem(label=page.draft.display_name, href=request.url.path),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "workflows/draft_editor.html",
-        {
-            "page": page,
-            "principal": principal,
-            "shell": shell,
-        },
-    )
+) -> RedirectResponse:
+    _ = principal, session
+    return _react_workflow_redirect(request, f"/drafts/{workflow_draft_id}")
 
 
 @router.post(
@@ -475,6 +343,7 @@ async def workflow_draft_editor_page(
 )
 async def workflow_draft_save_ui(
     workflow_draft_id: UUID,
+    request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
@@ -505,10 +374,12 @@ async def workflow_draft_save_ui(
     except WorkflowAccessError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except DraftConflictError:
-        return _redirect(
-            f"/admin/workflows/drafts/{workflow_draft_id}/editor?conflict=stale-save"
+        return _react_workflow_redirect(
+            request,
+            f"/drafts/{workflow_draft_id}",
+            extra_query={"conflict": "stale-save"},
         )
-    return _redirect(f"/admin/workflows/drafts/{updated.workflow_draft_id}/editor")
+    return _redirect(f"{REACT_WORKFLOWS_PATH}/drafts/{updated.workflow_draft_id}")
 
 
 @router.post(
@@ -533,12 +404,11 @@ async def workflow_draft_validate_ui(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except DraftConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return _redirect(f"/admin/workflows/drafts/{workflow_draft_id}/editor")
+    return _redirect(f"{REACT_WORKFLOWS_PATH}/drafts/{workflow_draft_id}")
 
 
 @router.get(
     "/admin/workflows/drafts/{workflow_draft_id}/revisions/ui",
-    response_class=HTMLResponse,
     include_in_schema=False,
 )
 async def workflow_draft_revision_history_page(
@@ -546,43 +416,9 @@ async def workflow_draft_revision_history_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
-    service = _build_admin_service(session, container)
-    try:
-        draft = await service.get_workflow_draft(
-            principal=principal,
-            workflow_draft_id=workflow_draft_id,
-        )
-        revisions = await service.list_workflow_draft_revisions(
-            principal=principal,
-            workflow_draft_id=workflow_draft_id,
-        )
-    except WorkflowNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except WorkflowAccessError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    page = build_workflow_revision_history_model(draft=draft, revisions=revisions)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=f"{draft.display_name} Revisions",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Workflow Registry", href="/admin/workflows/ui"),
-            BreadcrumbItem(
-                label=draft.display_name,
-                href=f"/admin/workflows/drafts/{workflow_draft_id}/editor",
-            ),
-            BreadcrumbItem(label="Revisions", href=request.url.path),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "workflows/revision_history.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session
+    return _react_workflow_redirect(request, f"/drafts/{workflow_draft_id}/revisions")
 
 
 @router.post(
@@ -615,7 +451,7 @@ async def workflow_draft_restore_ui(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except DraftConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return _redirect(f"/admin/workflows/drafts/{workflow_draft_id}/revisions/ui")
+    return _redirect(f"{REACT_WORKFLOWS_PATH}/drafts/{workflow_draft_id}/revisions")
 
 
 @router.post(
@@ -650,12 +486,11 @@ async def workflow_draft_copy_ui(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return _redirect(f"/admin/workflows/drafts/{draft.workflow_draft_id}/editor")
+    return _redirect(f"{REACT_WORKFLOWS_PATH}/drafts/{draft.workflow_draft_id}")
 
 
 @router.get(
     "/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui",
-    response_class=HTMLResponse,
     include_in_schema=False,
 )
 async def workflow_publish_gate_page(
@@ -663,43 +498,11 @@ async def workflow_publish_gate_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
-    service = _build_admin_service(session, container)
-    try:
-        draft = await service.get_workflow_draft(
-            principal=principal,
-            workflow_draft_id=workflow_draft_id,
-        )
-        gate = await service.evaluate_workflow_publish_gate(
-            principal=principal,
-            workflow_draft_id=workflow_draft_id,
-            payload=PublishGateRequest(),
-        )
-    except WorkflowNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except WorkflowAccessError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    page = build_workflow_publish_gate_model(draft=draft, gate=gate)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=f"{draft.display_name} Publish Gate",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Workflow Registry", href="/admin/workflows/ui"),
-            BreadcrumbItem(
-                label=draft.display_name,
-                href=f"/admin/workflows/drafts/{workflow_draft_id}/editor",
-            ),
-            BreadcrumbItem(label="Publish Gate", href=request.url.path),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session
+    return _react_workflow_redirect(
         request,
-        "workflows/publish_gate.html",
-        {"page": page, "principal": principal, "shell": shell},
+        f"/drafts/{workflow_draft_id}/publish-gate",
     )
 
 
@@ -736,13 +539,12 @@ async def workflow_draft_publish_ui(
     except ArtifactPersistenceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return _redirect(
-        f"/admin/workflows/versions/{version.workflow_version_bundle_id}/detail"
+        f"{REACT_WORKFLOWS_PATH}/versions/{version.workflow_version_bundle_id}"
     )
 
 
 @router.get(
     "/admin/workflows/versions/{workflow_version_bundle_id}/detail",
-    response_class=HTMLResponse,
     include_in_schema=False,
 )
 async def workflow_version_detail_page(
@@ -750,36 +552,9 @@ async def workflow_version_detail_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
-    service = _build_admin_service(session, container)
-    try:
-        version = await service.get_workflow_version(
-            principal=principal,
-            workflow_version_bundle_id=workflow_version_bundle_id,
-        )
-    except WorkflowNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except WorkflowAccessError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    page = build_workflow_version_detail_model(version=version)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=f"{page.version.display_name} {page.version.display_version}",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Workflow Registry", href="/admin/workflows/ui"),
-            BreadcrumbItem(label=page.version.display_name, href=request.url.path),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session
+    return _react_workflow_redirect(
         request,
-        "workflows/version_detail.html",
-        {
-            "page": page,
-            "principal": principal,
-            "shell": shell,
-        },
+        f"/versions/{workflow_version_bundle_id}",
     )

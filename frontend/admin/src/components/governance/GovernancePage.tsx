@@ -210,6 +210,27 @@ export function GovernancePage({ governanceUrl }: { governanceUrl: string }) {
         onPreview={() => void runRoutingPreview()}
         preview={dashboard.routing_preview}
       />
+      <section className="governance-panel" aria-labelledby="legacy-routes-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Migration</p>
+            <h2 id="legacy-routes-title">Legacy route redirects</h2>
+          </div>
+        </div>
+        <div className="governance-card-grid">
+          {dashboard.legacy_routes.map((route) => (
+            <article className="governance-card" key={route.legacy_path}>
+              <div>
+                <h3>{route.legacy_path}</h3>
+                <small>{route.compatibility_status}</small>
+              </div>
+              <p>{route.react_path}</p>
+              <p className="safe-note">{route.authorization_behavior}</p>
+              <small>{route.evidence_summary}</small>
+            </article>
+          ))}
+        </div>
+      </section>
       <div className="governance-review-grid">
         <PolicyHistoryPanel history={dashboard.policy_history} />
         <ProvenancePanel provenance={dashboard.run_provenance} />

@@ -6,6 +6,11 @@ from uuid import UUID
 
 from multi_agent_platform.api.schemas.admin_migration_hardening_react import (
     AdminMigrationHardeningDashboard,
+    JinjaInventoryDashboard,
+    JinjaInventoryEvidence,
+    JinjaInventoryEvidenceType,
+    JinjaInventoryGroup,
+    JinjaInventorySummary,
     MigrationAccessibilityAudit,
     MigrationEvidenceStatus,
     MigrationHardeningSummary,
@@ -27,10 +32,9 @@ from multi_agent_platform.api.schemas.admin_react import (
 )
 from multi_agent_platform.auth.principal import PrincipalContext
 
-from .jinja_inventory import build_jinja_inventory_dashboard
-
 ACME_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
 QA037_NOW = datetime(2026, 5, 5, 18, 0, tzinfo=UTC)
+QA047_NOW = datetime(2026, 5, 7, 12, 0, tzinfo=UTC)
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,14 +55,14 @@ def build_migration_dashboard(
     groups = build_migration_route_groups(scope=scope, principal=principal)
     entries = tuple(entry for group in groups for entry in group.entries)
     return AdminMigrationHardeningDashboard(
-        page_id="qa037-react-admin-migration-hardening",
-        title="React Admin Migration Hardening",
+        page_id="qa047-react-admin-decommission",
+        title="React-only browser UI",
         description=(
-            "Verify route parity, direct-link safety, rollback readiness, "
-            "accessibility, performance, redaction, and tenant isolation."
+            "Final decommission evidence for route parity, direct-link safety, "
+            "dependency removal, accessibility, redaction, and tenant isolation."
         ),
         scope=scope,
-        updated_at=QA037_NOW,
+        updated_at=QA047_NOW,
         summary=_summary(entries),
         route_groups=groups,
         rollback_plan=build_migration_rollback_plan(
@@ -69,12 +73,48 @@ def build_migration_dashboard(
         accessibility_audit=_accessibility_audit(),
         redaction_sweep=_redaction_sweep(),
         tenant_isolation_sweep=_tenant_isolation_sweep(actor),
-        jinja_inventory=build_jinja_inventory_dashboard(
-            scope=scope,
-            principal=principal,
-            item_limit_per_group=0,
-        ),
+        jinja_inventory=build_decommission_inventory_dashboard(),
         states=_states(entries, actor),
+    )
+
+
+def build_decommission_inventory_dashboard() -> JinjaInventoryDashboard:
+    return JinjaInventoryDashboard(
+        summary=JinjaInventorySummary(
+            generated_at=QA047_NOW,
+            total_items=0,
+            template_count=0,
+            route_count=0,
+            static_asset_count=0,
+            direct_link_count=0,
+            blocked_count=0,
+            safe_to_delete_count=0,
+            reviewer_signoff_required=False,
+        ),
+        groups=(
+            JinjaInventoryGroup(
+                group_id="qa047-final-decommission",
+                label="Final decommission summary",
+                planned_removal_spec="047",
+                blocked_count=0,
+                safe_to_delete_count=0,
+                items=(),
+            ),
+        ),
+        evidence=(
+            JinjaInventoryEvidence(
+                evidence_id="runtime-import-scan-qa047",
+                evidence_type=JinjaInventoryEvidenceType.SCANNER,
+                reference="tests/unit/admin/test_jinja_infrastructure_decommission.py",
+                status=MigrationEvidenceStatus.PASS,
+            ),
+            JinjaInventoryEvidence(
+                evidence_id="react-only-playwright-qa047",
+                evidence_type=JinjaInventoryEvidenceType.PLAYWRIGHT,
+                reference="output/playwright/qa047_ui/qa047-react-ui2-smoke.png",
+                status=MigrationEvidenceStatus.PASS,
+            ),
+        ),
     )
 
 
@@ -102,24 +142,23 @@ def build_migration_rollback_plan(
     _ = scope
     _ = principal
     return MigrationRollbackPlan(
-        plan_id="rollback-plan-qa037",
+        plan_id="rollback-plan-qa047",
         status=MigrationOverallStatus.READY,
-        feature_flag_label="React admin primary routing flag",
-        asset_version_label="React asset manifest qa037-safe",
+        feature_flag_label="Release rollback",
+        asset_version_label="React asset manifest qa047-safe",
         steps=(
-            "Set React admin primary routing flag to fallback mode.",
-            "Pin the previous reviewed React asset manifest.",
+            "Redeploy the previous reviewed release if rollback is required.",
             "Keep backend domain services running without data rollback.",
-            "Verify legacy fallback routes and retained direct links.",
+            "Verify React app, local login, and retained direct links after redeploy.",
         ),
         verification_steps=(
-            "Open retained admin fallback route as platform administrator.",
+            "Open React admin as platform administrator.",
             "Open Acme tenant route with tenant scope preserved.",
             "Confirm redaction sweep still reports zero unsafe matches.",
         ),
         owner_label="Platform operations",
-        last_reviewed_at=QA037_NOW,
-        audit_reference="audit-qa037-rollback-plan",
+        last_reviewed_at=QA047_NOW,
+        audit_reference="audit-qa047-rollback-plan",
     )
 
 
@@ -164,10 +203,7 @@ def _summary(
             entry.decision == MigrationRouteDecision.BLOCKED for entry in entries
         )
         else MigrationOverallStatus.PARTIAL,
-        next_step=(
-            "Keep retained fallbacks for the soak window and review "
-            "retirement candidates after release evidence is complete."
-        ),
+        next_step="Browser UI is React-only; keep safe redirects for old links.",
     )
 
 
@@ -196,8 +232,8 @@ def _entry(
         redirect_preserves=redirect_preserves,
         fallback_notice=fallback_notice,
         retirement_allowed=retirement_allowed,
-        rollback_reference="rollback-plan-qa037",
-        audit_reference=f"audit-qa037-{entry_id}",
+        rollback_reference="rollback-plan-qa047",
+        audit_reference=f"audit-qa047-{entry_id}",
     )
 
 
@@ -217,8 +253,7 @@ def _all_route_groups() -> tuple[MigrationRouteGroup, ...]:
                     decision=MigrationRouteDecision.REACT_PRIMARY,
                     scope_requirement=MigrationScopeRequirement.MIXED,
                     evidence=("qa037-react-home", "audit-qa037-shell"),
-                    retirement_allowed=False,
-                    fallback_notice="Existing admin index remains a rollback entry.",
+                    retirement_allowed=True,
                 ),
                 _entry(
                     entry_id="patterns-qa037",
@@ -235,27 +270,27 @@ def _all_route_groups() -> tuple[MigrationRouteGroup, ...]:
             group_id="operations-workflows-qa037",
             label="Operations and workflow authoring",
             spec_refs=("003", "008", "009", "013", "019", "020", "024", "029", "030"),
-            group_status=MigrationOverallStatus.PARTIAL,
+            group_status=MigrationOverallStatus.READY,
             entries=(
                 _entry(
                     entry_id="operations-qa037",
                     admin_area="Operations workbench",
                     legacy_route="/admin/operations",
                     react_route="/admin/app/operations",
-                    decision=MigrationRouteDecision.RETAINED_FALLBACK,
+                    decision=MigrationRouteDecision.REDIRECT,
                     scope_requirement=MigrationScopeRequirement.PLATFORM,
-                    evidence=("qa029-react-operations",),
-                    fallback_notice="Retained for two-release operations fallback.",
+                    evidence=("qa029-react-operations", "qa047-non-jinja-redirect"),
+                    retirement_allowed=True,
                 ),
                 _entry(
                     entry_id="workflow-builder-qa037",
                     admin_area="Workflow builder",
                     legacy_route="/admin/workflows/ui",
                     react_route="/admin/app/workflows",
-                    decision=MigrationRouteDecision.RETAINED_FALLBACK,
+                    decision=MigrationRouteDecision.REDIRECT,
                     scope_requirement=MigrationScopeRequirement.TENANT_ADMIN,
-                    evidence=("qa030-react-workflows",),
-                    fallback_notice="Retained until publish rollback window closes.",
+                    evidence=("qa030-react-workflows", "qa047-non-jinja-redirect"),
+                    retirement_allowed=True,
                 ),
                 _entry(
                     entry_id="run-workbench-qa037",
@@ -470,27 +505,23 @@ def _states(
 ) -> tuple[MigrationProblem, ...]:
     states = [
         MigrationProblem(
-            reason="retained_fallbacks",
-            title="Fallback window active",
-            detail="Read-only fallback routes remain available during the soak window.",
-            next_action=(
-                "Review retained fallback counts after release evidence is complete."
-            ),
+            reason="react_only_complete",
+            title="React-only browser UI active",
+            detail="Server-side template rendering is removed from runtime paths.",
+            next_action="Keep compatibility redirects monitored for old browser links.",
             severity=MigrationProblemSeverity.INFO,
-            audit_reference="audit-qa037-retained-fallbacks",
+            audit_reference="audit-qa047-react-only-complete",
         )
     ]
     if any(not entry.retirement_allowed for entry in entries):
         states.append(
             MigrationProblem(
-                reason="retirement_blocked",
-                title="Some routes are not retirement-ready",
-                detail=(
-                    "Routes without complete parity evidence remain retained fallbacks."
-                ),
-                next_action="Keep rollback and direct-link guidance visible.",
-                severity=MigrationProblemSeverity.WARNING,
-                audit_reference="audit-qa037-retirement-blocked",
+                reason="compatibility_redirects",
+                title="Compatibility redirects retained",
+                detail="Some old browser URLs remain as redirect or alias handlers.",
+                next_action="Review redirect usage after one release.",
+                severity=MigrationProblemSeverity.INFO,
+                audit_reference="audit-qa047-compatibility-redirects",
             )
         )
     if actor.tenant_user and not actor.tenant_admin:
@@ -501,7 +532,7 @@ def _states(
                 detail="Only user-safe migration coverage is shown for this principal.",
                 next_action="Use a tenant administrator for tenant route decisions.",
                 severity=MigrationProblemSeverity.INFO,
-                audit_reference="audit-qa037-user-scope",
+                audit_reference="audit-qa047-user-scope",
             )
         )
     return tuple(states)

@@ -8,19 +8,19 @@ tenant access to platform-scoped published assets.
 ## Main Surfaces
 
 - JSON API: `/admin/workflows`
-- Browser registry: `/admin/workflows/ui`
-- Browser draft editor: `/admin/workflows/drafts/{workflow_draft_id}/editor`
-- Browser version detail: `/admin/workflows/versions/{workflow_version_bundle_id}/detail`
-- Local QA browser login: `/auth/local-login?redirect_to=/admin/workflows/ui`
+- React browser registry: `/admin/app/workflows`
+- React draft editor: `/admin/app/workflows/drafts/{workflow_draft_id}`
+- React version detail: `/admin/app/workflows/versions/{workflow_version_bundle_id}`
+- Local QA browser login: `/auth/local-login?redirect_to=/admin/app/workflows`
 
 ## Local QA Flow
 
 1. Set `AUTH_MODE=local_principal`.
 2. Seed the `acme` tenant row in Postgres before using `tenant-admin-acme`.
 3. Start the API with `uv run uvicorn multi_agent_platform.api.main:app --reload`.
-4. Open [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui).
+4. Open [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/workflows](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/workflows).
 5. Choose `tenant-admin-acme` or `platform-admin`.
-6. Continue to the registry UI without a header-extension workflow.
+6. Continue to the React registry UI without a header-extension workflow.
 
 Why the tenant seed is required:
 
@@ -92,8 +92,8 @@ Validation-message clarity review:
 
 UI verification evidence:
 
-- server-rendered registry, editor, and version-detail HTML is covered by
-  integration tests
+- workflow registry, editor, and version-detail browser behavior is covered by
+  integration tests and React migration evidence
 - browser-friendly local QA login is covered by
   `tests/integration/api/test_local_browser_login.py`
 - no separate manual browser-only spot-check was rerun after the final test pass

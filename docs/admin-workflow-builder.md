@@ -7,10 +7,10 @@ and trace published bundles back to source draft revisions.
 
 ## Authoring Flow
 
-1. Open `/admin/workflows/ui`.
+1. Open `/admin/app/workflows`.
 2. Choose `Create Workflow`.
 3. Create or seed a draft with `POST /admin/workflows`.
-4. Open `/admin/workflows/drafts/{workflow_draft_id}/editor`.
+4. Open `/admin/app/workflows/drafts/{workflow_draft_id}`.
 5. Review overview, roles, prompt/profile references, skills, contracts, graph
    nodes and edges, joins, approval gates, subworkflows, and required tests.
 6. Use the advanced JSON inspector only for read-only review.
@@ -46,7 +46,7 @@ evidence.
 
 ## Revision And Audit Flow
 
-Open `/admin/workflows/drafts/{workflow_draft_id}/revisions/ui` or call `GET
+Open `/admin/app/workflows/drafts/{workflow_draft_id}/revisions` or call `GET
 /admin/workflows/drafts/{workflow_draft_id}/revisions` to review immutable
 revision snapshots and changed-section summaries. Restore creates a new
 revision from an older snapshot and requires the current base revision.
@@ -64,4 +64,5 @@ be stored in audit payloads.
 - `src/multi_agent_platform/admin/workflow_registry/graph_preview.py`
 - `src/multi_agent_platform/admin/workflow_registry/reference_validation.py`
 - `src/multi_agent_platform/admin/workflow_registry/publish_gate.py`
-- `src/multi_agent_platform/web_admin/templates/workflows/`
+- React workflow components under `frontend/admin/src/components/workflows/`
+- Legacy workflow browser URLs redirect to `/admin/app/workflows`

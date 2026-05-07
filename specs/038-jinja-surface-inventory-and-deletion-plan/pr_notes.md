@@ -30,11 +30,31 @@ Reviewer signoff is required before any later spec changes an item from retained
 - Spec 040 owns workflow registry, builder, validation, publish, and workflow-route inventory.
 - Spec 041 owns model provider, prompt, profile, and governance inventory.
 - Spec 042 owns skill registry and skill execution inventory.
-- Spec 043 owns agent and workflow test bench inventory.
+- Spec 043 owns agent and workflow test bench inventory. Its implementation
+  removes the bounded `agent_tests` templates after proving React redirect,
+  form-post compatibility, tenant isolation, redaction, artifact metadata,
+  stale evidence, and Playwright parity.
 - Spec 044 owns platform operations, reliability, usage, and admin run inventory.
+  Its implementation removes the bounded operations, reliability, runs, usage,
+  and run-inspection static surfaces after proving React redirects, retained
+  JSON contracts, tenant isolation, metadata-only exports, and Playwright parity.
 - Spec 045 owns channels, Telegram, briefing, memberships, and people-oriented inventory.
+  Its implementation removes the bounded memberships, Telegram, and briefing
+  preference templates after proving React redirects, retained JSON contracts,
+  creation-only link-token handling, tenant isolation, redaction, and
+  Playwright parity.
 - Spec 046 owns user-facing `/runs` direct-link and compatibility inventory.
-- Spec 047 owns final Jinja infrastructure, imports, template provider, and dependency retirement inventory.
+  Its implementation keeps the retained `/runs` JSON lifecycle APIs, redirects
+  `/runs` and `/runs/new` to the React run workspace, redirects `/runs/{run_id}`
+  to the React run detail route after safe access checks, and proves the
+  deleted user-facing run templates remain unused through scanner, backend,
+  frontend, QA, and Playwright evidence.
+- Spec 047 owns final Jinja infrastructure, imports, template provider, and
+  dependency retirement inventory. Its implementation removes the remaining
+  template provider wiring, server-side template tree, legacy static assets, and
+  direct `jinja2` dependency; updates `/admin/app/migration` to React-only
+  decommission evidence; and proves old browser URLs use non-Jinja React hosts,
+  redirects, or safe compatibility responses.
 
 ## Redaction Notes
 
@@ -56,7 +76,7 @@ Tenant-scoped inventory omits platform-only Spec 044 surfaces.
 
 Focused checks already cover:
 
-- `tests/unit/admin/test_jinja_inventory_scanner.py`
+- `tests/unit/admin/test_jinja_infrastructure_decommission.py`
 - `tests/unit/admin/test_migration_hardening_service.py`
 - `tests/unit/api/test_admin_migration_hardening_react_schema.py`
 - `tests/contract/test_admin_migration_jinja_inventory_contract.py`

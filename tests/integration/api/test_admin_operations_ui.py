@@ -18,14 +18,24 @@ def test_operations_ui_renders_dashboard_and_redacted_logs(
 
     with TestClient(app) as client:
         page = client.get(
-            "/admin/operations?trace_id=trace-ops", headers=PLATFORM_HEADERS
+            "/admin/operations?trace_id=trace-ops",
+            headers=PLATFORM_HEADERS,
+            follow_redirects=False,
         )
-        denied = client.get("/admin/operations", headers=TENANT_HEADERS)
+        dashboard = client.get(
+            "/admin/operations/api/dashboard?trace_id=trace-ops",
+            headers=PLATFORM_HEADERS,
+        )
+        tenant_redirect = client.get(
+            "/admin/operations",
+            headers=TENANT_HEADERS,
+            follow_redirects=False,
+        )
 
-    assert page.status_code == 200, page.text
-    assert "Operations Console" in page.text
-    assert "System Health" in page.text
-    assert "Redacted Operational Logs" in page.text
-    assert "Gateway completed safely" in page.text
-    assert "must-redact" not in page.text
-    assert denied.status_code == 403
+    assert page.status_code == 303, page.text
+    assert page.headers["location"] == "/admin/app/operations?trace_id=trace-ops"
+    assert dashboard.status_code == 200
+    assert "Gateway completed safely" in dashboard.text
+    assert "must-redact" not in dashboard.text
+    assert tenant_redirect.status_code == 303
+    assert tenant_redirect.headers["location"] == "/admin/app/operations"

@@ -6,10 +6,12 @@ export const reactPrimaryRoutes = new Set([
   "/admin/app/patterns",
   "/admin/app/operations",
   "/admin/app/workflows",
+  "/admin/app/workflows/new",
   "/admin/app/governance",
   "/admin/app/skills",
   "/admin/app/test-bench",
   "/admin/app/memberships",
+  "/admin/app/saved-filters",
   "/admin/app/usage",
   "/admin/app/channels",
 ]);

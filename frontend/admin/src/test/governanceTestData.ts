@@ -22,6 +22,24 @@ export const governanceDashboardFixture: GovernanceDashboard = {
     },
   ],
   description: "Safe governance fixture.",
+  legacy_routes: [
+    {
+      authorization_behavior: "Authenticated redirect with backend JSON denial",
+      compatibility_status: "redirected",
+      evidence_summary: "Legacy governance browser route redirects to React.",
+      legacy_path: "/admin/model-providers",
+      preserved_params: ["tenant_id", "q", "status", "revision"],
+      react_path: "/admin/app/governance/providers",
+    },
+    {
+      authorization_behavior: "Authenticated redirect with backend JSON denial",
+      compatibility_status: "redirected",
+      evidence_summary: "Legacy runtime browser route redirects to React.",
+      legacy_path: "/admin/prompt-runtime/profiles/resolve",
+      preserved_params: ["tenant_id", "agent_key", "agent_kind"],
+      react_path: "/admin/app/governance/profiles/resolve",
+    },
+  ],
   page_id: "react-governance",
   policy_history: [
     {

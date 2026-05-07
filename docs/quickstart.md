@@ -84,8 +84,8 @@ http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app
 Sign in as `tenant-admin-acme` or `platform-admin`. The React shell reads
 safe bootstrap metadata from `/admin/app/bootstrap.json`, serves assets from
 `/admin/static/react`, reads safe command-search metadata from
-`/admin/app/search.json`, and links back to existing Jinja admin pages for
-domain workflows that have not migrated yet. Spec 027 adds the modern shell,
+`/admin/app/search.json`, and preserves older browser URLs through safe
+redirects to React routes. Spec 027 adds the modern shell,
 design tokens, accessible primitives, common states, saved-filter presentation,
 notifications, page actions, breadcrumbs, and command search without migrating
 domain pages.
@@ -129,8 +129,9 @@ The workflow builder reads `/admin/app/workflows/builder.json` and
 metadata, reference choices, React Flow graph preview, keyboard-readable graph
 lists, validation findings, publish readiness, required evidence, revision
 history, and redacted JSON preview summaries. Save, validation, stale revision,
-and publish outcomes come from protected backend actions. Existing Jinja
-workflow pages remain available under `/admin/workflows/ui`.
+and publish outcomes come from protected backend actions. Legacy workflow
+browser URLs redirect to React routes or safe non-Jinja compatibility
+responses.
 
 Open the React governance workspace:
 
@@ -196,8 +197,7 @@ model, workflow, agent, sub-agent, prompt, execution-mode, principal, graph
 node, gateway operation, physical attempt, and governed tool rollups, bounded
 event drilldowns, and audited export metadata. Platform administrators can
 review authorized platform-wide and tenant usage. Tenant administrators see
-only their active tenant. Existing server-rendered usage analytics remain
-available at `/admin/usage`.
+only their active tenant. Old `/admin/usage` browser links redirect to React.
 
 Focused validation:
 
@@ -407,10 +407,12 @@ curl -sS -X POST http://127.0.0.1:8000/runs \
 
 Use the returned `run_id` with `/runs/{run_id}/status`,
 `/runs/{run_id}/timeline`, `/runs/{run_id}/result`, approval/cancel endpoints,
-and artifact URL grant endpoints. Open `/runs` for the Web UI channel. For
-Telegram, create a link token with `POST /channels/telegram/link-token`, send
-`/link TOKEN` to `/channels/telegram/webhook/{secret}`, then use protected
-commands such as `/run`, `/status`, `/result`, and `/artifacts`.
+and artifact URL grant endpoints. Open `/runs` or `/runs/new` for the React Web
+UI run workspace, or open `/runs/{run_id}` to follow the authenticated legacy
+link to `/admin/app/channels/runs/{run_id}`. For Telegram, create a link token
+with `POST /channels/telegram/link-token`, send `/link TOKEN` to
+`/channels/telegram/webhook/{secret}`, then use protected commands such as
+`/run`, `/status`, `/result`, and `/artifacts`.
 
 ## Telegram Alias Delivery Quickstart
 
@@ -461,7 +463,7 @@ uv run alembic upgrade head
 
 Open the browser UI:
 
-- [Model Providers](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/model-providers)
+- [Model Providers](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/governance/providers)
 
 Manual QA:
 
@@ -501,12 +503,12 @@ Additional evidence:
 
 ## Workflow Studio Quickstart
 
-1. Open [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui).
+1. Open [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/workflows](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/workflows).
 2. Sign in as `platform-admin` to validate publish and sharing flows.
 3. Create a draft through `POST /admin/workflows`.
 4. Validate with `POST /admin/workflows/drafts/{workflow_draft_id}/validate`.
 5. Publish with `POST /admin/workflows/drafts/{workflow_draft_id}/publish`.
-6. Inspect the immutable version in `/admin/workflows/versions/{id}/detail`.
+6. Inspect the immutable version in `/admin/app/workflows/versions/{id}`.
 7. Create a sharing grant with
    `POST /admin/workflows/versions/{id}/sharing-grants`.
 
@@ -591,7 +593,7 @@ Manual skill tool execution QA:
 - [Spec 021 QA Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/021-real-skill-tool-execution-connectors/qa021.md)
 - [Spec 021 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/021-real-skill-tool-execution-connectors/qa021_ui.md)
 - [Spec 021 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/021-real-skill-tool-execution-connectors/qa021_user_guide.md)
-- Admin diagnostics route: `/admin/skill-execution/ui/diagnostics`
+- Admin diagnostics route: `/admin/app/skills/diagnostics`
 
 Target immutable memory explicitly:
 
@@ -659,9 +661,9 @@ Manual model-skill QA:
 
 Open the shared admin shell:
 
-- [Prompt Library](http://127.0.0.1:8000/admin/prompt-runtime/prompts)
-- [Agent Profiles](http://127.0.0.1:8000/admin/prompt-runtime/profiles)
-- [Profile Resolution](http://127.0.0.1:8000/admin/prompt-runtime/profiles/resolve)
+- [Prompt Library](http://127.0.0.1:8000/admin/app/governance/prompts)
+- [Agent Profiles](http://127.0.0.1:8000/admin/app/governance/profiles)
+- [Profile Resolution](http://127.0.0.1:8000/admin/app/governance/profiles/resolve)
 
 Focused reviewer command:
 
@@ -700,7 +702,10 @@ uv run uvicorn multi_agent_platform.api.main:app --reload
 
 Open the browser UI:
 
-- [Agent Tests](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/agent-tests/ui?tenant_id=11111111-1111-1111-1111-111111111111)
+- [Agent Tests](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/test-bench?tenant_id=11111111-1111-1111-1111-111111111111)
+
+Legacy `/admin/agent-tests/ui...` browser URLs remain compatibility redirects
+to `/admin/app/test-bench` and must not render Jinja templates.
 
 Manual QA:
 
@@ -766,8 +771,8 @@ uv run uvicorn multi_agent_platform.api.main:app --reload
 
 Open the browser UI:
 
-- [Workflow Registry](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/workflows/ui)
-- [Agent Tests](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/agent-tests/ui)
+- [Workflow Registry](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/workflows)
+- [Agent Tests](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/test-bench)
 
 Manual QA:
 
@@ -1267,21 +1272,21 @@ Additional evidence:
 - [Spec 036 UI Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/036-react-channel-telegram-and-briefing-preferences/qa036_ui.md)
 - [Spec 036 User Guide](/Users/scottcornell/src/my-projects/multi-agent/specs/036-react-channel-telegram-and-briefing-preferences/qa036_user_guide.md)
 
-## React Admin Migration Hardening Quickstart
+## React Admin Decommission Quickstart
 
-Use the QA037 environment when validating React primary routing, route parity,
-retained fallbacks, rollback evidence, performance budgets, accessibility
-coverage, redaction sweeps, and tenant isolation checks:
+Use the QA047 environment when validating React-only browser routing, route
+compatibility redirects, rollback-by-redeploy evidence, performance budgets,
+accessibility coverage, redaction sweeps, and tenant isolation checks:
 
 ```bash
 test ! -f .env || cp .env .env.autopilot-backup
-cp specs/037-react-admin-migration-hardening-and-jinja-retirement/.env.qa037 .env
+cp specs/047-jinja-infrastructure-decommission/.env.qa047 .env
 uv sync
 cd frontend/admin && npm install && npm run build && cd ../..
 docker compose up -d postgres
-docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa037 && createdb -U postgres multi_agent_platform_qa037'
+docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists multi_agent_platform_qa047 && createdb -U postgres multi_agent_platform_qa047'
 uv run alembic upgrade head
-docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa037 -c "INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING;"
+docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa047 -c "INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING;"
 ```
 
 Open the browser UI:
@@ -1296,8 +1301,8 @@ Manual QA:
 - Sign in as `tenant-admin-acme` and confirm platform-only rows are hidden.
 - Sign in as `tenant-user-acme` and confirm the limited user-scope guidance is
   shown.
-- Confirm retained fallback rows remain visible and no legacy deletion is
-  implied.
+- Confirm the dashboard states the browser UI is React-only and that old links
+  remain safe redirects or compatibility responses.
 - Confirm rollback, performance, accessibility, redaction, and tenant isolation
   panels are present.
 

@@ -3,10 +3,11 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Annotated, Any, cast
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.agents.resolution import AgentProfileResolutionError
@@ -16,7 +17,6 @@ from multi_agent_platform.agents.service import (
     AgentProfileService,
 )
 from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.agent_profiles import (
     ActivationRequest,
     AuditEventSummary,
@@ -34,7 +34,6 @@ from multi_agent_platform.api.schemas.agent_profiles import (
     ValidationFinding,
     ValidationResult,
 )
-from multi_agent_platform.api.ui.agent_profiles import build_agent_profile_ui_model
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.db.repositories.agent_profiles import (
@@ -50,41 +49,39 @@ from multi_agent_platform.tenancy.guards import (
 router = APIRouter(tags=["agent-runtime-profiles"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+REACT_GOVERNANCE_PATH = "/admin/app/governance"
+LEGACY_QUERY_PRESERVE_KEYS = frozenset(
+    {"tenant_id", "agent_key", "agent_kind", "q", "status", "revision", "flash"}
+)
 
 
 def _attr(obj: object, name: str, default: object | None = None) -> Any:
     return getattr(obj, name, default)
 
 
-def _profile_template_context(
-    *,
-    shell: object,
-    principal: PrincipalContext,
-    page: object,
-    **extra: object,
-) -> dict[str, object]:
-    context = {"shell": shell, "principal": principal, "page": page}
-    context.update(extra)
-    return context
+def _redirect(path: str) -> RedirectResponse:
+    return RedirectResponse(url=path, status_code=status.HTTP_303_SEE_OTHER)
 
 
-def _profile_ui_page(
+def _react_governance_redirect(
+    request: Request,
+    suffix: str = "",
     *,
-    title: str,
-    shell: object,
-    agent_runtime_profile_id: UUID | None = None,
-    agent_profile_version_id: UUID | None = None,
-    status_value: str = "draft",
-) -> object:
-    active_scope = shell.active_scope  # type: ignore[attr-defined]
-    return build_agent_profile_ui_model(
-        title=title,
-        scope_type=active_scope.scope_type,
-        tenant_id=active_scope.tenant_id,
-        agent_runtime_profile_id=agent_runtime_profile_id,
-        agent_profile_version_id=agent_profile_version_id,
-        status=status_value,
-    )
+    extra_query: dict[str, str] | None = None,
+) -> RedirectResponse:
+    clean_suffix = suffix if not suffix or suffix.startswith("/") else f"/{suffix}"
+    query_params = getattr(request, "query_params", {})
+    query = {
+        key: value
+        for key, value in query_params.items()
+        if key in LEGACY_QUERY_PRESERVE_KEYS and len(value) <= 240
+    }
+    if extra_query:
+        query.update(extra_query)
+    target = f"{REACT_GOVERNANCE_PATH}{clean_suffix}"
+    if query:
+        target = f"{target}?{urlencode(query)}"
+    return _redirect(target)
 
 
 def _is_platform_admin(principal: PrincipalContext) -> bool:
@@ -261,51 +258,6 @@ def _profile_version_detail(version: object) -> ProfileVersionDetail:
     )
 
 
-def _profile_submitted_fields(
-    *,
-    shell: object,
-    profile: object | None = None,
-    revision: object | None = None,
-) -> dict[str, object]:
-    active_scope = shell.active_scope  # type: ignore[attr-defined]
-    return {
-        "scope_type": _attr(profile, "scope_type", active_scope.scope_type),
-        "tenant_id": str(_attr(profile, "tenant_id", active_scope.tenant_id) or ""),
-        "agent_key": _attr(profile, "agent_key", ""),
-        "agent_kind": _attr(profile, "agent_kind", "agent"),
-        "display_name": _attr(profile, "display_name", ""),
-        "purpose": _attr(revision, "purpose", _attr(profile, "purpose", "")),
-        "prompt_references_json": json.dumps(
-            _attr(revision, "prompt_references_json", []) or [],
-            indent=2,
-        ),
-        "model_routing_hints_json": json.dumps(
-            _attr(revision, "model_routing_hints_json", {}) or {},
-            indent=2,
-        ),
-        "memory_scope_policy_json": json.dumps(
-            _attr(revision, "memory_scope_policy_json", {}) or {},
-            indent=2,
-        ),
-        "skill_requirements_json": json.dumps(
-            _attr(revision, "skill_requirements_json", []) or [],
-            indent=2,
-        ),
-        "tool_policy_expectations_json": json.dumps(
-            _attr(revision, "tool_policy_expectations_json", []) or [],
-            indent=2,
-        ),
-        "output_contract_expectations_json": json.dumps(
-            _attr(revision, "output_contract_expectations_json", {}) or {},
-            indent=2,
-        ),
-        "test_suite_requirements_json": json.dumps(
-            _attr(revision, "test_suite_requirements_json", []) or [],
-            indent=2,
-        ),
-    }
-
-
 def _profile_payloads_from_form(
     *,
     scope_type: str,
@@ -382,77 +334,30 @@ def _profile_payloads_from_form(
     return create_payload, draft_payload
 
 
-@router.get("/admin/prompt-runtime/profiles", response_class=HTMLResponse)
+@router.get("/admin/prompt-runtime/profiles")
 async def agent_profiles_index(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    repository = AgentProfileRepository(session)
-    profiles = await repository.list_visible_profiles(
-        principal_tenant_id=principal.tenant_id,
-        include_platform_admin=_is_platform_admin(principal),
-    )
-    items: list[ProfileSummary] = []
-    for profile in profiles:
-        draft = await repository.get_active_draft(profile.agent_runtime_profile_id)
-        validation = None
-        if draft is not None:
-            validation = await repository.get_validation_result(
-                draft.last_validation_result_id
-            )
-        items.append(_profile_summary(profile, validation))
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Agent Profiles",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "agent_profiles/index.html",
-        _profile_template_context(
-            shell=shell,
-            principal=principal,
-            page=_profile_ui_page(title="Agent Profiles", shell=shell),
-            items=items,
-        ),
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, "/profiles")
 
 
-@router.get("/admin/prompt-runtime/profiles/new", response_class=HTMLResponse)
+@router.get("/admin/prompt-runtime/profiles/new")
 async def agent_profiles_new(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="New Agent Profile",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "agent_profiles/edit.html",
-        _profile_template_context(
-            shell=shell,
-            principal=principal,
-            page=build_agent_profile_ui_model(
-                title="New Agent Profile",
-                scope_type=shell.active_scope.scope_type,
-                tenant_id=shell.active_scope.tenant_id,
-                submitted_fields=_profile_submitted_fields(shell=shell),
-            ),
-        ),
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, "/profiles/new")
 
 
 @router.get(
     "/admin/prompt-runtime/profiles/{agent_runtime_profile_id}/edit",
-    response_class=HTMLResponse,
 )
 async def agent_profiles_edit(
     agent_runtime_profile_id: UUID,
@@ -460,57 +365,16 @@ async def agent_profiles_edit(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    repository = AgentProfileRepository(session)
-    profile = await repository.get_profile(agent_runtime_profile_id)
-    draft = await repository.get_active_draft(agent_runtime_profile_id)
-    if profile is None or draft is None:
-        raise HTTPException(status_code=404, detail={"code": "profile_not_found"})
-    _require_profile_scope_mutation(
-        principal,
-        scope_type=profile.scope_type,
-        tenant_id=profile.tenant_id,
-    )
-    revision = await repository.get_latest_revision(draft)
-    validation = await repository.get_validation_result(draft.last_validation_result_id)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Edit Agent Profile",
-    )
-    submitted_fields = _profile_submitted_fields(
-        shell=shell,
-        profile=profile,
-        revision=revision,
-    )
-    submitted_fields["current_revision_number"] = draft.current_revision_number
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(
         request,
-        "agent_profiles/edit.html",
-        _profile_template_context(
-            shell=shell,
-            principal=principal,
-            page=build_agent_profile_ui_model(
-                title="Edit Agent Profile",
-                scope_type=profile.scope_type,
-                tenant_id=profile.tenant_id,
-                agent_runtime_profile_id=agent_runtime_profile_id,
-                agent_key=profile.agent_key,
-                agent_kind=profile.agent_kind,
-                validation_status=_attr(validation, "status", None),
-                findings=_attr(validation, "findings_json", None),
-                submitted_fields=submitted_fields,
-            ),
-            draft=revision,
-            validation=_profile_validation_response(validation),
-        ),
+        f"/profiles/{agent_runtime_profile_id}/edit",
     )
 
 
 @router.get(
     "/admin/prompt-runtime/profiles/versions/{agent_profile_version_id}",
-    response_class=HTMLResponse,
 )
 async def agent_profiles_detail(
     agent_profile_version_id: UUID,
@@ -518,47 +382,16 @@ async def agent_profiles_detail(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    repository = AgentProfileRepository(session)
-    version = await repository.get_profile_version(agent_profile_version_id)
-    if version is None:
-        raise HTTPException(status_code=404, detail={"code": "profile_not_found"})
-    _require_profile_scope_mutation(
-        principal,
-        scope_type=version.scope_type,
-        tenant_id=version.tenant_id,
-    )
-    grants = await repository.list_grants_for_version(agent_profile_version_id)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Agent Profile Version",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(
         request,
-        "agent_profiles/detail.html",
-        _profile_template_context(
-            shell=shell,
-            principal=principal,
-            page=build_agent_profile_ui_model(
-                title="Agent Profile Version",
-                scope_type=version.scope_type,
-                tenant_id=version.tenant_id,
-                agent_key=version.agent_key,
-                agent_kind=version.agent_kind,
-                agent_profile_version_id=agent_profile_version_id,
-                status=version.status,
-            ),
-            version=_profile_version_detail(version),
-            grants=grants,
-        ),
+        f"/profiles/versions/{agent_profile_version_id}",
     )
 
 
 @router.get(
     "/admin/prompt-runtime/profiles/{agent_runtime_profile_id}/history",
-    response_class=HTMLResponse,
 )
 async def agent_profiles_history(
     agent_runtime_profile_id: UUID,
@@ -566,50 +399,15 @@ async def agent_profiles_history(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    repository = AgentProfileRepository(session)
-    profile = await repository.get_profile(agent_runtime_profile_id)
-    if profile is None:
-        raise HTTPException(status_code=404, detail={"code": "profile_not_found"})
-    _require_profile_scope_mutation(
-        principal,
-        scope_type=profile.scope_type,
-        tenant_id=profile.tenant_id,
-    )
-    history = HistoryResponse(
-        items=[
-            AuditEventSummary.model_validate(event)
-            for event in await repository.list_profile_history(
-                agent_runtime_profile_id=agent_runtime_profile_id,
-                tenant_id=(
-                    None if _is_platform_admin(principal) else principal.tenant_id
-                ),
-            )
-        ]
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Agent Profile History",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(
         request,
-        "agent_profiles/history.html",
-        _profile_template_context(
-            shell=shell,
-            principal=principal,
-            page=_profile_ui_page(
-                title="Agent Profile History",
-                shell=shell,
-                agent_runtime_profile_id=agent_runtime_profile_id,
-            ),
-            history=history,
-        ),
+        f"/profiles/{agent_runtime_profile_id}/history",
     )
 
 
-@router.get("/admin/prompt-runtime/profiles/resolve", response_class=HTMLResponse)
+@router.get("/admin/prompt-runtime/profiles/resolve")
 async def agent_profiles_resolve(
     request: Request,
     principal: PrincipalDep,
@@ -618,64 +416,22 @@ async def agent_profiles_resolve(
     tenant_id: Annotated[UUID | None, Query()] = None,
     agent_key: Annotated[str | None, Query(max_length=128)] = None,
     agent_kind: Annotated[str, Query()] = "agent",
-) -> HTMLResponse:
-    resolved_tenant_id = _assert_query_tenant_allowed(principal, tenant_id)
-    resolution: ProfileResolveResponse | None = None
-    if resolved_tenant_id is not None and agent_key:
-        try:
-            result = await AgentProfileService(
-                AgentProfileRepository(session)
-            ).resolve_profile(
-                tenant_id=resolved_tenant_id,
-                agent_key=agent_key,
-                agent_kind=agent_kind,
-            )
-            resolution = ProfileResolveResponse(
-                resolved=True,
-                selected_profile_version_id=result.selected_profile_version_id,
-                source_scope=result.source_scope,  # type: ignore[arg-type]
-                considered_profile_version_ids=list(
-                    result.considered_profile_version_ids
-                ),
-            )
-        except AgentProfileResolutionError as exc:
-            resolution = ProfileResolveResponse(
-                resolved=False,
-                blocking_issues=[
-                    ValidationFinding(
-                        code="profile_resolution_failed",
-                        severity="blocking",
-                        message=str(exc),
-                        section="resolution",
-                    )
-                ],
-            )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Profile Resolution",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = session, container
+    _assert_query_tenant_allowed(principal, tenant_id)
+    extra_query: dict[str, str] = {"agent_kind": agent_kind}
+    if tenant_id is not None:
+        extra_query["tenant_id"] = str(tenant_id)
+    if agent_key:
+        extra_query["agent_key"] = agent_key
+    return _react_governance_redirect(
         request,
-        "agent_profiles/resolve.html",
-        _profile_template_context(
-            shell=shell,
-            principal=principal,
-            page=build_agent_profile_ui_model(
-                title="Profile Resolution",
-                scope_type=shell.active_scope.scope_type,
-                tenant_id=shell.active_scope.tenant_id,
-                agent_key=agent_key or "",
-                agent_kind=agent_kind,
-            ),
-            resolution=resolution,
-            resolve_tenant_id=resolved_tenant_id,
-        ),
+        "/profiles/resolve",
+        extra_query=extra_query,
     )
 
 
-@router.post("/admin/prompt-runtime/profiles/form", response_class=HTMLResponse)
+@router.post("/admin/prompt-runtime/profiles/form")
 async def agent_profile_form(
     principal: PrincipalDep,
     session: SessionDep,
@@ -748,10 +504,9 @@ async def agent_profile_form(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={"code": "stale_validation"},
             ) from exc
-        return RedirectResponse(
-            "/admin/prompt-runtime/profiles/versions/"
-            f"{activated_version.agent_profile_version_id}?flash=profile-activated",
-            status_code=status.HTTP_303_SEE_OTHER,
+        return _redirect(
+            f"{REACT_GOVERNANCE_PATH}/profiles/versions/"
+            f"{activated_version.agent_profile_version_id}?flash=profile-activated"
         )
 
     if action in {"retire", "grant"}:
@@ -790,10 +545,9 @@ async def agent_profile_form(
                         detail={"code": "grant_not_allowed"},
                     ) from exc
             flash = "profile-granted"
-        return RedirectResponse(
-            "/admin/prompt-runtime/profiles/versions/"
-            f"{agent_profile_version_id}?flash={flash}",
-            status_code=status.HTTP_303_SEE_OTHER,
+        return _redirect(
+            f"{REACT_GOVERNANCE_PATH}/profiles/versions/"
+            f"{agent_profile_version_id}?flash={flash}"
         )
 
     form_tenant_id = _parse_optional_uuid(tenant_id_value)
@@ -865,10 +619,9 @@ async def agent_profile_form(
         flash = "profile-validated"
     else:
         flash = "profile-saved"
-    return RedirectResponse(
-        "/admin/prompt-runtime/profiles/"
-        f"{profile.agent_runtime_profile_id}/edit?flash={flash}",
-        status_code=status.HTTP_303_SEE_OTHER,
+    return _redirect(
+        f"{REACT_GOVERNANCE_PATH}/profiles/"
+        f"{profile.agent_runtime_profile_id}/edit?flash={flash}"
     )
 
 

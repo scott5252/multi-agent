@@ -78,7 +78,7 @@ function toneFor(status: string): "info" | "success" | "warning" | "critical" {
     return "success";
   }
   if (
-    ["blocked", "denied", "failed", "failed_assertion", "contract_failure", "unavailable"].includes(
+    ["blocked", "denied", "failed", "failed_assertion", "contract_failure", "unavailable", "artifact_unavailable", "audit_unavailable", "redaction_unavailable"].includes(
       status,
     )
   ) {

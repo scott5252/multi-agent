@@ -716,9 +716,13 @@ def test_profile_api_completion_paths_cover_resolution_history_and_failures(
                 "agent_key": "coverage-platform-planner",
                 "agent_kind": "agent",
             },
+            follow_redirects=False,
         )
-        assert resolved_ui.status_code == 200
-        assert f"Resolved to {platform_profile_version_id}" in resolved_ui.text
+        assert resolved_ui.status_code == 303
+        assert resolved_ui.headers["location"].startswith(
+            "/admin/app/governance/profiles/resolve"
+        )
+        assert "agent_key=coverage-platform-planner" in resolved_ui.headers["location"]
 
         retired = client.post(
             "/admin/prompt-runtime/api/profiles/versions/"

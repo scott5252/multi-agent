@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from multi_agent_platform.api.schemas.admin_governance import (
+    GovernanceLegacyRouteMapping,
     GovernanceStatus,
     PolicyHistoryRecord,
     ProviderCredentialReference,
@@ -26,6 +27,28 @@ def test_governance_text_rejects_secret_and_payload_markers() -> None:
     ):
         with pytest.raises(ValueError):
             safe_governance_text(unsafe)
+
+
+def test_governance_legacy_route_mapping_allows_only_safe_admin_paths() -> None:
+    mapping = GovernanceLegacyRouteMapping(
+        legacy_path="/admin/prompt-runtime/prompts/{prompt_lineage_id}/preview",
+        react_path="/admin/app/governance/prompts/{prompt_lineage_id}/preview",
+        preserved_params=("tenant_id", "fixture_set_id"),
+        compatibility_status="redirected",
+        authorization_behavior="authenticated redirect with backend JSON denial",
+        evidence_summary="Legacy route redirects without rendering Jinja.",
+    )
+
+    assert mapping.react_path.startswith("/admin/app/governance")
+
+    with pytest.raises(ValidationError):
+        GovernanceLegacyRouteMapping(
+            legacy_path="/users/scott/secret.txt",
+            react_path="/admin/app/governance/prompts",
+            compatibility_status="redirected",
+            authorization_behavior="authenticated redirect",
+            evidence_summary="Unsafe local path rejected.",
+        )
 
 
 def test_provider_credential_reference_rejects_resolved_values() -> None:

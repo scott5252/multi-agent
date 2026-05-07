@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import json
 from typing import Annotated, Any, cast
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.agent_tests import (
     AgentTestAssertionResponse,
     AgentTestCaseCreateRequest,
@@ -23,16 +23,7 @@ from multi_agent_platform.api.schemas.agent_tests import (
     AgentTestSuiteUpdateRequest,
     PublishGateEvaluateRequest,
 )
-from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    is_platform_admin,
-)
-from multi_agent_platform.api.ui.agent_tests import (
-    AgentTestIndexPage,
-    AgentTestRunPage,
-    AgentTestSuitePage,
-    redaction_notice,
-)
+from multi_agent_platform.api.ui.admin_console import is_platform_admin
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.db.models.agent_tests import (
@@ -267,89 +258,39 @@ async def evaluate_agent_test_publish_gate(
     )
 
 
-@router.get("/ui", response_class=HTMLResponse)
+@router.get("/ui", response_model=None)
 async def agent_test_bench_index(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-) -> HTMLResponse:
-    shell = await build_shell_for_request(
-        request=request,
+) -> RedirectResponse:
+    _ = request, session
+    return _react_redirect(
         principal=principal,
-        session=session,
-        title="Agent Tests",
-        breadcrumbs=(
-            BreadcrumbItem(label="Agent Tests", href="/admin/agent-tests/ui"),
-        ),
-    )
-    repository = AgentTestRepository(session)
-    suites: list[AgentTestSuiteResponse] = []
-    if shell.active_scope.tenant_id is not None:
-        suites = [
-            await _suite_response(repository, suite)
-            for suite in await repository.list_suites_for_tenant(
-                tenant_id=shell.active_scope.tenant_id
-            )
-        ]
-    page = AgentTestIndexPage(
-        suites=suites,
-        tenant_id=str(shell.active_scope.tenant_id)
-        if shell.active_scope.tenant_id
-        else None,
-    )
-    return cast(
-        HTMLResponse,
-        request.app.state.container.workflow_ui_templates.TemplateResponse(
-            request,
-            "agent_tests/index.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": page,
-                "redaction_notice": redaction_notice(),
-            },
-        ),
+        request=request,
     )
 
 
-@router.get("/ui/suites/new", response_class=HTMLResponse)
+@router.get("/ui/suites/new", response_model=None)
 async def new_agent_test_suite_form(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-) -> HTMLResponse:
-    shell = await build_shell_for_request(
-        request=request,
+) -> RedirectResponse:
+    _ = session
+    return _react_redirect(
         principal=principal,
-        session=session,
-        title="Create Agent Test Suite",
-        breadcrumbs=(
-            BreadcrumbItem(label="Agent Tests", href="/admin/agent-tests/ui"),
-            BreadcrumbItem(label="Create", href="/admin/agent-tests/ui/suites/new"),
-        ),
-    )
-    return cast(
-        HTMLResponse,
-        request.app.state.container.workflow_ui_templates.TemplateResponse(
-            request,
-            "agent_tests/suite_form.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "suite": None,
-                "tenant_id": shell.active_scope.tenant_id,
-                "errors": [],
-            },
-        ),
+        request=request,
+        extra={"mode": "create-suite"},
     )
 
 
-@router.post("/ui/suites", response_class=HTMLResponse, response_model=None)
+@router.post("/ui/suites", response_model=None)
 async def create_agent_test_suite_from_form(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-) -> HTMLResponse | RedirectResponse:
+) -> RedirectResponse:
     form = await request.form()
     tenant_id = _form_tenant_id(form.get("tenant_id"), principal)
     _ensure_tenant_access(principal, tenant_id)
@@ -369,71 +310,36 @@ async def create_agent_test_suite_from_form(
         actor_principal_id=principal.principal_id,
     )
     return RedirectResponse(
-        f"/admin/agent-tests/ui/suites/{suite.agent_test_suite_id}",
+        _react_test_bench_href(
+            tenant_id=suite.tenant_id,
+            extra={
+                "suite_id": suite.agent_test_suite_id,
+                "mutation": "created",
+            },
+        ),
         status_code=SEE_OTHER,
     )
 
 
-@router.get("/ui/suites/{suite_id}", response_class=HTMLResponse)
+@router.get("/ui/suites/{suite_id}", response_model=None)
 async def agent_test_suite_detail(
     suite_id: UUID,
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-) -> HTMLResponse:
+) -> RedirectResponse:
     repository = AgentTestRepository(session)
     suite = await _require_suite_for_principal(repository, suite_id, principal)
-    shell = await build_shell_for_request(
-        request=request,
+    return _react_redirect(
         principal=principal,
-        session=session,
-        title=suite.name,
-        breadcrumbs=(
-            BreadcrumbItem(label="Agent Tests", href="/admin/agent-tests/ui"),
-            BreadcrumbItem(
-                label=suite.name,
-                href=f"/admin/agent-tests/ui/suites/{suite_id}",
-            ),
-        ),
-    )
-    cases = [
-        await _case_response(repository, case)
-        for case in await repository.list_cases_for_suite(suite_id)
-    ]
-    runs = await repository.list_runs_for_suite(
-        suite_id=suite_id, tenant_id=suite.tenant_id
-    )
-    gate_summary = await AgentTestBenchService(repository).evidence_summary(
+        request=request,
         tenant_id=suite.tenant_id,
-        target_type=suite.target_type.value,
-        target_id=suite.target_id,
-        target_version=suite.target_version,
-    )
-    page = AgentTestSuitePage(
-        title=suite.name,
-        suite=await _suite_response(repository, suite),
-        cases=[case.model_dump(mode="json") for case in cases],
-        runs=[await _run_response(repository, run) for run in runs],
-        gate_status=gate_summary.model_dump(mode="json"),
-    )
-    return cast(
-        HTMLResponse,
-        request.app.state.container.workflow_ui_templates.TemplateResponse(
-            request,
-            "agent_tests/suite_detail.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": page,
-                "redaction_notice": redaction_notice(),
-            },
-        ),
+        extra={"suite_id": suite_id},
     )
 
 
 @router.post(
     "/ui/suites/{suite_id}/cases",
-    response_class=HTMLResponse,
     response_model=None,
 )
 async def create_agent_test_case_from_form(
@@ -460,14 +366,19 @@ async def create_agent_test_case_from_form(
         actor_principal_id=principal.principal_id,
     )
     return RedirectResponse(
-        f"/admin/agent-tests/ui/suites/{suite_id}",
+        _react_test_bench_href(
+            tenant_id=suite.tenant_id,
+            extra={
+                "suite_id": suite_id,
+                "mutation": "case-created",
+            },
+        ),
         status_code=SEE_OTHER,
     )
 
 
 @router.post(
     "/ui/suites/{suite_id}/runs",
-    response_class=HTMLResponse,
     response_model=None,
 )
 async def create_agent_test_run_from_form(
@@ -491,49 +402,34 @@ async def create_agent_test_run_from_form(
         or None,
     )
     return RedirectResponse(
-        f"/admin/agent-tests/ui/runs/{run.agent_test_run_id}",
+        _react_test_bench_href(
+            tenant_id=suite.tenant_id,
+            extra={
+                "run_id": run.agent_test_run_id,
+                "mutation": "run-launched",
+            },
+        ),
         status_code=SEE_OTHER,
     )
 
 
-@router.get("/ui/runs/{run_id}", response_class=HTMLResponse)
+@router.get("/ui/runs/{run_id}", response_model=None)
 async def agent_test_run_detail(
     run_id: UUID,
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-) -> HTMLResponse:
+) -> RedirectResponse:
     repository = AgentTestRepository(session)
     run = await repository.get_run(run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="run not found")
     _ensure_tenant_access(principal, run.tenant_id)
-    page = AgentTestRunPage(
-        title="Agent Test Run",
-        run=await _run_response(repository, run),
-    )
-    shell = await build_shell_for_request(
-        request=request,
+    return _react_redirect(
         principal=principal,
-        session=session,
-        title="Agent Test Run",
-        breadcrumbs=(
-            BreadcrumbItem(label="Agent Tests", href="/admin/agent-tests/ui"),
-            BreadcrumbItem(label="Run", href=f"/admin/agent-tests/ui/runs/{run_id}"),
-        ),
-    )
-    return cast(
-        HTMLResponse,
-        request.app.state.container.workflow_ui_templates.TemplateResponse(
-            request,
-            "agent_tests/run_detail.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": page,
-                "redaction_notice": redaction_notice(),
-            },
-        ),
+        request=request,
+        tenant_id=run.tenant_id,
+        extra={"run_id": run_id},
     )
 
 
@@ -554,6 +450,56 @@ def _ensure_tenant_access(principal: PrincipalContext, tenant_id: UUID) -> None:
         return
     if principal.tenant_id != tenant_id or "tenant_admin" not in principal.role_codes:
         raise HTTPException(status_code=403, detail="agent test access denied")
+
+
+def _react_redirect(
+    *,
+    principal: PrincipalContext,
+    request: Request,
+    tenant_id: UUID | None = None,
+    extra: dict[str, object] | None = None,
+) -> RedirectResponse:
+    return RedirectResponse(
+        _react_test_bench_href(
+            tenant_id=_redirect_tenant_id(principal=principal, request=request)
+            if tenant_id is None
+            else tenant_id,
+            extra=extra,
+        ),
+        status_code=SEE_OTHER,
+    )
+
+
+def _redirect_tenant_id(
+    *,
+    principal: PrincipalContext,
+    request: Request,
+) -> UUID | None:
+    query_tenant_id = request.query_params.get("tenant_id")
+    if query_tenant_id:
+        try:
+            tenant_id = UUID(query_tenant_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="invalid tenant_id") from exc
+        _ensure_tenant_access(principal, tenant_id)
+        return tenant_id
+    return principal.tenant_id
+
+
+def _react_test_bench_href(
+    *,
+    tenant_id: UUID | None,
+    extra: dict[str, object] | None = None,
+) -> str:
+    query: dict[str, str] = {}
+    if tenant_id is not None:
+        query["tenant_id"] = str(tenant_id)
+    for key, value in (extra or {}).items():
+        if value is not None:
+            query[key] = str(value)
+    if not query:
+        return "/admin/app/test-bench"
+    return f"/admin/app/test-bench?{urlencode(query)}"
 
 
 def _form_tenant_id(value: object, principal: PrincipalContext) -> UUID:

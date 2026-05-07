@@ -19,11 +19,14 @@ import { WorkflowGraphPanel } from "./WorkflowGraphPanel";
 import { WorkflowJsonInspector } from "./WorkflowJsonInspector";
 import { WorkflowPublishPanel } from "./WorkflowPublishPanel";
 import { WorkflowReferencePicker } from "./WorkflowReferencePicker";
+import { WorkflowCreatePage } from "./WorkflowCreatePage";
+import { WorkflowRegistryPage } from "./WorkflowRegistryPage";
 import { WorkflowRevisionPanel } from "./WorkflowRevisionPanel";
 import {
   WorkflowSectionForm,
   type WorkflowDraftFormValues,
 } from "./WorkflowSectionForm";
+import { WorkflowSharingPanel } from "./WorkflowSharingPanel";
 import { WorkflowValidationPanel } from "./WorkflowValidationPanel";
 
 interface WorkflowBuilderPageProps {
@@ -247,6 +250,8 @@ export function WorkflowBuilderPage({
         <p>{envelope.description}</p>
       </section>
       {loadError ? <p className="safe-error">{loadError}</p> : null}
+      <WorkflowRegistryPage registry={envelope.registry} />
+      <WorkflowCreatePage createState={envelope.create_state} />
       <WorkflowSectionForm
         dirty={dirty}
         draft={envelope.draft}
@@ -286,10 +291,24 @@ export function WorkflowBuilderPage({
         publishing={publishing}
         readiness={publishReadiness}
       />
+      <WorkflowSharingPanel sharing={envelope.sharing} />
       <div className="workflow-review-grid">
         <WorkflowRevisionPanel revisions={envelope.revisions} />
         <WorkflowJsonInspector inspector={envelope.json_inspector} />
       </div>
+      <section className="workflow-version-panel" aria-labelledby="version-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Published version</p>
+            <h2 id="version-title">{envelope.version_detail.display_name}</h2>
+          </div>
+        </div>
+        <p>{envelope.version_detail.summary}</p>
+        <small>
+          {envelope.version_detail.display_version} /{" "}
+          {envelope.version_detail.digest_label}
+        </small>
+      </section>
     </div>
   );
 }

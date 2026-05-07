@@ -96,10 +96,10 @@ export const bootstrapFixture: ReactAdminBootstrap = {
     saved_filters: [],
     notifications: [
       {
-        notification_id: "jinja-fallbacks-active",
+        notification_id: "react-only-links-active",
         tone: "info",
-        title: "Existing pages remain active",
-        summary: "Domain pages still open through the authorized console.",
+        title: "React browser UI active",
+        summary: "Older browser links use safe React redirects.",
         href: "/admin",
       },
     ],

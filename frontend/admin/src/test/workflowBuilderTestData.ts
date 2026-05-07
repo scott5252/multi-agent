@@ -43,7 +43,7 @@ export const workflowReferenceCatalog: WorkflowReferenceCatalog = {
   ],
   skill_options: [
     {
-      href: "/admin/skill-registry/ui/installations",
+      href: "/admin/app/skills/installations",
       kind: "skill",
       label: "Weather connector skill",
       readiness_status: "ready",
@@ -55,7 +55,7 @@ export const workflowReferenceCatalog: WorkflowReferenceCatalog = {
   ],
   subworkflow_options: [
     {
-      href: "/admin/workflows/ui",
+      href: "/admin/app/workflows",
       kind: "subworkflow",
       label: "Weather enrichment subworkflow",
       readiness_status: "ready",
@@ -127,6 +127,34 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
   ],
   description:
     "Guided workflow drafting with backend validation, graph review, required evidence, and publish gates.",
+  create_state: {
+    create_action: {
+      action_id: "workflow-create-submit",
+      action_token: null,
+      confirmation: null,
+      disabled_reason: null,
+      enabled: true,
+      href: "/admin/workflows",
+      label: "Create draft",
+      method: "post",
+      requires_confirmation: false,
+      requires_idempotency_key: false,
+      variant: "primary",
+    },
+    page_id: "workflow-create-react",
+    summary:
+      "Start from a minimal ready workflow or a blocked-readiness fixture that exercises publish gates.",
+    templates: [
+      {
+        href: "/admin/app/workflows/new?template=minimal_ready",
+        label: "Minimal ready workflow",
+        summary: "Creates a small workflow with a terminal node.",
+        template_id: "minimal_ready",
+        workflow_kind: "main_workflow",
+      },
+    ],
+    title: "Create workflow",
+  },
   draft: {
     description: "Prepare a safe daily intelligence briefing for a tenant.",
     graph: {
@@ -226,6 +254,80 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
     workflow_draft_id: "00000000-0000-0000-0000-000000000030",
     workflow_lineage_id: "11111111-1111-1111-1111-000000000030",
   },
+  legacy_routes: [
+    {
+      authorization_behavior: "Backend authorization before redirect.",
+      compatibility_response: null,
+      evidence_references: ["tests/integration/api/test_admin_workflow_ui.py"],
+      inventory_item_id: "workflow-registry-index",
+      legacy_path: "/admin/workflows/ui",
+      methods: ["GET"],
+      preserved_parameters: ["tenant_id", "scope_filter", "status", "q"],
+      react_path: "/admin/app/workflows",
+      redirect_status: "303",
+      retirement_outcome: "redirected",
+    },
+  ],
+  registry: {
+    create_action: {
+      action_id: "workflow-create",
+      action_token: null,
+      confirmation: null,
+      disabled_reason: null,
+      enabled: true,
+      href: "/admin/app/workflows/new",
+      label: "Create workflow",
+      method: "get",
+      requires_confirmation: false,
+      requires_idempotency_key: false,
+      variant: "primary",
+    },
+    filters: {
+      scope_filter: "active",
+      sort: "updated",
+      status: "all",
+    },
+    items: [
+      {
+        actions: [
+          {
+            action_id: "open-draft",
+            action_token: null,
+            confirmation: null,
+            disabled_reason: null,
+            enabled: true,
+            href: "/admin/app/workflows/drafts/00000000-0000-0000-0000-000000000030",
+            label: "Open draft",
+            method: "get",
+            requires_confirmation: false,
+            requires_idempotency_key: false,
+            variant: "primary",
+          },
+        ],
+        href: "/admin/app/workflows/drafts/00000000-0000-0000-0000-000000000030",
+        name: "Daily briefing workflow",
+        owner_label: "Tenant Admin",
+        required_evidence_summary: "Required Daily briefing suite is stale.",
+        sharing_summary: "Visible to authorized workflow reviewers.",
+        status: "ready",
+        tenant_label: "Acme",
+        updated_at_label: "Current revision",
+        workflow_draft_id: "00000000-0000-0000-0000-000000000030",
+        workflow_kind: "main_workflow",
+        workflow_lineage_id: "11111111-1111-1111-1111-000000000030",
+        workflow_version_bundle_id: null,
+      },
+    ],
+    page_id: "workflow-registry-react",
+    scope: {
+      label: "Acme",
+      scope_type: "tenant",
+      tenant_id: "11111111-1111-1111-1111-111111111111",
+    },
+    summary:
+      "React workflow registry with draft, published version, required evidence, and sharing summaries.",
+    title: "Workflow registry",
+  },
   json_inspector: {
     artifact_reference_id: "artifact-ref-qa030-json-preview",
     collapsed_by_default: true,
@@ -282,6 +384,12 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
       summary: "Added weather branch and required join policy.",
     },
   ],
+  sharing: {
+    actions: [],
+    grants_label: "Tenant grant active",
+    status: "ready",
+    summary: "Sharing decisions are enforced by backend tenant grants.",
+  },
   scope: {
     label: "Acme",
     scope_type: "tenant",
@@ -338,6 +446,15 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
     status: "blocked",
     summary: "Validation found publish blockers that require review.",
     validation_id: "validation-qa030",
+  },
+  version_detail: {
+    digest_label: "Compiled bundle digest qa030",
+    display_name: "Daily briefing workflow",
+    display_version: "v1",
+    href: "/admin/app/workflows/versions/22222222-2222-2222-2222-000000000030",
+    summary:
+      "Published bundle pins workflow, prompt, profile, provider, skill, subworkflow, and evidence references.",
+    workflow_version_bundle_id: "22222222-2222-2222-2222-000000000030",
   },
 };
 

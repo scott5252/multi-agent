@@ -1,29 +1,20 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, cast
+from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.operations import (
     OperationsDashboardResponse,
     OperationsExportCreateRequest,
     OperationsExportResponse,
     OperationsLogResponse,
-)
-from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    CommonStateType,
-    build_common_state,
-)
-from multi_agent_platform.api.ui.operations import (
-    OperationsConsolePage,
-    operations_redaction_notice,
 )
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
@@ -41,6 +32,23 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 OptionalStringForm = Form(default=None)
 OptionalTenantForm = Form(default=None)
 LimitForm = Form(default=100)
+SEE_OTHER = status.HTTP_303_SEE_OTHER
+OPERATIONS_QUERY_KEYS = frozenset(
+    {
+        "trace_id",
+        "tenant_id",
+        "run_id",
+        "component",
+        "severity",
+        "status",
+        "dependency",
+        "start",
+        "end",
+        "limit",
+        "panel",
+        "saved_filter_id",
+    }
+)
 
 
 @router.get("/api/dashboard", response_model=OperationsDashboardResponse)
@@ -134,12 +142,11 @@ async def operations_export_api(
     )
 
 
-@router.get("", response_class=HTMLResponse, include_in_schema=False)
+@router.get("", response_model=None, include_in_schema=False)
 async def operations_console_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
     trace_id: str | None = None,
     tenant_id: UUID | None = None,
     run_id: UUID | None = None,
@@ -150,60 +157,22 @@ async def operations_console_page(
     start: datetime | None = None,
     end: datetime | None = None,
     limit: int = Query(default=100, ge=1, le=500),
-) -> HTMLResponse:
-    access_scope = _access_scope(principal)
-    filters = _filters_from_params(
-        trace_id=trace_id,
-        tenant_id=tenant_id,
-        run_id=run_id,
-        component=component,
-        severity=severity,
-        status=status_value,
-        dependency=dependency,
-        start=start,
-        end=end,
-        limit=limit,
+) -> RedirectResponse:
+    _ = (
+        principal,
+        session,
+        trace_id,
+        tenant_id,
+        run_id,
+        component,
+        severity,
+        status_value,
+        dependency,
+        start,
+        end,
+        limit,
     )
-    dashboard = await OperationsConsoleService(
-        session=session,
-        container=container,
-    ).dashboard(access_scope=access_scope, filters=filters)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Operations Console",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Operations Console", href="/admin/operations"),
-        ),
-        common_state=build_common_state(
-            CommonStateType.EMPTY,
-            title="No operational logs",
-            summary="No redacted operational events match the current filters.",
-            trace_id=principal.trace_id,
-        )
-        if not dashboard.logs
-        else None,
-    )
-    page = OperationsConsolePage(
-        dashboard=dashboard,
-        filters=filters,
-        can_export=access_scope.can_export,
-    )
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "operations/index.html",
-            {
-                "shell": shell,
-                "principal": principal,
-                "page": page,
-                "redaction_notice": operations_redaction_notice(),
-            },
-        ),
-    )
+    return _react_redirect(request, "/admin/app/operations")
 
 
 @router.post(
@@ -287,3 +256,22 @@ def _filters_from_params(**kwargs: object) -> OperationsLogFilters:
     return OperationsLogFilters.model_validate(
         {key: value for key, value in kwargs.items() if value is not None}
     )
+
+
+def _react_redirect(
+    request: Request,
+    destination: str,
+    *,
+    extra: dict[str, object] | None = None,
+) -> RedirectResponse:
+    query: dict[str, str] = {
+        key: value
+        for key, value in request.query_params.items()
+        if key in OPERATIONS_QUERY_KEYS and value
+    }
+    if extra:
+        for key, value in extra.items():
+            if value is not None:
+                query[key] = str(value)
+    suffix = f"?{urlencode(query)}" if query else ""
+    return RedirectResponse(f"{destination}{suffix}", status_code=SEE_OTHER)

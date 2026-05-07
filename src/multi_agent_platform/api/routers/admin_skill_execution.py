@@ -4,13 +4,11 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
-from multi_agent_platform.api.ui.admin_console import BreadcrumbItem
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.skill_execution.adapters import DAILY_BRIEFING_TOOL_NAMES
@@ -25,6 +23,8 @@ router = APIRouter(prefix="/admin/skill-execution", tags=["skill-execution"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 DEFAULT_QA_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
+SEE_OTHER = 303
+REACT_SKILLS_PATH = "/admin/app/skills"
 
 
 class SkillToolDiagnosticsResponse(BaseModel):
@@ -88,38 +88,13 @@ async def skill_tool_diagnostics_page(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    tenant_id = _tenant_id_for_request(request, principal)
-    gateway = _gateway_for_tenant(tenant_id)
-    results = await gateway.run_mock_diagnostics(
-        tenant_id=tenant_id,
-        actor_id=principal.principal_id,
-    )
-    records = gateway.diagnostic_records()
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Skill Tool Diagnostics",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(
-                label="Skill Tool Diagnostics",
-                href="/admin/skill-execution/ui/diagnostics",
-            ),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "skill_execution/diagnostics.html",
-        {
-            "principal": principal,
-            "shell": shell,
-            "tenant_id": tenant_id,
-            "records": records,
-            "results": results,
-        },
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    query = request.url.query
+    target = f"{REACT_SKILLS_PATH}/diagnostics"
+    if query:
+        target = f"{target}?{query}"
+    return RedirectResponse(target, status_code=SEE_OTHER)
 
 
 def _tenant_id_for_request(request: Request, principal: PrincipalContext) -> UUID:

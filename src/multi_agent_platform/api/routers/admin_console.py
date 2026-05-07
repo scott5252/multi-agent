@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import html
 import json
 from collections.abc import Sequence
-from typing import Annotated, cast
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
@@ -215,22 +216,43 @@ async def render_admin_error(
             request_path=request.url.path,
         ),
     )
-    response = container.workflow_ui_templates.TemplateResponse(
-        request,
-        "admin_shell/unavailable.html",
-        {"shell": shell, "state": state, "principal": principal},
+    title_text = html.escape(state.title)
+    summary_text = html.escape(state.summary)
+    trace_text = html.escape(principal.trace_id)
+    body = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{title_text}</title>
+  </head>
+  <body>
+    <main style="font-family: system-ui, sans-serif; padding: 2rem;">
+      <p style="font-weight: 700; text-transform: uppercase;">
+        Admin
+      </p>
+      <h1>{title_text}</h1>
+      <p>{summary_text}</p>
+      <p>Trace: <code>{trace_text}</code></p>
+      <p><a href="/admin/app">Open React admin</a></p>
+    </main>
+  </body>
+</html>
+"""
+    return HTMLResponse(
+        body,
         status_code=status_code,
+        headers={"X-Admin-Shell-Response": "non-jinja"},
     )
-    return cast(HTMLResponse, response)
 
 
-@router.get("/admin", response_class=HTMLResponse)
+@router.get("/admin", response_model=None)
 async def admin_console_landing(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
+) -> RedirectResponse | HTMLResponse:
     try:
         shell = await build_shell_for_request(
             request=request,
@@ -249,11 +271,8 @@ async def admin_console_landing(
             summary="The admin console could not be opened for this scope.",
             reason=exc.reason_category,
         )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "admin_shell/index.html",
-        {"shell": shell, "principal": principal},
-    )
+    redirect_to = with_scope_query("/admin/app", shell.active_scope)
+    return RedirectResponse(redirect_to, status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/admin/scope", response_class=HTMLResponse, response_model=None)
@@ -309,20 +328,19 @@ async def admin_console_scope(
             reason="audit_unavailable",
         )
     redirect_to = with_scope_query(
-        safe_redirect_target(next, fallback="/admin"),
+        safe_redirect_target(next, fallback="/admin/app"),
         selected_scope,
     )
     return RedirectResponse(redirect_to, status_code=status.HTTP_303_SEE_OTHER)
 
 
-@router.get("/admin/filters/{admin_area}", response_class=HTMLResponse)
-async def list_saved_filters(
+@router.get("/admin/filters/{admin_area}.json")
+async def saved_filters_envelope(
     admin_area: str,
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
-    container: ContainerDep,
-) -> HTMLResponse:
+) -> dict[str, object]:
     if admin_area not in filter_profiles():
         raise HTTPException(status_code=404, detail="unsupported admin area")
     active_scope = await resolve_scope_for_request(
@@ -339,21 +357,59 @@ async def list_saved_filters(
         build_saved_filter_summary(record, active_scope=active_scope)
         for record in records
     )
-    shell = await build_shell_for_request(
+    return {
+        "admin_area": admin_area,
+        "active_scope": {
+            "scope_type": active_scope.scope_type,
+            "tenant_id": str(active_scope.tenant_id)
+            if active_scope.tenant_id is not None
+            else None,
+            "label": sanitize_text(active_scope.label, fallback="Scope"),
+        },
+        "saved_filters": [
+            {
+                "filter_id": str(saved_filter.filter_id),
+                "display_name": saved_filter.display_name,
+                "admin_area": saved_filter.admin_area,
+                "filter_key": saved_filter.filter_key,
+                "safe_summary": saved_filter.safe_summary,
+                "restore_href": saved_filter.restore_href,
+                "delete_href": saved_filter.delete_href,
+                "last_restored_at": saved_filter.last_restored_at,
+            }
+            for saved_filter in saved_filters
+        ],
+        "actions": {
+            "save_url": with_scope_query(
+                f"/admin/filters/{admin_area}",
+                active_scope,
+            ),
+            "return_url": with_scope_query(
+                f"/admin/app/saved-filters/{admin_area}",
+                active_scope,
+            ),
+        },
+    }
+
+
+@router.get("/admin/filters/{admin_area}", response_model=None)
+async def list_saved_filters(
+    admin_area: str,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> RedirectResponse:
+    if admin_area not in filter_profiles():
+        raise HTTPException(status_code=404, detail="unsupported admin area")
+    active_scope = await resolve_scope_for_request(
         request=request,
         principal=principal,
         session=session,
-        title="Saved Filters",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Saved Filters", href=request.url.path),
-        ),
-        saved_filters=saved_filters,
     )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "admin_shell/saved_filters_page.html",
-        {"shell": shell, "principal": principal, "admin_area": admin_area},
+    return RedirectResponse(
+        with_scope_query(f"/admin/app/saved-filters/{admin_area}", active_scope),
+        status_code=status.HTTP_303_SEE_OTHER,
     )
 
 

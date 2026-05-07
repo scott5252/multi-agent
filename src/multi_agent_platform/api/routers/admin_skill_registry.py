@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Annotated, Any, cast
-from urllib.parse import urlencode
+from typing import Annotated, Any
+from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -18,7 +18,6 @@ from multi_agent_platform.admin.skill_registry.service import (
     SkillRegistryServiceError,
 )
 from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.skill_registry import (
     BindingEligibilityResponse,
     ConfigureCredentialsRequest,
@@ -33,12 +32,6 @@ from multi_agent_platform.api.schemas.skill_registry import (
     SkillVersionValidationResponse,
     TenantAvailabilityGrantRequest,
 )
-from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    CommonStateType,
-    PageAction,
-    build_common_state,
-)
 from multi_agent_platform.api.ui.skill_registry import (
     BindingEligibilityPreviewForm,
     BrowserFormError,
@@ -48,12 +41,7 @@ from multi_agent_platform.api.ui.skill_registry import (
     SkillPackageCreateForm,
     SmokeTestActionForm,
     TenantGrantForm,
-    build_installation_detail_page,
-    build_installation_list_page,
-    build_package_detail_page,
-    build_package_list_page,
     build_revision_conflict_view,
-    build_version_detail_page,
 )
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
@@ -63,6 +51,7 @@ PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 _SERVICE = SkillRegistryService()
 SEE_OTHER = status.HTTP_303_SEE_OTHER
+REACT_SKILLS_PATH = "/admin/app/skills"
 
 
 def get_skill_registry_service() -> SkillRegistryService:
@@ -72,6 +61,16 @@ def get_skill_registry_service() -> SkillRegistryService:
 def reset_skill_registry_service() -> None:
     global _SERVICE
     _SERVICE = SkillRegistryService()
+
+
+def _quote_path(value: str) -> str:
+    return quote(value, safe="")
+
+
+def _react_redirect(request: Request, path: str) -> RedirectResponse:
+    query = request.url.query
+    target = f"{path}?{query}" if query else path
+    return RedirectResponse(target, status_code=SEE_OTHER)
 
 
 @router.post("/packages", response_model=SkillPackageResponse)
@@ -272,28 +271,9 @@ async def skill_registry_package_list_page(
     session: SessionDep,
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> HTMLResponse:
-    page = build_package_list_page(
-        list(service.packages.values()),
-        platform_admin="platform_admin" in principal.role_codes,
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(
-                label="Skill Registry", href="/admin/skill-registry/ui/packages"
-            ),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "skill_registry/package_list.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session, container, service
+    return _react_redirect(request, f"{REACT_SKILLS_PATH}/packages")
 
 
 @router.get("/ui/packages/new", response_class=HTMLResponse, include_in_schema=False)
@@ -302,23 +282,9 @@ async def skill_registry_package_create_page(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    page: dict[str, Any] = {
-        "title": "Create Skill Package",
-        "redaction_notice": _redaction_notice(),
-        "errors": (),
-    }
-    shell = await _skill_registry_shell(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page["title"],
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "skill_registry/package_create.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_redirect(request, f"{REACT_SKILLS_PATH}/packages/new")
 
 
 async def _render_package_create_form(
@@ -327,29 +293,18 @@ async def _render_package_create_form(
     principal: PrincipalContext,
     session: AsyncSession,
     container: Any,
-    errors: tuple[object, ...],
+    errors: tuple[BrowserFormError, ...],
     values: object | None = None,
-) -> HTMLResponse:
-    page: dict[str, Any] = {
-        "title": "Create Skill Package",
-        "redaction_notice": _redaction_notice(),
-        "errors": errors,
-        "values": values,
-    }
-    shell = await _skill_registry_shell(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page["title"],
-    )
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "skill_registry/package_create.html",
-            {"page": page, "principal": principal, "shell": shell},
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        ),
+) -> Response:
+    _ = request, principal, session, container, values
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail={
+            "category": "skill_package_form_invalid",
+            "errors": [
+                {"field": error.field, "message": error.message} for error in errors
+            ],
+        },
     )
 
 
@@ -399,7 +354,8 @@ async def skill_registry_package_create_submit(
             )
         raise _http_error(exc) from exc
     return RedirectResponse(
-        f"/admin/skill-registry/ui/packages/{package.slug}", status_code=SEE_OTHER
+        f"{REACT_SKILLS_PATH}/packages/{_quote_path(package.slug)}",
+        status_code=SEE_OTHER,
     )
 
 
@@ -415,20 +371,11 @@ async def skill_registry_package_candidate_page(
     session: SessionDep,
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> HTMLResponse:
-    _ = principal
-    page = _candidate_page(slug, service)
-    shell = await _skill_registry_shell(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page["title"],
-        package_slug=slug,
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session, container, service
+    return _react_redirect(
         request,
-        "skill_registry/package_candidate_form.html",
-        {"page": page, "principal": principal, "shell": shell},
+        f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/candidate",
     )
 
 
@@ -441,24 +388,16 @@ async def _render_candidate_form(
     container: Any,
     service: SkillRegistryService,
     errors: tuple[BrowserFormError, ...],
-) -> HTMLResponse:
-    page = _candidate_page(slug, service)
-    page["errors"] = errors
-    shell = await _skill_registry_shell(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page["title"],
-        package_slug=slug,
-    )
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "skill_registry/package_candidate_form.html",
-            {"page": page, "principal": principal, "shell": shell},
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        ),
+) -> Response:
+    _ = slug, request, principal, session, container, service
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail={
+            "category": "skill_candidate_form_invalid",
+            "errors": [
+                {"field": error.field, "message": error.message} for error in errors
+            ],
+        },
     )
 
 
@@ -502,7 +441,8 @@ async def skill_registry_package_candidate_submit(
     except SkillRegistryServiceError as exc:
         raise _http_error(exc) from exc
     return RedirectResponse(
-        f"/admin/skill-registry/ui/packages/{slug}/candidate", status_code=SEE_OTHER
+        f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/candidate",
+        status_code=SEE_OTHER,
     )
 
 
@@ -533,15 +473,16 @@ async def skill_registry_package_candidate_validate_submit(
                 resource_id=slug,
                 submitted_revision=revision_token,
                 current_revision=candidate.revision_token if candidate else None,
-                reload_url=f"/admin/skill-registry/ui/packages/{slug}/candidate",
+                reload_url=f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/candidate",
             )
             return RedirectResponse(
-                f"/admin/skill-registry/ui/packages/{slug}/candidate?conflict=stale",
+                f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/candidate?conflict=stale",
                 status_code=SEE_OTHER,
             )
         raise _http_error(exc) from exc
     return RedirectResponse(
-        f"/admin/skill-registry/ui/packages/{slug}/candidate", status_code=SEE_OTHER
+        f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/candidate",
+        status_code=SEE_OTHER,
     )
 
 
@@ -567,14 +508,14 @@ async def skill_registry_package_candidate_publish_submit(
     except SkillRegistryServiceError as exc:
         if exc.category == "stale_revision":
             return RedirectResponse(
-                f"/admin/skill-registry/ui/packages/{slug}/candidate?conflict=stale",
+                f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/candidate?conflict=stale",
                 status_code=SEE_OTHER,
             )
         raise _http_error(exc) from exc
     return RedirectResponse(
         (
-            f"/admin/skill-registry/ui/packages/{slug}/versions/"
-            f"{version.semantic_version}"
+            f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/versions/"
+            f"{_quote_path(version.semantic_version)}"
         ),
         status_code=SEE_OTHER,
     )
@@ -592,31 +533,9 @@ async def skill_registry_package_detail_page(
     session: SessionDep,
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> HTMLResponse:
-    package = service.packages.get(slug)
-    if package is None:
-        raise HTTPException(status_code=404, detail="skill package not found")
-    page = build_package_detail_page(package)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(
-                label="Skill Registry", href="/admin/skill-registry/ui/packages"
-            ),
-            BreadcrumbItem(
-                label=slug, href=f"/admin/skill-registry/ui/packages/{slug}"
-            ),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "skill_registry/package_detail.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session, container, service
+    return _react_redirect(request, f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}")
 
 
 @router.get(
@@ -632,32 +551,14 @@ async def skill_registry_package_version_page(
     session: SessionDep,
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> HTMLResponse:
-    _ = principal
-    package = service.packages.get(slug)
-    if package is None or semantic_version not in package.versions:
-        raise HTTPException(status_code=404, detail="skill package version not found")
-    version = package.versions[semantic_version]
-    page = build_version_detail_page(version)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(
-                label="Skill Registry", href="/admin/skill-registry/ui/packages"
-            ),
-            BreadcrumbItem(
-                label=slug, href=f"/admin/skill-registry/ui/packages/{slug}"
-            ),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session, container, service
+    return _react_redirect(
         request,
-        "skill_registry/package_version_detail.html",
-        {"page": page, "principal": principal, "shell": shell},
+        (
+            f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/versions/"
+            f"{_quote_path(semantic_version)}"
+        ),
     )
 
 
@@ -674,28 +575,14 @@ async def skill_registry_tenant_grant_page(
     session: SessionDep,
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> HTMLResponse:
-    _ = principal
-    package = service.packages.get(slug)
-    if package is None or semantic_version not in package.versions:
-        raise HTTPException(status_code=404, detail="skill package version not found")
-    version = package.versions[semantic_version]
-    page: dict[str, Any] = {
-        "title": f"Tenant Grants: {slug} {semantic_version}",
-        "redaction_notice": _redaction_notice(),
-        "version": _version_response(version).model_dump(),
-    }
-    shell = await _skill_registry_shell(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page["title"],
-        package_slug=slug,
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session, container, service
+    return _react_redirect(
         request,
-        "skill_registry/tenant_grant_form.html",
-        {"page": page, "principal": principal, "shell": shell},
+        (
+            f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/versions/"
+            f"{_quote_path(semantic_version)}/grants"
+        ),
     )
 
 
@@ -726,7 +613,11 @@ async def skill_registry_tenant_grant_submit(
     except SkillRegistryServiceError as exc:
         raise _http_error(exc) from exc
     return RedirectResponse(
-        f"/admin/skill-registry/ui/packages/{slug}", status_code=SEE_OTHER
+        (
+            f"{REACT_SKILLS_PATH}/packages/{_quote_path(slug)}/versions/"
+            f"{_quote_path(semantic_version)}/grants"
+        ),
+        status_code=SEE_OTHER,
     )
 
 
@@ -742,28 +633,10 @@ async def skill_registry_available_versions_page(
     session: SessionDep,
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> HTMLResponse:
+) -> RedirectResponse:
     _ensure_tenant_access(principal, tenant_id)
-    page: dict[str, Any] = {
-        "title": "Available Skills",
-        "tenant_id": tenant_id,
-        "versions": [
-            _version_response(version).model_dump()
-            for version in service.list_available_versions(tenant_id=tenant_id)
-        ],
-        "redaction_notice": _redaction_notice(),
-    }
-    shell = await _skill_registry_shell(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page["title"],
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "skill_registry/available_versions.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+    _ = session, container, service
+    return _react_redirect(request, f"{REACT_SKILLS_PATH}/available-versions")
 
 
 @router.post(
@@ -792,7 +665,10 @@ async def skill_registry_installation_submit(
     except SkillRegistryServiceError as exc:
         raise _http_error(exc) from exc
     return RedirectResponse(
-        f"/admin/skill-registry/ui/installations/{installation.installation_id}",
+        (
+            f"{REACT_SKILLS_PATH}/installations/"
+            f"{_quote_path(installation.installation_id)}"
+        ),
         status_code=SEE_OTHER,
     )
 
@@ -809,32 +685,10 @@ async def skill_registry_installation_list_page(
     session: SessionDep,
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> HTMLResponse:
+) -> RedirectResponse:
     _ensure_tenant_access(principal, tenant_id)
-    installations = [
-        installation
-        for installation in service.installations.values()
-        if installation.tenant_id == tenant_id
-    ]
-    page = build_installation_list_page(installations, tenant_id=tenant_id)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(
-                label="Installed Skills",
-                href="/admin/skill-registry/ui/installations",
-            ),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "skill_registry/installation_list.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+    _ = session, container, service
+    return _react_redirect(request, f"{REACT_SKILLS_PATH}/installations")
 
 
 @router.get(
@@ -849,36 +703,11 @@ async def skill_registry_installation_detail_page(
     session: SessionDep,
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> HTMLResponse:
-    try:
-        installation = _installation_for_principal(service, installation_id, principal)
-    except HTTPException as exc:
-        if exc.detail == "cross_tenant":
-            return await _render_installation_unavailable(
-                request=request,
-                principal=principal,
-                session=session,
-                container=container,
-            )
-        raise
-    page = build_installation_detail_page(installation)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(
-                label="Installed Skills",
-                href="/admin/skill-registry/ui/installations",
-            ),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session, container, service
+    return _react_redirect(
         request,
-        "skill_registry/installation_detail.html",
-        {"page": page, "principal": principal, "shell": shell},
+        f"{REACT_SKILLS_PATH}/installations/{_quote_path(installation_id)}",
     )
 
 
@@ -894,34 +723,14 @@ async def skill_registry_installation_credentials_page(
     session: SessionDep,
     container: ContainerDep,
     service: Annotated[SkillRegistryService, Depends(get_skill_registry_service)],
-) -> HTMLResponse:
-    try:
-        installation = _installation_for_principal(service, installation_id, principal)
-    except HTTPException as exc:
-        if exc.detail == "cross_tenant":
-            return await _render_installation_unavailable(
-                request=request,
-                principal=principal,
-                session=session,
-                container=container,
-            )
-        raise
-    page = build_installation_detail_page(installation)
-    context = {
-        "page": page,
-        "principal": principal,
-        "shell": await _skill_registry_shell(
-            request=request,
-            principal=principal,
-            session=session,
-            title="Configure Installed Skill",
-        ),
-        "conflict": request.query_params.get("conflict") == "stale",
-    }
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session, container, service
+    return _react_redirect(
         request,
-        "skill_registry/installation_configure.html",
-        context,
+        (
+            f"{REACT_SKILLS_PATH}/installations/"
+            f"{_quote_path(installation_id)}/credentials"
+        ),
     )
 
 
@@ -961,14 +770,17 @@ async def skill_registry_installation_credentials_submit(
         if exc.category == "stale_revision":
             return RedirectResponse(
                 (
-                    "/admin/skill-registry/ui/installations/"
-                    f"{installation_id}/credentials?conflict=stale"
+                    f"{REACT_SKILLS_PATH}/installations/"
+                    f"{_quote_path(installation_id)}/credentials?conflict=stale"
                 ),
                 status_code=SEE_OTHER,
             )
         raise _http_error(exc) from exc
     return RedirectResponse(
-        f"/admin/skill-registry/ui/installations/{installation.installation_id}",
+        (
+            f"{REACT_SKILLS_PATH}/installations/"
+            f"{_quote_path(installation.installation_id)}"
+        ),
         status_code=SEE_OTHER,
     )
 
@@ -995,12 +807,18 @@ async def skill_registry_installation_smoke_submit(
     except SkillRegistryServiceError as exc:
         if exc.category == "stale_revision":
             return RedirectResponse(
-                f"/admin/skill-registry/ui/installations/{installation_id}?conflict=stale",
+                (
+                    f"{REACT_SKILLS_PATH}/installations/"
+                    f"{_quote_path(installation_id)}?conflict=stale"
+                ),
                 status_code=SEE_OTHER,
             )
         raise _http_error(exc) from exc
     return RedirectResponse(
-        f"/admin/skill-registry/ui/installations/{installation.installation_id}",
+        (
+            f"{REACT_SKILLS_PATH}/installations/"
+            f"{_quote_path(installation.installation_id)}"
+        ),
         status_code=SEE_OTHER,
     )
 
@@ -1020,7 +838,10 @@ async def skill_registry_installation_eligibility_submit(
     form = BindingEligibilityPreviewForm.from_mapping(await request.form())
     if form.revision_token != installation.revision_token:
         return RedirectResponse(
-            f"/admin/skill-registry/ui/installations/{installation_id}?conflict=stale",
+            (
+                f"{REACT_SKILLS_PATH}/installations/"
+                f"{_quote_path(installation_id)}?conflict=stale"
+            ),
             status_code=SEE_OTHER,
         )
     try:
@@ -1040,7 +861,7 @@ async def skill_registry_installation_eligibility_submit(
         }
     )
     return RedirectResponse(
-        f"/admin/skill-registry/ui/installations/{installation_id}?{params}",
+        f"{REACT_SKILLS_PATH}/installations/{_quote_path(installation_id)}?{params}",
         status_code=SEE_OTHER,
     )
 
@@ -1185,80 +1006,6 @@ def _redaction_notice() -> str:
     )
 
 
-async def _render_installation_unavailable(
-    *,
-    request: Request,
-    principal: PrincipalContext,
-    session: AsyncSession,
-    container: Any,
-) -> HTMLResponse:
-    next_href = "/admin/skill-registry/ui/packages"
-    if principal.tenant_id is not None:
-        next_href = (
-            f"/admin/skill-registry/ui/installations?tenant_id={principal.tenant_id}"
-        )
-    state = build_common_state(
-        CommonStateType.NOT_FOUND,
-        title="Installed skill unavailable",
-        summary=(
-            "This installed skill is not available in your current tenant scope. "
-            "No records from another tenant were shown."
-        ),
-        trace_id=principal.trace_id,
-        next_actions=(PageAction(label="View Installed Skills", href=next_href),),
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Installed skill unavailable",
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Installed Skills", href=next_href),
-        ),
-        common_state=state,
-    )
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "admin_shell/unavailable.html",
-            {"shell": shell, "state": state, "principal": principal},
-            status_code=status.HTTP_404_NOT_FOUND,
-        ),
-    )
-
-
-async def _skill_registry_shell(
-    *,
-    request: Request,
-    principal: PrincipalContext,
-    session: AsyncSession,
-    title: str,
-    package_slug: str | None = None,
-) -> object:
-    breadcrumbs = [
-        BreadcrumbItem(label="Admin", href="/admin"),
-        BreadcrumbItem(
-            label="Skill Registry", href="/admin/skill-registry/ui/packages"
-        ),
-    ]
-    if package_slug:
-        breadcrumbs.append(
-            BreadcrumbItem(
-                label=package_slug,
-                href=f"/admin/skill-registry/ui/packages/{package_slug}",
-            )
-        )
-    return await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=title,
-        breadcrumbs=tuple(breadcrumbs),
-    )
-
-
 def _http_error(exc: SkillRegistryServiceError) -> HTTPException:
     status_code = {
         "duplicate_package": status.HTTP_409_CONFLICT,
@@ -1266,7 +1013,7 @@ def _http_error(exc: SkillRegistryServiceError) -> HTTPException:
         "stale_revision": status.HTTP_409_CONFLICT,
         "unauthorized": status.HTTP_403_FORBIDDEN,
         "not_found": status.HTTP_404_NOT_FOUND,
-        "validation_blocked": status.HTTP_422_UNPROCESSABLE_ENTITY,
+        "validation_blocked": status.HTTP_422_UNPROCESSABLE_CONTENT,
     }.get(exc.category, status.HTTP_400_BAD_REQUEST)
     return HTTPException(
         status_code=status_code,

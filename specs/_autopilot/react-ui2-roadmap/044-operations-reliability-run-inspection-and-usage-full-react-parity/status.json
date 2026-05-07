@@ -1,0 +1,115 @@
+{
+  "spec": "044",
+  "title": "Operations, Reliability, Run Inspection, And Usage Full React Parity",
+  "feature_dir": "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity",
+  "branch": "codex/044-operations-reliability-run-inspection-and-usage-full-react-parity",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/spec.md",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/checklists/requirements.md"
+      ],
+      "notes": "Created the active Spec 044 specification from the generated roadmap prompt. Scope covers React parity and Jinja removal for operations console, reliability controls, run inspection, replay/lineage/timeline, usage analytics, usage export detail, old direct links, deletion evidence, and redaction-safe QA."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/spec.md"
+      ],
+      "auto_clarifications": [
+        "React operations owns the primary triage surface; old operations, reliability, run inspection, and usage browser URLs redirect to React or safe non-Jinja problems when safe.",
+        "Reliability actions are exposed only when existing backend policy marks them safe for the active principal and tenant.",
+        "Old run replay, lineage, and detail URLs redirect to React operations run-debug panels with safe context preserved when authorized.",
+        "Timeline, logs, run events, usage events, and dead-letter lists stay bounded by backend page-size and time-window limits.",
+        "Usage export detail exposes only metadata, filter snapshots, artifact references, checksums, row counts, and audit ids.",
+        "Platform operators see platform summaries; tenant admins and auditors see tenant-scoped summaries and denied routes fail closed.",
+        "Unsafe old routes return non-Jinja safe problems or documented retirement responses without data-existence leakage."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/plan.md",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/research.md",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/data-model.md",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/contracts/operations-react-parity-ui.md",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/contracts/operations-react-parity.openapi.yaml",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/quickstart.md"
+      ],
+      "notes": "Planned React-only operations, reliability, run inspection, and usage browser parity by retaining React JSON APIs, converting old browser routes to redirects or safe non-Jinja problems, deleting bounded templates only after tests, and validating with backend/frontend/performance/QA/Playwright gates."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/tasks.md"
+      ],
+      "task_count": 70,
+      "notes": "Generated dependency-ordered, file-specific tasks covering operations/reliability/admin-run/user-facing-run/usage redirect tests, React query-state updates, reliability actions, run debug/replay, usage export detail, bounded template deletion, QA docs, generated assets, Spec QA, and Playwright validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "remediations": [
+        "Detected that runs templates are shared by admin_run_inspection.py and web_run_ui.py; updated spec, plan, contracts, quickstart, and tasks to include user-facing /runs redirects before deleting templates/runs."
+      ],
+      "notes": "Analysis confirmed the active artifacts cover operations, reliability, admin run inspection, user-facing runs, usage export detail, direct-link redirects, bounded query behavior, authorization, redaction, template deletion evidence, QA docs, and Playwright validation. No CRITICAL or HIGH findings remain after the shared-runs remediation."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/routers/admin_operations.py",
+        "src/multi_agent_platform/api/ui/reliability_controls.py",
+        "src/multi_agent_platform/api/routers/admin_run_inspection.py",
+        "src/multi_agent_platform/api/routers/web_run_ui.py",
+        "src/multi_agent_platform/api/routers/admin_usage.py",
+        "src/multi_agent_platform/web_admin/templates/operations/index.html",
+        "src/multi_agent_platform/web_admin/templates/reliability/index.html",
+        "src/multi_agent_platform/web_admin/templates/reliability/breakers.html",
+        "src/multi_agent_platform/web_admin/templates/reliability/dead_letters.html",
+        "src/multi_agent_platform/web_admin/templates/runs/index.html",
+        "src/multi_agent_platform/web_admin/templates/runs/detail.html",
+        "src/multi_agent_platform/web_admin/templates/runs/replay.html",
+        "src/multi_agent_platform/web_admin/templates/usage/index.html",
+        "src/multi_agent_platform/web_admin/templates/usage/export_detail.html",
+        "src/multi_agent_platform/web_admin/static/run_inspection.js",
+        "tests/unit/admin/test_operations_jinja_retirement.py",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/qa044.md",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/qa044_ui.md",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/.env.qa044",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/qa044_user_guide.md",
+        "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/pr_notes.md"
+      ],
+      "notes": "Converted old operations, reliability, admin run inspection, user-facing run, and usage browser routes to React redirects while retaining JSON APIs. Deleted bounded operations/reliability/runs/usage templates and run_inspection.js after focused route and scanner tests passed. Updated React/admin links, QA docs, validation manifest, and Spec 038 migration notes."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/044-operations-reliability-run-inspection-and-usage-full-react-parity",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run pytest --no-cov tests/integration/api/test_admin_operations_ui.py tests/integration/api/test_reliability_controls_ui.py tests/integration/api/test_admin_run_inspection_ui.py tests/integration/api/test_admin_usage_ui.py tests/integration/api/test_web_run_ui.py tests/integration/api/test_admin_console_shell_authorization.py tests/integration/api/test_prompt_runtime_v2_browser_regression.py tests/unit/admin/test_operations_jinja_retirement.py -q",
+      "uv run pytest --no-cov tests/contract/test_admin_react_contract.py tests/integration/test_admin_react_routes.py tests/performance/operations/test_workbench_queries.py tests/performance/usage/test_react_usage_queries.py tests/unit/api/test_admin_workbench_schema.py tests/unit/api/test_admin_usage_react_schema.py -q",
+      "cd frontend/admin && npm test -- --run src/components/workbench src/components/usage src/App.test.tsx",
+      "cd frontend/admin && npm run build",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/044-operations-reliability-run-inspection-and-usage-full-react-parity/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/044-operations-reliability-run-inspection-and-usage-full-react-parity/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "output/playwright/qa044_ui/qa044-react-ui2-smoke.png",
+      "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/qa044.md",
+      "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/qa044_ui.md",
+      "specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/qa044_user_guide.md"
+    ],
+    "notes": "Spec QA completed after updating stale full-suite tests for React redirects and fixing operations run href query assembly. Playwright verified the React operations workbench route after local-principal login."
+  },
+  "blockers": []
+}

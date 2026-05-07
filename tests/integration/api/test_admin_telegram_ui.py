@@ -21,10 +21,13 @@ def test_telegram_ui_renders_console_and_mutates_config(
         page = client.get(
             f"/admin/telegram?tenant_id={ACME_TENANT_ID}",
             headers=ACME_HEADERS,
+            follow_redirects=False,
         )
-        revision = page.text.split('name="revision_token" value="', maxsplit=1)[
-            1
-        ].split('"', maxsplit=1)[0]
+        config = client.get(
+            f"/admin/telegram/api/config?tenant_id={ACME_TENANT_ID}",
+            headers=ACME_HEADERS,
+        )
+        revision = config.json()["revision_token"]
         updated = client.post(
             "/admin/telegram/config",
             headers=ACME_HEADERS,
@@ -48,14 +51,16 @@ def test_telegram_ui_renders_console_and_mutates_config(
             },
         )
 
-    assert page.status_code == 200
-    assert "Telegram Configuration" in page.text
-    assert "Telegram Command Aliases" in page.text
-    assert "Bot tokens" in page.text
-    assert "local-dev-secret" not in page.text
+    assert page.status_code == 303
+    assert page.headers["location"] == (
+        f"/admin/app/channels?tenant_id={ACME_TENANT_ID}&panel=telegram"
+    )
     assert updated.status_code == 303
+    assert updated.headers["location"] == (
+        f"/admin/app/channels?tenant_id={ACME_TENANT_ID}&panel=telegram"
+    )
     assert stale.status_code == 409
-    assert "Stale Telegram form" in stale.text
+    assert "stale revision" in stale.text
 
 
 def test_telegram_ui_issues_link_token_once(tmp_path, monkeypatch) -> None:
@@ -68,10 +73,17 @@ def test_telegram_ui_issues_link_token_once(tmp_path, monkeypatch) -> None:
             headers=ACME_HEADERS,
             data={"tenant_id": ACME_TENANT_ID},
         )
+        listed = client.get(
+            f"/admin/telegram/api/link-tokens?tenant_id={ACME_TENANT_ID}",
+            headers=ACME_HEADERS,
+        )
 
-    assert issued.status_code == 200
-    assert "One-Time Link Token" in issued.text
-    assert "Future views show only a fingerprint" in issued.text
+    assert issued.status_code == 201
+    assert issued.json()["link_token"]
+    assert (
+        issued.json()["token_audit"]["token_fingerprint"] != issued.json()["link_token"]
+    )
+    assert issued.json()["link_token"] not in listed.text
 
 
 def test_telegram_ui_creates_alias(tmp_path, monkeypatch) -> None:
@@ -93,10 +105,13 @@ def test_telegram_ui_creates_alias(tmp_path, monkeypatch) -> None:
             follow_redirects=False,
         )
         page = client.get(
-            f"/admin/telegram?tenant_id={ACME_TENANT_ID}",
+            f"/admin/telegram/api/aliases?tenant_id={ACME_TENANT_ID}",
             headers=ACME_HEADERS,
         )
 
     assert created.status_code == 303
+    assert created.headers["location"] == (
+        f"/admin/app/channels?tenant_id={ACME_TENANT_ID}&panel=aliases"
+    )
     assert "Morning briefing" in page.text
     assert "22222222-2222-2222-2222-222222222222" in page.text

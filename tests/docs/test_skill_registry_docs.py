@@ -25,8 +25,9 @@ def test_skill_registry_docs_and_qa_guides_exist() -> None:
 def test_readme_links_skill_registry_surfaces() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
 
-    assert "/admin/skill-registry/ui/packages" in readme
-    assert "/admin/skill-registry/ui/installations" in readme
+    assert "/admin/app/skills/packages" in readme
+    assert "/admin/app/skills/installations" in readme
+    assert "/admin/app/skills/diagnostics" in readme
 
 
 def test_qa014_ui_is_browser_first_and_screenshot_backed() -> None:

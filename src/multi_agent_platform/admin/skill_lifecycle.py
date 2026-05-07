@@ -25,6 +25,7 @@ from multi_agent_platform.api.schemas.admin_skill_lifecycle import (
     ReadinessRefreshRequest,
     SkillExecutionDiagnosticList,
     SkillExecutionDiagnosticSummary,
+    SkillLegacyRouteMapping,
     SkillLifecycleAuditList,
     SkillLifecycleAuditRecord,
     SkillLifecycleDashboard,
@@ -91,7 +92,93 @@ def build_skill_lifecycle_dashboard(
         skill_execution_diagnostics=diagnostics,
         binding_preview=build_binding_preview(scope=scope),
         audit_timeline=build_skill_lifecycle_audit(scope=scope).audit_timeline,
+        legacy_routes=build_skill_legacy_route_mappings(),
         actions=_dashboard_actions(scope=scope, platform_admin=platform_admin),
+    )
+
+
+def build_skill_legacy_route_mappings() -> tuple[SkillLegacyRouteMapping, ...]:
+    route_pairs = (
+        ("/admin/skill-registry/ui/packages", "/admin/app/skills/packages", ("query",)),
+        (
+            "/admin/skill-registry/ui/packages/new",
+            "/admin/app/skills/packages/new",
+            (),
+        ),
+        (
+            "/admin/skill-registry/ui/packages/{package_slug}",
+            "/admin/app/skills/packages/{package_slug}",
+            ("package_slug", "query"),
+        ),
+        (
+            "/admin/skill-registry/ui/packages/{package_slug}/candidate",
+            "/admin/app/skills/packages/{package_slug}/candidate",
+            ("package_slug", "conflict", "query"),
+        ),
+        (
+            "/admin/skill-registry/ui/packages/{package_slug}/versions/{semantic_version}",
+            "/admin/app/skills/packages/{package_slug}/versions/{semantic_version}",
+            ("package_slug", "semantic_version", "query"),
+        ),
+        (
+            "/admin/skill-registry/ui/packages/{package_slug}/versions/{semantic_version}/grants",
+            "/admin/app/skills/packages/{package_slug}/versions/{semantic_version}/grants",
+            ("package_slug", "semantic_version", "tenant_id", "query"),
+        ),
+        (
+            "/admin/skill-registry/ui/available-versions",
+            "/admin/app/skills/available-versions",
+            ("tenant_id", "query"),
+        ),
+        (
+            "/admin/skill-registry/ui/installations",
+            "/admin/app/skills/installations",
+            ("tenant_id", "query"),
+        ),
+        (
+            "/admin/skill-registry/ui/installations/{installation_id}",
+            "/admin/app/skills/installations/{installation_id}",
+            ("installation_id", "conflict", "eligibility", "query"),
+        ),
+        (
+            "/admin/skill-registry/ui/installations/{installation_id}/credentials",
+            "/admin/app/skills/installations/{installation_id}/credentials",
+            ("installation_id", "conflict", "query"),
+        ),
+        (
+            "/admin/skill-registry/ui/installations/{installation_id}/smoke-tests",
+            "/admin/app/skills/installations/{installation_id}/smoke-tests",
+            ("installation_id", "conflict", "query"),
+        ),
+        (
+            "/admin/skill-registry/ui/installations/{installation_id}/eligibility-preview",
+            "/admin/app/skills/installations/{installation_id}/eligibility-preview",
+            ("installation_id", "context", "query"),
+        ),
+        (
+            "/admin/skill-execution/ui/diagnostics",
+            "/admin/app/skills/diagnostics",
+            ("tenant_id", "query"),
+        ),
+    )
+    return tuple(
+        SkillLegacyRouteMapping(
+            legacy_path=legacy_path,
+            react_path=react_path,
+            compatibility_status="redirected",
+            preserved_params=preserved,
+            authorization_behavior="authenticated redirect with backend React denial",
+            evidence=(
+                "tests/integration/api/test_admin_skill_registry_legacy_redirects.py",
+                "tests/integration/api/test_admin_skill_execution_ui.py",
+                "tests/unit/admin/test_skill_jinja_retirement.py",
+            ),
+            notes=(
+                "Legacy skill browser route redirects to React and no longer "
+                "renders a skill registry or diagnostics Jinja template."
+            ),
+        )
+        for legacy_path, react_path, preserved in route_pairs
     )
 
 

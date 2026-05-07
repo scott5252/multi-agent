@@ -46,6 +46,20 @@ def safe_governance_text(value: str, *, max_length: int = 240) -> str:
     return normalized
 
 
+def safe_governance_route_path(value: str, *, max_length: int = 240) -> str:
+    normalized = safe_text(value, max_length=max_length)
+    lowered = normalized.lower()
+    if any(marker in lowered for marker in GOVERNANCE_UNSAFE_MARKERS):
+        raise ValueError("unsafe governance route cannot be rendered")
+    if not normalized.startswith("/admin/"):
+        raise ValueError("governance route must be an admin route")
+    if "\\" in normalized or "\n" in normalized or "\r" in normalized:
+        raise ValueError("governance route is not renderable")
+    if "/../" in normalized or normalized.endswith("/.."):
+        raise ValueError("governance route traversal is not renderable")
+    return normalized
+
+
 class GovernanceStatus(StrEnum):
     READY = "ready"
     DEGRADED = "degraded"
@@ -433,6 +447,36 @@ class RunProvenanceSummary(BaseModel):
         return safe_governance_text(value, max_length=220)
 
 
+class GovernanceLegacyRouteMapping(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    legacy_path: str
+    react_path: str
+    preserved_params: tuple[str, ...] = Field(default_factory=tuple)
+    compatibility_status: str
+    authorization_behavior: str
+    evidence_summary: str
+
+    @field_validator("legacy_path", "react_path")
+    @classmethod
+    def path_is_safe(cls, value: str) -> str:
+        return safe_governance_route_path(value, max_length=220)
+
+    @field_validator(
+        "compatibility_status",
+        "authorization_behavior",
+        "evidence_summary",
+    )
+    @classmethod
+    def text_is_safe(cls, value: str) -> str:
+        return safe_governance_text(value, max_length=220)
+
+    @field_validator("preserved_params")
+    @classmethod
+    def params_are_safe(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        return tuple(safe_governance_text(item, max_length=80) for item in value)
+
+
 class GovernanceDashboard(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -450,6 +494,9 @@ class GovernanceDashboard(BaseModel):
     prompt_preview: SafePromptPreview
     policy_history: tuple[PolicyHistoryRecord, ...] = Field(default_factory=tuple)
     run_provenance: tuple[RunProvenanceSummary, ...] = Field(default_factory=tuple)
+    legacy_routes: tuple[GovernanceLegacyRouteMapping, ...] = Field(
+        default_factory=tuple
+    )
     actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
     state: ReactAdminShellState | None = None
     refresh: RefreshHint | None = None

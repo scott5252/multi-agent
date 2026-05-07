@@ -2,18 +2,16 @@ from __future__ import annotations
 
 import json
 from typing import Annotated, Any
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.prompts import (
-    AuditEventSummary,
     FixtureValueSet,
-    HistoryResponse,
     PromptDraftDetail,
     PromptDraftSave,
     PromptLineageCreate,
@@ -31,7 +29,6 @@ from multi_agent_platform.api.schemas.prompts import (
 from multi_agent_platform.api.schemas.prompts import (
     PromptVariableDeclaration as PromptVariableSchema,
 )
-from multi_agent_platform.api.ui.prompts import build_prompt_ui_model
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.db.repositories.prompts import (
@@ -53,41 +50,39 @@ PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 MAX_PROMPT_TEMPLATE_BYTES = 64 * 1024
 MAX_FIXTURE_SET_COUNT = 20
+REACT_GOVERNANCE_PATH = "/admin/app/governance"
+LEGACY_QUERY_PRESERVE_KEYS = frozenset(
+    {"tenant_id", "q", "status", "revision", "fixture_set_id", "flash"}
+)
 
 
 def _attr(obj: object, name: str, default: object | None = None) -> Any:
     return getattr(obj, name, default)
 
 
-def _prompt_template_context(
-    *,
-    shell: object,
-    principal: PrincipalContext,
-    page: object,
-    **extra: object,
-) -> dict[str, object]:
-    context = {"shell": shell, "principal": principal, "page": page}
-    context.update(extra)
-    return context
+def _redirect(path: str) -> RedirectResponse:
+    return RedirectResponse(url=path, status_code=status.HTTP_303_SEE_OTHER)
 
 
-def _prompt_ui_page(
+def _react_governance_redirect(
+    request: Request,
+    suffix: str = "",
     *,
-    title: str,
-    shell: object,
-    prompt_lineage_id: UUID | None = None,
-    prompt_version_id: UUID | None = None,
-    status_value: str = "draft",
-) -> object:
-    active_scope = shell.active_scope  # type: ignore[attr-defined]
-    return build_prompt_ui_model(
-        title=title,
-        scope_type=active_scope.scope_type,
-        tenant_id=active_scope.tenant_id,
-        prompt_lineage_id=prompt_lineage_id,
-        prompt_version_id=prompt_version_id,
-        status=status_value,
-    )
+    extra_query: dict[str, str] | None = None,
+) -> RedirectResponse:
+    clean_suffix = suffix if not suffix or suffix.startswith("/") else f"/{suffix}"
+    query_params = getattr(request, "query_params", {})
+    query = {
+        key: value
+        for key, value in query_params.items()
+        if key in LEGACY_QUERY_PRESERVE_KEYS and len(value) <= 240
+    }
+    if extra_query:
+        query.update(extra_query)
+    target = f"{REACT_GOVERNANCE_PATH}{clean_suffix}"
+    if query:
+        target = f"{target}?{urlencode(query)}"
+    return _redirect(target)
 
 
 def _is_platform_admin(principal: PrincipalContext) -> bool:
@@ -339,77 +334,30 @@ def _parse_grant_tenant_ids(raw_value: str) -> list[UUID]:
     return [UUID(value.strip()) for value in raw_value.split(",") if value.strip()]
 
 
-@router.get("/admin/prompt-runtime/prompts", response_class=HTMLResponse)
+@router.get("/admin/prompt-runtime/prompts")
 async def prompt_library_index(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    repository = PromptRepository(session)
-    lineages = await repository.list_visible_lineages(
-        principal_tenant_id=principal.tenant_id,
-        include_platform_admin=_is_platform_admin(principal),
-    )
-    items: list[PromptLineageSummary] = []
-    for lineage in lineages:
-        draft = await repository.get_active_draft(lineage.prompt_lineage_id)
-        validation = None
-        if draft is not None:
-            validation = await repository.get_validation_result(
-                draft.last_validation_result_id
-            )
-        items.append(_prompt_lineage_summary(lineage, validation))
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Prompt Library",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "prompts/index.html",
-        _prompt_template_context(
-            shell=shell,
-            principal=principal,
-            page=_prompt_ui_page(title="Prompt Library", shell=shell),
-            items=items,
-        ),
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, "/prompts")
 
 
-@router.get("/admin/prompt-runtime/prompts/new", response_class=HTMLResponse)
+@router.get("/admin/prompt-runtime/prompts/new")
 async def prompt_library_new(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="New Prompt",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "prompts/edit.html",
-        _prompt_template_context(
-            shell=shell,
-            principal=principal,
-            page=build_prompt_ui_model(
-                title="New Prompt",
-                scope_type=shell.active_scope.scope_type,
-                tenant_id=shell.active_scope.tenant_id,
-                submitted_fields=_prompt_submitted_fields(shell=shell),
-            ),
-        ),
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, "/prompts/new")
 
 
 @router.get(
     "/admin/prompt-runtime/prompts/{prompt_lineage_id}/edit",
-    response_class=HTMLResponse,
 )
 async def prompt_library_edit(
     prompt_lineage_id: UUID,
@@ -417,52 +365,12 @@ async def prompt_library_edit(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    repository = PromptRepository(session)
-    lineage = await repository.get_lineage(prompt_lineage_id)
-    draft = await repository.get_active_draft(prompt_lineage_id)
-    if lineage is None or draft is None:
-        raise HTTPException(status_code=404, detail={"code": "prompt_not_found"})
-    _require_prompt_scope_mutation(
-        principal,
-        scope_type=lineage.scope_type,
-        tenant_id=lineage.tenant_id,
-    )
-    revision = await repository.get_latest_revision(draft)
-    validation = await repository.get_validation_result(draft.last_validation_result_id)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Edit Prompt",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "prompts/edit.html",
-        _prompt_template_context(
-            shell=shell,
-            principal=principal,
-            page=build_prompt_ui_model(
-                title="Edit Prompt",
-                scope_type=lineage.scope_type,
-                tenant_id=lineage.tenant_id,
-                prompt_lineage_id=prompt_lineage_id,
-                current_revision_number=draft.current_revision_number,
-                validation_status=_attr(validation, "status", None),
-                findings=_attr(validation, "findings_json", None),
-                submitted_fields=_prompt_submitted_fields(
-                    shell=shell,
-                    lineage=lineage,
-                    revision=revision,
-                ),
-            ),
-            draft=revision,
-            validation=_prompt_validation_response(validation),
-        ),
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, f"/prompts/{prompt_lineage_id}/edit")
 
 
-@router.post("/admin/prompt-runtime/prompts/form", response_class=HTMLResponse)
+@router.post("/admin/prompt-runtime/prompts/form")
 async def prompt_library_form(
     request: Request,
     principal: PrincipalDep,
@@ -528,11 +436,9 @@ async def prompt_library_form(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={"code": "stale_validation"},
             ) from exc
-        return RedirectResponse(
-            "/admin/prompt-runtime/prompts/versions/"
-            f"{published_version.prompt_version_id}"
-            "?flash=prompt-published",
-            status_code=status.HTTP_303_SEE_OTHER,
+        return _redirect(
+            f"{REACT_GOVERNANCE_PATH}/prompts/versions/"
+            f"{published_version.prompt_version_id}?flash=prompt-published"
         )
 
     if action in {"retire", "grant"}:
@@ -571,9 +477,9 @@ async def prompt_library_form(
                         detail={"code": "grant_not_allowed"},
                     ) from exc
             flash = "prompt-granted"
-        return RedirectResponse(
-            f"/admin/prompt-runtime/prompts/versions/{prompt_version_id}?flash={flash}",
-            status_code=status.HTTP_303_SEE_OTHER,
+        return _redirect(
+            f"{REACT_GOVERNANCE_PATH}/prompts/versions/{prompt_version_id}"
+            f"?flash={flash}"
         )
 
     form_tenant_id = _parse_optional_uuid(tenant_id_value)
@@ -653,22 +559,20 @@ async def prompt_library_form(
         )
         flash = "prompt-validated"
     elif action == "preview":
-        return RedirectResponse(
-            f"/admin/prompt-runtime/prompts/{lineage.prompt_lineage_id}/preview"
-            "?fixture_set_id=default",
-            status_code=status.HTTP_303_SEE_OTHER,
+        return _redirect(
+            f"{REACT_GOVERNANCE_PATH}/prompts/"
+            f"{lineage.prompt_lineage_id}/preview?fixture_set_id=default"
         )
     else:
         flash = "prompt-saved"
-    return RedirectResponse(
-        f"/admin/prompt-runtime/prompts/{lineage.prompt_lineage_id}/edit?flash={flash}",
-        status_code=status.HTTP_303_SEE_OTHER,
+    return _redirect(
+        f"{REACT_GOVERNANCE_PATH}/prompts/{lineage.prompt_lineage_id}/edit"
+        f"?flash={flash}"
     )
 
 
 @router.get(
     "/admin/prompt-runtime/prompts/versions/{prompt_version_id}",
-    response_class=HTMLResponse,
 )
 async def prompt_library_detail(
     prompt_version_id: UUID,
@@ -676,45 +580,13 @@ async def prompt_library_detail(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    repository = PromptRepository(session)
-    version = await repository.get_prompt_version(prompt_version_id)
-    if version is None:
-        raise HTTPException(status_code=404, detail={"code": "prompt_not_found"})
-    _require_prompt_scope_mutation(
-        principal,
-        scope_type=version.scope_type,
-        tenant_id=version.tenant_id,
-    )
-    grants = await repository.list_grants_for_version(prompt_version_id)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Prompt Version",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "prompts/detail.html",
-        _prompt_template_context(
-            shell=shell,
-            principal=principal,
-            page=build_prompt_ui_model(
-                title="Prompt Version",
-                scope_type=version.scope_type,
-                tenant_id=version.tenant_id,
-                prompt_version_id=prompt_version_id,
-                status=version.status,
-            ),
-            version=_prompt_version_detail(version),
-            grants=grants,
-        ),
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, f"/prompts/versions/{prompt_version_id}")
 
 
 @router.get(
     "/admin/prompt-runtime/prompts/{prompt_lineage_id}/history",
-    response_class=HTMLResponse,
 )
 async def prompt_library_history(
     prompt_lineage_id: UUID,
@@ -722,52 +594,13 @@ async def prompt_library_history(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    repository = PromptRepository(session)
-    lineage = await repository.get_lineage(prompt_lineage_id)
-    if lineage is None:
-        raise HTTPException(status_code=404, detail={"code": "prompt_not_found"})
-    _require_prompt_scope_mutation(
-        principal,
-        scope_type=lineage.scope_type,
-        tenant_id=lineage.tenant_id,
-    )
-    history = HistoryResponse(
-        items=[
-            AuditEventSummary.model_validate(event)
-            for event in await repository.list_prompt_history(
-                prompt_lineage_id=prompt_lineage_id,
-                tenant_id=(
-                    None if _is_platform_admin(principal) else principal.tenant_id
-                ),
-            )
-        ]
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Prompt History",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "prompts/history.html",
-        _prompt_template_context(
-            shell=shell,
-            principal=principal,
-            page=_prompt_ui_page(
-                title="Prompt History",
-                shell=shell,
-                prompt_lineage_id=prompt_lineage_id,
-            ),
-            history=history,
-        ),
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, f"/prompts/{prompt_lineage_id}/history")
 
 
 @router.get(
     "/admin/prompt-runtime/prompts/{prompt_lineage_id}/preview",
-    response_class=HTMLResponse,
 )
 async def prompt_library_preview_page(
     prompt_lineage_id: UUID,
@@ -776,43 +609,12 @@ async def prompt_library_preview_page(
     session: SessionDep,
     container: ContainerDep,
     fixture_set_id: Annotated[str, Query()] = "default",
-) -> HTMLResponse:
-    repository = PromptRepository(session)
-    lineage = await repository.get_lineage(prompt_lineage_id)
-    draft = await repository.get_active_draft(prompt_lineage_id)
-    if lineage is None or draft is None:
-        raise HTTPException(status_code=404, detail={"code": "prompt_not_found"})
-    _require_prompt_scope_mutation(
-        principal,
-        scope_type=lineage.scope_type,
-        tenant_id=lineage.tenant_id,
-    )
-    revision = await repository.get_latest_revision(draft)
-    if revision is None:
-        raise HTTPException(status_code=422, detail={"code": "missing_revision"})
-    preview_response = await _render_preview_from_revision(
-        revision=revision,
-        fixture_set_id=fixture_set_id,
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title="Prompt Preview",
-    )
-    return container.workflow_ui_templates.TemplateResponse(
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(
         request,
-        "prompts/preview.html",
-        _prompt_template_context(
-            shell=shell,
-            principal=principal,
-            page=_prompt_ui_page(
-                title="Prompt Preview",
-                shell=shell,
-                prompt_lineage_id=prompt_lineage_id,
-            ),
-            preview=preview_response,
-        ),
+        f"/prompts/{prompt_lineage_id}/preview",
+        extra_query={"fixture_set_id": fixture_set_id},
     )
 
 

@@ -1,0 +1,109 @@
+{
+  "spec": "047",
+  "title": "Jinja Infrastructure Decommission",
+  "feature_dir": "specs/047-jinja-infrastructure-decommission",
+  "branch": "codex/047-jinja-infrastructure-decommission",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/047-jinja-infrastructure-decommission/spec.md",
+        "specs/047-jinja-infrastructure-decommission/checklists/requirements.md"
+      ],
+      "notes": "Created Spec 047 from the generated roadmap prompt. Scope covers final removal of server-side template infrastructure, legacy static assets, direct jinja2 dependency metadata, non-Jinja direct-link compatibility, React-only migration evidence, and full validation."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/047-jinja-infrastructure-decommission/spec.md"
+      ],
+      "auto_clarifications": [
+        "Delete the server-side template directory because Specs 039 through 046 completed bounded parity evidence.",
+        "Keep Vite static output under web_admin/static/react.",
+        "Keep non-Jinja redirects or safe compatibility handlers for old browser URLs for one release.",
+        "Remove the direct jinja2 dependency once runtime scanners pass.",
+        "Document rollback as redeploying the previous release, not toggling Jinja back on."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/047-jinja-infrastructure-decommission/plan.md",
+        "specs/047-jinja-infrastructure-decommission/research.md",
+        "specs/047-jinja-infrastructure-decommission/data-model.md",
+        "specs/047-jinja-infrastructure-decommission/contracts/jinja-decommission-contract.md",
+        "specs/047-jinja-infrastructure-decommission/contracts/jinja-decommission.openapi.yaml",
+        "specs/047-jinja-infrastructure-decommission/quickstart.md"
+      ],
+      "notes": "Planned infrastructure removal around the remaining template provider, template tree, legacy static assets, local-login stylesheet dependency, migration decommission evidence, dependency metadata, scanner tests, docs, and validation gates."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/047-jinja-infrastructure-decommission/tasks.md"
+      ],
+      "task_count": 48,
+      "notes": "Generated dependency-ordered tasks covering final inventory, test-first scanner updates, backend container/settings cleanup, template/static/dependency deletion, React migration evidence updates, docs, QA artifacts, and full validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "remediations": [
+        "Scoped scanners to runtime Jinja infrastructure imports rather than historical specs/tests so final evidence can still document what was removed.",
+        "Kept Vite static assets explicitly out of legacy static deletion."
+      ],
+      "notes": "Cross-artifact analysis found no critical blockers. The single high-risk area is dependency removal, mitigated by import scanners, uv lock refresh, and full quality gates before completion."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/bootstrap/container.py",
+        "src/multi_agent_platform/config/settings.py",
+        "src/multi_agent_platform/admin/migration_hardening/react_migration_hardening.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/api/routers/auth.py",
+        "frontend/admin/src/components/migrationHardening/JinjaInventoryPanel.tsx",
+        "src/multi_agent_platform/web_admin/static/react/manifest.json",
+        "tests/unit/admin/test_jinja_infrastructure_decommission.py",
+        "tests/integration/api/test_admin_console_templates.py",
+        "tests/integration/api/test_prompt_runtime_v2_browser_regression.py",
+        "specs/047-jinja-infrastructure-decommission/qa047.md",
+        "specs/047-jinja-infrastructure-decommission/qa047_ui.md",
+        "specs/047-jinja-infrastructure-decommission/qa047_user_guide.md",
+        "specs/047-jinja-infrastructure-decommission/pr_notes.md"
+      ],
+      "notes": "Removed runtime template renderer wiring, template settings, obsolete Jinja scanner service, server template files, legacy static assets outside static/react, and the direct jinja2 dependency. Added React-only decommission dashboard evidence, non-Jinja host accessibility fallback, safe /runs local-login redirects, updated React migration evidence rendering, rebuilt Vite assets, and refreshed backend/frontend/docs/QA tests."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "uv run pytest --no-cov tests/unit/admin/test_jinja_infrastructure_decommission.py tests/unit/bootstrap/test_container.py tests/unit/config/test_settings.py tests/unit/api/test_dependency_helpers.py tests/unit/admin/test_migration_hardening_service.py tests/integration/api/test_auth_routes.py tests/integration/api/test_local_browser_login.py tests/integration/api/test_web_run_ui.py tests/integration/api/test_admin_react_migration_inventory_routes.py tests/contract/test_admin_migration_jinja_inventory_contract.py tests/contract/test_admin_react_contract.py tests/integration/test_admin_react_routes.py -q",
+      "npm test -- --run src/components/migrationHardening src/App.test.tsx",
+      "npm run typecheck",
+      "npm run build",
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/047-jinja-infrastructure-decommission",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/047-jinja-infrastructure-decommission/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/047-jinja-infrastructure-decommission/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "1148 passed, coverage 90.03%",
+      "Spec QA validation completed",
+      "Playwright UI validation completed",
+      "output/playwright/qa047_ui/qa047-react-ui2-smoke.png"
+    ],
+    "notes": "Final validation passed after adding the QA047 user guide required by the manifest and allowing safe local-login redirects to legacy /runs paths so Playwright can prove the user-run compatibility flow."
+  },
+  "blockers": []
+}

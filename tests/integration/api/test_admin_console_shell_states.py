@@ -5,7 +5,6 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from multi_agent_platform.api.main import create_app
-from tests.fixtures.admin_console import assert_state_region
 from tests.integration.api.test_admin_console_shell_routes import _configure_env
 
 
@@ -20,8 +19,11 @@ def test_empty_and_unavailable_states_render_without_sensitive_details(
         response = client.get(
             f"/admin/runs?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
+            follow_redirects=False,
         )
 
-    assert response.status_code == 200
-    assert_state_region(response.text, "empty")
+    assert response.status_code == 303
+    assert response.headers["location"] == (
+        f"/admin/app/operations?tenant_id={tenant_id}&panel=runs"
+    )
     assert "traceback" not in response.text.lower()

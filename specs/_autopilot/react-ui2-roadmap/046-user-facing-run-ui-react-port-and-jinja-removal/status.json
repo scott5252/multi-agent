@@ -1,0 +1,114 @@
+{
+  "spec": "046",
+  "title": "User-Facing Run UI React Port And Jinja Removal",
+  "feature_dir": "specs/046-user-facing-run-ui-react-port-and-jinja-removal",
+  "branch": "codex/046-user-facing-run-ui-react-port-and-jinja-removal",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/spec.md",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/checklists/requirements.md"
+      ],
+      "notes": "Created Spec 046 from the generated roadmap prompt. Scope covers React-only user-facing /runs browser compatibility, retained JSON lifecycle APIs, safe run status/timeline/actions/artifact evidence, redaction, and deletion-grade proof that Jinja run templates stay retired."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/spec.md"
+      ],
+      "auto_clarifications": [
+        "Legacy /runs browser links redirect to React while retained /runs JSON APIs remain the lifecycle source of truth.",
+        "Spec 046 does not duplicate Spec 044 admin run inspection retirement.",
+        "React browser validation may use bounded polling while SSE remains covered as an API capability.",
+        "Cross-tenant and unavailable run links return safe unavailable/problem states without existence disclosure.",
+        "React shows safe summaries, metadata, state, permitted actions, and audit references only."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/plan.md",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/research.md",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/data-model.md",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/contracts/user-facing-run-react-ui.md",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/contracts/user-facing-run-react.openapi.yaml",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/quickstart.md"
+      ],
+      "notes": "Planned a React-only user-facing run workspace under the existing app host, retained /runs JSON lifecycle APIs as backend-owned contracts, preserved authenticated legacy redirects, and bounded deletion evidence to the user-facing /runs surface because admin run inspection was completed in Spec 044."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/tasks.md"
+      ],
+      "task_count": 51,
+      "notes": "Generated dependency-ordered tasks covering existing /runs surface verification, test-first route/contract/scanner coverage, generated channel run TypeScript contracts, React user run status/action workspace, user-facing Jinja retirement evidence, docs, QA artifacts, Spec QA, and Playwright evidence."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "remediations": [
+        "Added canonical React start route /admin/app/channels/runs so /runs and /runs/new do not merely fall back to the broad channel dashboard.",
+        "Updated spec, plan, research, UI contract, quickstart, and tasks to distinguish start-route redirects from run-detail redirects."
+      ],
+      "notes": "Cross-artifact analysis found no remaining critical blockers after remediating the start-route gap. Tasks cover the run lifecycle contracts, React route integration, legacy redirects, redaction, scanner evidence, docs, QA, and Playwright gates."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/components/userRuns/UserRunPage.tsx",
+        "frontend/admin/src/components/userRuns/UserRunPage.test.tsx",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/App.test.tsx",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/api/routers/web_run_ui.py",
+        "tests/unit/admin/test_user_runs_jinja_retirement.py",
+        "tests/integration/api/test_web_run_ui.py",
+        "tests/integration/test_admin_react_routes.py",
+        "tests/contract/test_admin_react_contract.py",
+        "docs/user-interaction-channels.md",
+        "docs/quickstart.md",
+        "specs/038-jinja-surface-inventory-and-deletion-plan/pr_notes.md",
+        "specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal/validation.yml",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/.env.qa046",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/qa046.md",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/qa046_ui.md",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/qa046_user_guide.md",
+        "specs/046-user-facing-run-ui-react-port-and-jinja-removal/pr_notes.md"
+      ],
+      "notes": "Implemented the React user-facing run workspace for /admin/app/channels/runs and detail links, redirected legacy /runs browser destinations to React while retaining JSON lifecycle APIs, generated safe channel run TypeScript contracts, added run action controls, and proved user-facing Jinja run templates/imports remain retired."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/046-user-facing-run-ui-react-port-and-jinja-removal",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal/validation.yml --dry-run",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal/validation.yml --dry-run --start-processes",
+      "cd frontend/admin && npm test -- --run src/components/userRuns src/App.test.tsx",
+      "uv run pytest --no-cov tests/integration/api/test_channel_run_api.py tests/integration/api/test_web_run_ui.py tests/integration/channels/test_cross_channel_recovery.py tests/integration/test_admin_react_routes.py tests/contract/test_admin_react_contract.py tests/unit/admin/test_user_runs_jinja_retirement.py -q",
+      "cd frontend/admin && npm run build",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/046-user-facing-run-ui-react-port-and-jinja-removal/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "output/playwright/qa046_ui/qa046-react-ui2-smoke.png"
+    ],
+    "notes": "QA docs, focused backend and frontend tests, generated contract checks, frontend build, ruff, format, mypy, full Spec QA, and Playwright validation all passed. Screenshot inspection confirmed the React run workspace renders the accepted run, safe status, permitted actions, timeline, result, and artifact sections without Jinja."
+  },
+  "blockers": []
+}

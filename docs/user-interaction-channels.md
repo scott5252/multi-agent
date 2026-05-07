@@ -9,9 +9,12 @@ and idempotency key before touching run state.
 
 - **Web API**: `POST /runs`, status, timeline, SSE events, result, approval,
   cancel, subscription, callback, and artifact URL endpoints.
-- **Web UI**: `GET /runs`, `GET /runs/new`, `POST /runs`, and
-  `GET /runs/{run_id}` render the same run status, timeline, result,
-  notification, callback, and artifact data.
+- **Web UI**: `GET /runs` and `GET /runs/new` redirect to the React run
+  workspace at `/admin/app/channels/runs`; `GET /runs/{run_id}` redirects to
+  `/admin/app/channels/runs/{run_id}` after the same tenant/principal access
+  check. `POST /runs` and the retained JSON endpoints remain the source of
+  truth for start, status, timeline, result, notification, callback, and
+  artifact data.
 - **Telegram**: `/start`, `/link`, `/run`, `/status`, `/approve`, `/reject`,
   `/resume`, `/cancel`, `/result`, `/artifacts`, `/subscribe`, `/watch`, and
   `/unwatch` route through the same facade after identity linking.
@@ -54,8 +57,7 @@ platform-authenticated download URLs instead of returning bytes directly.
 
 ## Troubleshooting
 
-Use the run id and trace id from status responses or the Web UI support panel
-to inspect audits, timeline events, notification attempts, callback attempts,
-and artifact access grants. Telegram messages stay concise; detailed error
+Use the run id and trace id from status responses or the React run workspace to
+inspect audits, timeline events, notification attempts, callback attempts, and
+artifact access grants. Telegram messages stay concise; detailed error
 categories are stored in channel evidence.
-

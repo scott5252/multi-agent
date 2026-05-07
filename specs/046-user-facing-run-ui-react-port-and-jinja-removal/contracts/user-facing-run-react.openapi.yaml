@@ -1,0 +1,108 @@
+openapi: 3.1.0
+info:
+  title: User-Facing Run React UI Compatibility
+  version: 0.1.0
+paths:
+  /runs:
+    get:
+      summary: Legacy browser run index redirects to React
+      responses:
+        "303":
+          description: React redirect
+    post:
+      summary: Start a run through the retained channel run API
+      responses:
+        "202":
+          description: JSON run invocation accepted
+        "303":
+          description: Browser form compatibility redirects to run detail
+  /runs/new:
+    get:
+      summary: Legacy browser run start route redirects to React
+      responses:
+        "303":
+          description: React redirect
+  /runs/{run_id}:
+    get:
+      summary: Legacy browser run detail redirects to React after safe access check
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "303":
+          description: React redirect
+        "404":
+          description: Safe unavailable response
+  /runs/{run_id}/status:
+    get:
+      summary: Retained safe run status JSON
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe run status
+        "404":
+          description: Safe unavailable response
+  /runs/{run_id}/timeline:
+    get:
+      summary: Retained safe run timeline JSON
+      responses:
+        "200":
+          description: Bounded safe timeline
+  /runs/{run_id}/events:
+    get:
+      summary: Retained SSE timeline event stream
+      responses:
+        "200":
+          description: Event stream
+  /runs/{run_id}/result:
+    get:
+      summary: Retained safe result JSON
+      responses:
+        "200":
+          description: Safe result availability and summary
+  /runs/{run_id}/approvals/{prompt_id}/decision:
+    post:
+      summary: Retained waiting prompt decision API
+      responses:
+        "202":
+          description: Decision accepted
+        "409":
+          description: Safe stale conflict
+  /runs/{run_id}/cancel:
+    post:
+      summary: Retained run cancellation API
+      responses:
+        "202":
+          description: Cancel accepted
+  /runs/{run_id}/artifacts:
+    get:
+      summary: Retained safe artifact metadata API
+      responses:
+        "200":
+          description: Artifact metadata list
+  /runs/{run_id}/artifacts/{artifact_id}/download-url:
+    post:
+      summary: Retained short-lived artifact download grant API
+      responses:
+        "201":
+          description: Short-lived grant created
+  /runs/{run_id}/subscriptions:
+    post:
+      summary: Retained notification subscription API
+      responses:
+        "201":
+          description: Subscription registered
+  /runs/{run_id}/callbacks:
+    post:
+      summary: Retained callback registration API
+      responses:
+        "201":
+          description: Callback registered

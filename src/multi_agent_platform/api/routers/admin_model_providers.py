@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import ContainerDep, get_session
-from multi_agent_platform.api.routers.admin_console import build_shell_for_request
 from multi_agent_platform.api.schemas.model_providers import (
     CatalogSyncResponse,
     ProviderConnectionCreateRequest,
@@ -19,16 +19,7 @@ from multi_agent_platform.api.schemas.model_providers import (
     ProviderTestResponse,
 )
 from multi_agent_platform.api.ui.admin_console import (
-    BreadcrumbItem,
-    CommonStateType,
-    build_common_state,
     is_platform_admin,
-)
-from multi_agent_platform.api.ui.model_providers import (
-    build_catalog_page,
-    build_detail_page,
-    build_form_page,
-    build_list_page,
 )
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
@@ -50,6 +41,8 @@ from multi_agent_platform.model_providers.validation import ProviderValidationEr
 router = APIRouter(prefix="/admin/model-providers", tags=["model-providers"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+REACT_GOVERNANCE_PATH = "/admin/app/governance"
+LEGACY_QUERY_PRESERVE_KEYS = frozenset({"tenant_id", "q", "status", "revision"})
 
 
 def _service(session: AsyncSession, container: ContainerDep) -> ModelProviderService:
@@ -58,146 +51,80 @@ def _service(session: AsyncSession, container: ContainerDep) -> ModelProviderSer
     return container.model_provider_service_factory(session)
 
 
-@router.get("", response_class=HTMLResponse, include_in_schema=False)
+def _redirect(path: str) -> RedirectResponse:
+    return RedirectResponse(url=path, status_code=303)
+
+
+def _react_governance_redirect(
+    request: Request,
+    suffix: str = "",
+    *,
+    extra_query: dict[str, str] | None = None,
+) -> RedirectResponse:
+    clean_suffix = suffix if not suffix or suffix.startswith("/") else f"/{suffix}"
+    query_params = getattr(request, "query_params", {})
+    query = {
+        key: value
+        for key, value in query_params.items()
+        if key in LEGACY_QUERY_PRESERVE_KEYS and len(value) <= 240
+    }
+    if extra_query:
+        query.update(extra_query)
+    target = f"{REACT_GOVERNANCE_PATH}{clean_suffix}"
+    if query:
+        target = f"{target}?{urlencode(query)}"
+    return _redirect(target)
+
+
+@router.get("", include_in_schema=False)
 async def model_provider_list_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    service = _service(session, container)
-    items = await service.list_connections(principal=principal)
-    page = build_list_page(items, can_mutate=is_platform_admin(principal))
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Model Providers", href="/admin/model-providers"),
-        ),
-        common_state=build_common_state(
-            CommonStateType.EMPTY,
-            title="No model providers",
-            summary="No model provider connections are visible in this scope.",
-            trace_id=principal.trace_id,
-        )
-        if not items
-        else None,
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "model_providers/index.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, "/providers")
 
 
-@router.get("/new", response_class=HTMLResponse, include_in_schema=False)
+@router.get("/new", include_in_schema=False)
 async def new_model_provider_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
+) -> RedirectResponse:
     if not is_platform_admin(principal):
         raise HTTPException(status_code=403, detail="platform administrator required")
-    page = build_form_page(connection_id=None, can_mutate=True)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Model Providers", href="/admin/model-providers"),
-            BreadcrumbItem(label="New", href="/admin/model-providers/new"),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "model_providers/edit.html",
-        {
-            "page": page,
-            "connection": None,
-            "models": (),
-            "principal": principal,
-            "shell": shell,
-        },
-    )
+    _ = session, container
+    return _react_governance_redirect(request, "/providers/new")
 
 
-@router.get("/catalog", response_class=HTMLResponse, include_in_schema=False)
+@router.get("/catalog", include_in_schema=False)
 async def model_provider_catalog_page(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    page = build_catalog_page(entries=(), can_mutate=is_platform_admin(principal))
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Model Providers", href="/admin/model-providers"),
-            BreadcrumbItem(label="Catalog", href="/admin/model-providers/catalog"),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "model_providers/catalog.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, "/providers")
 
 
-@router.get("/{connection_id}", response_class=HTMLResponse, include_in_schema=False)
+@router.get("/{connection_id}", include_in_schema=False)
 async def model_provider_detail_page(
     connection_id: UUID,
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
-    repository = ModelProviderRepository(session)
-    service = _service(session, container)
-    connection = await service.get_connection(
-        connection_id=connection_id,
-        principal=principal,
-    )
-    models = tuple(await repository.list_models(connection_id))
-    tenant_ids = await repository.visible_tenant_ids(connection_id)
-    latest_test = await repository.latest_test(connection_id)
-    page = build_detail_page(
-        connection=connection,
-        models=models,
-        tenant_ids=tenant_ids,
-        latest_test=latest_test,
-        can_mutate=is_platform_admin(principal),
-    )
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Model Providers", href="/admin/model-providers"),
-            BreadcrumbItem(label=page.title, href=request.url.path),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "model_providers/detail.html",
-        {"page": page, "principal": principal, "shell": shell},
-    )
+) -> RedirectResponse:
+    _ = principal, session, container
+    return _react_governance_redirect(request, f"/providers/{connection_id}")
 
 
 @router.get(
     "/{connection_id}/edit",
-    response_class=HTMLResponse,
     include_in_schema=False,
 )
 async def edit_model_provider_page(
@@ -206,35 +133,11 @@ async def edit_model_provider_page(
     principal: PrincipalDep,
     session: SessionDep,
     container: ContainerDep,
-) -> HTMLResponse:
+) -> RedirectResponse:
     if not is_platform_admin(principal):
         raise HTTPException(status_code=403, detail="platform administrator required")
-    repository = ModelProviderRepository(session)
-    connection = await repository.get_connection(connection_id)
-    models = tuple(await repository.list_models(connection_id))
-    page = build_form_page(connection_id=connection_id, can_mutate=True)
-    shell = await build_shell_for_request(
-        request=request,
-        principal=principal,
-        session=session,
-        title=page.title,
-        breadcrumbs=(
-            BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="Model Providers", href="/admin/model-providers"),
-            BreadcrumbItem(label="Edit", href=request.url.path),
-        ),
-    )
-    return container.workflow_ui_templates.TemplateResponse(
-        request,
-        "model_providers/edit.html",
-        {
-            "page": page,
-            "connection": connection,
-            "models": models,
-            "principal": principal,
-            "shell": shell,
-        },
-    )
+    _ = session, container
+    return _react_governance_redirect(request, f"/providers/{connection_id}/edit")
 
 
 @router.get("/api/connections", response_model=ProviderConnectionListResponse)
@@ -318,7 +221,7 @@ async def activate_connection_form(
         active=True,
     )
     await session.commit()
-    return RedirectResponse(f"/admin/model-providers/{connection_id}", status_code=303)
+    return _redirect(f"{REACT_GOVERNANCE_PATH}/providers/{connection_id}")
 
 
 @router.post("/{connection_id}/deactivate", include_in_schema=False)
@@ -334,7 +237,7 @@ async def deactivate_connection_form(
         active=False,
     )
     await session.commit()
-    return RedirectResponse(f"/admin/model-providers/{connection_id}", status_code=303)
+    return _redirect(f"{REACT_GOVERNANCE_PATH}/providers/{connection_id}")
 
 
 @router.post("/{connection_id}/test", response_model=ProviderTestResponse)
@@ -375,13 +278,11 @@ async def sync_provider_catalog(
 
 @router.post(
     "",
-    response_class=HTMLResponse,
     response_model=None,
     include_in_schema=False,
 )
 @router.post(
     "/{connection_id}",
-    response_class=HTMLResponse,
     response_model=None,
     include_in_schema=False,
 )
@@ -404,7 +305,7 @@ async def save_provider_connection_form(
     read_seconds: Annotated[float, Form()] = 30.0,
     total_seconds: Annotated[float, Form()] = 45.0,
     active: Annotated[bool, Form()] = False,
-) -> HTMLResponse | RedirectResponse:
+) -> RedirectResponse:
     del request
     try:
         payload = ProviderConnectionCreateRequest(
@@ -453,9 +354,8 @@ async def save_provider_connection_form(
         ValueError,
     ) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return RedirectResponse(
-        f"/admin/model-providers/{connection.provider_connection_id}",
-        status_code=303,
+    return _redirect(
+        f"{REACT_GOVERNANCE_PATH}/providers/{connection.provider_connection_id}"
     )
 
 

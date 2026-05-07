@@ -1,12 +1,9 @@
-"""React-safe migration hardening projections."""
+"""React-safe migration hardening and decommission projections."""
 
-from .jinja_inventory import (
-    QA038_NOW,
-    build_jinja_inventory_dashboard,
-    write_jinja_inventory_json,
-)
 from .react_migration_hardening import (
     QA037_NOW,
+    QA047_NOW,
+    build_decommission_inventory_dashboard,
     build_migration_dashboard,
     build_migration_rollback_plan,
     build_migration_route_groups,
@@ -14,10 +11,9 @@ from .react_migration_hardening import (
 
 __all__ = (
     "QA037_NOW",
-    "QA038_NOW",
-    "build_jinja_inventory_dashboard",
+    "QA047_NOW",
+    "build_decommission_inventory_dashboard",
     "build_migration_dashboard",
     "build_migration_rollback_plan",
     "build_migration_route_groups",
-    "write_jinja_inventory_json",
 )

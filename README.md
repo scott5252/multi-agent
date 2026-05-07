@@ -40,35 +40,38 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   display, authorization-aware navigation, common states, safe messages,
   breadcrumbs, saved filters, and route-preserving links to workflow,
   model-skill, run inspection, and reliability pages
-- model provider gateway management under `/admin/model-providers` for
+- model provider gateway management under `/admin/app/governance/providers` for
   platform-admin OpenAI/local OpenAI-compatible provider configuration, safe
   probes, health review, catalog sync evidence, and gateway-governed runtime
   invocation metadata
 - prompt library and agent runtime profile management under
-  `/admin/prompt-runtime/prompts` and `/admin/prompt-runtime/profiles` with
+  `/admin/app/governance/prompts` and `/admin/app/governance/profiles` with
   immutable prompt/profile versions, safe fixture previews, tenant grants,
   workflow validation hooks, model-skill prompt reference digests, runtime
   provenance pins, audit-safe summaries, and reviewer QA evidence
 - guided admin workflow builder under `/admin/workflows/ui` with create,
   editor, graph preview, reference lookup, validation, revision history,
   publish gate, and published bundle pin/provenance views
-- governed skill registry under `/admin/skill-registry/ui/packages` and
-  `/admin/skill-registry/ui/installations` for declarative package
+- governed skill registry under `/admin/app/skills/packages` and
+  `/admin/app/skills/installations` for declarative package
   publication, tenant installation, credential readiness, smoke-test evidence,
   binding eligibility, upgrades, quarantine, and safe audit summaries
 - governed skill tool execution diagnostics under
-  `/admin/skill-execution/ui/diagnostics` for Daily Briefing calendar, Gmail,
-  news, weather, and commute mock adapters with policy decisions and redacted
-  summaries
+  `/admin/app/skills/diagnostics` for Daily Briefing calendar, Gmail, news,
+  weather, and commute mock adapters with policy decisions and redacted
+  summaries. Legacy skill registry and diagnostics browser URLs redirect to
+  the React skill workspace.
 - user and tenant membership administration under `/admin/memberships` and
   `/admin/memberships/api` for platform-admin user management, tenant-admin
   self-service, idempotent invitations, Auth0 subject linking, role grants,
   principal suspension/reactivation, tenant membership status, access history,
   and redaction-safe audit evidence
-- agent and workflow test bench under `/admin/agent-tests/ui` and
-  `/admin/agent-tests` for tenant-scoped suites, fixture-backed cases, safe
-  mock or mocked-provider runs, redacted diagnostics, blocked side-effect
-  evidence, and publish gate readiness checks
+- React agent and workflow test bench under `/admin/app/test-bench` plus
+  JSON APIs under `/admin/agent-tests` for tenant-scoped suites,
+  fixture-backed cases, safe mock or mocked-provider runs, redacted
+  diagnostics, blocked side-effect evidence, and publish gate readiness
+  checks. Legacy `/admin/agent-tests/ui...` browser URLs redirect safely to
+  the React workspace.
 - operations console under `/admin/operations` and `/admin/operations/api` for
   platform-admin and auditor review of health, dependency readiness, capacity,
   provider and channel status, reliability pressure, throughput, redacted
@@ -93,9 +96,8 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
   binding/diagnostic/audit contracts, test suite/case/run/gate contracts,
   membership invitation/principal/role/status/history/audit contracts, usage
   summary/trend/rollup/drilldown/export contracts, export and evidence artifact
-  references, shared design tokens, common states, and Jinja fallback routes
-  while existing admin domain pages remain on their current server-rendered
-  routes
+  references, shared design tokens, common states, React routes, and safe
+  compatibility redirects for older browser URLs
 
 ## Quickstart
 
@@ -114,17 +116,16 @@ and interact with workflow runs through Web UI, Telegram, and Web API channels.
 10. Validate a guided workflow draft at
     `/admin/workflows/drafts/{workflow_draft_id}/editor`, then review
     `/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui`.
-11. Review skill packages at `/admin/skill-registry/ui/packages` and tenant
-    installations at `/admin/skill-registry/ui/installations`.
-12. Review skill tool diagnostics at
-    `/admin/skill-execution/ui/diagnostics`.
-13. Review agent and workflow test suites at `/admin/agent-tests/ui`, then run
+11. Review skill packages at `/admin/app/skills/packages` and tenant
+    installations at `/admin/app/skills/installations`.
+12. Review skill tool diagnostics at `/admin/app/skills/diagnostics`.
+13. Review agent and workflow test suites at `/admin/app/test-bench`, then run
     safe mock or mocked-provider checks before publication.
 14. Review React membership administration at `/admin/app/memberships` as
-    `platform-admin` and as `tenant-admin-acme`; the existing fallback remains
-    at `/admin/memberships`.
+    `platform-admin` and as `tenant-admin-acme`; old membership browser links
+    redirect to React.
 15. Review React usage analytics at `/admin/app/usage` as `platform-admin` and
-    as `tenant-admin-acme`; the existing fallback remains at `/admin/usage`.
+    as `tenant-admin-acme`; old usage browser links redirect to React.
 16. Review platform operational status at `/admin/operations` as
     `platform-admin` or `auditor`.
 17. Dry-run the Spec Kit Autopilot example with
@@ -154,9 +155,9 @@ The shell uses backend-authorized bootstrap metadata from
 `/admin/app/bootstrap.json` and safe command-search metadata from
 `/admin/app/search.json`. React renders shared shell chrome, active scope,
 breadcrumbs, page actions, saved-filter presentation, notifications, common
-states, and local design tokens from the backend contract. Existing Jinja admin
-pages remain available and future React domain routes stay disabled until their
-own migration specs pass.
+  states, and local design tokens from the backend contract. Browser admin
+  pages are React-only; old domain links are preserved through backend-owned
+  redirects or safe compatibility responses.
 
 The reusable data/form pattern page is available at
 [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/patterns](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/patterns).
@@ -185,8 +186,8 @@ It reads `/admin/app/workflows/builder.json` and
 metadata, reference options, graph preview, validation findings, publish
 readiness, required evidence, revisions, and redacted JSON preview summaries.
 Save, validation, stale revision, and publish decisions post back to protected
-workflow builder actions. Jinja workflow registry pages remain available under
-`/admin/workflows/ui`.
+workflow builder actions. Old workflow browser links redirect to
+`/admin/app/workflows`.
 
 The React governance workspace is available at
 [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/governance](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/governance).
@@ -207,8 +208,8 @@ package publication, manifest upload precedence, validation findings,
 platform-only tenant grants, immutable publication, quarantine/withdrawal
 evidence, tenant discovery, installation, credential references, queued
 smoke-test/readiness actions, connector readiness, SkillExecutionGateway
-diagnostics, binding eligibility, and lifecycle audit records. Existing Jinja
-skill registry and skill execution diagnostic routes remain available.
+diagnostics, binding eligibility, and lifecycle audit records. Legacy skill
+registry and skill execution diagnostic browser routes redirect to React.
 
 The React agent and workflow test bench is available at
 [http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/test-bench](http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app/test-bench).
@@ -230,8 +231,7 @@ principal rollups, graph node attribution, gateway operation attribution,
 physical attempt attribution, governed tool attribution, bounded event
 drilldowns, and audited export summaries. Platform administrators can review
 authorized cross-tenant usage; tenant administrators see only their active
-tenant. Existing server-rendered usage pages remain available at
-`/admin/usage`.
+tenant. Old usage browser links redirect to `/admin/app/usage`.
 
 Focused shell validation:
 
@@ -344,18 +344,18 @@ uv run python scripts/frontend/generate_admin_react_types.py --check
 
 ## Admin Console Shell
 
-Open `/admin` to use the shared server-rendered admin console. Platform scope
+Open `/admin` to use the shared React admin console. Platform scope
 omits `tenant_id`; tenant scope uses a validated `tenant_id=<uuid>` query
 parameter on shell links and forms. The shell shows the active scope on every
 wrapped page so administrators can identify whether they are acting at the
 platform level or inside a tenant.
 
-Navigation groups organize existing pages without replacing their routes:
-Workflows, Model And Skill Config, Run Inspection, Reliability, and Access.
-The main destinations remain `/admin/workflows/ui`, `/admin/config/ui`,
-`/admin/config/ui/history`, `/admin/runs`, `/admin/reliability/ui/`,
+Navigation groups organize existing pages and React workspaces:
+Workflows, Governance, Run Inspection, Reliability, and Access. The main
+destinations include `/admin/app/workflows`, `/admin/app/governance`,
+`/admin/runs`, `/admin/reliability/ui/`,
 `/admin/reliability/ui/breakers`, and
-`/admin/reliability/ui/dead-letters`, plus `/admin/model-providers`.
+`/admin/reliability/ui/dead-letters`.
 
 Common states distinguish empty lists, filtered-empty lists, denied access,
 not-found resources, unavailable dependencies, validation failures, partial
@@ -430,7 +430,9 @@ history, rollback, and run provenance for reviewer verification.
 
 ## Model Provider Gateway
 
-Platform administrators configure model providers at `/admin/model-providers`.
+Platform administrators configure model providers at
+`/admin/app/governance/providers`. Old `/admin/model-providers` browser URLs
+redirect to the React governance workspace.
 Supported providers are OpenAI and local OpenAI-compatible chat completions
 endpoints. Connections capture display name, provider type, safe base URL,
 model ids, timeout policy, tenant visibility, active state, health state, last
@@ -464,8 +466,10 @@ signals, and safe audit summaries are captured consistently.
 
 ## Agent And Workflow Test Bench
 
-Administrators configure tenant-scoped test suites at `/admin/agent-tests/ui`
-or through JSON APIs under `/admin/agent-tests`. Suites target prompt versions,
+Administrators configure tenant-scoped test suites in React at
+`/admin/app/test-bench` or through JSON APIs under `/admin/agent-tests`.
+Legacy `/admin/agent-tests/ui...` browser URLs are compatibility redirects
+that preserve tenant scope and safe route ids. Suites target prompt versions,
 agent runtime profile versions, workflow drafts, published subworkflows, or
 published workflows. Cases store safe fixture summaries, expected contract
 shapes, deterministic assertions, optional evaluator settings, model/tool
@@ -674,14 +678,11 @@ payloads. QA036 reviewer evidence lives in
 `specs/036-react-channel-telegram-and-briefing-preferences/qa036_ui.md`, and
 `specs/036-react-channel-telegram-and-briefing-preferences/qa036_user_guide.md`.
 
-The React admin migration hardening dashboard is the React landing experience at
-`/admin/app` and is also available directly at `/admin/app/migration`. It
-summarizes Specs 026 through 036 route parity, React-primary destinations,
-retained fallbacks, rollback instructions, performance budgets, accessibility
-coverage, redaction sweeps, and tenant isolation checks. Legacy Jinja route
-deletion stays disabled by default; retained fallbacks remain visible until
-route-specific parity and rollback evidence is complete. QA037 reviewer
-evidence lives in
+The React admin migration hardening dashboard is available at
+`/admin/app/migration`. After Spec 047 it summarizes React-only browser UI
+decommission evidence, route compatibility redirects, rollback-by-redeploy
+guidance, performance budgets, accessibility coverage, redaction sweeps, and
+tenant isolation checks. QA037 and QA047 reviewer evidence lives in
 `specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037.md`,
 `specs/037-react-admin-migration-hardening-and-jinja-retirement/qa037_ui.md`,
 and

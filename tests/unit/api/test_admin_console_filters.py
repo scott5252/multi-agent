@@ -25,7 +25,9 @@ def test_filter_profiles_cover_useful_admin_areas() -> None:
         "reliability_dead_letters",
         "telegram_configuration",
     }
-    assert profiles["run_inspection"].destination_href == "/admin/runs"
+    assert profiles["run_inspection"].destination_href == (
+        "/admin/app/operations?panel=runs"
+    )
 
 
 def test_tenant_filter_scope_mismatch_is_rejected() -> None:

@@ -68,10 +68,12 @@ def test_admin_model_provider_pages_and_json_api(tmp_path, monkeypatch) -> None:
         list_page = client.get(
             "/admin/model-providers",
             headers={"X-Local-Principal": "platform-admin"},
+            follow_redirects=False,
         )
         new_page = client.get(
             "/admin/model-providers/new",
             headers={"X-Local-Principal": "platform-admin"},
+            follow_redirects=False,
         )
         created = client.post(
             "/admin/model-providers/api/connections",
@@ -89,10 +91,12 @@ def test_admin_model_provider_pages_and_json_api(tmp_path, monkeypatch) -> None:
         detail_page = client.get(
             f"/admin/model-providers/{connection_id}",
             headers={"X-Local-Principal": "platform-admin"},
+            follow_redirects=False,
         )
         edit_page = client.get(
             f"/admin/model-providers/{connection_id}/edit",
             headers={"X-Local-Principal": "platform-admin"},
+            follow_redirects=False,
         )
         listed = client.get(
             "/admin/model-providers/api/connections",
@@ -142,6 +146,7 @@ def test_admin_model_provider_pages_and_json_api(tmp_path, monkeypatch) -> None:
         catalog_page = client.get(
             "/admin/model-providers/catalog",
             headers={"X-Local-Principal": "platform-admin"},
+            follow_redirects=False,
         )
         denied = client.post(
             "/admin/model-providers/api/connections",
@@ -164,22 +169,35 @@ def test_admin_model_provider_pages_and_json_api(tmp_path, monkeypatch) -> None:
             },
         )
 
-    assert list_page.status_code == 200
-    assert "Model Providers" in list_page.text
-    assert new_page.status_code == 200
-    assert "Provider type" in new_page.text
-    assert detail_page.status_code == 200
-    assert "Provider" in detail_page.text
-    assert edit_page.status_code == 200
+    assert list_page.status_code == 303
+    assert list_page.headers["location"] == "/admin/app/governance/providers"
+    assert new_page.status_code == 303
+    assert new_page.headers["location"] == "/admin/app/governance/providers/new"
+    assert detail_page.status_code == 303
+    assert detail_page.headers["location"] == (
+        f"/admin/app/governance/providers/{connection_id}"
+    )
+    assert edit_page.status_code == 303
+    assert edit_page.headers["location"] == (
+        f"/admin/app/governance/providers/{connection_id}/edit"
+    )
     assert listed.status_code == 200
     assert listed.json()["items"][0]["display_name"] == "Provider"
     assert updated.status_code == 200
     assert updated.json()["display_name"] == "Provider Updated"
     assert deactivated.status_code == 303
+    assert deactivated.headers["location"] == (
+        f"/admin/app/governance/providers/{connection_id}"
+    )
     assert activated.status_code == 303
+    assert activated.headers["location"] == (
+        f"/admin/app/governance/providers/{connection_id}"
+    )
     assert synced.status_code == 200
     assert form_saved.status_code == 303
-    assert catalog_page.status_code == 200
+    assert form_saved.headers["location"].startswith("/admin/app/governance/providers/")
+    assert catalog_page.status_code == 303
+    assert catalog_page.headers["location"] == "/admin/app/governance/providers"
     assert denied.status_code in {403, 422}
     assert unsafe_local.status_code == 422
     assert unsafe_local.json() == {

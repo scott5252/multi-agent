@@ -17,7 +17,6 @@ def test_process_profiles_include_api_and_worker(settings: Settings) -> None:
 
 
 def test_settings_expose_web_admin_paths(settings: Settings) -> None:
-    assert settings.web_admin_templates_dir.name == "templates"
     assert settings.web_admin_static_dir.name == "static"
     assert settings.workflow_registry_artifact_prefix == "workflow-registry"
     assert settings.runtime_checkpoint_database_url == settings.database_url

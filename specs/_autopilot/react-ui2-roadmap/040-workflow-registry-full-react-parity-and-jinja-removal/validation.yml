@@ -21,6 +21,18 @@
         "id": "qa040-react-ui2-smoke",
         "steps": [
           {
+            "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"platform-admin\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
             "goto": "/admin/app/workflows"
           },
           {

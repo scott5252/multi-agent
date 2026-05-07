@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 from datetime import UTC, datetime
-from typing import Annotated, Any, cast
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -27,6 +28,7 @@ from multi_agent_platform.admin.channel_telegram_briefing import (
 from multi_agent_platform.admin.governance import (
     build_credential_reference_result,
     build_governance_dashboard,
+    build_governance_legacy_route_mappings,
     build_policy_history,
     build_profile_list,
     build_profile_resolution,
@@ -52,7 +54,7 @@ from multi_agent_platform.admin.memberships.react_memberships import (
     build_role_grant_result,
 )
 from multi_agent_platform.admin.migration_hardening import (
-    build_jinja_inventory_dashboard,
+    build_decommission_inventory_dashboard,
     build_migration_dashboard,
     build_migration_rollback_plan,
     build_migration_route_groups,
@@ -67,6 +69,7 @@ from multi_agent_platform.admin.skill_lifecycle import (
     build_package_lifecycle_result,
     build_readiness_refresh_result,
     build_skill_execution_diagnostics,
+    build_skill_legacy_route_mappings,
     build_skill_lifecycle_audit,
     build_skill_lifecycle_dashboard,
     build_tenant_discovery,
@@ -88,6 +91,10 @@ from multi_agent_platform.admin.workflow_builder import (
     build_save_result,
     build_validation_result,
     build_workflow_builder_envelope,
+    build_workflow_create_envelope,
+    build_workflow_legacy_route_mappings,
+    build_workflow_registry_envelope,
+    build_workflow_version_detail,
 )
 from multi_agent_platform.api.deps import ContainerDep, get_session
 from multi_agent_platform.api.routers.admin_console import (
@@ -113,6 +120,7 @@ from multi_agent_platform.api.schemas.admin_channel_telegram_briefing_react impo
 )
 from multi_agent_platform.api.schemas.admin_governance import (
     GovernanceDashboard,
+    GovernanceLegacyRouteMapping,
     GovernanceMutationResult,
     PolicyHistoryList,
     ProfileGovernanceList,
@@ -207,6 +215,7 @@ from multi_agent_platform.api.schemas.admin_skill_lifecycle import (
     CredentialConfigurationRequest,
     ReadinessRefreshRequest,
     SkillExecutionDiagnosticList,
+    SkillLegacyRouteMapping,
     SkillLifecycleAuditList,
     SkillLifecycleDashboard,
     SkillLifecycleMutationResult,
@@ -251,9 +260,14 @@ from multi_agent_platform.api.schemas.admin_workbench import (
 from multi_agent_platform.api.schemas.admin_workflow_builder import (
     BuilderMutationResult,
     WorkflowBuilderEnvelope,
+    WorkflowCreateEnvelope,
     WorkflowDraftSaveRequest,
+    WorkflowLegacyRouteMapping,
+    WorkflowPublishReadiness,
     WorkflowPublishRequest,
     WorkflowReferenceCatalog,
+    WorkflowRegistryEnvelope,
+    WorkflowVersionDetail,
 )
 from multi_agent_platform.api.ui.admin_console import (
     AdminConsoleAccessError,
@@ -330,7 +344,6 @@ REACT_OPERATIONS_EXPORT_URL = "/admin/app/operations/export"
 VITE_ENTRY_KEY = "src/main.tsx"
 DESIGN_TOKEN_VERSION = "qa034"
 DISABLED_REACT_FALLBACKS: dict[str, str] = {
-    "workflows": "/admin/workflows/ui",
     "operations": "/admin/operations",
 }
 
@@ -358,20 +371,11 @@ async def react_admin_app(
             detail=exc.reason_category,
         ) from exc
 
-    bootstrap_url = _with_tenant_query(REACT_BOOTSTRAP_URL, shell.active_scope)
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "admin_react/app.html",
-            {
-                "asset_manifest": react_admin_manifest(container),
-                "bootstrap_url": bootstrap_url,
-                "config_url": REACT_CONFIG_URL,
-                "mount_path": REACT_MOUNT_PATH,
-                "shell": shell,
-            },
-        ),
+    return render_react_admin_host(
+        asset_manifest=react_admin_manifest(container),
+        bootstrap_url=_with_tenant_query(REACT_BOOTSTRAP_URL, shell.active_scope),
+        config_url=REACT_CONFIG_URL,
+        mount_path=REACT_MOUNT_PATH,
     )
 
 
@@ -425,18 +429,11 @@ async def react_admin_migration_app(
         if tenant_id
         else "/admin/app/migration/shell.json"
     )
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "admin_react/app.html",
-            {
-                "asset_manifest": react_admin_manifest(container),
-                "bootstrap_url": bootstrap_url,
-                "config_url": REACT_CONFIG_URL,
-                "mount_path": REACT_MOUNT_PATH,
-            },
-        ),
+    return render_react_admin_host(
+        asset_manifest=react_admin_manifest(container),
+        bootstrap_url=bootstrap_url,
+        config_url=REACT_CONFIG_URL,
+        mount_path=REACT_MOUNT_PATH,
     )
 
 
@@ -521,29 +518,44 @@ async def react_admin_migration_routes(
 
 
 @router.get(
-    "/admin/app/migration/jinja-inventory.json",
+    "/admin/app/migration/decommission-inventory.json",
     response_model=JinjaInventoryDashboard,
     responses={
         401: {"model": SafeProblemDetail},
         403: {"model": SafeProblemDetail},
     },
 )
-async def react_admin_migration_jinja_inventory(
+async def react_admin_migration_decommission_inventory(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> JinjaInventoryDashboard:
-    shell = await _migration_shell(
+    await _migration_shell(
         request=request,
         principal=principal,
         session=session,
         tenant_id=tenant_id,
     )
-    return build_jinja_inventory_dashboard(
-        scope=_scope_response(shell.active_scope),
+    return build_decommission_inventory_dashboard()
+
+
+@router.get(
+    "/admin/app/migration/jinja-inventory.json",
+    response_model=JinjaInventoryDashboard,
+    include_in_schema=False,
+)
+async def react_admin_migration_legacy_inventory_alias(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> JinjaInventoryDashboard:
+    return await react_admin_migration_decommission_inventory(
+        request=request,
         principal=principal,
-        item_limit_per_group=None,
+        session=session,
+        tenant_id=tenant_id,
     )
 
 
@@ -749,6 +761,112 @@ async def react_admin_workflows_app(
     )
 
 
+@router.get("/admin/app/workflows/new", response_class=HTMLResponse)
+async def react_admin_workflows_new_app(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> HTMLResponse:
+    return await react_admin_app(
+        request=request,
+        principal=principal,
+        session=session,
+        container=container,
+        tenant_id=tenant_id,
+    )
+
+
+@router.get(
+    "/admin/app/workflows/registry.json",
+    response_model=WorkflowRegistryEnvelope,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_registry(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> WorkflowRegistryEnvelope:
+    try:
+        shell = await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    return build_workflow_registry_envelope(scope=_scope_response(shell.active_scope))
+
+
+@router.get(
+    "/admin/app/workflows/create.json",
+    response_model=WorkflowCreateEnvelope,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_create_state(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> WorkflowCreateEnvelope:
+    try:
+        shell = await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    return build_workflow_create_envelope(scope=_scope_response(shell.active_scope))
+
+
+@router.get(
+    "/admin/app/workflows/legacy-routes.json",
+    response_model=tuple[WorkflowLegacyRouteMapping, ...],
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_legacy_routes(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> tuple[WorkflowLegacyRouteMapping, ...]:
+    try:
+        shell = await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    return build_workflow_legacy_route_mappings(
+        scope=_scope_response(shell.active_scope),
+    )
+
+
 @router.get(
     "/admin/app/workflows/builder.json",
     response_model=WorkflowBuilderEnvelope,
@@ -783,6 +901,105 @@ async def react_admin_workflow_builder(
         workflow_draft_id=workflow_draft_id,
         large=large,
     )
+
+
+@router.get(
+    "/admin/app/workflows/drafts/{workflow_draft_id}/detail.json",
+    response_model=WorkflowBuilderEnvelope,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_draft_detail(
+    workflow_draft_id: str,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> WorkflowBuilderEnvelope:
+    try:
+        shell = await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    return build_workflow_builder_envelope(
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        workflow_draft_id=workflow_draft_id,
+    )
+
+
+@router.get(
+    "/admin/app/workflows/drafts/{workflow_draft_id}/publish-gate.json",
+    response_model=WorkflowPublishReadiness,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_publish_gate_detail(
+    workflow_draft_id: str,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> WorkflowPublishReadiness:
+    _ = workflow_draft_id
+    try:
+        shell = await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    return build_workflow_builder_envelope(
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+    ).publish_readiness
+
+
+@router.get(
+    "/admin/app/workflows/versions/{workflow_version_bundle_id}/detail.json",
+    response_model=WorkflowVersionDetail,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_version_detail(
+    workflow_version_bundle_id: str,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> WorkflowVersionDetail:
+    _ = workflow_version_bundle_id
+    try:
+        shell = await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    return build_workflow_version_detail(scope=_scope_response(shell.active_scope))
 
 
 @router.get(
@@ -987,6 +1204,37 @@ async def react_admin_governance_providers(
         ) from exc
     return build_provider_list(
         scope=_scope_response(shell.active_scope), principal=principal
+    )
+
+
+@router.get(
+    "/admin/app/governance/legacy-routes.json",
+    response_model=tuple[GovernanceLegacyRouteMapping, ...],
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_governance_legacy_routes(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> tuple[GovernanceLegacyRouteMapping, ...]:
+    try:
+        shell = await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    return build_governance_legacy_route_mappings(
+        scope=_scope_response(shell.active_scope),
     )
 
 
@@ -1363,6 +1611,35 @@ async def react_admin_skills_bootstrap(
         scope=_scope_response(shell.active_scope),
         principal=principal,
     )
+
+
+@router.get(
+    "/admin/app/skills/legacy-routes.json",
+    response_model=tuple[SkillLegacyRouteMapping, ...],
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_skills_legacy_routes(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> tuple[SkillLegacyRouteMapping, ...]:
+    try:
+        await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    return build_skill_legacy_route_mappings()
 
 
 @router.post(
@@ -2524,18 +2801,28 @@ async def react_admin_channels_app(
         if tenant_id
         else "/admin/app/channels/shell.json"
     )
-    return cast(
-        HTMLResponse,
-        container.workflow_ui_templates.TemplateResponse(
-            request,
-            "admin_react/app.html",
-            {
-                "asset_manifest": react_admin_manifest(container),
-                "bootstrap_url": bootstrap_url,
-                "config_url": REACT_CONFIG_URL,
-                "mount_path": REACT_MOUNT_PATH,
-            },
-        ),
+    return render_react_admin_host(
+        asset_manifest=react_admin_manifest(container),
+        bootstrap_url=bootstrap_url,
+        config_url=REACT_CONFIG_URL,
+        mount_path=REACT_MOUNT_PATH,
+    )
+
+
+@router.get("/admin/app/channels/runs", response_class=HTMLResponse)
+async def react_admin_channels_runs_app(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> HTMLResponse:
+    return await react_admin_channels_app(
+        request=request,
+        principal=principal,
+        session=session,
+        container=container,
+        tenant_id=tenant_id,
     )
 
 
@@ -3255,6 +3542,10 @@ async def react_admin_spa_fallback(
 ) -> HTMLResponse:
     if (
         react_path in DISABLED_REACT_FALLBACKS
+        or react_path.startswith("workflows/")
+        or react_path.startswith("governance/")
+        or react_path.startswith("skills/")
+        or react_path.startswith("saved-filters/")
         or react_path.startswith("usage/exports/")
         or react_path.startswith("channels/runs/")
     ):
@@ -4055,6 +4346,89 @@ def _asset_url(base_path: str, asset: str) -> str:
     return f"{base_path.rstrip('/')}/{asset.lstrip('/')}"
 
 
+def render_react_admin_host(
+    *,
+    asset_manifest: ReactAdminAssetManifestSummary,
+    bootstrap_url: str,
+    config_url: str,
+    mount_path: str,
+) -> HTMLResponse:
+    stylesheet_links = "\n".join(
+        f'    <link rel="stylesheet" href="{html.escape(stylesheet, quote=True)}">'
+        for stylesheet in asset_manifest.stylesheets
+    )
+    script_tags = "\n".join(
+        (
+            '    <script type="module" '
+            f'src="{html.escape(entrypoint, quote=True)}"></script>'
+        )
+        for entrypoint in asset_manifest.entrypoints
+    )
+    if asset_manifest.available:
+        fallback_body = "<p>Loading the authenticated admin shell.</p>"
+    else:
+        reason = html.escape(asset_manifest.unavailable_reason or "unavailable")
+        fallback_body = (
+            "<p>React admin built assets are unavailable: "
+            f"{reason}.</p>"
+            '<p><a href="/auth/local-login?redirect_to=/admin/app">'
+            "Open local login</a></p>"
+        )
+    document = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>React Admin</title>
+{stylesheet_links}
+  </head>
+  <body>
+    <a
+      href="#admin-main-content"
+      style="position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden;"
+    >
+      Skip to content
+    </a>
+    <div
+      id="root"
+      data-bootstrap-url="{html.escape(bootstrap_url, quote=True)}"
+      data-config-url="{html.escape(config_url, quote=True)}"
+      data-mount-path="{html.escape(mount_path, quote=True)}"
+    >
+      <main
+        id="admin-main-content"
+        aria-label="Admin"
+        style="font-family: system-ui, sans-serif; padding: 2rem;"
+      >
+        <p style="font-weight: 700; text-transform: uppercase;">
+          Admin
+        </p>
+        <h1 style="font-size: 2rem; margin: 0 0 0.75rem;">React Admin</h1>
+        {fallback_body}
+      </main>
+    </div>
+{script_tags}
+  </body>
+</html>
+"""
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'"
+    )
+    return HTMLResponse(
+        document,
+        headers={
+            "Cache-Control": "no-store",
+            "Content-Security-Policy": csp,
+            "X-React-Admin-Host": "non-jinja",
+        },
+    )
+
+
 def _scope_response(scope: AdminScope) -> ReactAdminScope:
     return ReactAdminScope(
         scope_type=ReactAdminScopeType(scope.scope_type),
@@ -4090,7 +4464,7 @@ def _navigation_item_response(
 ) -> ReactAdminNavigationItem:
     href = safe_redirect_target(item.href, fallback="/admin")
     route_surface_key = item.route_surface_key
-    fallback_kind = ReactAdminFallbackKind.JINJA
+    fallback_kind = ReactAdminFallbackKind.REACT
     if item.admin_area == "workflows":
         href = _with_optional_tenant_query(REACT_WORKFLOWS_PATH, active_scope)
         route_surface_key = "GET:/admin/app/workflows"
@@ -4098,6 +4472,14 @@ def _navigation_item_response(
     elif item.admin_area == "governance":
         href = _with_optional_tenant_query(REACT_GOVERNANCE_PATH, active_scope)
         route_surface_key = "GET:/admin/app/governance"
+        fallback_kind = ReactAdminFallbackKind.REACT
+    elif item.admin_area in {
+        "skill_registry",
+        "skill_registry_installations",
+        "skill_execution",
+    }:
+        href = _with_optional_tenant_query(REACT_SKILLS_PATH, active_scope)
+        route_surface_key = "GET:/admin/app/skills"
         fallback_kind = ReactAdminFallbackKind.REACT
     elif item.admin_area == "operations":
         href = _with_optional_tenant_query(REACT_OPERATIONS_PATH, active_scope)

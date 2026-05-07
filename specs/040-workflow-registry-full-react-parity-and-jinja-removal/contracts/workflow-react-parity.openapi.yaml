@@ -1,0 +1,226 @@
+openapi: 3.1.0
+info:
+  title: Workflow Registry React Parity Contracts
+  version: 0.1.0
+paths:
+  /admin/app/workflows/registry.json:
+    get:
+      summary: Authorized workflow registry React envelope
+      parameters:
+        - name: tenant_id
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: scope_filter
+          in: query
+          schema: { type: string }
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: saved_filter
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Workflow registry envelope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowRegistryReactEnvelope"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/workflows/create.json:
+    get:
+      summary: Authorized workflow create state
+      responses:
+        "200":
+          description: Workflow create state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowCreateState"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/workflows/drafts/{workflow_draft_id}/detail.json:
+    get:
+      summary: Authorized workflow draft React state
+      parameters:
+        - name: workflow_draft_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Workflow draft React state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowDraftReactState"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+        "404":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/workflows/drafts/{workflow_draft_id}/publish-gate.json:
+    get:
+      summary: Authorized workflow publish gate state
+      parameters:
+        - name: workflow_draft_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Publish gate state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowPublishGateReactState"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+        "404":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/workflows/legacy-route.json:
+    get:
+      summary: Inspect legacy workflow route mapping
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Legacy route mapping
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowLegacyRouteMapping"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+components:
+  responses:
+    SafeProblem:
+      description: Redaction-safe problem detail
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SafeProblemDetail"
+  schemas:
+    WorkflowRegistryReactEnvelope:
+      type: object
+      required: [page_id, scope, filters, items, legacy_routes]
+      properties:
+        page_id: { type: string }
+        scope: { type: object }
+        filters: { type: object }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowRegistryReactItem"
+        create_action:
+          $ref: "#/components/schemas/WorkflowAction"
+        legacy_routes:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowLegacyRouteMapping"
+        common_state:
+          type: object
+    WorkflowRegistryReactItem:
+      type: object
+      required: [workflow_lineage_id, name, workflow_kind, status, actions]
+      properties:
+        workflow_lineage_id: { type: string }
+        workflow_draft_id: { type: string }
+        workflow_version_bundle_id: { type: string }
+        name: { type: string }
+        workflow_kind: { type: string }
+        status: { type: string }
+        owner_label: { type: string }
+        tenant_label: { type: string }
+        updated_at_label: { type: string }
+        sharing_summary: { type: string }
+        required_evidence_summary: { type: string }
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowAction"
+    WorkflowCreateState:
+      type: object
+      required: [metadata, defaults, create_action]
+      properties:
+        metadata: { type: object }
+        defaults: { type: object }
+        create_action:
+          $ref: "#/components/schemas/WorkflowAction"
+        validation: { type: object }
+    WorkflowDraftReactState:
+      type: object
+      required: [draft, graph_preview, validation, publish_readiness, revisions, sharing]
+      properties:
+        draft: { type: object }
+        field_help: { type: array, items: { type: object } }
+        reference_catalog: { type: object }
+        graph_preview: { type: object }
+        validation: { type: object }
+        publish_readiness: { type: object }
+        revisions: { type: array, items: { type: object } }
+        sharing: { type: object }
+        stale_conflict: { type: object }
+    WorkflowPublishGateReactState:
+      type: object
+      required: [decision, revision, validation_summary, required_evidence, blockers]
+      properties:
+        decision: { type: string }
+        revision: { type: string }
+        validation_summary: { type: object }
+        required_evidence: { type: array, items: { type: object } }
+        sharing_summary: { type: string }
+        blockers: { type: array, items: { type: string } }
+        warnings: { type: array, items: { type: string } }
+        confirmation: { type: object }
+        publish_action:
+          $ref: "#/components/schemas/WorkflowAction"
+        published_bundle_summary: { type: object }
+    WorkflowLegacyRouteMapping:
+      type: object
+      required: [legacy_path, methods, redirect_status, retirement_outcome]
+      properties:
+        legacy_path: { type: string }
+        methods: { type: array, items: { type: string } }
+        react_path: { type: string }
+        preserved_parameters: { type: array, items: { type: string } }
+        redirect_status: { type: string }
+        compatibility_response: { type: string }
+        authorization_behavior: { type: string }
+        inventory_item_id: { type: string }
+        evidence_references: { type: array, items: { type: string } }
+        retirement_outcome: { type: string }
+    WorkflowAction:
+      type: object
+      required: [action_id, label, href, method]
+      properties:
+        action_id: { type: string }
+        label: { type: string }
+        href: { type: string }
+        method: { type: string }
+        disabled: { type: boolean }
+        reason: { type: string }
+    SafeProblemDetail:
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

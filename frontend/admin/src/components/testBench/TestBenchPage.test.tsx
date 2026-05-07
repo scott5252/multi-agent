@@ -11,6 +11,7 @@ import { TestBenchPage } from "./TestBenchPage";
 
 describe("TestBenchPage", () => {
   afterEach(() => {
+    window.history.replaceState({}, "", "/admin/app/test-bench");
     vi.unstubAllGlobals();
   });
 
@@ -54,5 +55,42 @@ describe("TestBenchPage", () => {
       "/admin/app/test-bench/suites",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("uses redirected run query state without leaking unsafe content", async () => {
+    window.history.pushState(
+      {},
+      "",
+      "/admin/app/test-bench?tenant_id=11111111-1111-1111-1111-111111111111&run_id=run-qa043-redirected",
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => testBenchDashboardFixture,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => testBenchRunDetailFixture,
+        }),
+    );
+
+    render(
+      <TestBenchPage
+        testBenchUrl="/admin/app/test-bench/bootstrap.json?tenant_id=11111111-1111-1111-1111-111111111111&run_id=run-qa043-redirected"
+      />,
+    );
+
+    await screen.findByText(
+      "Old run links now open React with backend-owned run evidence preserved.",
+    );
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/admin/app/test-bench/runs/run-qa043-redirected.json?tenant_id=11111111-1111-1111-1111-111111111111",
+      expect.objectContaining({ headers: expect.any(Object) }),
+    );
+    expect(screen.queryByText(/raw transcript/)).not.toBeInTheDocument();
   });
 });

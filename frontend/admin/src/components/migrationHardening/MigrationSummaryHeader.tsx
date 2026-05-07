@@ -31,13 +31,13 @@ export function MigrationSummaryHeader({
         <Metric label="Destinations" value={summary.total_destinations} />
         <Metric label="React primary" value={summary.react_primary_count} />
         <Metric label="Redirects" value={summary.redirect_count} />
-        <Metric label="Fallbacks" value={summary.retained_fallback_count} />
+        <Metric label="Legacy fallbacks" value={summary.retained_fallback_count} />
         <Metric label="Retirement ready" value={summary.retirement_candidate_count} />
         <Metric label="Blocked" value={summary.blocked_count} />
       </dl>
       <p className="migration-next-step">{summary.next_step}</p>
       <p className="migration-muted">
-        Inventory rows: {dashboard.jinja_inventory.summary.total_items} surfaces,
+        Decommission rows: {dashboard.jinja_inventory.summary.total_items} surfaces,
         {dashboard.jinja_inventory.summary.blocked_count} blocked.
       </p>
     </section>

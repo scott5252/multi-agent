@@ -1,0 +1,112 @@
+openapi: 3.1.0
+info:
+  title: Spec 044 Operations React Parity Contract
+  version: 0.1.0
+paths:
+  /admin/app/operations:
+    get:
+      summary: React operations browser host
+      responses:
+        "200":
+          description: React admin host
+  /admin/app/operations.json:
+    get:
+      summary: React operations workbench envelope
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: panel
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Operations workbench envelope
+  /admin/app/operations/runs/{workflow_run_id}.json:
+    get:
+      summary: React run debug envelope
+      parameters:
+        - name: workflow_run_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Redacted run debug envelope
+  /admin/app/usage/bootstrap.json:
+    get:
+      summary: React usage dashboard envelope
+      responses:
+        "200":
+          description: Usage dashboard envelope
+  /admin/app/usage/exports/{usage_export_request_id}.json:
+    get:
+      summary: React usage export detail envelope
+      parameters:
+        - name: usage_export_request_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Safe export detail metadata
+  /admin/operations:
+    get:
+      summary: Legacy operations route
+      responses:
+        "303":
+          description: Redirects to React operations
+  /admin/reliability/ui/breakers:
+    get:
+      summary: Legacy reliability breaker route
+      responses:
+        "303":
+          description: Redirects to React operations reliability panel
+  /admin/runs/{run_id}:
+    get:
+      summary: Legacy run detail route
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "303":
+          description: Redirects to React run debug
+  /runs/{run_id}:
+    get:
+      summary: Legacy user-facing run detail route
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "303":
+          description: Redirects to React channel run status
+  /admin/usage/exports/{usage_export_request_id}:
+    get:
+      summary: Legacy usage export detail route
+      parameters:
+        - name: usage_export_request_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "303":
+          description: Redirects to React usage export detail

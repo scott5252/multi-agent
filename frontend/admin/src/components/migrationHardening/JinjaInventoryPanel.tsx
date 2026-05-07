@@ -26,16 +26,16 @@ export function JinjaInventoryPanel({
     >
       <div className="migration-panel-heading">
         <div>
-          <p className="eyebrow">Jinja inventory</p>
-          <h2 id="jinja-inventory-title">Deletion readiness</h2>
+          <p className="eyebrow">Decommission inventory</p>
+          <h2 id="jinja-inventory-title">React-only readiness</h2>
         </div>
         <span className="migration-count">{summary.total_items} items</span>
       </div>
 
-      <dl className="migration-summary-grid compact" aria-label="Jinja inventory counts">
-        <Metric label="Templates" value={summary.template_count} />
+      <dl className="migration-summary-grid compact" aria-label="Decommission inventory counts">
+        <Metric label="Templates removed" value={summary.template_count} />
         <Metric label="Routes" value={summary.route_count} />
-        <Metric label="Assets" value={summary.static_asset_count} />
+        <Metric label="Assets removed" value={summary.static_asset_count} />
         <Metric label="Direct links" value={summary.direct_link_count} />
         <Metric label="Blocked" value={summary.blocked_count} />
         <Metric label="Safe" value={summary.safe_to_delete_count} />
@@ -74,14 +74,15 @@ export function JinjaInventoryPanel({
             </article>
           ))
         ) : (
-          <p className="migration-empty">No inventory rows are visible for this scope.</p>
+          <p className="migration-empty">No server-rendered inventory rows remain for this scope.</p>
         )}
       </div>
 
       <ul className="migration-evidence-list">
         {inventory.evidence.map((evidence) => (
           <li key={evidence.evidence_id}>
-            {evidence.evidence_type.replaceAll("_", " ")}: {evidence.reference}
+            {evidence.evidence_type.replaceAll("_", " ")}: <code>{evidence.evidence_id}</code>
+            {evidence.reference ? <small>{evidence.reference}</small> : null}
           </li>
         ))}
       </ul>

@@ -134,6 +134,26 @@ export const skillLifecycleDashboardFixture: SkillLifecycleDashboard = {
       upgrade_path: "1.5.0 available after smoke evidence refresh",
     },
   ],
+  legacy_routes: [
+    {
+      authorization_behavior: "authenticated redirect with backend React denial",
+      compatibility_status: "redirected",
+      evidence: ["tests/integration/api/test_admin_skill_registry_legacy_redirects.py"],
+      legacy_path: "/admin/skill-registry/ui/packages",
+      notes: "Legacy skill browser route redirects to React.",
+      preserved_params: ["query"],
+      react_path: "/admin/app/skills/packages",
+    },
+    {
+      authorization_behavior: "authenticated redirect with backend React denial",
+      compatibility_status: "redirected",
+      evidence: ["tests/integration/api/test_admin_skill_execution_ui.py"],
+      legacy_path: "/admin/skill-execution/ui/diagnostics",
+      notes: "Legacy diagnostics browser route redirects to React.",
+      preserved_params: ["tenant_id", "query"],
+      react_path: "/admin/app/skills/diagnostics",
+    },
+  ],
   page_id: "react-skill-lifecycle",
   platform_publication: {
     authorized_actions: [

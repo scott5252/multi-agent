@@ -1,0 +1,104 @@
+{
+  "spec": "045",
+  "title": "Channels, Memberships, Access, Telegram, And Briefing Full React Parity",
+  "feature_dir": "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
+  "branch": "codex/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
+  "status": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/spec.md",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/checklists/requirements.md"
+      ],
+      "notes": "Created Spec 045 from the generated roadmap prompt. Scope covers React-only memberships/access, Telegram/channel delivery, and briefing preferences while preserving retained JSON APIs and deleting only bounded domain templates after parity evidence."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/spec.md"
+      ],
+      "auto_clarifications": [
+        "Include all admin browser pages for access and people workflows.",
+        "Show link tokens only immediately after creation.",
+        "Preserve old direct links through authenticated React redirects.",
+        "Keep tenant-user and tenant-admin views separated by backend policy.",
+        "Keep destructive membership confirmations and revision checks backend-owned.",
+        "Use mocked-safe Telegram webhook validation with no full identifiers.",
+        "Include briefing import/export browser routes and safe artifact metadata.",
+        "Retain API-only routes used by React."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/plan.md",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/research.md",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/data-model.md",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/contracts/channels-people-react-parity-ui.md",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/contracts/channels-people-react-parity.openapi.yaml",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/quickstart.md"
+      ],
+      "notes": "Planned React-only browser parity for memberships/access, Telegram/channel delivery, and briefing preferences by retaining JSON APIs, converting old browser routes to React redirects or safe compatibility handlers, deleting only bounded domain templates, and validating with backend/frontend/QA/Playwright gates."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/tasks.md"
+      ],
+      "task_count": 52,
+      "notes": "Generated dependency-ordered tasks covering legacy route tests, membership/Telegram/briefing redirects, form-post compatibility, template deletion, docs, TypeScript generation, backend/frontend validation, QA docs, Spec QA, and Playwright evidence."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "remediations": [
+        "Identified old Telegram link-token form posts as a special non-Jinja compatibility path: return immediate JSON with the one-time token instead of redirecting and losing the token."
+      ],
+      "notes": "Read-only analysis confirmed the remaining deletable domain templates are memberships/index.html, telegram/index.html, and briefing_preferences/index.html. Admin shell Jinja remains for Spec 047. Existing React membership and channel workspaces already provide replacement routes and retained JSON APIs."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/routers/admin_memberships.py",
+        "src/multi_agent_platform/api/routers/admin_telegram.py",
+        "src/multi_agent_platform/api/routers/admin_briefing_preferences.py",
+        "src/multi_agent_platform/api/ui/admin_console.py",
+        "tests/unit/admin/test_channels_people_jinja_retirement.py",
+        "tests/integration/api/test_admin_memberships_ui.py",
+        "tests/integration/api/test_admin_telegram_ui.py",
+        "tests/integration/api/test_admin_briefing_preferences_ui.py",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/.env.qa045",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/qa045.md",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/qa045_ui.md",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/qa045_user_guide.md",
+        "specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/pr_notes.md"
+      ],
+      "notes": "Converted legacy memberships, Telegram/channel, and briefing browser routes to React redirects or safe non-Jinja compatibility handlers, updated admin navigation/filter destinations, deleted bounded domain templates, added retirement scanners and redirected-route coverage, and created required QA artifacts."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run pytest --no-cov tests/integration/api/test_admin_memberships_ui.py tests/integration/api/test_admin_telegram_ui.py tests/integration/api/test_admin_briefing_preferences_ui.py tests/integration/test_admin_react_routes.py tests/contract/test_admin_react_contract.py tests/unit/admin/test_channels_people_jinja_retirement.py tests/unit/api/test_admin_memberships_router_edges.py tests/unit/api/test_admin_console_filters.py tests/integration/api/test_admin_console_shell_routes.py tests/integration/api/test_admin_console_shell_saved_filters.py -q",
+      "cd frontend/admin && npm test -- --run src/components/memberships src/components/channelTelegramBriefing src/App.test.tsx",
+      "cd frontend/admin && npm run build",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/react-ui2-roadmap/045-channels-memberships-access-telegram-and-briefing-full-react-parity/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/react-ui2-roadmap/045-channels-memberships-access-telegram-and-briefing-full-react-parity/validation.yml --start-processes"
+    ],
+    "evidence": [
+      "output/playwright/qa045_ui/qa045-react-ui2-smoke.png"
+    ],
+    "notes": "All Spec 045 QA document, backend, frontend, full Spec QA, and Playwright gates passed. Screenshot inspected after Playwright showed the React channel workspace rendering without retired Jinja templates."
+  },
+  "blockers": []
+}

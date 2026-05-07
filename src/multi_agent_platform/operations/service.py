@@ -243,7 +243,7 @@ class OperationsConsoleService:
                 last_test_outcome=item.last_test_outcome.value
                 if item.last_test_outcome
                 else None,
-                href=f"/admin/model-providers/{item.provider_connection_id}",
+                href=f"/admin/app/governance/providers/{item.provider_connection_id}",
             )
             for item in summaries
         )
@@ -339,7 +339,7 @@ class OperationsConsoleService:
                     f"{capacity.runnable_depth} runnable, "
                     f"{capacity.delayed_depth} delayed."
                 ),
-                href="/admin/reliability/ui/",
+                href="/admin/app/operations?panel=reliability",
             ),
             OperationsStatusCard(
                 label="DB Pool Pressure",
@@ -371,7 +371,7 @@ class OperationsConsoleService:
                     f"{provider_counts.get('healthy', 0)} healthy, "
                     f"{provider_counts.get('unavailable', 0)} unavailable."
                 ),
-                href="/admin/model-providers",
+                href="/admin/app/governance/providers",
             ),
             OperationsStatusCard(
                 label="Telegram And Channels",
@@ -388,7 +388,7 @@ class OperationsConsoleService:
                     f"{capacity.retry_backlog} retries, "
                     f"{capacity.dead_letter_count} dead letters."
                 ),
-                href="/admin/reliability/ui/breakers",
+                href="/admin/app/operations?panel=breakers",
             ),
             OperationsStatusCard(
                 label="Request Latency",
@@ -401,14 +401,14 @@ class OperationsConsoleService:
                 value=str(len(logs)),
                 status="available",
                 summary="Recent lifecycle and gateway events in the filter window.",
-                href="/admin/runs",
+                href="/admin/app/operations?panel=runs",
             ),
             OperationsStatusCard(
                 label="Token Throughput",
                 value=str(usage.token_throughput),
                 status=usage.usage_status,
                 summary=f"{usage.total_events} usage events in the filter window.",
-                href="/admin/usage",
+                href="/admin/app/usage",
             ),
             OperationsStatusCard(
                 label="Error Rate",
@@ -518,7 +518,7 @@ def _trace_to_event(record: AuditRuntimeTraceRecord) -> OperationalLogEvent:
 
 def _gateway_to_event(record: GatewayInvocationAttempt) -> OperationalLogEvent:
     links = [
-        OperationsLink(label="Model Providers", href="/admin/model-providers"),
+        OperationsLink(label="Model Providers", href="/admin/app/governance/providers"),
         OperationsLink(label="Usage", href=_usage_href(record.tenant_id)),
     ]
     if record.workflow_run_id:
@@ -568,16 +568,16 @@ def _ensure_aware(value: datetime) -> datetime:
 
 
 def _run_href(run_id: UUID, tenant_id: UUID | None) -> str:
-    href = f"/admin/runs/{run_id}"
+    href = f"/admin/app/operations?run_id={run_id}"
     if tenant_id is not None:
-        href = f"{href}?tenant_id={tenant_id}"
+        href = f"{href}&tenant_id={tenant_id}"
     return href
 
 
 def _usage_href(tenant_id: UUID | None) -> str:
     if tenant_id is None:
-        return "/admin/usage"
-    return f"/admin/usage?tenant_id={tenant_id}"
+        return "/admin/app/usage"
+    return f"/admin/app/usage?tenant_id={tenant_id}"
 
 
 def _matches_filters(
