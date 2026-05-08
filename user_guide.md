@@ -67,14 +67,14 @@ Some areas are intentionally lighter in the current code:
   dependency have been removed. Old browser links should redirect or alias into
   Admin without rendering templates. User-facing labels now use product terms
   such as "Admin"; "React" is reserved for implementation context and
-  developer-only migration evidence.
+  developer-only evidence.
 - Production Admin JSON routes follow the live-only policy introduced in Specs
   048 through 058. Workflow, governance, skill lifecycle, test bench,
   memberships, channels, usage, operations, and run-debug workspaces should
   project from durable repositories/services or show truthful empty, denied, or
   unavailable states. The old sample patterns page is no longer a production
-  destination, and the migration dashboard exposes live-data inventory,
-  live-only route gate, and transitional-label gate evidence.
+  destination, and live-data inventory, live-only route gate, and
+  transitional-label gate evidence remain reviewer-safe Admin guardrails.
 - The `/runtime/runs` API is backed by a process-local runtime service in the
   public API facade. Durable runtime database models, repositories, graph
   execution, and worker code exist, but a run started only through that facade
@@ -249,12 +249,12 @@ areas:
   with start, status, timeline, result, artifact, and approval controls.
 - Spec 047, Jinja infrastructure decommission: template renderer wiring,
   server template directory, legacy static assets, and direct `jinja2`
-  dependency removed, with React-only readiness evidence in
-  `/admin/app/migration`.
+  dependency removed, with readiness evidence available through Admin
+  guardrail routes.
 - Spec 048, live data inventory and mock guardrails: production Admin route,
   backend projection, frontend source, generated contract, and built asset
   scanner with live-only policy, computed metadata allowlists, route response
-  scans, and reviewer-safe migration evidence.
+  scans, and reviewer-safe guardrail evidence.
 - Spec 049, React contract provenance and sample route retirement:
   backend-owned provenance and empty-state metadata, `/admin/app/patterns`
   removed or development-gated outside production, and production frontend
@@ -308,8 +308,8 @@ The system has several major capabilities:
 
 - Tenant-aware authentication and authorization with Auth0 or local principals.
 - An Admin console with workflow, access, reliability, operations, model,
-  prompt, profile, skill, test bench, usage, channel/Telegram, migration, and
-  briefing preference workspaces.
+  prompt, profile, skill, test bench, usage, channel/Telegram, and briefing
+  preference workspaces.
 - Workflow registry and workflow builder pages for creating draft workflows,
   validating graphs and references, reviewing revisions, and publishing
   immutable workflow bundles.
@@ -496,10 +496,6 @@ cd ../..
 Important browser pages:
 
 - `/admin/app` - Admin home and authorized workspace shell.
-- `/admin/app/migration` - decommission readiness, old-link compatibility
-  decisions, release rollback guidance, live-data inventory, live-only route
-  gate, transitional-label gate, runtime scanner/dependency evidence,
-  performance, accessibility, redaction, and tenant-isolation evidence.
 - `/admin/app/operations` - operations, reliability, and run debug workbench.
 - `/admin/app/workflows` - workflow registry and guided builder.
 - `/admin/app/governance` - model providers, prompt library, runtime profiles,
@@ -519,6 +515,251 @@ Important browser pages:
   compatibility responses into Admin.
 - `/runs` and `/runs/{run_id}` - user-facing run links that open the Admin run
   workspace under `/admin/app/channels/runs`.
+
+### Admin UI Visual Tour
+
+The screenshots below were captured from the running local server on
+May 8, 2026 with Playwright at a 1920 pixel wide viewport and full-page
+capture. The Admin pages use the `tenant-admin-acme` local principal so
+tenant-scoped controls and records are visible. If a Markdown viewer scales a
+screenshot down, open the image directly; every guide image is at least 1920
+pixels wide.
+
+Common shell elements appear on nearly every Admin page:
+
+- Left navigation: grouped links for Access, Workflows, Model and Skill Config,
+  Prompt Runtime, Run Inspection, and Reliability. The highlighted link is the
+  current workspace. These links preserve the active authorization context.
+- Breadcrumbs: the path at the top of the page. The first breadcrumb returns to
+  Console Home, and the final breadcrumb names the current workspace.
+- Page title and product label: confirms the current workspace and that the
+  browser is inside the Multi-Agent Admin console.
+- Signed-in user: shows the active principal catalog key or display name.
+- System health: summarizes backend readiness for the current request.
+- Active scope: shows whether the page is platform scoped or tenant scoped.
+  Platform administrators may see a scope selector; tenant administrators see
+  their assigned tenant.
+- Log off: clears the local login cookie and returns to the login flow.
+- Status pills: short state labels such as `ready`, `empty`, `unavailable`, or
+  `missing`. These describe backend-owned live data, not sample records.
+- Action buttons: run mutations, exports, validation, or refresh requests
+  through guarded Admin routes. When an area has no live rows, the page keeps
+  the action or empty state visible instead of inventing data.
+
+#### Local Login
+
+![Local login screen](docs/assets/user-guide/admin-ui/local-login-wide.png)
+
+- Principal cards list the enabled local QA identities from
+  `LOCAL_PRINCIPAL_CATALOG_JSON`.
+- Role badges show the catalog roles granted to that local identity.
+- The catalog key text is the value stored in the protected local cookie after
+  sign-in.
+- Each Sign In button posts the chosen principal, a safe redirect target, and a
+  local action token to `/auth/local-login`.
+- Use `Platform Admin` for platform-wide readiness checks. Use `Acme Tenant
+  Admin` or another tenant principal for tenant-scoped setup and operating
+  pages.
+
+#### Console Home
+
+![Console home](docs/assets/user-guide/admin-ui/admin-home-wide.png)
+
+- The summary panel reports the active tenant, the number of authorized
+  workspaces, the number of notices needing attention, and whether the scope is
+  tenant or platform mode.
+- Refresh reloads the home envelope from the backend.
+- Current notices lists actionable system notices for the active scope. An
+  empty notice state means there are no active notices.
+- Start here contains quick-action links for common workflows: review
+  workflows, search runs, check routing, review providers, manage skills, open
+  test bench, manage access, and review usage.
+- Authorized destinations lists every workspace the principal can open in the
+  current scope. Each card states the destination purpose and provides an
+  Open button.
+- The page intentionally shows only destinations allowed by backend
+  authorization.
+
+#### Operations And Run Debug
+
+![Operations and run debug](docs/assets/user-guide/admin-ui/operations-wide.png)
+
+- Workbench summaries show operational readiness cards for tenant evidence,
+  system health, Telegram/channel status, reliability state, run activity,
+  provider gateway, skill execution, and usage.
+- Open details links on cards jump the operator to the deeper source page for
+  that signal when one is available.
+- Likely causes summarizes detected run or operations failure patterns for the
+  active scope.
+- Tenant activity shows recent visible run or operational activity for the
+  selected tenant and time range.
+- Recovery posture reports retries, dead letters, breaker state, and recovery
+  evidence that the principal is allowed to see.
+- Export evidence requests a redacted operational evidence package.
+- Redacted signals lists safe log rows and summaries without raw secrets,
+  prompts, completions, messages, connector payloads, or local filesystem
+  paths.
+
+#### Workflow Registry And Builder
+
+![Workflow registry and builder](docs/assets/user-guide/admin-ui/workflows-wide.png)
+
+- The registry area lists workflow lineages, drafts, revision status, validation
+  state, publish readiness, and sharing evidence when live workflow records
+  exist.
+- The empty state is truthful: no workflow rows are currently available for
+  the captured Acme scope.
+- Create draft starts a guided workflow draft flow for the active tenant.
+- The active draft area shows graph, reference, validation, and publish
+  controls once a draft exists.
+- Validation and publish sections use backend-owned evidence, including
+  required test-bench gates when configured.
+- The page keeps older workflow URLs compatible through redirects into this
+  Admin workspace.
+
+#### Governance
+
+![Governance workspace](docs/assets/user-guide/admin-ui/governance-wide.png)
+
+- The governance summary covers provider connections, prompt versions, runtime
+  profiles, routing policy, gateway diagnostics, policy history, and run
+  provenance.
+- The empty state means the current scope has no live governance records yet.
+- Section buttons for Setup, Providers, Prompts, Profiles, Routing, and
+  Provenance switch the operator between governance panels and display each
+  panel status.
+- Readiness summary counts visible provider connections, prompt lineages, and
+  runtime profiles.
+- Setup and health lists configured model provider connections and safe
+  provider health status.
+- Versions and safe previews show prompt lineage/version information and
+  redacted preview state when records exist.
+- Runtime configuration shows profile resolution evidence and active profile
+  version state.
+- Read-only policy preview shows routing and policy history without allowing
+  unsafe direct provider calls.
+- Safe changes and Run evidence show policy history and run provenance when
+  live records are present.
+
+#### Skill Lifecycle
+
+![Skill lifecycle workspace](docs/assets/user-guide/admin-ui/skills-wide.png)
+
+- The skill lifecycle summary covers package publication, tenant grants,
+  installations, credential readiness, smoke tests, connector diagnostics,
+  binding eligibility, and audit evidence.
+- Section buttons such as Discover, Installations, Diagnostics, Binding, and
+  Audit switch between lifecycle panels and report live status.
+- The empty state confirms no governed skill lifecycle rows are visible for the
+  captured scope.
+- Lifecycle readiness explains whether available, granted, installed, ready,
+  quarantined, or diagnostic skill records exist.
+- Granted tenant skills and installation panels list package versions and
+  tenant install readiness when records exist.
+- Reference readiness, queued readiness, and connector readiness explain
+  credential-reference and smoke-test state without exposing credential values.
+- Preview binding computes whether a skill can be bound to a workflow.
+- Run diagnostic launches a governed, redaction-safe connector diagnostic.
+
+#### Agent Tests
+
+![Agent tests workspace](docs/assets/user-guide/admin-ui/test-bench-wide.png)
+
+- The test bench header describes guided suite authoring, safe run launch,
+  diagnostics, artifacts, publish gates, and governance evidence.
+- The empty state shows that no suite, run, or gate rows are available for the
+  captured Acme scope.
+- Release confidence cards summarize suites, running test runs, runs needing
+  review, and required publish gates.
+- Audit timeline shows test-bench lifecycle events when records exist.
+- When suites are present, this workspace is where operators create cases,
+  launch safe mock or approved probe runs, inspect diagnostics, and confirm
+  current publish-gate evidence.
+
+#### Membership Administration
+
+![Membership administration](docs/assets/user-guide/admin-ui/memberships-wide.png)
+
+- The section navigation switches between Overview, Directory, Invitations,
+  Role grants, Status, Access history, Support overrides, and Audit.
+- Summary cards show current platform user count, invitation count, role grant
+  count, access-history count, support override count, and audit event count.
+- Users lists visible principals and tenant memberships. Details buttons open
+  a user's membership and access context when available.
+- Invite users sends a tenant invitation with a selected role. The replay-safe
+  checkbox controls whether repeated submissions reuse the same invitation
+  request.
+- Link identity connects an external or local identity to a principal, with a
+  confirmation checkbox for conflict recovery.
+- Assign roles grants a selected role to a selected principal.
+- Access-changing actions lists grant, suspend, restore, or similar actions
+  that have changed access state.
+- Recent decisions records authorization decisions and the route or permission
+  involved.
+- Temporary access evidence shows support override state.
+- Membership timeline lists membership and access audit events for the tenant.
+
+#### Usage Analytics
+
+![Usage analytics](docs/assets/user-guide/admin-ui/usage-wide.png)
+
+- Filters constrain the view by group, tenant, provider, and model. Tenant
+  administrators are locked to their tenant.
+- Export CSV requests a redacted usage export for the selected filters.
+- Usage states explain empty, tenant-constrained, denied, partial, or
+  unavailable conditions.
+- Summary cards report total tokens, estimated cost, usage events, average
+  latency, unavailable usage, and pricing confidence.
+- Daily usage shows the selected time series with confirmed tokens, estimated
+  tokens, cost, and latency.
+- Rollups group usage by the selected dimension, such as day, provider, model,
+  workflow, agent, prompt, execution mode, principal, gateway operation, or
+  governed tool.
+- Safe events lists individual redacted usage events when available.
+- Create export records an audited CSV export request and links to export
+  detail when generated.
+
+#### Channels, Telegram, And Briefing Preferences
+
+![Channels and briefing workspace](docs/assets/user-guide/admin-ui/channels-wide.png)
+
+- The readiness header shows how many scoped channel summaries are ready and
+  when the panel was refreshed.
+- Refresh reloads channel, Telegram, run, notification, and briefing preference
+  evidence.
+- Readiness cards summarize Telegram enablement, webhook availability,
+  reference readiness, linked identity count, alias count, and delivery
+  attempts.
+- States shows empty or unavailable channel conditions for the active scope.
+- Telegram Configuration shows redacted bot/reference state and saves safe
+  configuration changes.
+- Webhook Validation shows the latest persisted validation evidence and the
+  Validate button triggers a mock-safe validation path.
+- Aliases lists natural-language command aliases and Create Alias adds one for
+  the tenant.
+- Identity Links lists linked Telegram identities and Create Code starts a safe
+  one-time link-code flow.
+- Delivery Diagnostics summarizes delivery attempts and receipt status without
+  exposing raw private messages.
+- Admin Summaries contains redacted briefing preference summaries plus Import
+  and Export controls for safe preference artifacts.
+
+#### User-Facing Run Workspace
+
+![Run workspace](docs/assets/user-guide/admin-ui/channel-runs-wide.png)
+
+- The run workspace keeps `/runs` and `/runs/{run_id}` browser links inside the
+  Admin shell while preserving the user-facing run flow.
+- The status pill reports whether the run page is ready, loading, or in an
+  action state.
+- New run opens a blank run-start state.
+- Workflow selects the safe workflow reference to run.
+- Request summary is the only free-text request content shown in the browser.
+  It should remain a safe summary rather than a private message or raw payload.
+- Start Run submits the workflow reference and request summary to the retained
+  run API.
+- The action-state area reports whether a start request has been submitted,
+  accepted, denied, or failed.
 
 ### Quality Checks
 
@@ -2197,7 +2438,7 @@ local development so the application uses the bundled static React directory.
 #### `REACT_ADMIN_DOMAIN_ROUTES_JSON`
 
 Optional JSON map for domain route enablement experiments. Use it only with the
-migration dashboard and rollback guidance, because route ownership must remain
+internal route-safety evidence, because route ownership must remain
 backend-authorized and tenant-safe.
 
 ### Build Metadata

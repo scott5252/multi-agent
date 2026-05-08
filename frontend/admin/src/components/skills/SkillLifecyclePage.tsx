@@ -319,30 +319,6 @@ export function SkillLifecyclePage({ skillsUrl }: { skillsUrl: string }) {
         preview={dashboard.binding_preview}
       />
       <SkillLifecycleAuditPanel auditTimeline={dashboard.audit_timeline} />
-      <section className="governance-panel skill-panel" aria-labelledby="skill-legacy-title">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Migration</p>
-            <h2 id="skill-legacy-title">Legacy route redirects</h2>
-          </div>
-          <span className="count-pill">{dashboard.legacy_routes.length} mapped</span>
-        </div>
-        <div className="governance-card-grid legacy-route-grid">
-          {dashboard.legacy_routes.map((route) => (
-            <article className="governance-card legacy-route-card" key={route.legacy_path}>
-              <h3>
-                <code className="legacy-route-path">{route.legacy_path}</code>
-              </h3>
-              <p className="eyebrow">{route.compatibility_status}</p>
-              <p>
-                <code className="legacy-route-path">{route.react_path}</code>
-              </p>
-              <p>{route.authorization_behavior}</p>
-              <small>{route.notes}</small>
-            </article>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

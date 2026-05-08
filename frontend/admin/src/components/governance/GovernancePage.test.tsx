@@ -48,6 +48,10 @@ describe("GovernancePage", () => {
 
     await screen.findByRole("heading", { name: "Governance" });
     expect(screen.getByText("ModelGateway-only execution is enforced.")).toBeInTheDocument();
+    expect(screen.getByText("Read-only policy preview")).toBeInTheDocument();
+    expect(screen.queryByText("Legacy route redirects")).not.toBeInTheDocument();
+    expect(screen.queryByText("/admin/model-providers")).not.toBeInTheDocument();
+    expect(screen.queryByText("/admin/app/governance/providers")).not.toBeInTheDocument();
     expect(screen.queryByText(/raw prompt/i)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Run probe/ }));
