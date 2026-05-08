@@ -51,7 +51,7 @@ DB-backed, and deterministic QA version of the scenario:
 
 - tenant setup
 - local-principal admin login
-- Admin shell and migration decommission dashboard
+- Admin shell and live guardrail evidence
 - Admin workspaces for governance, skills, workflows, test bench, usage,
   memberships, operations, channels, Telegram, and briefing preferences
 - backend-owned provenance, truthful empty states, live-only route guardrails,
@@ -250,7 +250,7 @@ SUGGESTED FOCUS
 
 | Scenario requirement | Current support | Codebase used | Implementable now |
 | --- | --- | --- | --- |
-| Admin scenario setup | Primary browser setup uses `/admin/app` with domain workspaces for governance, skills, workflows, test bench, channels, usage, operations, migration evidence, and user run review; older browser URLs redirect or alias to Admin without Jinja rendering; product-facing labels no longer expose implementation-era "React" wording | `api/routers/admin_react.py`, `frontend/admin/src/*`, `admin/migration_hardening/*`, `api/routers/web_run_ui.py` | Yes |
+| Admin scenario setup | Primary browser setup uses `/admin/app` with domain workspaces for governance, skills, workflows, test bench, channels, usage, operations, and user run review; older browser URLs redirect or alias to Admin without Jinja rendering; product-facing labels no longer expose implementation-era "React" wording | `api/routers/admin_react.py`, `frontend/admin/src/*`, `api/routers/web_run_ui.py` | Yes |
 | Telegram account linking | Admin-issued link tokens and consumed identity links persist in PostgreSQL; the legacy channel link-token endpoint remains in-memory | `channels/telegram.py`, `admin/telegram_config/service.py`, `db/repositories/telegram_config.py`, `db/repositories/channels.py` | Yes |
 | Telegram trigger | Exact-match tenant aliases such as `Morning briefing` route to a published workflow version; slash commands such as `/run` still work | `channels/telegram.py`, `admin/telegram_config/service.py`, `api/routers/admin_telegram.py` | Yes |
 | Telegram bot reply | Alias-triggered results are formatted and sent through a mockable or real `sendMessage` client; delivery attempts persist with safe fingerprints | `channels/telegram_delivery.py`, `channels/telegram.py`, `api/routers/telegram_webhook.py` | Yes with configured Bot API secret or test-injected mock client |
@@ -263,7 +263,7 @@ SUGGESTED FOCUS
 | Test bench | Durable suite/case/assertion/run/run-step/artifact tables, mock sandbox execution, publish-gate evidence, launcher metadata, progress, diagnostics, and audit projections exist | `testing/agent_bench/`, `db/models/agent_tests.py`, `testing/agent_bench/react_test_bench.py` | Yes |
 | Publish gate test evidence | Workflow publish gate evaluation queries current same-tenant test-bench evidence for the active draft revision; legacy `latest_result_status` remains compatibility metadata | `admin/workflow_registry/service.py`, `admin/workflow_registry/publish_gate.py`, `testing/agent_bench/service.py` | Yes |
 | User preferences | Tenant users can save, export, import, summarize, and resolve Daily Briefing preference profiles with immutable revisions and safe summaries | `admin/briefing_preferences/*`, `runtime/briefing_preferences.py`, `api/routers/admin_briefing_preferences.py` | Yes |
-| Live-data guardrails | Production Admin route contracts include backend-owned provenance or truthful empty states, scanner evidence blocks fixture markers, sample patterns are not production data, and live-only plus transitional-label gates are available in migration evidence | `admin/migration_hardening/live_data_inventory.py`, `admin/migration_hardening/react_migration_hardening.py`, `api/routers/admin_react.py` | Yes |
+| Live-data guardrails | Production Admin route contracts include backend-owned provenance or truthful empty states, scanner evidence blocks fixture markers, sample patterns are not production data, and live-only plus transitional-label guardrails stay reviewer-safe | `admin/migration_hardening/live_data_inventory.py`, `admin/migration_hardening/react_migration_hardening.py`, `api/routers/admin_react.py` | Yes |
 
 ## Spec 020-025 Updates Incorporated
 
@@ -287,7 +287,7 @@ SUGGESTED FOCUS
 | 034 | Membership setup can be reviewed in `/admin/app/memberships` when local principals or tenant grants need adjustment. | Verify platform and tenant scopes, invitations, masked identity labels, role grant guardrails, access history, and audit timeline. |
 | 035 | Usage and cost review should use `/admin/app/usage`. | Verify default 7-day filters, rollups, bounded event drilldowns, export metadata, confidence labels, and tenant-only visibility for tenant admins. |
 | 036 | Telegram readiness, aliases, identity links, delivery diagnostics, safe run status, and briefing preferences should use `/admin/app/channels`. | Verify one-time link tokens show only on creation, identities are masked, delivery attempts are bounded, and preference admin summaries redact raw values. |
-| 037 | Migration hardening review should use `/admin/app/migration`. | Verify route parity decisions, rollback plan, dual-auth evidence, performance/accessibility evidence, redaction sweep, and tenant-isolation sweep before the final removal specs. |
+| 037 | Migration hardening evidence is historical guardrail context, not part of this browser setup flow. | Verify route parity decisions, rollback plan, dual-auth evidence, performance/accessibility evidence, redaction sweep, and tenant-isolation sweep through reviewer-safe guardrail evidence when needed. |
 | 038 | Jinja surface inventory should be treated as historical deletion evidence. | Verify every template, legacy static asset, direct link, dependency, route owner, and deletion blocker is accounted for before removal. |
 | 039 | React host, auth shell utilities, and local login should be non-Jinja. | Verify `/admin/app`, local login, saved-filter shell utilities, and old shell links return React host HTML or safe redirects without template rendering. |
 | 040 | Workflow registry/browser authoring should be React-only. | Verify old workflow URLs redirect to `/admin/app/workflows`, create/edit/list/publish flows work in React, and workflow Jinja/static assets are removed. |
@@ -297,7 +297,7 @@ SUGGESTED FOCUS
 | 044 | Operations, reliability, run inspection, and usage should be React-only. | Verify `/admin/app/operations` and `/admin/app/usage` cover readiness, logs, run debug, reliability, exports, and cost review while old URLs redirect safely. |
 | 045 | Channels, memberships, access, Telegram, and briefing preferences should be React-only. | Verify `/admin/app/channels` and `/admin/app/memberships` cover old browser flows, saved filters, aliases, identities, delivery diagnostics, and preference admin. |
 | 046 | User-facing run UI should be React-only. | Verify `/runs` and `/runs/{run_id}` safely redirect or alias into `/admin/app/channels/runs`, and run start/status/timeline/result/action flows render in React. |
-| 047 | Final Jinja infrastructure decommission should be verified in `/admin/app/migration`. | Verify zero server-rendered inventory rows, runtime import scanners, removed template directory, removed legacy static assets, removed direct `jinja2` dependency, release rollback guidance, and React-only readiness evidence. |
+| 047 | Final Jinja infrastructure decommission should be treated as completed historical evidence for this setup. | Verify zero server-rendered inventory rows, runtime import scanners, removed template directory, removed legacy static assets, removed direct `jinja2` dependency, release rollback guidance, and Admin-only readiness evidence when reviewing the decommission work. |
 
 ## Spec 048-059 Live Data And Product Terminology Updates Incorporated
 
@@ -314,7 +314,7 @@ SUGGESTED FOCUS
 | 056 | Usage review is live usage-event and pricing evidence. | Verify dashboard totals, trends, drilldowns, cost confidence, attribution, reconciliation, and export requests derive from persisted usage and storage metadata. |
 | 057 | Operations and run debug are live operational evidence. | Verify health, pressure, run timeline, likely causes, reliability recovery, provider/channel/skill/usage evidence, queue state, and exports reflect live records or truthful empty states. |
 | 058 | The final live-only gate decommissions obsolete production mock/demo surfaces. | Verify empty and seeded route probes, built asset scans, seed requirements, fixture boundary documentation, and rollback guidance. |
-| 059 | Production-visible Admin copy no longer uses transitional "React" labels. | Verify shell titles, breadcrumbs, navigation, command/search labels, redirects, fallbacks, empty/error states, screenshots, and docs say "Admin" or domain terms unless the page is developer-only migration evidence. |
+| 059 | Production-visible Admin copy no longer uses transitional "React" labels. | Verify shell titles, breadcrumbs, navigation, command/search labels, redirects, fallbacks, empty/error states, screenshots, and docs say "Admin" or domain terms unless the page is developer-only evidence. |
 
 ## Step-By-Step Setup With Current Code
 
@@ -458,6 +458,214 @@ evidence for DB-backed runs. The public channel facade still keeps its user
 visible channel run state in process memory, so the Telegram alias demo below
 uses deterministic channel completion/delivery rather than waiting on a worker
 graph result.
+
+### Browser Setup Page Walkthrough
+
+The screenshots in this section were captured from the running local server on
+May 8, 2026 at a 1920 pixel wide viewport. Open the image directly if your
+Markdown viewer scales it down. The setup flow uses `tenant-admin-acme` for
+tenant-scoped pages unless a step explicitly says otherwise.
+
+#### Local Login
+
+![Local login for the Daily Briefing setup](docs/assets/test-example/admin-ui/local-login-wide.png)
+
+Use this page in Step 3 to enter the Admin console.
+
+1. Open `/auth/local-login?redirect_to=/admin/app`.
+2. Choose `Platform Admin` only when you need platform-wide checks.
+3. Choose `Acme Tenant Admin` for the Daily Briefing setup flow.
+4. Confirm the browser redirects to `/admin/app`.
+5. If you need to change principals, use Log off in the top-right corner and
+   return to this page.
+
+#### Console Home
+
+![Console home for the Daily Briefing setup](docs/assets/test-example/admin-ui/admin-home-wide.png)
+
+Use this page after login to confirm scope and choose the next setup area.
+
+1. Confirm the top bar shows `tenant-admin-acme`, system health `Ready`, and
+   active scope `Acme`.
+2. Review Current notices. There should be no active notice for a clean local
+   setup.
+3. Use Start here for common destinations such as Review workflows, Check
+   routing, Manage skills, Open test bench, Manage access, and Review usage.
+4. Use Authorized destinations when you want to verify which workspaces the
+   current principal can open.
+5. Use the left navigation for the rest of the setup: Configuration, Skill
+   Registry, Agent Tests, Usage Analytics, Membership Administration, Telegram
+   Configuration, Model Providers, Briefing Preferences, Prompt Library, Agent
+   Profiles, Run Search, and Reliability pages.
+
+#### Governance Setup
+
+![Governance setup page for providers, prompts, profiles, and routing](docs/assets/test-example/admin-ui/governance-wide.png)
+
+Use this page for Steps 5, 6, and 7.
+
+1. Open `/admin/app/governance`.
+2. Confirm the Governance panel appears and the active scope is Acme.
+3. Use Setup to review readiness counts for provider connections, prompt
+   lineages, and runtime profiles.
+4. Use Providers to create or inspect the model provider connection from Step 5.
+   Store credential references only; never paste raw API keys into visible
+   fields.
+5. Use Prompts to create and publish the seven Daily Briefing prompt versions
+   from Step 6.
+6. Use Profiles to create and activate the orchestrator, scout, recommender,
+   and synthesizer runtime profiles from Step 7.
+7. Use Routing to review read-only routing policy and preview evidence.
+8. Use Provenance to inspect run provenance after test or runtime activity
+   exists.
+9. Treat empty panels as truthful setup state: the page is saying no durable
+   records exist yet for this scope.
+
+#### Skill Lifecycle Setup
+
+![Skill lifecycle setup page for Daily Briefing tools](docs/assets/test-example/admin-ui/skills-wide.png)
+
+Use this page for Step 8.
+
+1. Open `/admin/app/skills`.
+2. Confirm the Skill lifecycle header appears and the active scope is Acme.
+3. Use Discover to review skill versions granted to the tenant.
+4. Use Installations to review tenant skill installations.
+5. Use Reference readiness to confirm credential metadata is present without
+   exposing credential values.
+6. Use Queued readiness and Connector readiness to check smoke/readiness
+   evidence.
+7. Use Preview binding after creating installations to confirm the tools can be
+   bound to the workflow.
+8. Use Run diagnostic to execute a governed connector diagnostic.
+9. Use Lifecycle timeline to confirm audit evidence after publication,
+   installation, readiness, or diagnostic actions.
+
+#### Channels, Telegram, And Briefing Preferences Setup
+
+![Channels, Telegram, and briefing preferences setup page](docs/assets/test-example/admin-ui/channels-wide.png)
+
+Use this page for Steps 4, 8A, and 12.
+
+1. Open `/admin/app/channels`.
+2. Confirm the page title is Telegram Configuration and the inner header is
+   Channel, Telegram, and Briefing Preferences.
+3. Review Readiness to see Telegram status, webhook status, reference
+   readiness, linked identity count, alias count, and delivery attempts.
+4. In Telegram Configuration, save only redacted provider/reference
+   configuration.
+5. Use Validate Acme to run safe webhook validation evidence.
+6. Use Create Alias after the workflow is published to create the
+   `Morning briefing` alias.
+7. Use Create Code to issue a one-time identity link code.
+8. Use Admin Summaries, Import, and Export for Daily Briefing preference
+   profile summaries and safe artifacts.
+9. Use Refresh after API or webhook actions so bounded delivery, alias, and
+   identity evidence reloads from the backend.
+
+#### Workflow Setup
+
+![Workflow setup page for the Daily Briefing graph](docs/assets/test-example/admin-ui/workflows-wide.png)
+
+Use this page for Steps 9 and 11.
+
+1. Open `/admin/app/workflows`.
+2. Confirm the Workflow Registry and Workflow builder panels are visible.
+3. Use Create draft to start the `daily-intelligence-briefing` workflow.
+4. Enter the slug, display name, tenant scope, workflow kind, and entry node
+   described in Step 9.
+5. Add roles, prompt/profile references, skill installations, contracts, graph
+   nodes, edges, and join policy from the authoring document.
+6. Save the draft and review the graph preview.
+7. Run validation and resolve blocking findings.
+8. After Step 10 creates current passing test evidence, return here, reopen the
+   draft, review the publish gate, and publish.
+9. Record the published workflow version id for the Telegram alias in Step 12.
+
+#### Agent Tests Setup
+
+![Agent Tests setup page for publish-gate evidence](docs/assets/test-example/admin-ui/test-bench-wide.png)
+
+Use this page for Step 10.
+
+1. Open `/admin/app/test-bench`.
+2. Confirm the Agent Tests page and Test Bench panel are visible.
+3. Create the `Daily Briefing Mock Smoke` suite for the Acme tenant.
+4. Target the current `workflow_draft_id` and current
+   `workflow_draft_revision_id`.
+5. Add the `Morning briefing` test case and deterministic assertions from
+   Step 10.
+6. Launch the suite in `mock_model` mode.
+7. Confirm the run passes and record the suite/run identifiers.
+8. Return to `/admin/app/workflows` and add the required test declaration to
+   the draft before publishing.
+
+#### Membership Administration
+
+![Membership Administration page for access setup](docs/assets/test-example/admin-ui/memberships-wide.png)
+
+Use this page when setup is blocked by principal, role, or tenant-access
+problems.
+
+1. Open `/admin/app/memberships`.
+2. Confirm the active scope is Acme.
+3. Use Users to inspect visible principals and tenant memberships.
+4. Use Invite users if a new tenant user needs access.
+5. Use Link identity when an external identity must be associated with a
+   principal.
+6. Use Assign roles to grant `tenant_user` or `tenant_admin` when policy allows
+   it.
+7. Use Recent decisions to diagnose route or permission denials.
+8. Use Membership timeline to confirm access-changing audit events.
+
+#### Run Workspace
+
+![Run workspace for the Daily Briefing example](docs/assets/test-example/admin-ui/channel-runs-wide.png)
+
+Use this page for user-facing run review and the optional Web UI run path.
+
+1. Open `/admin/app/channels/runs`.
+2. Confirm the Run workspace panel is visible.
+3. Enter the safe workflow reference, such as the published workflow version id
+   or the retained demo reference.
+4. Enter a safe Request summary such as `Morning briefing`.
+5. Select Start Run.
+6. Review the action state after submission.
+7. For Telegram alias QA, use this page to inspect or compare user-facing run
+   behavior after webhook actions have produced a run id.
+
+#### Operations Review
+
+![Operations review page for the Daily Briefing example](docs/assets/test-example/admin-ui/operations-wide.png)
+
+Use this page in Step 15 after setup, diagnostics, test runs, or Telegram
+webhook requests.
+
+1. Open `/admin/app/operations`.
+2. Review Workbench summaries for tenant activity, system health, channels,
+   reliability state, runs, providers, skills, and usage.
+3. Review Likely causes for bounded failure summaries.
+4. Review Tenant activity for visible run or operational activity.
+5. Review Recovery posture for retry, dead-letter, and breaker evidence.
+6. Use Export evidence only when you need a redacted support package.
+7. Review Redacted signals for safe operational log summaries.
+
+#### Usage Review
+
+![Usage review page for the Daily Briefing example](docs/assets/test-example/admin-ui/usage-wide.png)
+
+Use this page in Step 15 after provider probes, gateway calls, diagnostics, or
+runtime activity.
+
+1. Open `/admin/app/usage`.
+2. Keep the tenant filter scoped to Acme as a tenant administrator.
+3. Choose a Group By dimension such as Day, Provider, Model, Workflow, Agent,
+   Prompt, Gateway Operation, or Governed Tool.
+4. Review total tokens, estimated cost, usage-event count, latency, unavailable
+   usage, and confidence cards.
+5. Review the Daily usage trend and Rollups table.
+6. Review Safe events for redacted drilldown rows when events exist.
+7. Use Export CSV or Create export only for reviewer-safe usage evidence.
 
 ### Step 4 - Configure Telegram For The Acme Tenant
 
@@ -1399,7 +1607,6 @@ graph or produce live scenario content.
 
 After setup and mock runs, inspect:
 
-- `/admin/app/migration`
 - `/admin/app/operations`
 - `/admin/app/usage`
 - `/admin/app/operations` run debug panels
@@ -1408,6 +1615,8 @@ After setup and mock runs, inspect:
 - `/admin/app/channels`
 - `/admin/app/skills`
 - `/admin/app/workflows`
+- `/admin/app/memberships` if access or role-grant evidence was part of the
+  setup
 
 Codebase used by this step:
 
@@ -1658,15 +1867,11 @@ Current status:
 - `/admin/app/usage` and `/admin/app/operations` provide usage/cost and
   operational review for the scenario from live usage, runtime, provider,
   channel, reliability, audit, and export evidence.
-- `/admin/app/migration` records decommission readiness, old-link compatibility
-  decisions, release rollback guidance, live-data inventory, live-only gate,
-  transitional-label gate, runtime scanner/dependency evidence, and
-  performance/accessibility/redaction/tenant-isolation evidence.
 - `/admin/app/patterns` is not a production sample-data route. Production Admin
   setup should use domain workspaces and live seed data instead.
 
 Remaining limit: Admin live-data hardening changes browser route ownership,
-source-of-truth projections, and migration evidence; it does not make the Daily
+source-of-truth projections, and guardrail evidence; it does not make the Daily
 Briefing runtime consume live Calendar, Gmail, news, weather, or commute
 payloads. Old browser links should be tested as redirects or safe compatibility
 responses, not as template-backed pages.

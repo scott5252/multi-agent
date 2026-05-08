@@ -69,17 +69,6 @@ The scenario setup below is grounded in these current code areas:
 - `specs/030-react-workflow-builder/plan.md`
 - `specs/031-model-prompt-profile-and-provider-governance/plan.md`
 - `specs/033-react-agent-and-workflow-test-bench/plan.md`
-- `specs/037-react-admin-migration-hardening-and-jinja-retirement/plan.md`
-- `specs/038-jinja-surface-inventory-and-deletion-plan/plan.md`
-- `specs/039-no-jinja-react-host-auth-shell-utilities-and-local-login/plan.md`
-- `specs/040-workflow-registry-full-react-parity-and-jinja-removal/plan.md`
-- `specs/041-governance-full-react-parity-and-jinja-removal/plan.md`
-- `specs/042-skill-registry-and-tool-diagnostics-full-react-parity-and-jinja-removal/plan.md`
-- `specs/043-test-bench-full-react-parity-and-jinja-removal/plan.md`
-- `specs/044-operations-reliability-run-inspection-and-usage-full-react-parity/plan.md`
-- `specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/plan.md`
-- `specs/046-user-facing-run-ui-react-port-and-jinja-removal/plan.md`
-- `specs/047-jinja-infrastructure-decommission/plan.md`
 - `specs/048-live-data-inventory-and-mock-guardrails/plan.md`
 - `specs/049-react-contract-provenance-and-sample-route-retirement/plan.md`
 - `specs/050-workflow-react-live-data/plan.md`
@@ -105,26 +94,17 @@ The scenario setup below is grounded in these current code areas:
 - `src/multi_agent_platform/testing/agent_bench/*`
 - `src/multi_agent_platform/api/routers/admin_agent_tests.py`
 - `src/multi_agent_platform/api/routers/admin_react.py`
-- `src/multi_agent_platform/admin/migration_hardening/live_data_inventory.py`
 - `frontend/admin/src/components/workflows/*`
 - `frontend/admin/src/components/governance/*`
 - `frontend/admin/src/components/testBench/*`
-
-Specs `038` through `047` make the Admin browser implementation the only
-browser administration surface. Older browser URLs are compatibility redirects
-or safe non-Jinja responses, and the runtime no longer includes server-rendered
-Jinja templates or a direct `jinja2` dependency. The design reviewer scenario
-should therefore be validated only through Admin workspaces and JSON/API
-contracts.
 
 Specs `048` through `059` make those browser workspaces live-data guarded and
 product-facing. Production Admin routes should not invent workflows, reviewers,
 test runs, usage rows, audit references, artifact references, or mutation
 success. They should return live durable data, allowed computed metadata, or
 truthful empty/denied/unavailable states with backend-owned provenance. Visible
-browser copy should say "Admin" or domain-specific terms; "React" should appear
-only where this document is discussing implementation details or developer-only
-migration evidence.
+browser copy should say "Admin" or domain-specific terms; implementation
+framework labels should stay out of product-facing setup copy.
 
 ## Scenario To Build
 
@@ -230,9 +210,9 @@ Development handoff:
 | Durable design review artifacts | Runtime step outputs and artifact references exist, but there is no purpose-built design review table or service yet | `runtime/orchestration/*`, `testing/agent_bench/*`, `storage/*` | Partially |
 | Iteration loop until quorum | One review round can run as an acyclic graph. Repeated rounds should be coordinated as separate workflow runs because graph execution asserts acyclic plans | `runtime/orchestration/graph_execution.py` | Needs coordinator development |
 | Review evidence and QA gates | Test bench suites, cases, runs, artifacts, and publish gate evidence are live repository-backed and can validate the review workflow itself | `testing/agent_bench/*`, `testing/agent_bench/react_test_bench.py`, `admin/workflow_registry/publish_gate.py`, `api/routers/admin_agent_tests.py` | Yes |
-| Browser review surface | Existing workflow builder, governance, test bench, operations, and migration workspaces can administer the pieces with live-data provenance; a dedicated design-review workspace would be additive | `frontend/admin/src/*`, `api/routers/admin_react.py`, `admin/migration_hardening/live_data_inventory.py` | Partially |
+| Browser review surface | Existing workflow builder, governance, test bench, operations, usage, memberships, and run workspaces can administer the pieces with live-data provenance; a dedicated design-review workspace would be additive | `frontend/admin/src/*`, `api/routers/admin_react.py` | Partially |
 | Redaction and tenant isolation | Existing platform conventions require safe summaries, artifact references, tenant guards, and no raw prompts, completions, secrets, connector payloads, or unauthorized tenant data in UI or QA artifacts | `auth/*`, `audit/*`, `model_providers/redaction.py`, `runtime/orchestration/graph_redaction.py` | Yes |
-| Live-data and terminology guardrails | Production Admin routes must not expose deterministic reviewer/demo records, sample route data, or transitional "React" product labels; migration evidence scans source, built assets, route responses, visible copy, empty states, and seeded states | `admin/migration_hardening/live_data_inventory.py`, `admin/migration_hardening/react_migration_hardening.py`, `api/routers/admin_react.py` | Yes |
+| Live-data and terminology guardrails | Production Admin routes must not expose deterministic reviewer/demo records, sample route data, or implementation-framework labels as product copy; guardrail checks cover source, built assets, route responses, visible copy, empty states, and seeded states | `api/routers/admin_react.py`, `tests/unit/admin/test_transitional_label_scanner.py`, `tests/integration/api/test_admin_live_data_inventory_routes.py` | Yes |
 | Browser routing | Admin workspaces are the canonical browser interface; old admin and run links must redirect or alias into Admin without rendering server templates | `api/routers/admin_react.py`, `api/routers/auth.py`, `api/routers/web_run_ui.py`, `frontend/admin/src/App.tsx` | Yes |
 
 ## Recommended Workflow Shape
@@ -546,6 +526,255 @@ Codebase used by this step:
 Current-code review: API startup and deterministic graph execution are
 supported.
 
+### Browser Setup Page Walkthrough
+
+The screenshots in this section were captured from the running local server on
+May 8, 2026 at a 1920 pixel wide viewport. Open the image directly if your
+Markdown viewer scales it down. The design reviewer setup flow uses
+`tenant-admin-acme` for tenant-scoped pages unless a step explicitly says
+otherwise.
+
+#### Local Login
+
+![Local login for the Design Reviewer Council setup](docs/assets/design-reviewer-example/admin-ui/local-login-wide.png)
+
+Use this page in Step 3 to enter the Admin console.
+
+1. Open `/auth/local-login?redirect_to=/admin/app`.
+2. Choose `Platform Admin` only when you need platform-wide governance or
+   diagnostic checks.
+3. Choose `Acme Tenant Admin` for the Design Reviewer Council workflow setup.
+4. Confirm the browser redirects to `/admin/app`.
+5. If you need to change principals, use Log off in the top-right corner and
+   return to this page.
+
+Visible elements:
+
+- Principal cards show the local display name, catalog key, and role badges.
+- `Sign In` stores the chosen local principal in the browser cookie and sends
+  the browser to the requested Admin route.
+
+#### Console Home
+
+![Console home for the Design Reviewer Council setup](docs/assets/design-reviewer-example/admin-ui/admin-home-wide.png)
+
+Use this page after login to confirm scope and choose the next setup area.
+
+1. Confirm the top bar shows `tenant-admin-acme`, system health `Ready`, and
+   active scope `Acme`.
+2. Use Refresh to reload backend-owned notices, metrics, and destination links.
+3. Review Current notices. A clean local setup should not need a blocking
+   notice before the design reviewer setup starts.
+4. Use Start here for common destinations such as Review workflows, Check
+   routing, Open test bench, Manage access, and Review usage.
+5. Use Authorized destinations to confirm which workspaces the current
+   principal can open.
+6. Use the left navigation for the rest of the setup: Workflow Registry,
+   Configuration, Agent Tests, Usage Analytics, Membership Administration, Run
+   Search, and Reliability pages.
+
+Visible elements:
+
+- The left navigation groups all Admin workspaces by area.
+- The top bar exposes the command/search control, active principal, scope, and
+  logoff action.
+- Summary metrics, Current notices, Start here, and Authorized destinations
+  are live projections from the Admin home endpoint.
+
+#### Governance Setup
+
+![Governance setup page for Design Reviewer providers, prompts, profiles, and routing](docs/assets/design-reviewer-example/admin-ui/governance-wide.png)
+
+Use this page for Step 4.
+
+1. Open `/admin/app/governance?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Confirm the Governance panel appears and the active scope is Acme.
+3. Use Setup to review readiness counts for provider connections, prompt
+   lineages, and runtime profiles.
+4. Use Providers to create or inspect the model provider connection for
+   reviewer roles. Store credential references only; never paste raw API keys
+   into visible fields.
+5. Use Prompts to create and publish the lead, reviewer, and feedback
+   synthesizer prompt versions from Step 4.
+6. Use Profiles to create and activate runtime profiles for the lead designer,
+   each reviewer, and the synthesizer.
+7. Use Routing to preview read-only routing behavior for the profiles.
+8. Use Provenance to inspect run provenance after tests or workflow runs exist.
+9. Treat empty panels as truthful setup state: the page is saying no durable
+   records exist yet for this scope.
+
+Visible elements:
+
+- The section tabs switch between Setup, Providers, Prompts, Profiles, Routing,
+  and Provenance content.
+- Readiness summary lists what backend records are present or missing.
+- Provider, prompt, and profile panels expose safe mutation buttons only when
+  the current principal is authorized.
+- Provenance cards show redaction-safe provider, prompt, profile, credential,
+  and audit evidence after runtime activity exists.
+
+#### Workflow Setup
+
+![Workflow setup page for the Design Reviewer Council graph](docs/assets/design-reviewer-example/admin-ui/workflows-wide.png)
+
+Use this page for Steps 5 and 7.
+
+1. Open `/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Confirm the Workflow Registry and Workflow builder panels are visible.
+3. Use Create draft to start the `Design Reviewer Council` workflow draft.
+4. Set the draft display name, description, tenant scope, workflow kind, and
+   entry node described in Step 5.
+5. Add the lead role, four or five reviewer sub-agent roles, quorum join,
+   feedback synthesis role, terminal handoff node, edges, and JSON contracts.
+6. Pin the prompt and runtime profile references created from Governance.
+7. Save the draft and review the graph preview, validation panel, JSON
+   inspector, sharing state, and revision history.
+8. Run validation and resolve blocking findings.
+9. After Step 6 creates current passing test evidence, return here, review the
+   publish gate, and publish.
+
+Visible elements:
+
+- Workflow Registry lists existing live workflow records for the active scope.
+- Create workflow starts a backend-owned draft; the empty state appears when no
+  active draft exists yet.
+- Draft forms own the safe editable metadata, selected prompt/profile
+  references, and join policy controls once a draft is available.
+- Graph, validation, publish, sharing, revisions, and JSON inspector panels
+  explain whether the draft is ready to become an immutable published bundle.
+
+#### Agent Tests Setup
+
+![Agent Tests setup page for Design Reviewer publish-gate evidence](docs/assets/design-reviewer-example/admin-ui/test-bench-wide.png)
+
+Use this page for Step 6.
+
+1. Open `/admin/app/test-bench?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Confirm the Agent Tests page and Test Bench panel are visible.
+3. Create a `Design Reviewer Council` suite for the current workflow draft
+   revision.
+4. Add the deterministic approval, revision-required, blocking-issue,
+   manual-resolution, and cross-tenant-denial cases from Step 6.
+5. Target the current `workflow_draft_id` and current
+   `workflow_draft_revision_id`.
+6. Launch the suite in a safe deterministic mode.
+7. Review backend-owned status, recent runs, pass/fail diagnostics, traces,
+   artifacts, publish-gate evidence, and audit timeline after a run exists.
+8. Return to `/admin/app/workflows` and confirm the publish gate sees current
+   passing evidence for the draft revision.
+
+Visible elements:
+
+- The section tabs separate Suites, Runs, Diagnostics, Gates, and Audit.
+- Release confidence summary cards report suite, run, and gate readiness.
+- Suite authoring controls create or update suites and cases when records are
+  present and the principal is authorized.
+- Run launch, progress, run detail, trace/artifact, and publish-gate panels are
+  live evidence surfaces; empty state means no durable test records exist yet.
+
+#### Membership Administration
+
+![Membership Administration page for Design Reviewer access setup](docs/assets/design-reviewer-example/admin-ui/memberships-wide.png)
+
+Use this page when setup is blocked by principal, role, or tenant-access
+problems.
+
+1. Open `/admin/app/memberships?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Confirm the active scope is Acme.
+3. Use Users to inspect visible principals and tenant memberships.
+4. Use Invite users if a new tenant user needs access to design review setup.
+5. Use Link identity when an external identity must be associated with a
+   principal.
+6. Use Assign roles to grant `tenant_user` or `tenant_admin` when policy allows
+   it.
+7. Use status controls to suspend, activate, or update memberships only when
+   authorized.
+8. Use Recent decisions, support overrides, and Membership timeline to diagnose
+   route or permission denials.
+
+Visible elements:
+
+- Overview cards summarize the active tenant scope and membership posture.
+- User directory and raw identifier detail expose only policy-safe user data.
+- Invite, Link, Grant, Revoke, and status action controls write audited access
+  changes through backend actions.
+
+#### Run Workspace
+
+![Run workspace for the Design Reviewer Council example](docs/assets/design-reviewer-example/admin-ui/run-workspace-wide.png)
+
+Use this page for optional user-facing run review after a workflow version is
+published.
+
+1. Open `/admin/app/channels/runs?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Confirm the Run workspace panel is visible.
+3. Enter the safe workflow reference, such as the published workflow version id.
+4. Enter a safe Request summary such as `Design an admin workspace where tenant
+   admins can create, test, and publish multi-agent workflows without editing
+   raw JSON.`
+5. Select Start Run.
+6. Review action state after submission.
+7. After a run id exists, review status and progress, permitted actions,
+   approval prompts, safe result keys, artifacts, subscriptions, and callback
+   state.
+
+Visible elements:
+
+- The Start run form contains Workflow and Request summary fields plus Start
+  Run.
+- Status and progress appears only after a run exists.
+- Actions are backend-permitted controls such as Cancel, Subscribe, Register
+  Callback, and approval decisions when the run is waiting on a prompt.
+
+#### Operations Review
+
+![Operations review page for the Design Reviewer Council example](docs/assets/design-reviewer-example/admin-ui/operations-wide.png)
+
+Use this page after setup, validation, test runs, or optional user-facing runs.
+
+1. Open `/admin/app/operations?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Review Workbench summaries for tenant activity, system health, channels,
+   reliability state, runs, providers, skills, and usage.
+3. Review Likely causes for bounded failure summaries.
+4. Review Tenant activity and any run timeline, branch, gateway, tool, or
+   delivery summaries when run debug evidence exists.
+5. Review Recovery posture for retry, dead-letter, quota, lease, and breaker
+   evidence.
+6. Use Export evidence only when you need a redacted support package.
+7. Review Redacted signals for safe operational log summaries.
+
+Visible elements:
+
+- Summary and health panels give the operator-level picture of the active
+  tenant.
+- Run debug panels appear when there is safe run evidence to inspect.
+- Export evidence produces a redaction-safe snapshot rather than raw runtime
+  payloads.
+
+#### Usage Review
+
+![Usage review page for the Design Reviewer Council example](docs/assets/design-reviewer-example/admin-ui/usage-wide.png)
+
+Use this page after provider probes, gateway calls, test runs, or optional
+runtime activity.
+
+1. Open `/admin/app/usage?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Keep the tenant filter scoped to Acme as a tenant administrator.
+3. Choose a Group By dimension such as Day, Provider, Model, Workflow, Agent,
+   Prompt, Gateway Operation, or Governed Tool.
+4. Review total tokens, estimated cost, usage-event count, latency,
+   unavailable usage, and confidence cards.
+5. Review the Daily usage trend and Rollups table.
+6. Review Safe events for redacted drilldown rows when events exist.
+7. Use Export CSV or Create export only for reviewer-safe usage evidence.
+
+Visible elements:
+
+- Header actions refresh the dashboard and request exports.
+- Filter controls adjust tenant, date range, and grouping.
+- Summary cards, trend, rollups, safe events, and exports are all
+  backend-owned projections of usage records.
+
 ### Step 4 - Configure Provider, Prompt, And Profile Governance
 
 Open:
@@ -813,8 +1042,8 @@ Browser validation should cover:
 - cross-tenant denial
 - redaction sweep for raw prompts, completions, secrets, credential values,
   private payloads, memory contents, unauthorized run data, and raw tool payloads
-- visible-copy sweep for product-facing Admin terminology, with "React" limited
-  to implementation context or developer-only migration evidence
+- visible-copy sweep for product-facing Admin terminology, with implementation
+  framework labels limited to developer documentation and source context
 
 ## Development Recommendation
 
