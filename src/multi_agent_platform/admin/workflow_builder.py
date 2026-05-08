@@ -1,20 +1,34 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from uuid import UUID
 
 from multi_agent_platform.api.schemas.admin_patterns import (
     AdminAction,
     AdminActionMethod,
     AdminMutationStatus,
+    AdminSortDirection,
     ConfirmationRequirement,
+    PaginationState,
     RevisionConflict,
+    SortField,
+    SortingState,
     ToastHint,
 )
 from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminActionMetadata,
+    ReactAdminActionMetadataSource,
+    ReactAdminEmptyStateMetadata,
+    ReactAdminEmptyStateReason,
     ReactAdminNotificationTone,
     ReactAdminPageActionVariant,
+    ReactAdminPageProvenance,
     ReactAdminScope,
     ReactAdminScopeType,
+    ReactAdminShellState,
+    ReactAdminShellStateKind,
+    ReactAdminSourceKind,
 )
 from multi_agent_platform.api.schemas.admin_workflow_builder import (
     BuilderMutationResult,
@@ -26,7 +40,6 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     WorkflowCreateEnvelope,
     WorkflowCreateTemplate,
     WorkflowDraftDocument,
-    WorkflowDraftSaveRequest,
     WorkflowEvidenceSummary,
     WorkflowGraphEdge,
     WorkflowGraphNode,
@@ -35,7 +48,6 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     WorkflowJsonInspector,
     WorkflowLegacyRouteMapping,
     WorkflowPublishReadiness,
-    WorkflowPublishRequest,
     WorkflowReferenceCatalog,
     WorkflowReferenceOption,
     WorkflowRegistryEnvelope,
@@ -45,29 +57,201 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     WorkflowValidationSummary,
     WorkflowVersionDetail,
 )
+from multi_agent_platform.api.schemas.workflow_editor import (
+    EditorLookupResponse,
+    GraphPreviewResponse,
+    PublishGateResponse,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    DraftRevisionListResponse,
+    ValidationFindingResponse,
+    ValidationResultResponse,
+    WorkflowDraftResponse,
+    WorkflowVersionResponse,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    WorkflowRegistryItem as LiveWorkflowRegistryItem,
+)
 from multi_agent_platform.auth.principal import PrincipalContext
 
-DEFAULT_DRAFT_ID = "00000000-0000-0000-0000-000000000030"
-DEFAULT_LINEAGE_ID = "11111111-1111-1111-1111-000000000030"
-CURRENT_REVISION = "draft-rev-qa030-current"
-NEXT_REVISION = "draft-rev-qa030-next"
+
+def build_workflow_registry_envelope(
+    *,
+    scope: ReactAdminScope,
+    items: tuple[LiveWorkflowRegistryItem, ...] | list[LiveWorkflowRegistryItem] = (),
+    filters: dict[str, str] | None = None,
+) -> WorkflowRegistryEnvelope:
+    live_items = tuple(items)
+    provenance = _provenance(
+        ReactAdminSourceKind.LIVE_REPOSITORY
+        if live_items
+        else ReactAdminSourceKind.EMPTY_LIVE_STATE,
+        "Workflow registry records",
+        (
+            "Workflow lineages, drafts, validation state, versions, and sharing "
+            "are read from durable workflow registry tables."
+        ),
+    )
+    empty_state = None
+    if not live_items:
+        empty_state = _empty_state(
+            title="No workflows found",
+            summary=(
+                "No authorized workflow lineages, active drafts, or published "
+                "bundles exist for this scope."
+            ),
+            setup_hint="Create a workflow draft to populate the live registry.",
+            provenance=provenance,
+        )
+    return WorkflowRegistryEnvelope(
+        page_id="workflow-registry-react",
+        title="Workflow registry",
+        summary=(
+            "Live workflow registry with draft, version, validation, evidence, "
+            "and sharing summaries."
+        ),
+        scope=scope,
+        filters=filters
+        or {
+            "status": "all",
+            "scope_filter": "all",
+            "sort": "updated_desc",
+        },
+        pagination=PaginationState(
+            page_size=min(max(len(live_items), 1), 50),
+            total_items=len(live_items),
+        ),
+        sorting=SortingState(
+            active=SortField(
+                key=(filters or {}).get("sort", "updated_desc"),
+                label="Latest updated",
+                direction=AdminSortDirection.DESC,
+            ),
+            allowed=(
+                SortField(
+                    key="updated_desc",
+                    label="Latest updated",
+                    direction=AdminSortDirection.DESC,
+                ),
+            ),
+        ),
+        items=tuple(_registry_item_from_live(item, scope) for item in live_items),
+        create_action=AdminAction(
+            action_id="workflow-create",
+            label="Create workflow",
+            method=AdminActionMethod.GET,
+            href=_with_tenant_query("/admin/app/workflows/new", scope),
+            variant=ReactAdminPageActionVariant.PRIMARY,
+        ),
+        provenance=provenance,
+        empty_state=empty_state,
+    )
+
+
+def build_workflow_create_envelope(*, scope: ReactAdminScope) -> WorkflowCreateEnvelope:
+    provenance = _provenance(
+        ReactAdminSourceKind.COMPUTED_METADATA,
+        "Workflow create actions",
+        (
+            "Create metadata is computed from backend workflow authoring "
+            "capabilities and the active scope."
+        ),
+    )
+    return WorkflowCreateEnvelope(
+        page_id="workflow-create-react",
+        title="Create workflow",
+        summary="Start a durable workflow draft through the workflow registry service.",
+        templates=(
+            WorkflowCreateTemplate(
+                template_id="blank_workflow",
+                label="Blank workflow",
+                summary=(
+                    "Creates a tenant-scoped draft with no synthetic domain records."
+                ),
+                workflow_kind="main_workflow",
+                href=_with_tenant_query(
+                    "/admin/app/workflows/new?template=blank", scope
+                ),
+            ),
+        ),
+        create_action=AdminAction(
+            action_id="workflow-create-submit",
+            label="Create draft",
+            method=AdminActionMethod.POST,
+            href=_with_tenant_query("/admin/app/workflows", scope),
+            variant=ReactAdminPageActionVariant.PRIMARY,
+            requires_idempotency_key=True,
+            action_metadata=ReactAdminActionMetadata(
+                idempotency_source=(
+                    ReactAdminActionMetadataSource.GENERATED_CLIENT_STATE
+                ),
+            ),
+        ),
+        provenance=provenance,
+    )
 
 
 def build_workflow_builder_envelope(
     *,
     scope: ReactAdminScope,
     principal: PrincipalContext,
-    workflow_draft_id: str | UUID | None = None,
-    large: bool = False,
+    registry_items: tuple[LiveWorkflowRegistryItem, ...]
+    | list[LiveWorkflowRegistryItem] = (),
+    draft: WorkflowDraftResponse | None = None,
+    lookups: EditorLookupResponse | None = None,
+    graph_preview: GraphPreviewResponse | None = None,
+    revisions: DraftRevisionListResponse | None = None,
+    publish_gate: PublishGateResponse | None = None,
+    version: WorkflowVersionResponse | None = None,
 ) -> WorkflowBuilderEnvelope:
     _ = principal
-    draft_id = str(workflow_draft_id or DEFAULT_DRAFT_ID)
-    graph = build_graph_preview(large=large)
-    validation = build_validation_summary(blocked=not large)
-    publish_readiness = build_publish_readiness(ready=False)
-    tenant_label = (
-        scope.label if scope.scope_type == ReactAdminScopeType.TENANT else None
+    registry = build_workflow_registry_envelope(
+        scope=scope, items=tuple(registry_items)
     )
+    create_state = build_workflow_create_envelope(scope=scope)
+    reference_catalog = build_reference_catalog(scope=scope, lookups=lookups)
+    legacy_routes = build_workflow_legacy_route_mappings(scope=scope)
+    if draft is None:
+        provenance = _provenance(
+            ReactAdminSourceKind.EMPTY_LIVE_STATE,
+            "Workflow builder records",
+            "No active durable workflow draft is available for the active scope.",
+        )
+        empty_state = _empty_state(
+            title="No active workflow draft",
+            summary="Create a workflow draft before opening the builder.",
+            setup_hint="Use the create action to start a durable workflow draft.",
+            provenance=provenance,
+        )
+        return WorkflowBuilderEnvelope(
+            page_id="react-workflow-builder",
+            title="Workflow builder",
+            description=(
+                "Guided workflow drafting with backend validation, graph review, "
+                "required evidence, and publish gates."
+            ),
+            scope=scope,
+            registry=registry,
+            create_state=create_state,
+            reference_catalog=reference_catalog,
+            legacy_routes=legacy_routes,
+            state=ReactAdminShellState(
+                state=ReactAdminShellStateKind.EMPTY,
+                title=empty_state.title,
+                summary=empty_state.summary,
+                action=None,
+                provenance=provenance,
+                empty_state=empty_state,
+            ),
+            provenance=provenance,
+            empty_state=empty_state,
+        )
+
+    draft_document = _draft_document_from_live(draft, graph_preview)
+    validation = build_validation_summary(
+        draft=draft, validation=draft.latest_validation
+    )
+    publish_readiness = build_publish_readiness(draft=draft, gate=publish_gate)
     return WorkflowBuilderEnvelope(
         page_id="react-workflow-builder",
         title="Workflow builder",
@@ -76,202 +260,30 @@ def build_workflow_builder_envelope(
             "required evidence, and publish gates."
         ),
         scope=scope,
-        registry=build_workflow_registry_envelope(scope=scope),
-        create_state=build_workflow_create_envelope(scope=scope),
-        draft=WorkflowDraftDocument(
-            workflow_draft_id=draft_id,
-            workflow_lineage_id=DEFAULT_LINEAGE_ID,
-            revision=CURRENT_REVISION,
-            name="Daily briefing workflow",
-            description="Prepare a safe daily intelligence briefing for a tenant.",
-            status=WorkflowBuilderStatus.READY,
-            tenant_label=tenant_label,
-            metadata_summary="Briefing workflow with explicit revision saves.",
-            roles_summary="Coordinator plus calendar and weather sub-agent roles.",
-            references_summary=(
-                "Prompt, profile, provider route, skill, and test evidence selected."
-            ),
-            graph=graph,
+        registry=registry,
+        create_state=create_state,
+        draft=draft_document,
+        sections=_sections_from_draft(
+            draft=draft, validation=validation, publish=publish_readiness
         ),
-        sections=_sections(),
-        reference_catalog=build_reference_catalog(scope=scope),
+        reference_catalog=reference_catalog,
         validation=validation,
         publish_readiness=publish_readiness,
-        revisions=_revisions(),
-        version_detail=build_workflow_version_detail(scope=scope),
-        sharing=build_workflow_sharing_summary(scope=scope),
-        legacy_routes=build_workflow_legacy_route_mappings(scope=scope),
-        json_inspector=_json_inspector(),
-        actions=(
-            AdminAction(
-                action_id="workflow-save",
-                label="Save draft",
-                method=AdminActionMethod.POST,
-                href=_draft_action_href(draft_id, "save", scope),
-                variant=ReactAdminPageActionVariant.PRIMARY,
-                requires_idempotency_key=True,
-            ),
-            AdminAction(
-                action_id="workflow-validate",
-                label="Run validation",
-                method=AdminActionMethod.POST,
-                href=_draft_action_href(draft_id, "validate", scope),
-                variant=ReactAdminPageActionVariant.SECONDARY,
-            ),
-            AdminAction(
-                action_id="workflow-publish",
-                label="Review publish",
-                method=AdminActionMethod.POST,
-                href=_draft_action_href(draft_id, "publish", scope),
-                variant=ReactAdminPageActionVariant.SECONDARY,
-                requires_confirmation=True,
-                confirmation=ConfirmationRequirement(
-                    title="Publish workflow",
-                    summary=(
-                        "Publish only after validation and required evidence are "
-                        "current."
-                    ),
-                    confirm_label="Publish workflow",
-                ),
-            ),
+        revisions=_revisions_from_live(revisions, draft=draft),
+        version_detail=build_workflow_version_detail(scope=scope, version=version),
+        sharing=build_workflow_sharing_summary(scope=scope, version=version),
+        legacy_routes=legacy_routes,
+        json_inspector=_json_inspector_from_draft(
+            draft=draft, graph=draft_document.graph
         ),
-    )
-
-
-def build_workflow_registry_envelope(
-    *,
-    scope: ReactAdminScope,
-) -> WorkflowRegistryEnvelope:
-    draft_href = _with_tenant_query(
-        f"/admin/app/workflows/drafts/{DEFAULT_DRAFT_ID}",
-        scope,
-    )
-    version_href = _with_tenant_query(
-        "/admin/app/workflows/versions/22222222-2222-2222-2222-000000000030",
-        scope,
-    )
-    return WorkflowRegistryEnvelope(
-        page_id="workflow-registry-react",
-        title="Workflow registry",
-        summary=(
-            "React workflow registry with draft, published version, required "
-            "evidence, and sharing summaries."
-        ),
-        scope=scope,
-        filters={
-            "status": "all",
-            "scope_filter": "active",
-            "sort": "updated",
-        },
-        items=(
-            WorkflowRegistryItem(
-                workflow_lineage_id=DEFAULT_LINEAGE_ID,
-                workflow_draft_id=DEFAULT_DRAFT_ID,
-                name="Daily briefing workflow",
-                workflow_kind="main_workflow",
-                status=WorkflowBuilderStatus.READY,
-                owner_label="Tenant Admin",
-                tenant_label=(
-                    scope.label
-                    if scope.scope_type == ReactAdminScopeType.TENANT
-                    else None
-                ),
-                updated_at_label="Current revision",
-                sharing_summary="Visible to authorized workflow reviewers.",
-                required_evidence_summary="Required Daily briefing suite is stale.",
-                href=draft_href,
-                actions=(
-                    AdminAction(
-                        action_id="open-draft",
-                        label="Open draft",
-                        method=AdminActionMethod.GET,
-                        href=draft_href,
-                        variant=ReactAdminPageActionVariant.PRIMARY,
-                    ),
-                    AdminAction(
-                        action_id="open-publish-gate",
-                        label="Publish gate",
-                        method=AdminActionMethod.GET,
-                        href=_with_tenant_query(
-                            f"/admin/app/workflows/drafts/{DEFAULT_DRAFT_ID}/publish-gate",
-                            scope,
-                        ),
-                        variant=ReactAdminPageActionVariant.SECONDARY,
-                    ),
-                ),
+        actions=_draft_actions(draft=draft, scope=scope),
+        provenance=_provenance(
+            ReactAdminSourceKind.LIVE_REPOSITORY,
+            "Workflow draft records",
+            (
+                "Draft document, revisions, validation, graph, publish readiness, "
+                "and sharing summaries are projected from durable workflow records."
             ),
-            WorkflowRegistryItem(
-                workflow_lineage_id=DEFAULT_LINEAGE_ID,
-                workflow_version_bundle_id="22222222-2222-2222-2222-000000000030",
-                name="Daily briefing workflow",
-                workflow_kind="main_workflow",
-                status=WorkflowBuilderStatus.PUBLISHED,
-                owner_label="Platform Admin",
-                tenant_label=None,
-                updated_at_label="Published bundle",
-                sharing_summary="Published bundle pins runtime versions.",
-                required_evidence_summary="Evidence references are retained.",
-                href=version_href,
-                actions=(
-                    AdminAction(
-                        action_id="open-version",
-                        label="View version",
-                        method=AdminActionMethod.GET,
-                        href=version_href,
-                        variant=ReactAdminPageActionVariant.SECONDARY,
-                    ),
-                ),
-            ),
-        ),
-        create_action=AdminAction(
-            action_id="workflow-create",
-            label="Create workflow",
-            method=AdminActionMethod.GET,
-            href=_with_tenant_query("/admin/app/workflows/new", scope),
-            variant=ReactAdminPageActionVariant.PRIMARY,
-        ),
-    )
-
-
-def build_workflow_create_envelope(
-    *,
-    scope: ReactAdminScope,
-) -> WorkflowCreateEnvelope:
-    return WorkflowCreateEnvelope(
-        page_id="workflow-create-react",
-        title="Create workflow",
-        summary=(
-            "Start from a minimal ready workflow or a blocked-readiness fixture "
-            "that exercises publish gates."
-        ),
-        templates=(
-            WorkflowCreateTemplate(
-                template_id="minimal_ready",
-                label="Minimal ready workflow",
-                summary="Creates a small workflow with a terminal node.",
-                workflow_kind="main_workflow",
-                href=_with_tenant_query(
-                    "/admin/app/workflows/new?template=minimal_ready",
-                    scope,
-                ),
-            ),
-            WorkflowCreateTemplate(
-                template_id="qa013_blocked_readiness",
-                label="Blocked readiness workflow",
-                summary="Creates a draft with deliberate publish blockers.",
-                workflow_kind="main_workflow",
-                href=_with_tenant_query(
-                    "/admin/app/workflows/new?template=qa013_blocked_readiness",
-                    scope,
-                ),
-            ),
-        ),
-        create_action=AdminAction(
-            action_id="workflow-create-submit",
-            label="Create draft",
-            method=AdminActionMethod.POST,
-            href=_with_tenant_query("/admin/workflows", scope),
-            variant=ReactAdminPageActionVariant.PRIMARY,
         ),
     )
 
@@ -279,32 +291,42 @@ def build_workflow_create_envelope(
 def build_workflow_version_detail(
     *,
     scope: ReactAdminScope,
-) -> WorkflowVersionDetail:
+    version: WorkflowVersionResponse | None = None,
+) -> WorkflowVersionDetail | None:
     _ = scope
+    if version is None:
+        return None
+    digest = version.compiled_bundle_digest or "digest unavailable"
     return WorkflowVersionDetail(
-        workflow_version_bundle_id="22222222-2222-2222-2222-000000000030",
-        display_name="Daily briefing workflow",
-        display_version="v1",
-        digest_label="Compiled bundle digest qa030",
+        workflow_version_bundle_id=str(version.workflow_version_bundle_id),
+        display_name=version.display_name,
+        display_version=version.display_version,
+        digest_label=f"Digest {digest[:16]}",
         summary=(
-            "Published bundle pins workflow, prompt, profile, provider, skill, "
-            "subworkflow, and evidence references."
+            f"Published {version.status} workflow bundle from durable registry state."
         ),
-        href="/admin/app/workflows/versions/22222222-2222-2222-2222-000000000030",
+        href=f"/admin/app/workflows/versions/{version.workflow_version_bundle_id}",
     )
 
 
 def build_workflow_sharing_summary(
     *,
     scope: ReactAdminScope,
+    version: WorkflowVersionResponse | None = None,
 ) -> WorkflowSharingSummary:
+    if version is None:
+        return WorkflowSharingSummary(
+            status=WorkflowBuilderStatus.UNAVAILABLE,
+            summary="Sharing is available after a workflow bundle is published.",
+            grants_label="No published bundle selected",
+            actions=(),
+        )
+    grant_count = len(version.sharing_grants)
     return WorkflowSharingSummary(
         status=WorkflowBuilderStatus.READY,
-        summary="Sharing decisions are enforced by backend tenant grants.",
+        summary="Sharing summary is derived from durable workflow version grants.",
         grants_label=(
-            "Tenant grant active"
-            if scope.scope_type == ReactAdminScopeType.TENANT
-            else "Platform-owned workflow"
+            f"{grant_count} active sharing grant{'s' if grant_count != 1 else ''}"
         ),
         actions=(
             AdminAction(
@@ -361,7 +383,7 @@ def build_workflow_legacy_route_mappings(
             legacy_path="/admin/workflows/drafts/{workflow_draft_id}/editor",
             methods=("GET",),
             react_path=_with_tenant_query(
-                f"/admin/app/workflows/drafts/{DEFAULT_DRAFT_ID}",
+                "/admin/app/workflows/drafts/{workflow_draft_id}",
                 scope,
             ),
             preserved_parameters=preserved,
@@ -375,7 +397,7 @@ def build_workflow_legacy_route_mappings(
             legacy_path="/admin/workflows/drafts/{workflow_draft_id}/publish-gate/ui",
             methods=("GET",),
             react_path=_with_tenant_query(
-                f"/admin/app/workflows/drafts/{DEFAULT_DRAFT_ID}/publish-gate",
+                "/admin/app/workflows/drafts/{workflow_draft_id}/publish-gate",
                 scope,
             ),
             preserved_parameters=preserved,
@@ -389,7 +411,7 @@ def build_workflow_legacy_route_mappings(
             legacy_path="/admin/workflows/versions/{workflow_version_bundle_id}/detail",
             methods=("GET",),
             react_path=_with_tenant_query(
-                "/admin/app/workflows/versions/22222222-2222-2222-2222-000000000030",
+                "/admin/app/workflows/versions/{workflow_version_bundle_id}",
                 scope,
             ),
             preserved_parameters=preserved,
@@ -402,417 +424,572 @@ def build_workflow_legacy_route_mappings(
     )
 
 
-def build_reference_catalog(*, scope: ReactAdminScope) -> WorkflowReferenceCatalog:
-    tenant_eligible = scope.scope_type == ReactAdminScopeType.TENANT
+def build_reference_catalog(
+    *,
+    scope: ReactAdminScope,
+    lookups: EditorLookupResponse | None = None,
+) -> WorkflowReferenceCatalog:
+    _ = scope
+    if lookups is None:
+        return WorkflowReferenceCatalog()
+    grouped: dict[str, list[WorkflowReferenceOption]] = {
+        "prompt": [],
+        "runtime_profile": [],
+        "model_route": [],
+        "skill": [],
+        "test_suite": [],
+        "subworkflow": [],
+    }
+    for group in lookups.groups:
+        for option in group.options:
+            disabled = bool(getattr(option, "disabled", False))
+            projected = WorkflowReferenceOption(
+                reference_id=option.value or option.option_id,
+                label=option.label,
+                kind=group.lookup_kind,
+                readiness_status=_status_from_lookup(option.status, disabled),
+                tenant_eligible=not disabled,
+                version_label=_metadata_label(option.metadata),
+                safe_summary=option.description or f"{option.status} reference option",
+                href=option.detail_url,
+            )
+            key = _lookup_group_key(group.lookup_kind)
+            grouped.setdefault(key, []).append(projected)
     return WorkflowReferenceCatalog(
-        prompt_options=(
-            WorkflowReferenceOption(
-                reference_id="prompt-daily-briefing-v3",
-                label="Daily briefing prompt",
-                kind="prompt",
-                readiness_status=WorkflowBuilderStatus.READY,
-                version_label="v3",
-                safe_summary=(
-                    "Prompt version is published and granted to the active scope."
-                ),
-                href=_with_tenant_query("/admin/app/governance/prompts", scope),
-            ),
-        ),
-        profile_options=(
-            WorkflowReferenceOption(
-                reference_id="profile-briefing-safe",
-                label="Briefing runtime profile",
-                kind="runtime_profile",
-                readiness_status=WorkflowBuilderStatus.READY,
-                version_label="v2",
-                safe_summary="Profile pins provider routing and tool policy versions.",
-                href=_with_tenant_query("/admin/app/governance/profiles", scope),
-            ),
-        ),
-        provider_options=(
-            WorkflowReferenceOption(
-                reference_id="provider-route-briefing",
-                label="Pinned briefing model route",
-                kind="model_route",
-                readiness_status=WorkflowBuilderStatus.WARNING,
-                tenant_eligible=tenant_eligible,
-                safe_summary=(
-                    "Provider route is configured with safe reference diagnostics."
-                ),
-                href="/admin/app/governance/providers",
-            ),
-        ),
-        skill_options=(
-            WorkflowReferenceOption(
-                reference_id="skill-weather-readonly",
-                label="Weather connector skill",
-                kind="skill",
-                readiness_status=WorkflowBuilderStatus.READY,
-                safe_summary=(
-                    "Installed read-only connector is eligible for workflow binding."
-                ),
-                href=_with_tenant_query(
-                    "/admin/app/skills/installations",
-                    scope,
-                ),
-            ),
-        ),
-        test_suite_options=(
-            WorkflowReferenceOption(
-                reference_id="suite-briefing-required",
-                label="Daily briefing required suite",
-                kind="test_suite",
-                readiness_status=WorkflowBuilderStatus.BLOCKED,
-                safe_summary="Repository-backed evidence is required before publish.",
-                href=_with_tenant_query("/admin/agent-tests/ui", scope),
-            ),
-        ),
-        subworkflow_options=(
-            WorkflowReferenceOption(
-                reference_id="subworkflow-weather-v1",
-                label="Weather enrichment subworkflow",
-                kind="subworkflow",
-                readiness_status=WorkflowBuilderStatus.READY,
-                safe_summary="Published subworkflow is visible to the active scope.",
-                href=_with_tenant_query("/admin/app/workflows", scope),
-            ),
-        ),
+        prompt_options=tuple(grouped.get("prompt", ())),
+        profile_options=tuple(grouped.get("runtime_profile", ())),
+        provider_options=tuple(grouped.get("model_route", ())),
+        skill_options=tuple(grouped.get("skill", ())),
+        test_suite_options=tuple(grouped.get("test_suite", ())),
+        subworkflow_options=tuple(grouped.get("subworkflow", ())),
     )
 
 
 def build_save_result(
     *,
-    scope: ReactAdminScope,
-    request: WorkflowDraftSaveRequest,
+    draft: WorkflowDraftResponse | None = None,
+    conflict: RevisionConflict | None = None,
 ) -> BuilderMutationResult:
-    if request.force_stale or request.revision != CURRENT_REVISION:
+    if conflict is not None:
         return BuilderMutationResult(
             status=AdminMutationStatus.STALE_CONFLICT,
-            summary="Draft revision changed before the save could be applied.",
-            stale_conflict=RevisionConflict(
-                submitted_revision=request.revision,
-                current_revision=CURRENT_REVISION,
-                message="Reload the current draft revision before saving again.",
-                reload_href=_with_tenant_query("/admin/app/workflows", scope),
-            ),
-            audit_reference_id="audit-workflow-save-stale-qa030",
+            summary=conflict.message,
+            stale_conflict=conflict,
         )
+    if draft is None:
+        return BuilderMutationResult(
+            status=AdminMutationStatus.VALIDATION_ERROR,
+            summary="Workflow draft save did not return durable state.",
+        )
+    revision = _revision_label(draft)
     return BuilderMutationResult(
         status=AdminMutationStatus.ACCEPTED,
-        summary="Draft saved as a new explicit revision.",
-        revision=NEXT_REVISION,
-        validation=build_validation_summary(blocked=True),
-        publish_readiness=build_publish_readiness(ready=False),
+        summary="Draft saved as a durable workflow revision.",
+        revision=revision,
+        validation=build_validation_summary(
+            draft=draft, validation=draft.latest_validation
+        ),
         toast=ToastHint(
             tone=ReactAdminNotificationTone.SUCCESS,
             title="Draft saved",
-            summary="Validation is ready to refresh for the new revision.",
+            summary="The latest durable workflow revision is now current.",
         ),
-        audit_reference_id="audit-workflow-save-qa030",
+        audit_reference_id=f"workflow-draft:{draft.workflow_draft_id}:revision:{draft.current_revision_number}",
     )
 
 
-def build_validation_result(*, ready: bool = False) -> BuilderMutationResult:
-    validation = build_validation_summary(blocked=not ready)
+def build_create_result(
+    *,
+    draft: WorkflowDraftResponse | None = None,
+    scope: ReactAdminScope,
+) -> BuilderMutationResult:
+    if draft is None:
+        return BuilderMutationResult(
+            status=AdminMutationStatus.VALIDATION_ERROR,
+            summary="Workflow draft create did not return durable state.",
+        )
     return BuilderMutationResult(
         status=AdminMutationStatus.ACCEPTED,
-        summary="Workflow validation completed with safe findings.",
-        revision=CURRENT_REVISION,
-        validation=validation,
-        publish_readiness=build_publish_readiness(ready=ready),
-        audit_reference_id="audit-workflow-validation-qa030",
+        summary="Workflow draft created through durable registry state.",
+        revision=_revision_label(draft),
+        validation=build_validation_summary(
+            draft=draft,
+            validation=draft.latest_validation,
+        ),
+        next_action=AdminAction(
+            action_id="workflow-open-created-draft",
+            label="Open draft",
+            method=AdminActionMethod.GET,
+            href=_with_tenant_query(
+                f"/admin/app/workflows/drafts/{draft.workflow_draft_id}",
+                scope,
+            ),
+            variant=ReactAdminPageActionVariant.PRIMARY,
+        ),
+        toast=ToastHint(
+            tone=ReactAdminNotificationTone.SUCCESS,
+            title="Workflow created",
+            summary="A durable workflow draft is ready to edit.",
+        ),
+        audit_reference_id=f"workflow-draft:{draft.workflow_draft_id}:created",
+    )
+
+
+def build_restore_result(
+    *,
+    draft: WorkflowDraftResponse | None = None,
+    conflict: RevisionConflict | None = None,
+) -> BuilderMutationResult:
+    if conflict is not None:
+        return BuilderMutationResult(
+            status=AdminMutationStatus.STALE_CONFLICT,
+            summary=conflict.message,
+            stale_conflict=conflict,
+        )
+    if draft is None:
+        return BuilderMutationResult(
+            status=AdminMutationStatus.VALIDATION_ERROR,
+            summary="Workflow revision restore did not return durable state.",
+        )
+    return BuilderMutationResult(
+        status=AdminMutationStatus.ACCEPTED,
+        summary="Workflow revision restored as the current durable draft revision.",
+        revision=_revision_label(draft),
+        validation=build_validation_summary(
+            draft=draft,
+            validation=draft.latest_validation,
+        ),
+        toast=ToastHint(
+            tone=ReactAdminNotificationTone.SUCCESS,
+            title="Revision restored",
+            summary="The selected revision is now the current durable draft.",
+        ),
+        audit_reference_id=(
+            f"workflow-draft:{draft.workflow_draft_id}:revision:"
+            f"{draft.current_revision_number}"
+        ),
+    )
+
+
+def build_copy_result(
+    *,
+    draft: WorkflowDraftResponse | None = None,
+    scope: ReactAdminScope,
+) -> BuilderMutationResult:
+    if draft is None:
+        return BuilderMutationResult(
+            status=AdminMutationStatus.VALIDATION_ERROR,
+            summary="Workflow copy did not return durable state.",
+        )
+    return BuilderMutationResult(
+        status=AdminMutationStatus.ACCEPTED,
+        summary="Workflow draft copied into a new durable lineage.",
+        revision=_revision_label(draft),
+        validation=build_validation_summary(
+            draft=draft,
+            validation=draft.latest_validation,
+        ),
+        next_action=AdminAction(
+            action_id="workflow-open-copied-draft",
+            label="Open copied draft",
+            method=AdminActionMethod.GET,
+            href=_with_tenant_query(
+                f"/admin/app/workflows/drafts/{draft.workflow_draft_id}",
+                scope,
+            ),
+            variant=ReactAdminPageActionVariant.PRIMARY,
+        ),
+        toast=ToastHint(
+            tone=ReactAdminNotificationTone.SUCCESS,
+            title="Workflow copied",
+            summary="A copied durable workflow draft is ready to edit.",
+        ),
+        audit_reference_id=f"workflow-draft:{draft.workflow_draft_id}:copied",
+    )
+
+
+def build_validation_result(
+    *,
+    draft: WorkflowDraftResponse | None = None,
+    validation: ValidationResultResponse | None = None,
+    publish_gate: PublishGateResponse | None = None,
+) -> BuilderMutationResult:
+    if draft is None or validation is None:
+        return BuilderMutationResult(
+            status=AdminMutationStatus.VALIDATION_ERROR,
+            summary="Workflow validation did not return durable state.",
+        )
+    return BuilderMutationResult(
+        status=AdminMutationStatus.ACCEPTED,
+        summary="Workflow validation completed and was persisted.",
+        revision=_revision_label(draft),
+        validation=build_validation_summary(draft=draft, validation=validation),
+        publish_readiness=build_publish_readiness(draft=draft, gate=publish_gate),
+        audit_reference_id=f"workflow-validation:{validation.validation_result_id}",
     )
 
 
 def build_publish_result(
     *,
-    request: WorkflowPublishRequest,
+    draft: WorkflowDraftResponse,
+    version: WorkflowVersionResponse | None = None,
+    gate: PublishGateResponse | None = None,
+    confirmation_required: bool = False,
 ) -> BuilderMutationResult:
-    if not request.ready_fixture:
+    if version is not None:
         return BuilderMutationResult(
-            status=AdminMutationStatus.VALIDATION_ERROR,
-            summary="Publish is blocked until validation and evidence are current.",
-            revision=request.revision,
-            publish_readiness=build_publish_readiness(ready=False),
-            audit_reference_id="audit-workflow-publish-blocked-qa030",
-        )
-    if not request.confirmed:
-        return BuilderMutationResult(
-            status=AdminMutationStatus.CONFIRMATION_REQUIRED,
-            summary="Confirm publish after reviewing the immutable bundle summary.",
-            revision=request.revision,
-            publish_readiness=build_publish_readiness(ready=True),
-            confirmation=ConfirmationRequirement(
-                title="Publish workflow",
-                summary="This creates an immutable published workflow bundle.",
-                confirm_label="Publish workflow",
+            status=AdminMutationStatus.ACCEPTED,
+            summary="Workflow published as an immutable durable bundle.",
+            revision=_revision_label(draft),
+            publish_readiness=build_publish_readiness(
+                draft=draft,
+                gate=gate,
+                published=True,
             ),
-            audit_reference_id="audit-workflow-publish-confirm-qa030",
+            toast=ToastHint(
+                tone=ReactAdminNotificationTone.SUCCESS,
+                title="Workflow published",
+                summary="The published bundle is available for authorized runtime use.",
+            ),
+            audit_reference_id=f"workflow-version:{version.workflow_version_bundle_id}",
         )
+    readiness = build_publish_readiness(draft=draft, gate=gate)
     return BuilderMutationResult(
-        status=AdminMutationStatus.ACCEPTED,
-        summary="Workflow published as an immutable bundle.",
-        revision=request.revision,
-        publish_readiness=build_publish_readiness(ready=True, published=True),
-        toast=ToastHint(
-            tone=ReactAdminNotificationTone.SUCCESS,
-            title="Workflow published",
-            summary="The published bundle is ready for runtime selection.",
-        ),
-        audit_reference_id="audit-workflow-publish-qa030",
+        status=AdminMutationStatus.CONFIRMATION_REQUIRED
+        if confirmation_required
+        else AdminMutationStatus.VALIDATION_ERROR,
+        summary=readiness.summary,
+        revision=_revision_label(draft),
+        publish_readiness=readiness,
+        confirmation=readiness.confirmation if confirmation_required else None,
     )
 
 
-def build_graph_preview(*, large: bool = False) -> WorkflowGraphPreview:
-    if large:
-        nodes = tuple(
-            WorkflowGraphNode(
-                node_id=f"node-{index}",
-                label=f"Workflow step {index}",
-                node_type="agent",
-                status=WorkflowBuilderStatus.READY,
-                summary="Large workflow fixture node summary.",
-                x=(index % 10) * 180,
-                y=(index // 10) * 120,
-            )
-            for index in range(1, 101)
+def build_validation_summary(
+    *,
+    draft: WorkflowDraftResponse,
+    validation: ValidationResultResponse | None,
+) -> WorkflowValidationSummary:
+    revision = _revision_label(draft)
+    if validation is None:
+        return WorkflowValidationSummary(
+            validation_id=f"not-run-{draft.workflow_draft_id}",
+            status=WorkflowBuilderStatus.UNAVAILABLE,
+            revision=revision,
+            generated_at_label="Not yet validated",
+            summary=(
+                "No durable validation result exists for the current draft revision."
+            ),
+            findings=(),
+            artifact_reference_ids=(),
         )
-        edges = tuple(
-            WorkflowGraphEdge(
-                edge_id=f"edge-{index}-{index + 1}",
-                source=f"node-{index}",
-                target=f"node-{index + 1}",
-                label="next",
-            )
-            for index in range(1, 100)
-        )
-    else:
-        nodes = (
-            WorkflowGraphNode(
-                node_id="start",
-                label="Start briefing",
-                node_type="trigger",
-                status=WorkflowBuilderStatus.READY,
-                role_label="Coordinator",
-                summary="Start the daily briefing workflow.",
-                x=0,
-                y=80,
-            ),
-            WorkflowGraphNode(
-                node_id="calendar",
-                label="Calendar branch",
-                node_type="sub_agent",
-                status=WorkflowBuilderStatus.READY,
-                role_label="Calendar analyst",
-                summary="Read-only calendar context branch.",
-                x=260,
-                y=0,
-            ),
-            WorkflowGraphNode(
-                node_id="weather",
-                label="Weather branch",
-                node_type="tool",
-                status=WorkflowBuilderStatus.WARNING,
-                role_label="Weather analyst",
-                summary="Weather connector branch requires current evidence.",
-                x=260,
-                y=170,
-            ),
-            WorkflowGraphNode(
-                node_id="join",
-                label="Join briefing branches",
-                node_type="join",
-                status=WorkflowBuilderStatus.WARNING,
-                summary="Wait for required branches before drafting the briefing.",
-                x=560,
-                y=80,
-            ),
-        )
-        edges = (
-            WorkflowGraphEdge(
-                edge_id="edge-start-calendar",
-                source="start",
-                target="calendar",
-                label="fan-out",
-                condition_category="parallel",
-            ),
-            WorkflowGraphEdge(
-                edge_id="edge-start-weather",
-                source="start",
-                target="weather",
-                label="fan-out",
-                condition_category="parallel",
-            ),
-            WorkflowGraphEdge(
-                edge_id="edge-calendar-join",
-                source="calendar",
-                target="join",
-                label="required",
-                condition_category="join",
-            ),
-            WorkflowGraphEdge(
-                edge_id="edge-weather-join",
-                source="weather",
-                target="join",
-                label="required",
-                condition_category="join",
-            ),
-        )
-    return WorkflowGraphPreview(
-        layout_revision="layout-qa030",
-        layout_is_authoritative=False,
-        nodes=nodes,
-        edges=edges,
-        join_policies=(
-            WorkflowJoinPolicySummary(
-                policy_id="wait_for_required_branches",
-                label="Wait for required branches",
-                summary="Join proceeds after required branches complete.",
-                required_branch_count=2,
-            ),
-        ),
-        accessibility_summary=(
-            "Graph details are also available through keyboard-accessible "
-            "node and edge lists."
-        ),
-    )
-
-
-def build_validation_summary(*, blocked: bool) -> WorkflowValidationSummary:
-    findings: tuple[ValidationFinding, ...] = ()
-    status = WorkflowBuilderStatus.READY
-    summary = "Validation passed for the current draft revision."
-    if blocked:
-        status = WorkflowBuilderStatus.BLOCKED
-        summary = "Validation found publish blockers that require review."
-        findings = (
-            ValidationFinding(
-                finding_id="finding-required-evidence",
-                severity=WorkflowBuilderSeverity.BLOCKING,
-                category="required_test_evidence",
-                section="Evidence",
-                message="Required Daily briefing test evidence is stale.",
-                recommended_action="Run the required test suite and refresh evidence.",
-                href="/admin/agent-tests/ui",
-                evidence_reference_id="evidence-qa030-required-suite",
-            ),
-        )
+    blocked = validation.blocking_issue_count > 0 or validation.status == "failed"
     return WorkflowValidationSummary(
-        validation_id="validation-qa030",
-        status=status,
-        revision=CURRENT_REVISION,
-        generated_at_label="Generated for deterministic QA030 validation",
-        summary=summary,
-        findings=findings,
-        artifact_reference_ids=("artifact-ref-qa030-validation",),
+        validation_id=str(validation.validation_result_id),
+        status=WorkflowBuilderStatus.BLOCKED
+        if blocked
+        else WorkflowBuilderStatus.READY,
+        revision=revision,
+        generated_at_label="Latest durable validation",
+        summary=(
+            "Validation has blocking findings."
+            if blocked
+            else "Validation passed for the current draft revision."
+        ),
+        findings=tuple(_finding_from_live(finding) for finding in validation.findings),
+        artifact_reference_ids=(),
     )
 
 
 def build_publish_readiness(
     *,
-    ready: bool,
+    draft: WorkflowDraftResponse,
+    gate: PublishGateResponse | None,
     published: bool = False,
 ) -> WorkflowPublishReadiness:
-    if not ready:
+    revision = _revision_label(draft)
+    if gate is None:
         return WorkflowPublishReadiness(
             decision=AdminMutationStatus.VALIDATION_ERROR,
-            revision=CURRENT_REVISION,
-            summary="Publish is blocked until required evidence is current.",
-            blockers=("Required Daily briefing test evidence is stale.",),
-            warnings=("Weather branch evidence should be refreshed after save.",),
-            required_evidence=(
-                WorkflowEvidenceSummary(
-                    evidence_id="evidence-qa030-required-suite",
-                    label="Daily briefing required suite",
-                    status=WorkflowBuilderStatus.BLOCKED,
-                    summary="Repository-backed test evidence is stale for this draft.",
-                    artifact_reference_id="artifact-ref-qa030-stale-evidence",
-                    href="/admin/agent-tests/ui",
-                ),
-            ),
+            revision=revision,
+            summary="Publish readiness has not been evaluated for the current draft.",
+            blockers=("Run validation and publish-gate evaluation before publishing.",),
+            required_evidence=(),
         )
+    ready = gate.status == "ready"
+    blockers = tuple(finding.message for finding in gate.findings if finding.blocking)
+    warnings = tuple(
+        finding.message for finding in gate.findings if not finding.blocking
+    )
+    evidence = _evidence_from_gate(gate)
     return WorkflowPublishReadiness(
         decision=AdminMutationStatus.ACCEPTED
         if published
-        else AdminMutationStatus.CONFIRMATION_REQUIRED,
-        revision=CURRENT_REVISION,
-        summary="Publish gate is ready after validation and evidence review.",
-        required_evidence=(
-            WorkflowEvidenceSummary(
-                evidence_id="evidence-qa030-required-suite",
-                label="Daily briefing required suite",
-                status=WorkflowBuilderStatus.READY,
-                summary="Repository-backed test evidence is current.",
-                artifact_reference_id="artifact-ref-qa030-ready-evidence",
-                href="/admin/agent-tests/ui",
-            ),
+        else AdminMutationStatus.CONFIRMATION_REQUIRED
+        if ready
+        else AdminMutationStatus.VALIDATION_ERROR,
+        revision=revision,
+        summary=(
+            "Workflow bundle has been published."
+            if published
+            else "Publish gate is ready after validation and evidence review."
+            if ready
+            else (
+                "Publish is blocked until validation and required evidence are current."
+            )
         ),
+        blockers=blockers,
+        warnings=warnings,
+        required_evidence=evidence,
         confirmation=ConfirmationRequirement(
             title="Publish workflow",
             summary="Confirm publish to create an immutable workflow bundle.",
             confirm_label="Publish workflow",
-        ),
+        )
+        if ready and not published
+        else None,
         published_bundle_summary=(
-            "Published bundle pins workflow, prompts, profile, provider, skills, "
-            "and required evidence references."
+            "Published bundle pins durable workflow, validation, and evidence "
+            "references."
         )
         if published
         else None,
     )
 
 
-def _sections() -> tuple[BuilderSection, ...]:
+def _registry_item_from_live(
+    item: LiveWorkflowRegistryItem,
+    scope: ReactAdminScope,
+) -> WorkflowRegistryItem:
+    actions: tuple[AdminAction, ...]
+    if item.workflow_draft_id is not None:
+        href = _with_tenant_query(
+            f"/admin/app/workflows/drafts/{item.workflow_draft_id}",
+            scope,
+        )
+        actions = (
+            AdminAction(
+                action_id="open-draft",
+                label="Open draft",
+                method=AdminActionMethod.GET,
+                href=href,
+                variant=ReactAdminPageActionVariant.PRIMARY,
+            ),
+            AdminAction(
+                action_id="open-publish-gate",
+                label="Publish gate",
+                method=AdminActionMethod.GET,
+                href=_with_tenant_query(
+                    f"/admin/app/workflows/drafts/{item.workflow_draft_id}/publish-gate",
+                    scope,
+                ),
+                variant=ReactAdminPageActionVariant.SECONDARY,
+            ),
+        )
+    else:
+        href = _with_tenant_query(
+            f"/admin/app/workflows/versions/{item.workflow_version_bundle_id}",
+            scope,
+        )
+        actions = (
+            AdminAction(
+                action_id="open-version",
+                label="View version",
+                method=AdminActionMethod.GET,
+                href=href,
+                variant=ReactAdminPageActionVariant.SECONDARY,
+            ),
+        )
+    return WorkflowRegistryItem(
+        workflow_lineage_id=str(item.workflow_lineage_id),
+        workflow_draft_id=str(item.workflow_draft_id)
+        if item.workflow_draft_id
+        else None,
+        workflow_version_bundle_id=str(item.workflow_version_bundle_id)
+        if item.workflow_version_bundle_id
+        else None,
+        name=item.display_name,
+        workflow_kind=item.workflow_kind.value,
+        status=_status_from_registry_item(item),
+        owner_label="Platform workflow"
+        if item.scope_type.value == "platform"
+        else "Tenant workflow",
+        tenant_label=_tenant_label(item=item, scope=scope),
+        updated_at_label=_timestamp_label(item.updated_at),
+        sharing_summary=_sharing_label(item),
+        required_evidence_summary=_evidence_label(item),
+        href=href,
+        actions=actions,
+    )
+
+
+def _draft_document_from_live(
+    draft: WorkflowDraftResponse,
+    graph_preview: GraphPreviewResponse | None,
+) -> WorkflowDraftDocument:
+    document = draft.document
+    graph = _graph_from_live(
+        graph_preview,
+        layout_revision=str(draft.latest_revision.workflow_draft_revision_id),
+    )
+    return WorkflowDraftDocument(
+        workflow_draft_id=str(draft.workflow_draft_id),
+        workflow_lineage_id=str(draft.workflow_lineage_id),
+        revision=_revision_label(draft),
+        name=draft.display_name,
+        description=draft.description or "No workflow description provided.",
+        status=_status_from_draft(draft),
+        tenant_label="Tenant workflow" if draft.tenant_id else None,
+        metadata_summary=(
+            f"{document.workflow_kind.value} / key {document.workflow_key}"
+        ),
+        roles_summary=(
+            f"{len(document.roles)} role{'s' if len(document.roles) != 1 else ''}"
+        ),
+        references_summary=_references_summary(document),
+        graph=graph,
+    )
+
+
+def _graph_from_live(
+    graph_preview: GraphPreviewResponse | None,
+    *,
+    layout_revision: str,
+) -> WorkflowGraphPreview:
+    if graph_preview is None:
+        return WorkflowGraphPreview(
+            layout_revision=layout_revision,
+            layout_is_authoritative=False,
+            nodes=(),
+            edges=(),
+            join_policies=(),
+            accessibility_summary=(
+                "No graph preview is available for this workflow draft."
+            ),
+        )
+    nodes = tuple(
+        WorkflowGraphNode(
+            node_id=node.id,
+            label=node.label,
+            node_type=node.node_type,
+            status=_status_from_badges(node.badges),
+            role_label=node.role_key,
+            summary=f"{node.node_type} node from the stored workflow document.",
+            x=(index % 4) * 220,
+            y=(index // 4) * 140,
+        )
+        for index, node in enumerate(graph_preview.nodes)
+    )
+    edges = tuple(
+        WorkflowGraphEdge(
+            edge_id=edge.id,
+            source=edge.source,
+            target=edge.target,
+            label=edge.label,
+            condition_category=edge.edge_type,
+        )
+        for edge in graph_preview.edges
+    )
+    join_policies = tuple(
+        WorkflowJoinPolicySummary(
+            policy_id=f"join-{index}",
+            label="Join policy",
+            summary=summary,
+            required_branch_count=0,
+        )
+        for index, summary in enumerate(graph_preview.summary.join_summaries, start=1)
+    )
+    return WorkflowGraphPreview(
+        layout_revision=layout_revision,
+        layout_is_authoritative=True,
+        nodes=nodes,
+        edges=edges,
+        join_policies=join_policies,
+        accessibility_summary=(
+            f"Stored workflow graph has {graph_preview.summary.node_count} nodes and "
+            f"{graph_preview.summary.edge_count} edges."
+        ),
+    )
+
+
+def _sections_from_draft(
+    *,
+    draft: WorkflowDraftResponse,
+    validation: WorkflowValidationSummary,
+    publish: WorkflowPublishReadiness,
+) -> tuple[BuilderSection, ...]:
+    graph = draft.document
     return (
         BuilderSection(
             section_id="metadata",
             label="Metadata",
-            status=WorkflowBuilderStatus.READY,
-            summary="Name, description, tags, and Daily Briefing pattern.",
+            status=_status_from_draft(draft),
+            summary=f"{draft.display_name} revision {draft.current_revision_number}.",
         ),
         BuilderSection(
             section_id="references",
             label="References",
-            status=WorkflowBuilderStatus.WARNING,
-            summary="Prompt, profile, provider, skill, and test references.",
+            status=WorkflowBuilderStatus.READY,
+            summary=_references_summary(graph),
         ),
         BuilderSection(
             section_id="graph",
             label="Graph",
-            status=WorkflowBuilderStatus.WARNING,
-            summary="Nodes, edges, fan-out, joins, and approval gates.",
+            status=validation.status,
+            summary=(
+                f"{len(graph.nodes)} nodes and {len(graph.edges)} edges in "
+                "the stored document."
+            ),
         ),
         BuilderSection(
             section_id="publish",
             label="Publish",
-            status=WorkflowBuilderStatus.BLOCKED,
-            summary="Required evidence must be current before publish.",
+            status=WorkflowBuilderStatus.READY
+            if publish.decision
+            in {AdminMutationStatus.ACCEPTED, AdminMutationStatus.CONFIRMATION_REQUIRED}
+            else WorkflowBuilderStatus.BLOCKED,
+            summary=publish.summary,
         ),
     )
 
 
-def _revisions() -> tuple[WorkflowRevisionSummary, ...]:
-    return (
+def _revisions_from_live(
+    revisions: DraftRevisionListResponse | None,
+    *,
+    draft: WorkflowDraftResponse,
+) -> tuple[WorkflowRevisionSummary, ...]:
+    if revisions is None:
+        revision = draft.latest_revision
+        return (
+            WorkflowRevisionSummary(
+                revision=_revision_label(draft),
+                created_at_label=_timestamp_label(revision.created_at),
+                actor_label="Workflow author",
+                change_category="latest_revision",
+                summary=revision.change_summary or "Latest durable workflow revision.",
+                audit_reference_id=f"workflow-revision:{revision.workflow_draft_revision_id}",
+                current=True,
+            ),
+        )
+    return tuple(
         WorkflowRevisionSummary(
-            revision=CURRENT_REVISION,
-            created_at_label="Current revision",
-            actor_label="Tenant Admin",
-            change_category="draft_saved",
-            summary="Updated graph references and validation evidence.",
-            audit_reference_id="audit-workflow-revision-current-qa030",
-            current=True,
-        ),
-        WorkflowRevisionSummary(
-            revision="draft-rev-qa030-previous",
-            created_at_label="Earlier today",
-            actor_label="Platform Admin",
-            change_category="graph_updated",
-            summary="Added weather branch and required join policy.",
-            audit_reference_id="audit-workflow-revision-previous-qa030",
-        ),
+            revision=str(item.revision_number),
+            created_at_label=_timestamp_label(item.created_at),
+            actor_label="Workflow author",
+            change_category="draft_revision",
+            summary=item.change_summary or "Durable workflow draft revision.",
+            audit_reference_id=f"workflow-revision:{item.workflow_draft_revision_id}",
+            current=item.revision_number == revisions.current_revision_number,
+        )
+        for item in revisions.revisions
     )
 
 
-def _json_inspector() -> WorkflowJsonInspector:
+def _json_inspector_from_draft(
+    *,
+    draft: WorkflowDraftResponse,
+    graph: WorkflowGraphPreview,
+) -> WorkflowJsonInspector:
     return WorkflowJsonInspector(
         collapsed_by_default=True,
         summary="Advanced JSON is read-only and redacted.",
@@ -821,16 +998,247 @@ def _json_inspector() -> WorkflowJsonInspector:
             "channel messages, and connector outputs are summarized."
         ),
         safe_document_preview={
-            "workflow": "Daily briefing workflow",
-            "revision": CURRENT_REVISION,
-            "graph": "4 nodes, 4 edges, 1 join policy",
+            "workflow": draft.document.workflow_key,
+            "revision": str(draft.current_revision_number),
+            "graph": f"{len(graph.nodes)} nodes, {len(graph.edges)} edges",
         },
-        artifact_reference_id="artifact-ref-qa030-json-preview",
+        artifact_reference_id=None,
     )
 
 
+def _draft_actions(
+    *,
+    draft: WorkflowDraftResponse,
+    scope: ReactAdminScope,
+) -> tuple[AdminAction, ...]:
+    revision = _revision_label(draft)
+    metadata = ReactAdminActionMetadata(
+        revision=revision,
+        revision_source=ReactAdminActionMetadataSource.BACKEND,
+        idempotency_source=ReactAdminActionMetadataSource.GENERATED_CLIENT_STATE,
+    )
+    return (
+        AdminAction(
+            action_id="workflow-save",
+            label="Save draft",
+            method=AdminActionMethod.POST,
+            href=_draft_action_href(draft.workflow_draft_id, "save", scope),
+            variant=ReactAdminPageActionVariant.PRIMARY,
+            requires_idempotency_key=True,
+            action_metadata=metadata,
+        ),
+        AdminAction(
+            action_id="workflow-validate",
+            label="Run validation",
+            method=AdminActionMethod.POST,
+            href=_draft_action_href(draft.workflow_draft_id, "validate", scope),
+            variant=ReactAdminPageActionVariant.SECONDARY,
+            action_metadata=metadata,
+        ),
+        AdminAction(
+            action_id="workflow-publish",
+            label="Review publish",
+            method=AdminActionMethod.POST,
+            href=_draft_action_href(draft.workflow_draft_id, "publish", scope),
+            variant=ReactAdminPageActionVariant.SECONDARY,
+            requires_confirmation=True,
+            confirmation=ConfirmationRequirement(
+                title="Publish workflow",
+                summary=(
+                    "Publish only after validation and required evidence are current."
+                ),
+                confirm_label="Publish workflow",
+            ),
+            action_metadata=metadata,
+        ),
+    )
+
+
+def _finding_from_live(finding: ValidationFindingResponse) -> ValidationFinding:
+    return ValidationFinding(
+        finding_id=finding.code or finding.field_path or finding.category,
+        severity=WorkflowBuilderSeverity.BLOCKING
+        if finding.blocking
+        else WorkflowBuilderSeverity.WARNING
+        if finding.severity in {"warning", "advisory"}
+        else WorkflowBuilderSeverity.INFO,
+        category=finding.category,
+        section=finding.section_key or finding.field_path or "workflow",
+        message=finding.message,
+        recommended_action=finding.remediation or "Review the workflow document.",
+        href=finding.safe_links[0] if finding.safe_links else None,
+        evidence_reference_id=finding.reference_id,
+    )
+
+
+def _evidence_from_gate(
+    gate: PublishGateResponse,
+) -> tuple[WorkflowEvidenceSummary, ...]:
+    summary = gate.required_test_summary
+    if summary.required_count == 0:
+        return ()
+    if summary.failing_count or summary.missing_count:
+        status = WorkflowBuilderStatus.BLOCKED
+    elif summary.stale_count:
+        status = WorkflowBuilderStatus.WARNING
+    elif summary.passing_count >= summary.required_count:
+        status = WorkflowBuilderStatus.READY
+    else:
+        status = WorkflowBuilderStatus.UNAVAILABLE
+    return (
+        WorkflowEvidenceSummary(
+            evidence_id="required-test-evidence",
+            label="Required test evidence",
+            status=status,
+            summary=(
+                f"{summary.passing_count} passing, {summary.failing_count} failing, "
+                f"{summary.missing_count} missing, {summary.stale_count} stale."
+            ),
+            artifact_reference_id=None,
+            href="/admin/app/test-bench",
+        ),
+    )
+
+
+def _provenance(
+    source_kind: ReactAdminSourceKind,
+    source_label: str,
+    source_detail: str | None = None,
+) -> ReactAdminPageProvenance:
+    return ReactAdminPageProvenance(
+        source_kind=source_kind,
+        source_label=source_label,
+        source_detail=source_detail,
+    )
+
+
+def _empty_state(
+    *,
+    title: str,
+    summary: str,
+    setup_hint: str,
+    provenance: ReactAdminPageProvenance,
+) -> ReactAdminEmptyStateMetadata:
+    return ReactAdminEmptyStateMetadata(
+        reason=ReactAdminEmptyStateReason.NO_LIVE_ROWS,
+        title=title,
+        summary=summary,
+        setup_hint=setup_hint,
+        provenance=provenance,
+    )
+
+
+def _status_from_registry_item(item: LiveWorkflowRegistryItem) -> WorkflowBuilderStatus:
+    if item.visibility_status.value == "published":
+        return WorkflowBuilderStatus.PUBLISHED
+    if item.latest_validation_status == "failed":
+        return WorkflowBuilderStatus.BLOCKED
+    if item.publish_readiness_status == "ready":
+        return WorkflowBuilderStatus.READY
+    return WorkflowBuilderStatus.READY
+
+
+def _status_from_draft(draft: WorkflowDraftResponse) -> WorkflowBuilderStatus:
+    if draft.status == "published_source":
+        return WorkflowBuilderStatus.PUBLISHED
+    if draft.latest_validation and draft.latest_validation.blocking_issue_count > 0:
+        return WorkflowBuilderStatus.BLOCKED
+    return WorkflowBuilderStatus.READY
+
+
+def _status_from_lookup(status: str, disabled: bool) -> WorkflowBuilderStatus:
+    if disabled:
+        return WorkflowBuilderStatus.UNAVAILABLE
+    if status in {"available", "ready", "active", "published"}:
+        return WorkflowBuilderStatus.READY
+    if status in {"blocked", "failed", "missing"}:
+        return WorkflowBuilderStatus.BLOCKED
+    if status in {"stale", "warning"}:
+        return WorkflowBuilderStatus.WARNING
+    return WorkflowBuilderStatus.UNAVAILABLE
+
+
+def _status_from_badges(badges: Sequence[object]) -> WorkflowBuilderStatus:
+    for badge in badges:
+        if getattr(badge, "blocking", False):
+            return WorkflowBuilderStatus.BLOCKED
+    return WorkflowBuilderStatus.READY
+
+
+def _lookup_group_key(kind: str) -> str:
+    normalized = kind.lower()
+    if "prompt" in normalized:
+        return "prompt"
+    if "profile" in normalized:
+        return "runtime_profile"
+    if "provider" in normalized or "model" in normalized:
+        return "model_route"
+    if "skill" in normalized:
+        return "skill"
+    if "test" in normalized or "suite" in normalized:
+        return "test_suite"
+    if "subworkflow" in normalized or "workflow" in normalized:
+        return "subworkflow"
+    return "skill"
+
+
+def _metadata_label(metadata: dict[str, object]) -> str | None:
+    for key in ("version", "semantic_version", "display_version"):
+        value = metadata.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+def _tenant_label(
+    *,
+    item: LiveWorkflowRegistryItem,
+    scope: ReactAdminScope,
+) -> str | None:
+    if item.tenant_id is None or scope.scope_type != ReactAdminScopeType.TENANT:
+        return None
+    if scope.tenant_id is not None and str(item.tenant_id) == str(scope.tenant_id):
+        return scope.label
+    return None
+
+
+def _sharing_label(item: LiveWorkflowRegistryItem) -> str:
+    if item.visibility_status.value == "published":
+        return "Published bundle sharing is backed by durable grants."
+    return "Draft visibility follows workflow scope authorization."
+
+
+def _evidence_label(item: LiveWorkflowRegistryItem) -> str:
+    if item.publish_readiness_status == "ready":
+        return "Required evidence is ready for publish."
+    if item.latest_validation_status == "failed":
+        return "Validation findings block publish readiness."
+    if item.latest_validation_status:
+        return f"Latest validation status is {item.latest_validation_status}."
+    return "Publish readiness has not been evaluated."
+
+
+def _references_summary(document: object) -> str:
+    prompt_refs = len(getattr(document, "prompt_profile_references", ()))
+    skills = len(getattr(document, "skill_installations", ()))
+    tests = len(getattr(document, "test_requirements", ()))
+    subworkflows = len(getattr(document, "subworkflow_refs", ()))
+    return (
+        f"{prompt_refs} prompt/profile references, {skills} skill installations, "
+        f"{tests} required tests, {subworkflows} subworkflow references."
+    )
+
+
+def _revision_label(draft: WorkflowDraftResponse) -> str:
+    return str(draft.current_revision_number)
+
+
+def _timestamp_label(value: datetime) -> str:
+    return value.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC")
+
+
 def _draft_action_href(
-    draft_id: str,
+    draft_id: str | UUID,
     action: str,
     scope: ReactAdminScope,
 ) -> str:

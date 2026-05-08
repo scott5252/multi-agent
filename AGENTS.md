@@ -1,8 +1,10 @@
 # multi-agent Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-05-05
+Auto-generated from all feature plans. Last updated: 2026-05-07
 
 ## Active Technologies
+- Python 3.12; TypeScript strict mode on Node.js `>=20.19.0 <26` + FastAPI, Pydantic v2, SQLAlchemy 2 async ORM, PostgreSQL 16+, React 19, Vite, Vitest, Testing Library, Playwright, pytest, Ruff, mypy, uv (codex/048-live-data-inventory-and-mock-guardrails)
+- Existing workflow registry, validation, version bundle, sharing, artifact, audit, and test-bench tables in PostgreSQL; no new migration planned unless implementation discovers a missing durable field (codex/048-live-data-inventory-and-mock-guardrails)
 
 - Python 3.12 across the platform.
 - TypeScript strict mode and Node.js `>=20.19.0 <26` for the React admin UI
@@ -169,6 +171,7 @@ docs/QA tests for generated guides, and Playwright validation for browser-first
 admin workflows.
 
 ## Recent Changes
+- codex/048-live-data-inventory-and-mock-guardrails: Added Python 3.12; TypeScript strict mode on Node.js `>=20.19.0 <26` + FastAPI, Pydantic v2, SQLAlchemy 2 async ORM, PostgreSQL 16+, React 19, Vite, Vitest, Testing Library, Playwright, pytest, Ruff, mypy, uv
 
 - 033-react-agent-and-workflow-test-bench: Planned additive React test bench
   workspace for guided suite and case authoring, safe execution-mode selection,
@@ -182,76 +185,59 @@ admin workflows.
   diagnostics, SkillExecutionGateway evidence, binding eligibility previews,
   quarantine/withdrawal states, stale conflict recovery, audit timeline, and
   browser-first redaction-safe QA over existing Specs 014/014-v2/021 services.
-- 031-model-prompt-profile-and-provider-governance: Completed additive React
   governance workspace for provider setup/health, credential-reference
   diagnostics, platform-admin-only probes and credential-reference actions,
   prompt versions and safe previews, runtime profiles, read-only routing
   previews, policy history, direct-call guardrail evidence, and run provenance
   over existing provider/prompt/profile/routing/gateway services with QA docs
   and Playwright evidence.
-- 030-react-workflow-builder: Completed additive React workflow builder with
   backend-owned draft/reference/graph/validation/publish contracts, guided
   semantic saves, stale-revision recovery, React Flow graph preview with
   accessible lists, required evidence, publish confirmation, revision history,
   read-only JSON inspection, QA docs, and Playwright evidence.
-- 029-operations-reliability-and-run-debug-workbench: Completed additive React
   operations workbench over existing operations, reliability, run inspection,
   graph runtime, provider gateway, Telegram/channel delivery, skill execution,
   usage, audit, redaction, export, and fallback route services with QA docs and
   Playwright evidence.
-- 028-react-admin-data-contracts-and-form-patterns: Completed shared
   backend-owned React admin page envelopes, safe problem details, form and
   mutation result contracts, filter/pagination/sorting metadata, export
   snapshots, evidence summaries, reusable React table/form/mutation helpers,
   harmless `/admin/app/patterns` sample page, QA docs, and Playwright evidence.
-- 027-modern-admin-shell-and-design-system: Completed the shared React admin
   shell and design system with backend-authorized navigation, persistent
   scope awareness, breadcrumbs, saved-filter chips, command/search over safe
   destinations, responsive shell layouts, WCAG-oriented primitives, QA docs,
   and Playwright evidence.
-- 026-react-admin-ui-foundation: Completed React admin UI foundation
   with `/admin/app`, backend-owned bootstrap/navigation contracts,
   generated TypeScript types, Vite/npm tooling, FastAPI-served built assets,
   dual Auth0/local-principal validation, QA docs, and Playwright evidence.
-- 025-live-model-credential-resolution-for-gateway-calls: Completed live
   credential resolution for provider probes and ModelGateway calls using
   `ProviderSecretResolver`, safe secret reference selection, fail-closed OpenAI
   behavior, local allowlisted no-auth behavior, redaction-safe diagnostics, and
   focused provider/gateway tests.
-- 024-automatic-test-bench-evidence-integration-workflow-publish-gates:
   Completed repository-backed required test-bench evidence for workflow
   validation, publish gate responses, published bundle summaries, and admin UI
   evidence rendering.
-- 023-user-briefing-preferences-and-context: Completed tenant-scoped Daily
   Intelligence Briefing preferences with immutable revisions, admin/user UI,
   JSON import/export, safe admin summaries, runtime resolver, and Telegram alias
   context injection.
-- 022-telegram-natural-language-trigger-delivery-persistence: Completed
   tenant-scoped Telegram command aliases, persistent identity/link-token
   consumption, update receipts, readiness checks, mockable Bot API delivery,
   and durable delivery attempts.
-- 021-real-skill-tool-execution-connectors: Completed governed
   `SkillExecutionGateway` support for first-party read-only Daily Briefing
   connector tools with policy enforcement, redaction, normalized outputs, and
   admin diagnostics.
-- 020-workflow-graph-execution-parallel-sub-agent-runtime: Completed durable
   graph execution for published workflow bundles, deterministic role execution
   for QA, parallel branch scheduling, join policies, step/timeline evidence,
   manual resolution pauses, and worker integration.
-- 019-operations-console-logs-performance: Completed platform-operator
   Operations Console aggregation over existing health, reliability, provider,
   Telegram, usage, gateway, and audit/debugging records with redacted CSV
   exports.
-- 018-user-tenant-membership-administration: Completed governed membership
   administration with invitations, tenant memberships, role guardrails,
   next-request grant refresh, admin UI/API flows, and safe audit records.
-- 017-telegram-configuration-console: Completed Telegram configuration console
   with tenant enablement, safe token audit, linked identity summaries,
   diagnostics, local fake-secret readiness, and redaction-safe admin UI.
-- 016-token-usage-cost-analytics: Completed normalized token usage and
   estimated-cost analytics with usage/pricing tables, ModelGateway capture,
   tenant dashboards, safe CSV export metadata, and audit-safe access logging.
-- 015-agent-workflow-test-bench: Completed governed test bench foundations for
   tenant-scoped suites, cases, assertions, durable runs, artifacts, mocked-safe
   execution, and workflow publication gate evidence.
 
@@ -261,5 +247,5 @@ admin workflows.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the latest plan:
-`specs/047-jinja-infrastructure-decommission/plan.md`
+`specs/059-admin-ui-transitional-react-label-removal/plan.md`
 <!-- SPECKIT END -->

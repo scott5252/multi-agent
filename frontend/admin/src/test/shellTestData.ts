@@ -73,7 +73,7 @@ export const bootstrapFixture: ReactAdminBootstrap = {
     active_area: "home",
     breadcrumbs: [
       { label: "Admin", href: "/admin", active: false },
-      { label: "React Admin", href: "/admin/app", active: true },
+      { label: "Admin", href: "/admin/app", active: true },
     ],
     page_actions: [
       {
@@ -96,10 +96,10 @@ export const bootstrapFixture: ReactAdminBootstrap = {
     saved_filters: [],
     notifications: [
       {
-        notification_id: "react-only-links-active",
+        notification_id: "admin-links-active",
         tone: "info",
-        title: "React browser UI active",
-        summary: "Older browser links use safe React redirects.",
+        title: "Admin browser UI active",
+        summary: "Older browser links use safe Admin redirects.",
         href: "/admin",
       },
     ],

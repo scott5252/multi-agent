@@ -186,6 +186,19 @@ class ChannelRepository:
         )
         return list((await self.session.execute(stmt)).scalars().all())
 
+    async def list_recent_delivery_attempts(
+        self, *, tenant_id: UUID | None, platform_scope: bool, limit: int = 25
+    ) -> list[NotificationDeliveryAttemptRecord]:
+        stmt = select(NotificationDeliveryAttemptRecord)
+        if not platform_scope:
+            stmt = stmt.where(NotificationDeliveryAttemptRecord.tenant_id == tenant_id)
+        elif tenant_id is not None:
+            stmt = stmt.where(NotificationDeliveryAttemptRecord.tenant_id == tenant_id)
+        stmt = stmt.order_by(NotificationDeliveryAttemptRecord.created_at.desc()).limit(
+            limit
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
     async def add_callback_registration(
         self, record: ApiCallbackRegistrationRecord
     ) -> ApiCallbackRegistrationRecord:

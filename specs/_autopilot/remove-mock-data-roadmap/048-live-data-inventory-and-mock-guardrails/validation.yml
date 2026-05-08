@@ -37,6 +37,24 @@
             "expect_text": "Migration"
           },
           {
+            "expect_text": "Live-data guardrails"
+          },
+          {
+            "expect_text": "Route targets"
+          },
+          {
+            "click": "button:has-text(\"Refresh\")"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Live-data guardrails"
+          },
+          {
+            "expect_text": "qa048-live-data-source-scan"
+          },
+          {
             "screenshot": "qa048-live-data-ui-api-smoke.png",
             "full_page": true
           }

@@ -1,0 +1,84 @@
+openapi: 3.1.0
+info:
+  title: Channels Telegram Briefing React Live Data
+  version: 0.1.0
+  description: Backend-owned contracts for live channel, Telegram, and briefing React workspace data.
+paths:
+  /admin/app/channels/bootstrap.json:
+    get:
+      summary: Return the live channel and briefing dashboard for the authorized active scope.
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Live, empty, denied, or unavailable channel/briefing dashboard.
+  /admin/app/channels/telegram/config:
+    post:
+      summary: Persist tenant Telegram configuration through backend services.
+      responses:
+        "200":
+          description: Persisted config result or safe denial/conflict result.
+  /admin/app/channels/telegram/aliases:
+    post:
+      summary: Persist or replay a command alias action through backend services.
+      responses:
+        "200":
+          description: Persisted alias result or safe denial/conflict/unavailable result.
+  /admin/app/channels/telegram/aliases/{alias_id}/{action}:
+    post:
+      summary: Persist alias lifecycle actions through backend services.
+      responses:
+        "200":
+          description: Persisted alias action result or safe validation result.
+  /admin/app/channels/telegram/link-tokens:
+    post:
+      summary: Create a one-time link token and persisted audit evidence.
+      responses:
+        "200":
+          description: One-time token creation result with safe audit summary.
+  /admin/app/channels/telegram/webhook/validate:
+    post:
+      summary: Validate webhook readiness through mocked-safe local service behavior.
+      responses:
+        "200":
+          description: Persisted webhook validation or safe unavailable result.
+  /admin/app/channels/telegram/deliveries.json:
+    get:
+      summary: Return bounded live Telegram delivery and webhook diagnostics.
+      responses:
+        "200":
+          description: Bounded redaction-safe diagnostics for the active scope.
+  /admin/app/channels/runs/{workflow_run_id}/status.json:
+    get:
+      summary: Return a redaction-safe runtime status summary for an authorized run.
+      responses:
+        "200":
+          description: Live run status or safe unavailable result.
+  /admin/app/channels/briefing/preferences.json:
+    get:
+      summary: Return live briefing preference profiles and safe audit evidence.
+      responses:
+        "200":
+          description: Current user profile, admin summaries, and safe evidence ids.
+  /admin/app/channels/briefing/preferences:
+    post:
+      summary: Persist briefing preference changes through briefing preference services.
+      responses:
+        "200":
+          description: Persisted briefing preference mutation result.
+  /admin/app/channels/briefing/preferences/import:
+    post:
+      summary: Persist a safe briefing preference import reference.
+      responses:
+        "200":
+          description: Import result with artifact and audit evidence.
+  /admin/app/channels/briefing/preferences/export:
+    post:
+      summary: Persist a safe briefing preference export request.
+      responses:
+        "200":
+          description: Export result with artifact reference and audit evidence.

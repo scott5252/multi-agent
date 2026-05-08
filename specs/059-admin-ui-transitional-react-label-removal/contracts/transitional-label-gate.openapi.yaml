@@ -1,0 +1,149 @@
+openapi: 3.1.0
+info:
+  title: QA059 Transitional Label Gate
+  version: 1.0.0
+  description: >
+    Reviewer-facing contract for the final admin terminology gate. The contract
+    reports production-visible transitional label findings and allowed
+    implementation references without exposing raw secrets or unauthorized
+    tenant data.
+paths:
+  /admin/app/migration/transitional-labels.json:
+    get:
+      summary: Read transitional label gate evidence
+      operationId: readTransitionalLabelGate
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: ci_mode
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Transitional label gate evidence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransitionalLabelGate"
+        "401":
+          description: Authentication required
+        "403":
+          description: Scope denied
+components:
+  schemas:
+    TransitionalLabelGate:
+      type: object
+      required:
+        - page_id
+        - generated_at
+        - summary
+        - findings
+        - evidence
+      properties:
+        page_id:
+          type: string
+          example: qa059-transitional-label-gate
+        generated_at:
+          type: string
+          format: date-time
+        summary:
+          $ref: "#/components/schemas/TransitionalLabelGateSummary"
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransitionalLabelFinding"
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransitionalLabelEvidence"
+    TransitionalLabelGateSummary:
+      type: object
+      required:
+        - blocked_count
+        - allowed_reference_count
+        - surfaces_scanned
+        - routes_scanned
+        - screenshots_checked
+        - ci_status
+        - next_step
+      properties:
+        blocked_count:
+          type: integer
+          minimum: 0
+        allowed_reference_count:
+          type: integer
+          minimum: 0
+        surfaces_scanned:
+          type: integer
+          minimum: 0
+        routes_scanned:
+          type: integer
+          minimum: 0
+        screenshots_checked:
+          type: integer
+          minimum: 0
+        ci_status:
+          type: string
+          enum: [pass, warning, fail]
+        next_step:
+          type: string
+    TransitionalLabelFinding:
+      type: object
+      required:
+        - finding_id
+        - surface_id
+        - matched_text
+        - classification
+        - severity
+        - rationale
+        - owner
+      properties:
+        finding_id:
+          type: string
+        surface_id:
+          type: string
+        matched_text:
+          type: string
+        classification:
+          type: string
+          enum:
+            - blocking_transitional_label
+            - allowed_implementation_reference
+            - technical_qa_context
+            - historical_reference
+            - internal_generated_identifier
+        severity:
+          type: string
+          enum: [blocking, warning, info]
+        rationale:
+          type: string
+        owner:
+          type: string
+        remediation:
+          type: string
+          nullable: true
+    TransitionalLabelEvidence:
+      type: object
+      required:
+        - evidence_id
+        - evidence_type
+        - reference
+        - status
+      properties:
+        evidence_id:
+          type: string
+        evidence_type:
+          type: string
+          enum: [scanner, route_response, playwright, docs, curl]
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [pass, warning, fail]

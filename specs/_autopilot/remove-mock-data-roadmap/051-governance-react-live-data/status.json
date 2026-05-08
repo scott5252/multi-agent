@@ -1,0 +1,184 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "051",
+  "title": "Governance React Live Data",
+  "status": "completed",
+  "active_phase": "completed",
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "completed_at": "2026-05-07T19:16:43Z",
+    "commands": [
+      {
+        "id": "qa-documents",
+        "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/051-governance-react-live-data",
+        "status": "passed"
+      },
+      {
+        "id": "generated-types",
+        "command": "uv run python scripts/frontend/generate_admin_react_types.py --check",
+        "status": "passed"
+      },
+      {
+        "id": "focused-backend-tests",
+        "command": "uv run pytest tests/unit/api/test_admin_governance_schema.py tests/unit/admin/test_governance_service.py tests/integration/test_admin_react_routes.py::test_react_admin_governance_platform_tenant_and_auth0_are_safe tests/integration/test_admin_react_routes.py::test_react_admin_governance_actions_are_safe_and_scoped tests/contract/test_admin_react_contract.py tests/unit/admin/test_live_data_inventory_scanner.py tests/performance/governance/test_governance_queries.py -q --no-cov",
+        "status": "passed",
+        "summary": "32 passed"
+      },
+      {
+        "id": "frontend-governance-tests",
+        "command": "npm run --prefix frontend/admin typecheck && npm run --prefix frontend/admin test -- --run src/components/governance/GovernancePage.test.tsx src/components/governance/ProviderGovernancePanel.test.tsx src/components/governance/PromptGovernancePanel.test.tsx src/components/governance/ProfileGovernancePanel.test.tsx src/components/governance/RoutingPreviewPanel.test.tsx src/components/governance/ProvenancePanel.test.tsx && npm run --prefix frontend/admin build",
+        "status": "passed",
+        "summary": "typecheck passed; 6 Vitest files passed; production build completed"
+      },
+      {
+        "id": "spec-qa",
+        "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/051-governance-react-live-data/validation.yml",
+        "status": "passed",
+        "summary": "setup, governance API checks, ruff, format, mypy, and full coverage completed"
+      },
+      {
+        "id": "playwright-ui",
+        "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/051-governance-react-live-data/validation.yml --start-processes",
+        "status": "passed",
+        "screenshot": "output/playwright/qa051_ui/qa051-live-data-ui-api-smoke.png"
+      },
+      {
+        "id": "post-ui-database-verification",
+        "command": "uv run python scripts/qa/verify_governance_qa051.py",
+        "status": "passed",
+        "summary": "QA051 governance prompt save verified at draft revision 2 with 2 revisions"
+      },
+      {
+        "id": "multi-agent-curl-test",
+        "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa051-after-spec",
+        "status": "passed",
+        "output_dir": ".data/curl_test_runs/qa051-after-spec",
+        "summary": "All curl_testing.md sections passed; failed commands none"
+      }
+    ]
+  },
+  "artifacts": {
+    "spec": "specs/051-governance-react-live-data/spec.md",
+    "requirements_checklist": "specs/051-governance-react-live-data/checklists/requirements.md",
+    "plan": "specs/051-governance-react-live-data/plan.md",
+    "research": "specs/051-governance-react-live-data/research.md",
+    "data_model": "specs/051-governance-react-live-data/data-model.md",
+    "contracts": [
+      "specs/051-governance-react-live-data/contracts/governance-live-data-ui.md",
+      "specs/051-governance-react-live-data/contracts/governance-live-data.openapi.yaml"
+    ],
+    "quickstart": "specs/051-governance-react-live-data/quickstart.md",
+    "tasks": "specs/051-governance-react-live-data/tasks.md",
+    "qa_env": "specs/051-governance-react-live-data/.env.qa051",
+    "qa_guide": "specs/051-governance-react-live-data/qa051.md",
+    "qa_ui_guide": "specs/051-governance-react-live-data/qa051_ui.md",
+    "qa_user_guide": "specs/051-governance-react-live-data/qa051_user_guide.md",
+    "pr_notes": "specs/051-governance-react-live-data/pr_notes.md",
+    "validation_manifest": "specs/_autopilot/remove-mock-data-roadmap/051-governance-react-live-data/validation.yml",
+    "playwright_screenshot": "output/playwright/qa051_ui/qa051-live-data-ui-api-smoke.png",
+    "curl_output_dir": ".data/curl_test_runs/qa051-after-spec"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 051 specification from generated autopilot prompt after completing Spec 050 validation, retaining prior validated dirty-worktree changes without requiring a commit."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 051 feature specification and completed requirements checklist with no clarification markers."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification using roadmap defaults for live governance data, empty states, redaction-safe details, durable governance actions, and QA seeded/empty validation."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five autopilot clarifications covering safe prompt summaries, provider health freshness, local QA probe limits, routing/profile scope, and provenance unavailable/denied behavior."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started implementation planning for live governance projections, safe mutations, QA seeding, contracts, tests, scanner updates, and validation."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created plan, research, data model, quickstart, governance live-data contracts, and updated AGENTS plan pointer."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation for live governance projections, durable safe actions, empty/seeded tests, frontend updates, scanner checks, QA docs, Playwright, post-UI verification, and curl validation."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated 60 dependency-ordered tasks covering live governance projections, safe details, durable governance actions, QA docs, generated contracts, Playwright, post-UI API/database verification, and curl validation."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started cross-artifact consistency analysis across spec.md, plan.md, and tasks.md."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Remediated directory-level task specificity in tasks.md; no CRITICAL or HIGH findings remain."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started implementation phase for Spec 051."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Implemented live repository-backed governance projections, nullable/empty-state contracts, safe governance mutations, React empty/unavailable rendering, QA seed and post-UI verification scripts, QA docs, generated TypeScript updates, and production React assets."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Passed QA document validation, generated TypeScript check, focused backend and frontend governance tests, production React build, full Spec QA with ruff/format/mypy/coverage, Playwright save-and-preview flow, post-UI database verification, and multi-agent-curl-test."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 051 completed with queue/status reconciled and no commit required between specs per user override."
+    }
+  ],
+  "auto_clarifications": [
+    "Safe summaries only; raw prompt content, raw completions, protected variables, and test transcripts never render in React or QA evidence.",
+    "Show the latest persisted provider health/readiness snapshot with timestamps and unavailable/stale states when no current safe evidence exists.",
+    "Use explicitly mocked or local allowlisted diagnostics only; production provider, credential, and outbound calls stay disabled unless an artifact explicitly approves a live probe.",
+    "Resolve routing previews through existing authorized provider, prompt, profile, model-skill routing, and policy repositories for the active platform or tenant scope.",
+    "Return live safe provenance when authorized, denied states when unauthorized, and unavailable states when no redaction-safe evidence exists; never synthesize pass evidence."
+  ],
+  "task_count": 60,
+  "analysis": {
+    "findings": [
+      {
+        "id": "T1",
+        "severity": "MEDIUM",
+        "category": "Task Specificity",
+        "summary": "Tasks T037, T048, T054, and T055 were too directory-level or command-vague for strict execution.",
+        "remediation": "Updated tasks to list exact frontend panel files, build output paths, and focused backend/frontend command targets.",
+        "status": "remediated"
+      }
+    ],
+    "critical_remaining": 0,
+    "high_remaining": 0
+  }
+}

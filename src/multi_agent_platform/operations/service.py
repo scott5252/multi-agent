@@ -160,6 +160,8 @@ class OperationsConsoleService:
                 "surface": "operations_console",
                 "row_count": len(events),
                 "artifact_size_bytes": size_bytes,
+                "artifact_sha256": checksum,
+                "artifact_reference_id": f"operations-export:{export_id}",
             },
         )
         return OperationsExportResult(

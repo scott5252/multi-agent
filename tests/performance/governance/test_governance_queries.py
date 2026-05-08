@@ -2,6 +2,14 @@ from __future__ import annotations
 
 import time
 
+import pytest
+from tests.unit.admin.test_governance_service import (
+    FakeConfigRepository,
+    FakeProfileRepository,
+    FakePromptRepository,
+    FakeProviderRepository,
+)
+
 from multi_agent_platform.admin.governance import build_governance_dashboard
 from multi_agent_platform.api.schemas.admin_react import ReactAdminScope
 from multi_agent_platform.auth.principal import (
@@ -11,7 +19,8 @@ from multi_agent_platform.auth.principal import (
 )
 
 
-def test_governance_dashboard_build_stays_bounded() -> None:
+@pytest.mark.asyncio
+async def test_governance_dashboard_build_stays_bounded() -> None:
     principal = PrincipalContext(
         principal_id="tenant-admin",
         auth_provider=AuthProvider.LOCAL_PRINCIPAL,
@@ -27,10 +36,17 @@ def test_governance_dashboard_build_stays_bounded() -> None:
     )
 
     started = time.perf_counter()
-    dashboard = build_governance_dashboard(scope=scope, principal=principal)
+    dashboard = await build_governance_dashboard(
+        scope=scope,
+        principal=principal,
+        provider_repository=FakeProviderRepository(),
+        prompt_repository=FakePromptRepository(),
+        profile_repository=FakeProfileRepository(),
+        config_repository=FakeConfigRepository(),
+    )
     elapsed = time.perf_counter() - started
 
     assert dashboard.providers
     assert dashboard.policy_history
-    assert dashboard.run_provenance
+    assert dashboard.routing_preview
     assert elapsed < 0.5

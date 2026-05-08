@@ -39,5 +39,7 @@ describe("rollback and route decisions", () => {
     expect(screen.getByText("Blocked")).toBeInTheDocument();
     expect(screen.getAllByText("Retirement evidence complete").length).toBeGreaterThan(0);
     expect(screen.queryByText(/qa037-secret-value|authorization header/i)).not.toBeInTheDocument();
+    expect(migrationDashboard.live_data_inventory?.page_id).toBe("qa058-live-only-gate");
+    expect(migrationDashboard.live_data_inventory?.summary.blocking_findings).toBe(0);
   });
 });

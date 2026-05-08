@@ -12,8 +12,12 @@ from multi_agent_platform.api.schemas.admin_patterns import (
     safe_text,
 )
 from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminEmptyStateMetadata,
+    ReactAdminEmptyStateReason,
+    ReactAdminPageProvenance,
     ReactAdminScope,
     ReactAdminShellState,
+    ReactAdminSourceKind,
 )
 
 SKILL_LIFECYCLE_UNSAFE_MARKERS = (
@@ -61,6 +65,38 @@ class SkillLifecycleStatus(StrEnum):
     QUARANTINED = "quarantined"
     WITHDRAWN = "withdrawn"
     SUMMARIZED = "summarized"
+
+
+def live_skill_lifecycle_provenance(
+    *, source_label: str, source_detail: str | None = None
+) -> ReactAdminPageProvenance:
+    return ReactAdminPageProvenance(
+        source_kind=ReactAdminSourceKind.LIVE_REPOSITORY,
+        source_label=source_label,
+        source_detail=source_detail,
+    )
+
+
+def empty_skill_lifecycle_state(
+    *,
+    title: str,
+    summary: str,
+    setup_hint: str | None = None,
+    source_label: str = "Skill lifecycle records",
+) -> ReactAdminEmptyStateMetadata:
+    return ReactAdminEmptyStateMetadata(
+        reason=ReactAdminEmptyStateReason.NO_LIVE_ROWS,
+        title=title,
+        summary=summary,
+        setup_hint=setup_hint,
+        provenance=ReactAdminPageProvenance(
+            source_kind=ReactAdminSourceKind.EMPTY_LIVE_STATE,
+            source_label=source_label,
+            source_detail=(
+                "No authorized live skill lifecycle records exist for this scope."
+            ),
+        ),
+    )
 
 
 class SkillLifecycleSection(BaseModel):
@@ -506,6 +542,8 @@ class SkillLifecycleDashboard(BaseModel):
     actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
     state: ReactAdminShellState | None = None
     refresh: RefreshHint | None = None
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
     @field_validator("title", "description")
     @classmethod
@@ -642,6 +680,8 @@ class TenantSkillDiscoveryList(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     discovery: TenantSkillDiscovery
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class TenantSkillInstallationList(BaseModel):
@@ -650,6 +690,8 @@ class TenantSkillInstallationList(BaseModel):
     installations: tuple[TenantSkillInstallationSummary, ...] = Field(
         default_factory=tuple
     )
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class SkillExecutionDiagnosticList(BaseModel):
@@ -658,9 +700,13 @@ class SkillExecutionDiagnosticList(BaseModel):
     diagnostics: tuple[SkillExecutionDiagnosticSummary, ...] = Field(
         default_factory=tuple
     )
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class SkillLifecycleAuditList(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     audit_timeline: tuple[SkillLifecycleAuditRecord, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None

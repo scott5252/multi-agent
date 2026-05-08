@@ -2,10 +2,11 @@ import type { ChangeEvent, FormEvent } from "react";
 
 import type {
   FormFieldDescriptor,
-  SampleActionRequest,
   ValidationFieldError,
 } from "../../api/generated/reactAdminApi";
 import { Button, TextInput } from "../primitives";
+
+export type AdminFormValues = Record<string, string | boolean>;
 
 interface AdminFormProps {
   dirty: boolean;
@@ -14,7 +15,7 @@ interface AdminFormProps {
   onChange: (field: string, value: string | boolean) => void;
   onSubmit: () => void;
   submitting: boolean;
-  values: SampleActionRequest;
+  values: AdminFormValues;
 }
 
 export function AdminForm({
@@ -52,7 +53,7 @@ export function AdminForm({
             onChange={(event: ChangeEvent<HTMLInputElement>) =>
               onChange(field.field, event.currentTarget.value)
             }
-            value={String(values[field.field as keyof SampleActionRequest] ?? "")}
+            value={String(values[field.field] ?? "")}
           />
           {field.help_text ? (
             <small id={`${field.field}-help`}>{field.help_text}</small>
@@ -66,7 +67,7 @@ export function AdminForm({
       ))}
       <label className="form-field checkbox-field">
         <input
-          checked={values.confirmed}
+          checked={Boolean(values.confirmed)}
           onChange={(event) => onChange("confirmed", event.currentTarget.checked)}
           type="checkbox"
         />

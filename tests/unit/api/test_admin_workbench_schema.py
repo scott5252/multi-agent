@@ -8,6 +8,7 @@ from multi_agent_platform.api.schemas.admin_workbench import (
     GatewayAttemptSummary,
     TimelineEventSummary,
     WorkbenchExportSnapshot,
+    WorkbenchExportStatus,
     WorkbenchLogSummary,
     WorkbenchSeverity,
     WorkbenchStatus,
@@ -66,13 +67,17 @@ def test_workbench_export_rejects_local_paths_and_secret_markers() -> None:
         export_id="export-safe",
         status="complete",
         summary="Safe export ready.",
-        artifact_reference_id="artifact-ref-qa029-platform",
+        artifact_reference_id="operations-export:live-safe",
         scope_label="Platform",
         redaction_summary="Secrets and payloads are redacted.",
         row_count=2,
     )
 
-    assert snapshot.artifact_reference_id == "artifact-ref-qa029-platform"
+    assert snapshot.status is WorkbenchExportStatus.COMPLETE
+    assert WorkbenchExportStatus.DENIED.value == "denied"
+    assert WorkbenchExportStatus.VALIDATION.value == "validation"
+    assert WorkbenchStatus.EMPTY.value == "empty"
+    assert snapshot.artifact_reference_id == "operations-export:live-safe"
 
     with pytest.raises(ValidationError):
         WorkbenchExportSnapshot(

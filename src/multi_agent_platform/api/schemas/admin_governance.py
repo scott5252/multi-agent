@@ -12,8 +12,12 @@ from multi_agent_platform.api.schemas.admin_patterns import (
     safe_text,
 )
 from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminEmptyStateMetadata,
+    ReactAdminEmptyStateReason,
+    ReactAdminPageProvenance,
     ReactAdminScope,
     ReactAdminShellState,
+    ReactAdminSourceKind,
 )
 
 GOVERNANCE_UNSAFE_MARKERS = (
@@ -69,6 +73,36 @@ class GovernanceStatus(StrEnum):
     UNAVAILABLE = "unavailable"
     RUNNING = "running"
     SUMMARIZED = "summarized"
+
+
+def live_governance_provenance(
+    *, source_label: str, source_detail: str | None = None
+) -> ReactAdminPageProvenance:
+    return ReactAdminPageProvenance(
+        source_kind=ReactAdminSourceKind.LIVE_REPOSITORY,
+        source_label=source_label,
+        source_detail=source_detail,
+    )
+
+
+def empty_governance_state(
+    *,
+    title: str,
+    summary: str,
+    setup_hint: str | None = None,
+    source_label: str = "Governance records",
+) -> ReactAdminEmptyStateMetadata:
+    return ReactAdminEmptyStateMetadata(
+        reason=ReactAdminEmptyStateReason.NO_LIVE_ROWS,
+        title=title,
+        summary=summary,
+        setup_hint=setup_hint,
+        provenance=ReactAdminPageProvenance(
+            source_kind=ReactAdminSourceKind.EMPTY_LIVE_STATE,
+            source_label=source_label,
+            source_detail="No authorized live governance records exist for this scope.",
+        ),
+    )
 
 
 class GovernanceSection(BaseModel):
@@ -489,15 +523,17 @@ class GovernanceDashboard(BaseModel):
     providers: tuple[ProviderGovernanceSummary, ...] = Field(default_factory=tuple)
     prompts: tuple[PromptLibrarySummary, ...] = Field(default_factory=tuple)
     profiles: tuple[RuntimeProfileGovernanceSummary, ...] = Field(default_factory=tuple)
-    routing_preview: RoutingPreviewResult
-    profile_resolution: ProfileResolutionPreview
-    prompt_preview: SafePromptPreview
+    routing_preview: RoutingPreviewResult | None = None
+    profile_resolution: ProfileResolutionPreview | None = None
+    prompt_preview: SafePromptPreview | None = None
     policy_history: tuple[PolicyHistoryRecord, ...] = Field(default_factory=tuple)
     run_provenance: tuple[RunProvenanceSummary, ...] = Field(default_factory=tuple)
     legacy_routes: tuple[GovernanceLegacyRouteMapping, ...] = Field(
         default_factory=tuple
     )
     actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
     state: ReactAdminShellState | None = None
     refresh: RefreshHint | None = None
 
@@ -516,24 +552,32 @@ class ProviderGovernanceList(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     providers: tuple[ProviderGovernanceSummary, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class PromptGovernanceList(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     prompts: tuple[PromptLibrarySummary, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class ProfileGovernanceList(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     profiles: tuple[RuntimeProfileGovernanceSummary, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class PolicyHistoryList(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     history: tuple[PolicyHistoryRecord, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class ProviderCredentialReferenceRequest(BaseModel):

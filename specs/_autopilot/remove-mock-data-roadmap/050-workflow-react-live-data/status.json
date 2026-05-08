@@ -1,0 +1,170 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "050",
+  "title": "Workflow React Live Data",
+  "status": "completed",
+  "active_phase": null,
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      {
+        "name": "spec_qa",
+        "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/050-workflow-react-live-data/validation.yml",
+        "status": "passed",
+        "summary": "Spec QA validation completed; QA environment copied, PostgreSQL QA database reset and migrated, local tenants seeded, API and worker readiness checked, QA user guide requirements checked, Ruff, format check, mypy, and pytest coverage passed."
+      },
+      {
+        "name": "playwright_ui",
+        "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/050-workflow-react-live-data/validation.yml --start-processes",
+        "status": "passed",
+        "summary": "Playwright logged in as tenant-admin-acme, verified the empty workflow state, created a durable workflow draft, opened it, edited name and description, saved the draft, and captured output/playwright/qa050_ui/qa050-live-data-ui-api-smoke.png.",
+        "evidence": [
+          "output/playwright/qa050_ui/qa050-live-data-ui-api-smoke.png"
+        ]
+      },
+      {
+        "name": "post_ui_api_database_verification",
+        "command": "curl --fail --silent -H 'X-Local-Principal: tenant-admin-acme' http://127.0.0.1:8000/admin/app/workflows/registry.json; curl --fail --silent -H 'X-Local-Principal: tenant-admin-acme' http://127.0.0.1:8000/admin/app/workflows/drafts/8b51dad1-64bc-470d-8f37-c9a9acf7cec5/detail.json?tenant_id=11111111-1111-1111-1111-111111111111; docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa050 ...",
+        "status": "passed",
+        "summary": "Registry API returned one live_repository workflow item named React live workflow saved with draft 8b51dad1-64bc-470d-8f37-c9a9acf7cec5; draft detail and builder APIs returned live_repository provenance, revision 2, and description Saved through the QA050 Playwright workflow action.; direct QA database query confirmed the same draft, display_name, description, ACTIVE status, and revision 2.",
+        "evidence": [
+          "specs/_autopilot/remove-mock-data-roadmap/050-workflow-react-live-data/status.json",
+          "output/playwright/qa050_ui/qa050-live-data-ui-api-smoke.png"
+        ]
+      },
+      {
+        "name": "multi_agent_curl_test",
+        "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa050-after-spec",
+        "status": "passed",
+        "summary": "multi-agent-curl-test recreated the dedicated multi_agent_curl_test database, ran the generated curl walkthrough, and reported no failed commands.",
+        "evidence": [
+          ".data/curl_test_runs/qa050-after-spec/succeeded.tsv",
+          ".data/curl_test_runs/qa050-after-spec/failed.tsv",
+          ".data/curl_test_runs/qa050-after-spec/server.log"
+        ]
+      }
+    ]
+  },
+  "artifacts": {
+    "spec": "specs/050-workflow-react-live-data/spec.md",
+    "requirements_checklist": "specs/050-workflow-react-live-data/checklists/requirements.md",
+    "plan": "specs/050-workflow-react-live-data/plan.md",
+    "research": "specs/050-workflow-react-live-data/research.md",
+    "data_model": "specs/050-workflow-react-live-data/data-model.md",
+    "contracts": [
+      "specs/050-workflow-react-live-data/contracts/workflow-react-live-data-contract.md",
+      "specs/050-workflow-react-live-data/contracts/workflow-react-live-data.openapi.yaml"
+    ],
+    "quickstart": "specs/050-workflow-react-live-data/quickstart.md"
+    ,
+    "tasks": "specs/050-workflow-react-live-data/tasks.md"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 050 specification from generated autopilot prompt while retaining validated Specs 048 and 049 dirty-worktree changes."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 050 feature specification and completed requirements checklist."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification using roadmap defaults for workflow route shape, latest draft resolution, live list controls, stored graph previews, publish evidence, stale conflicts, and QA seed workflows."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five roadmap-default autonomous clarifications in spec.md."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started implementation planning for workflow live-data projections, durable mutations, QA seeding, tests, scanner updates, and validation."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created plan, research, data model, quickstart, contracts, and updated AGENTS plan pointer."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation for workflow live-data projection, durable mutations, QA seeds, tests, scanner updates, docs, and validation."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated 59 dependency-ordered tasks covering tests, live workflow projections, durable mutations, QA docs, Playwright, post-UI API/database verification, and curl validation."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started cross-artifact consistency analysis across spec.md, plan.md, and tasks.md."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Remediated one task file-path specificity issue; no CRITICAL or HIGH findings remain."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started implementation phase for Spec 050."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Completed Spec 050 live workflow React implementation, including durable workflow projections, mutation routes, empty-state frontend handling, QA docs, generated contracts, scanner mappings, focused backend checks, frontend tests, and production React build."
+    },
+    {
+      "phase": "validation",
+      "status": "in_progress",
+      "note": "Started Spec 050 validation after reconciling validation.yml to exercise workflow create and save actions through the React UI."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Completed Spec 050 validation: Spec QA, Playwright create/save workflow UI flow, post-UI API/database persistence checks, and multi-agent-curl-test all passed."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 050 Workflow React Live Data completed and queue is ready to advance to Spec 051."
+    }
+  ],
+  "auto_clarifications": [
+    "Keep existing React registry, create, builder, draft detail, version detail, publish-gate, and lookup surfaces; registry and lineage-oriented entry points open the latest authorized active draft.",
+    "Use backend-owned bounded search, status, scope, and sort metadata with latest-updated ordering by default.",
+    "Generate graph previews from stored workflow documents through existing graph and reference validation helpers.",
+    "Use existing publish-gate and test-bench evidence records for current drafts or published bundles; no synthetic pass evidence.",
+    "Seed one tenant-scoped Acme workflow draft with revisions, validation evidence, publish-gate evidence, and a published bundle, plus isolation records as needed."
+  ],
+  "task_count": 59,
+  "analysis": {
+    "findings": [
+      {
+        "id": "T1",
+        "severity": "MEDIUM",
+        "category": "Task Specificity",
+        "summary": "Task T035 referenced the workflow component directory instead of exact component file paths.",
+        "remediation": "Updated T035 to list WorkflowReferencePicker.tsx, WorkflowValidationPanel.tsx, WorkflowRevisionPanel.tsx, WorkflowPublishPanel.tsx, and WorkflowSharingPanel.tsx explicitly.",
+        "status": "remediated"
+      }
+    ],
+    "critical_remaining": 0,
+    "high_remaining": 0
+  }
+}

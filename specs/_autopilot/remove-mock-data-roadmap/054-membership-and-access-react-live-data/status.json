@@ -1,0 +1,174 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "054",
+  "title": "Membership And Access React Live Data",
+  "status": "completed",
+  "active_phase": "completed",
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      {
+        "name": "qa-docs",
+        "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/054-membership-and-access-react-live-data",
+        "status": "passed"
+      },
+      {
+        "name": "spec-qa",
+        "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/054-membership-and-access-react-live-data/validation.yml",
+        "status": "passed"
+      },
+      {
+        "name": "playwright-ui",
+        "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/054-membership-and-access-react-live-data/validation.yml --start-processes",
+        "status": "passed",
+        "screenshot": "output/playwright/qa054_ui/qa054-live-data-ui-api-smoke.png"
+      },
+      {
+        "name": "post-ui-verifier",
+        "command": "uv run python scripts/qa/verify_membership_qa054.py",
+        "status": "passed",
+        "summary": "memberships=2; role_grants=2; access_decisions=5; support_overrides=1; seed_invitations=1; playwright_invitations=1; invitation_audits=1"
+      },
+      {
+        "name": "curl-test",
+        "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa054-after-spec",
+        "status": "passed",
+        "artifact_dir": ".data/curl_test_runs/qa054-after-spec"
+      }
+    ]
+  },
+  "artifacts": {
+    "spec": "specs/054-membership-and-access-react-live-data/spec.md",
+    "requirements_checklist": "specs/054-membership-and-access-react-live-data/checklists/requirements.md",
+    "plan": "specs/054-membership-and-access-react-live-data/plan.md",
+    "research": "specs/054-membership-and-access-react-live-data/research.md",
+    "data_model": "specs/054-membership-and-access-react-live-data/data-model.md",
+    "quickstart": "specs/054-membership-and-access-react-live-data/quickstart.md",
+    "contracts": [
+      "specs/054-membership-and-access-react-live-data/contracts/membership-live-data.openapi.yaml",
+      "specs/054-membership-and-access-react-live-data/contracts/membership-live-data-ui.md"
+    ],
+    "agent_context": "AGENTS.md",
+    "tasks": "specs/054-membership-and-access-react-live-data/tasks.md",
+    "qa_docs": [
+      "specs/054-membership-and-access-react-live-data/qa054.md",
+      "specs/054-membership-and-access-react-live-data/qa054_ui.md",
+      "specs/054-membership-and-access-react-live-data/qa054_user_guide.md",
+      "specs/054-membership-and-access-react-live-data/pr_notes.md"
+    ],
+    "validation": {
+      "qa_env": "specs/054-membership-and-access-react-live-data/.env.qa054",
+      "qa_seed": "scripts/qa/seed_membership_qa054.py",
+      "post_ui_verifier": "scripts/qa/verify_membership_qa054.py",
+      "playwright_screenshot": "output/playwright/qa054_ui/qa054-live-data-ui-api-smoke.png",
+      "curl_test_dir": ".data/curl_test_runs/qa054-after-spec"
+    }
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 054 specification from generated autopilot prompt after completing Spec 053 validation. Continuing with validated prior-spec changes in the dirty worktree and without requiring an intermediate Git commit."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 054 feature specification and completed requirements checklist with no unresolved clarification markers. The before_specify git feature hook was not used because the user explicitly requested continuing all specs in the current dirty worktree without intermediate commit gates."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification for membership and access live-data source of truth, masking/redaction, scope behavior, durable safe actions, and post-UI persistence evidence."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five autonomous clarification answers in spec.md covering authoritative repositories/services, platform versus tenant scope, redaction-safe identity fields, durable action semantics, and qa054 local-principal persistence evidence. Optional clarify git commit hooks were skipped per the user instruction to keep validated changes in the dirty worktree."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started planning after reconciling queue.json and status.json for Spec 054."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Generated plan.md, research.md, data-model.md, quickstart.md, membership live-data OpenAPI/UI contracts, and updated AGENTS.md to the Spec 054 plan. Optional plan git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation after reconciling queue.json and status.json for Spec 054."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated 39 dependency-ordered tasks for Spec 054 across setup, foundation, three user stories, QA docs, validation, Playwright, post-UI verification, and curl regression. Optional tasks git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started cross-artifact analysis for Spec 054 before implementation."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Completed cross-artifact analysis. Auto-remediated one HIGH support-override task coverage gap in tasks.md; no CRITICAL or HIGH blockers remain. Optional analyze git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started implementation for Spec 054 after reconciling queue.json and status.json."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Completed Spec 054 implementation: membership React production routes now use live repository/service-backed principal, invitation, membership, role grant, access decision, support override, and audit projections with durable invitation and role/status actions. Optional implement git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "validation",
+      "status": "in_progress",
+      "note": "Started mandatory Spec 054 validation after implementation; dirty validated worktree remains intentionally uncommitted per user instruction."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Passed QA docs, run_spec_qa, Playwright UI with screenshot output/playwright/qa054_ui/qa054-live-data-ui-api-smoke.png, post-UI persistence verifier, and multi-agent curl test in .data/curl_test_runs/qa054-after-spec."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 054 completed and ready to advance queue next_spec to 055 without requiring an intermediate Git commit."
+    }
+  ],
+  "auto_clarifications": [
+    "Authoritative sources are MembershipService, MembershipRepository, AccessControlRepository, AuditRepository, and existing principal/role/invitation repositories.",
+    "Backend resolves platform versus tenant authority; browser state never expands scope and cross-tenant IDs fail closed.",
+    "Only masked identity/contact labels and safe summaries render; raw identity, token, tenant, and audit payload details remain absent.",
+    "Durable actions route through existing services/repositories with idempotency, revision, stale-conflict, denial, and audit evidence.",
+    "qa054 uses real local-principal QA rows and no external identity provider/provider calls; Playwright proves one persisted action."
+  ],
+  "analysis": {
+    "status": "completed",
+    "findings": [
+      {
+        "id": "C1",
+        "category": "Coverage",
+        "severity": "HIGH",
+        "summary": "Support override evidence was explicit in spec and plan but too implicit in task implementation coverage.",
+        "remediation": "Updated T009 and T013 to require support-override empty/unavailable evidence tests and projection behavior before implementation."
+      }
+    ],
+    "rerun_summary": "No remaining CRITICAL or HIGH cross-artifact blockers after task remediation. Placeholder and unresolved-marker scan is clean."
+  },
+  "task_count": 39
+}

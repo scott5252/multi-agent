@@ -6,9 +6,11 @@ from multi_agent_platform.admin.skill_lifecycle import (
     build_binding_preview_result,
     build_candidate_result,
     build_candidate_validation_result,
+    build_connector_diagnostic_result,
     build_credential_configuration_result,
-    build_install_result,
+    build_package_lifecycle_result,
     build_publish_result,
+    build_readiness_refresh_result,
     build_skill_lifecycle_dashboard,
     build_tenant_grant_result,
 )
@@ -19,18 +21,20 @@ from multi_agent_platform.api.schemas.admin_react import (
 from multi_agent_platform.api.schemas.admin_skill_lifecycle import (
     BindingEligibilityPreviewRequest,
     CredentialConfigurationRequest,
+    ReadinessRefreshRequest,
     SkillPackageCandidateRequest,
     SkillPackagePublishRequest,
     TenantGrantMutationRequest,
-    TenantSkillInstallRequest,
 )
 from multi_agent_platform.auth.principal import AuthMode, AuthProvider, PrincipalContext
+from multi_agent_platform.db.repositories.skill_registry import SkillRegistryRepository
+from tests.fixtures.skill_registry import seed_live_skill_lifecycle_repository
 
 
-def _tenant_scope() -> ReactAdminScope:
+def _tenant_scope(tenant_id: str) -> ReactAdminScope:
     return ReactAdminScope(
         scope_type=ReactAdminScopeType.TENANT,
-        tenant_id="11111111-1111-1111-1111-111111111111",
+        tenant_id=tenant_id,
         label="Acme",
     )
 
@@ -56,19 +60,44 @@ def _principal(*, platform: bool = False) -> PrincipalContext:
     )
 
 
-def test_skill_lifecycle_dashboard_scopes_platform_and_tenant() -> None:
-    platform = build_skill_lifecycle_dashboard(
+async def test_skill_lifecycle_dashboard_scopes_empty_and_seeded(
+    session,
+    seeded_tenant,
+) -> None:
+    repository = SkillRegistryRepository(session)
+    tenant_scope = _tenant_scope(str(seeded_tenant.tenant_id))
+
+    empty = await build_skill_lifecycle_dashboard(
+        scope=tenant_scope,
+        principal=_principal(),
+        repository=repository,
+    )
+    assert empty.empty_state is not None
+    assert empty.installations == ()
+    assert empty.tenant_discovery is not None
+    assert empty.tenant_discovery.available_versions == ()
+
+    await seed_live_skill_lifecycle_repository(
+        repository,
+        tenant_id=seeded_tenant.tenant_id,
+    )
+    platform = await build_skill_lifecycle_dashboard(
         scope=_platform_scope(),
         principal=_principal(platform=True),
+        repository=repository,
     )
-    tenant = build_skill_lifecycle_dashboard(
-        scope=_tenant_scope(),
+    tenant = await build_skill_lifecycle_dashboard(
+        scope=tenant_scope,
         principal=_principal(),
+        repository=repository,
     )
 
     assert platform.platform_publication is not None
-    assert platform.platform_publication.candidate.manifest_source == "upload"
-    assert tenant.platform_publication is None
+    assert platform.platform_publication.package_versions[0].package_slug == (
+        "calendar-assistant"
+    )
+    assert tenant.empty_state is None
+    assert tenant.provenance is not None
     assert tenant.tenant_discovery is not None
     assert tenant.tenant_discovery.grants[0].tenant_label == "Acme"
     assert tenant.connector_diagnostics[0].connector_label == "Calendar"
@@ -78,90 +107,169 @@ def test_skill_lifecycle_dashboard_scopes_platform_and_tenant() -> None:
     assert "resolved credential" not in serialized
 
 
-def test_candidate_upload_precedence_and_publish_gates_are_safe() -> None:
-    candidate = build_candidate_result(
+async def test_candidate_upload_precedence_and_publish_gates_are_safe(
+    session,
+    seeded_tenant,
+) -> None:
+    repository = SkillRegistryRepository(session)
+    candidate = await build_candidate_result(
         request=SkillPackageCandidateRequest(
             idempotency_key="candidate",
             manifest_text="unsafe sample qa032-secret-value",
-            uploaded_fixture_id="qa032-uploaded-manifest",
-        )
+            uploaded_fixture_id="uploaded-manifest",
+        ),
+        principal=_principal(platform=True),
+        repository=repository,
     )
-    blocked = build_candidate_validation_result(ready=False)
-    stale = build_publish_result(
+    blocked = await build_candidate_validation_result(
+        ready=False,
+        principal=_principal(platform=True),
+        repository=repository,
+    )
+    unavailable = await build_publish_result(
         request=SkillPackagePublishRequest(
-            candidate_revision="stale-revision",
+            candidate_revision="candidate-unavailable",
             confirmed=True,
-            idempotency_key="publish-stale",
+            idempotency_key="publish-unavailable",
         ),
         scope=_platform_scope(),
+        principal=_principal(platform=True),
+        repository=repository,
     )
-    published = build_publish_result(
+    await seed_live_skill_lifecycle_repository(
+        repository,
+        tenant_id=seeded_tenant.tenant_id,
+    )
+    published = await build_publish_result(
         request=SkillPackagePublishRequest(
-            candidate_revision="candidate-rev-qa032-current",
+            candidate_revision="candidate-unavailable",
             confirmed=True,
             idempotency_key="publish",
         ),
         scope=_platform_scope(),
+        principal=_principal(platform=True),
+        repository=repository,
     )
 
     assert candidate.status == "accepted"
-    assert "uploaded manifest fixture" in candidate.diagnostics[0].lower()
+    assert "uploaded fixture metadata" in candidate.diagnostics[0].lower()
     assert "qa032-secret-value" not in candidate.model_dump_json()
     assert blocked.status == "validation_error"
-    assert stale.status == "stale_conflict"
+    assert unavailable.status == "dependency_unavailable"
     assert published.publication is not None
     assert published.publication.lifecycle_status == "published"
 
 
-def test_install_credentials_grants_and_binding_preview_are_safe() -> None:
-    grant = build_tenant_grant_result(
+async def test_install_credentials_grants_and_binding_preview_are_safe(
+    session,
+    seeded_tenant,
+) -> None:
+    repository = SkillRegistryRepository(session)
+    ids = await seed_live_skill_lifecycle_repository(
+        repository,
+        tenant_id=seeded_tenant.tenant_id,
+    )
+    tenant_scope = _tenant_scope(str(seeded_tenant.tenant_id))
+    dashboard = await build_skill_lifecycle_dashboard(
+        scope=tenant_scope,
+        principal=_principal(),
+        repository=repository,
+    )
+    installation = dashboard.installations[0]
+    reference_id = installation.credential_options[0].reference_id
+    version_id = str(ids["version_id"])
+    installation_id = str(ids["installation_id"])
+
+    grant = await build_tenant_grant_result(
         request=TenantGrantMutationRequest(
-            tenant_id="11111111-1111-1111-1111-111111111111",
-            version_id="package-version-daily-briefing-1-4-0",
+            tenant_id=str(seeded_tenant.tenant_id),
+            version_id=version_id,
             grant_enabled=True,
-            revision="grant-rev-qa032-current",
+            revision=version_id,
             idempotency_key="grant",
         ),
         scope=_platform_scope(),
+        principal=_principal(platform=True),
+        repository=repository,
     )
-    install = build_install_result(
-        request=TenantSkillInstallRequest(
-            package_id="package-daily-briefing-connectors",
-            version_id="package-version-daily-briefing-1-4-0",
-            revision="installation-rev-qa032-current",
-            idempotency_key="install",
-        ),
-        scope=_tenant_scope(),
-    )
-    credential = build_credential_configuration_result(
+    credential = await build_credential_configuration_result(
+        installation_id=installation_id,
         request=CredentialConfigurationRequest(
-            selected_reference_id="cred-ref-acme-briefing",
-            revision="installation-rev-qa032-current",
+            selected_reference_id=reference_id,
+            revision=str(ids["revision"]),
             idempotency_key="credential",
-        )
+        ),
+        scope=tenant_scope,
+        principal=_principal(),
+        repository=repository,
     )
-    denied_credential = build_credential_configuration_result(
+    denied_credential = await build_credential_configuration_result(
+        installation_id=installation_id,
         request=CredentialConfigurationRequest(
             selected_reference_id="other-tenant-reference",
-            revision="installation-rev-qa032-current",
+            revision=credential.revision or str(ids["revision"]),
             idempotency_key="credential-denied",
-        )
-    )
-    binding = build_binding_preview_result(
-        scope=_tenant_scope(),
-        request=BindingEligibilityPreviewRequest(
-            workflow_context="Daily briefing workflow",
-            profile_id="profile-briefing-runtime",
-            package_id="package-daily-briefing-connectors",
         ),
+        scope=tenant_scope,
+        principal=_principal(),
+        repository=repository,
+    )
+    stale_credential = await build_credential_configuration_result(
+        installation_id=installation_id,
+        request=CredentialConfigurationRequest(
+            selected_reference_id=reference_id,
+            revision="stale-revision",
+            idempotency_key="credential-stale",
+        ),
+        scope=tenant_scope,
+        principal=_principal(),
+        repository=repository,
+    )
+    readiness = await build_readiness_refresh_result(
+        installation_id=installation_id,
+        request=ReadinessRefreshRequest(
+            revision=credential.revision or str(ids["revision"]),
+            idempotency_key="readiness",
+        ),
+        scope=tenant_scope,
+        principal=_principal(),
+        repository=repository,
+    )
+    binding = await build_binding_preview_result(
+        scope=tenant_scope,
+        request=BindingEligibilityPreviewRequest(
+            workflow_context="Calendar workflow",
+            profile_id="profile-calendar-runtime",
+            package_id=installation_id,
+        ),
+        principal=_principal(),
+        repository=repository,
+    )
+    diagnostic = await build_connector_diagnostic_result(
+        scope=tenant_scope,
+        principal=_principal(),
+        repository=repository,
+    )
+    quarantine = await build_package_lifecycle_result(
+        package_id=version_id,
+        action="quarantine",
+        scope=_platform_scope(),
+        principal=_principal(platform=True),
+        repository=repository,
     )
 
     assert grant.status == "accepted"
-    assert install.installation is not None
-    assert install.installation.credential_readiness == "ready"
     assert credential.credential is not None
-    assert credential.credential.fingerprint == "fp_qa032_acme_briefing"
+    assert credential.credential.fingerprint is not None
+    assert "resolved credential" not in credential.model_dump_json().lower()
     assert denied_credential.status == "validation_error"
+    assert stale_credential.status == "stale_conflict"
+    assert readiness.smoke_test is not None
+    assert readiness.smoke_test.readiness == "queued"
     assert binding.binding_preview is not None
-    assert "email.send" in binding.binding_preview.blocked_tools
-    assert "No live tools" in binding.diagnostics[0]
+    assert "calendar.write" in binding.binding_preview.blocked_tools
+    assert "No tools" in binding.diagnostics[0]
+    assert diagnostic.diagnostic is not None
+    assert diagnostic.diagnostic.gateway_decision == "queued"
+    assert quarantine.publication is not None
+    assert quarantine.publication.lifecycle_status == "quarantined"

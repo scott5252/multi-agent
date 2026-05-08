@@ -965,34 +965,59 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="read_react_admin_command_search",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
-    "GET:/admin/app/patterns": ProtectedSurface(
-        surface_key="GET:/admin/app/patterns",
-        requested_action="render_react_admin_patterns",
-        classification=SurfaceClassification.AUTHENTICATED,
-    ),
-    "GET:/admin/app/patterns.json": ProtectedSurface(
-        surface_key="GET:/admin/app/patterns.json",
-        requested_action="read_react_admin_patterns_envelope",
-        classification=SurfaceClassification.AUTHENTICATED,
-    ),
-    "POST:/admin/app/patterns/actions/sample": ProtectedSurface(
-        surface_key="POST:/admin/app/patterns/actions/sample",
-        requested_action="preview_react_admin_patterns_action",
-        classification=SurfaceClassification.AUTHENTICATED,
-    ),
-    "POST:/admin/app/patterns/export": ProtectedSurface(
-        surface_key="POST:/admin/app/patterns/export",
-        requested_action="preview_react_admin_patterns_export",
-        classification=SurfaceClassification.AUTHENTICATED,
-    ),
     "GET:/admin/app/workflows": ProtectedSurface(
         surface_key="GET:/admin/app/workflows",
         requested_action="render_react_admin_workflow_builder",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "POST:/admin/app/workflows": ProtectedSurface(
+        surface_key="POST:/admin/app/workflows",
+        requested_action="create_react_admin_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/workflows/registry.json": ProtectedSurface(
+        surface_key="GET:/admin/app/workflows/registry.json",
+        requested_action="read_react_admin_workflow_registry",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/workflows/create.json": ProtectedSurface(
+        surface_key="GET:/admin/app/workflows/create.json",
+        requested_action="read_react_admin_workflow_create_state",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/workflows/legacy-routes.json": ProtectedSurface(
+        surface_key="GET:/admin/app/workflows/legacy-routes.json",
+        requested_action="read_react_admin_workflow_legacy_routes",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
     "GET:/admin/app/workflows/builder.json": ProtectedSurface(
         surface_key="GET:/admin/app/workflows/builder.json",
         requested_action="read_react_admin_workflow_builder",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/app/workflows/drafts/{workflow_draft_id}/detail.json"
+    ): ProtectedSurface(
+        surface_key=("GET:/admin/app/workflows/drafts/{workflow_draft_id}/detail.json"),
+        requested_action="read_react_admin_workflow_draft_detail",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/app/workflows/drafts/{workflow_draft_id}/publish-gate.json"
+    ): ProtectedSurface(
+        surface_key=(
+            "GET:/admin/app/workflows/drafts/{workflow_draft_id}/publish-gate.json"
+        ),
+        requested_action="read_react_admin_workflow_publish_gate",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/app/workflows/versions/{workflow_version_bundle_id}/detail.json"
+    ): ProtectedSurface(
+        surface_key=(
+            "GET:/admin/app/workflows/versions/{workflow_version_bundle_id}/detail.json"
+        ),
+        requested_action="read_react_admin_workflow_version_detail",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
     "GET:/admin/app/workflows/lookups.json": ProtectedSurface(
@@ -1013,6 +1038,16 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
     "POST:/admin/app/workflows/drafts/{workflow_draft_id}/publish": ProtectedSurface(
         surface_key="POST:/admin/app/workflows/drafts/{workflow_draft_id}/publish",
         requested_action="publish_react_admin_workflow_draft",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/workflows/drafts/{workflow_draft_id}/restore": ProtectedSurface(
+        surface_key="POST:/admin/app/workflows/drafts/{workflow_draft_id}/restore",
+        requested_action="restore_react_admin_workflow_revision",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/app/workflows/drafts/{workflow_draft_id}/copy": ProtectedSurface(
+        surface_key="POST:/admin/app/workflows/drafts/{workflow_draft_id}/copy",
+        requested_action="copy_react_admin_workflow_draft",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
     "GET:/admin/app/governance": ProtectedSurface(
@@ -1485,6 +1520,26 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
     "GET:/admin/app/migration/routes.json": ProtectedSurface(
         surface_key="GET:/admin/app/migration/routes.json",
         requested_action="read_react_admin_migration_routes",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/migration/decommission-inventory.json": ProtectedSurface(
+        surface_key="GET:/admin/app/migration/decommission-inventory.json",
+        requested_action="read_react_admin_migration_decommission_inventory",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/migration/live-data-inventory.json": ProtectedSurface(
+        surface_key="GET:/admin/app/migration/live-data-inventory.json",
+        requested_action="read_react_admin_migration_live_data_inventory",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/migration/transitional-labels.json": ProtectedSurface(
+        surface_key="GET:/admin/app/migration/transitional-labels.json",
+        requested_action="read_react_admin_migration_transitional_labels",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/migration/jinja-inventory.json": ProtectedSurface(
+        surface_key="GET:/admin/app/migration/jinja-inventory.json",
+        requested_action="read_react_admin_migration_jinja_inventory_alias",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
     "GET:/admin/app/migration/rollback.json": ProtectedSurface(

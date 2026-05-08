@@ -2,17 +2,28 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from multi_agent_platform.admin.channel_telegram_briefing import (
+from tests.fixtures.channel_telegram_briefing import (
     ACME_TENANT_ID,
     GLOBEX_TENANT_ID,
-    SAFE_RUN_ID,
+    seed_channel_telegram_briefing_live_data,
+)
+
+from multi_agent_platform.admin.briefing_preferences.service import (
+    BriefingPreferenceService,
+)
+from multi_agent_platform.admin.channel_telegram_briefing import (
     build_alias_save_result,
+    build_briefing_preferences,
     build_channel_telegram_briefing_dashboard,
+    build_delivery_diagnostics,
     build_link_token_result,
     build_preference_export_result,
     build_preference_save_result,
     build_run_status_summary,
     build_webhook_validation_result,
+)
+from multi_agent_platform.admin.telegram_config.service import (
+    TelegramConfigurationService,
 )
 from multi_agent_platform.api.schemas.admin_channel_telegram_briefing_react import (
     BriefingOutputStyle,
@@ -34,87 +45,145 @@ from multi_agent_platform.auth.principal import (
     AuthProvider,
     PrincipalContext,
 )
+from multi_agent_platform.channels.service import ChannelService
+from multi_agent_platform.db.repositories.briefing_preferences import (
+    BriefingPreferenceRepository,
+)
+from multi_agent_platform.db.repositories.channels import ChannelRepository
+from multi_agent_platform.db.repositories.runtime_orchestration import (
+    RuntimeOrchestrationRepository,
+)
+from multi_agent_platform.db.repositories.telegram_config import (
+    TelegramConfigRepository,
+)
 
 
-def test_platform_dashboard_contains_authorized_tenant_summaries() -> None:
-    dashboard = build_channel_telegram_briefing_dashboard(
+async def test_empty_tenant_dashboard_returns_truthful_empty_state(
+    session,
+    settings,
+) -> None:
+    services = _services(session, settings)
+    dashboard = await build_channel_telegram_briefing_dashboard(
+        **services,
+        scope=_tenant_scope(ACME_TENANT_ID, "Acme"),
+        principal=_tenant_admin_principal(),
+        allowed_scope_options=_scope_options(),
+    )
+
+    serialized = dashboard.model_dump_json()
+    assert dashboard.aliases == ()
+    assert dashboard.delivery_attempts == ()
+    assert dashboard.states[-1].reason == "empty"
+    assert "qa036" not in serialized.lower()
+    assert "Globex" not in serialized
+
+
+async def test_seeded_tenant_dashboard_uses_live_rows(session, settings) -> None:
+    seed = await seed_channel_telegram_briefing_live_data(session)
+    services = _services(session, settings)
+    dashboard = await build_channel_telegram_briefing_dashboard(
+        **services,
+        scope=_tenant_scope(seed.tenant_id, "Acme"),
+        principal=_tenant_admin_principal(),
+        allowed_scope_options=_scope_options(),
+    )
+
+    serialized = dashboard.model_dump_json()
+    assert {item.alias_text for item in dashboard.aliases} == {"Morning briefing"}
+    assert dashboard.link_token_result is not None
+    assert dashboard.link_token_result.token_value is None
+    assert dashboard.delivery_attempts[0].status == "delivered"
+    assert dashboard.run_status_links[0].run_id == str(seed.run_id)
+    assert "Globex" not in serialized
+    assert "qa036" not in serialized.lower()
+
+
+async def test_platform_dashboard_uses_allowed_scope_tenants(
+    session,
+    settings,
+) -> None:
+    await seed_channel_telegram_briefing_live_data(session)
+    services = _services(session, settings)
+    dashboard = await build_channel_telegram_briefing_dashboard(
+        **services,
         scope=_platform_scope(),
         principal=_platform_principal(),
         allowed_scope_options=_scope_options(),
     )
 
-    labels = {item.tenant_label for item in dashboard.readiness}
-    assert labels == {"Acme", "Globex"}
-    assert dashboard.aliases
-    assert "pair-code" not in dashboard.model_dump_json()
-    assert "qa036-secret-value" not in dashboard.model_dump_json()
+    assert {item.tenant_label for item in dashboard.readiness} == {"Acme", "Globex"}
+    assert any(config.tenant_label == "Globex" for config in dashboard.tenant_configs)
+    assert "qa036" not in dashboard.model_dump_json().lower()
 
 
-def test_tenant_dashboard_filters_other_tenants_and_hides_token_follow_up() -> None:
-    dashboard = build_channel_telegram_briefing_dashboard(
-        scope=_tenant_scope(ACME_TENANT_ID, "Acme"),
-        principal=_tenant_admin_principal(),
-        allowed_scope_options=_scope_options(),
-    )
-
-    assert {item.tenant_label for item in dashboard.readiness} == {"Acme"}
-    assert "Globex" not in dashboard.model_dump_json()
-    assert dashboard.link_token_result is not None
-    assert dashboard.link_token_result.token_value is None
-
-
-def test_link_token_creation_returns_immediate_visible_value() -> None:
-    result = build_link_token_result(
+async def test_link_token_creation_returns_immediate_value(
+    session,
+    settings,
+) -> None:
+    services = _services(session, settings)
+    result = await build_link_token_result(
+        telegram_service=services["telegram_service"],
         scope=_tenant_scope(ACME_TENANT_ID, "Acme"),
         principal=_tenant_admin_principal(),
         request=LinkTokenCreateRequest(
             principal_label="Acme briefing user",
             expires_in_minutes=10,
-            idempotency_key="link-token-qa036",
+            idempotency_key="link-token-live",
         ),
     )
 
     assert result.display_mode == "immediate"
-    assert result.token_value == "pair-code-10-qa036"
+    assert result.token_value is not None
+    assert len(result.token_value) == 32
 
 
-def test_alias_and_webhook_mutations_include_idempotency_and_audit() -> None:
+async def test_alias_and_webhook_mutations_use_services(session, settings) -> None:
+    services = _services(session, settings)
     scope = _tenant_scope(ACME_TENANT_ID, "Acme")
     principal = _tenant_admin_principal()
-    alias = build_alias_save_result(
+    alias = await build_alias_save_result(
+        telegram_service=services["telegram_service"],
         scope=scope,
         principal=principal,
         request=TelegramAliasSaveRequest(
             alias_text="Morning briefing",
-            target_summary="Daily briefing workflow",
-            idempotency_key="alias-qa036",
+            target_summary="Configured workflow",
+            idempotency_key="alias-live",
         ),
     )
-    webhook = build_webhook_validation_result(
+    webhook = await build_webhook_validation_result(
+        telegram_service=services["telegram_service"],
         scope=scope,
         principal=principal,
         request=WebhookValidationRequest(
-            revision="telegram-config-rev-qa036",
-            idempotency_key="webhook-qa036-replay",
+            revision="telegram-config-not-configured",
+            idempotency_key="webhook-live",
         ),
     )
 
     assert alias.status is ChannelMutationStatus.ACCEPTED
     assert alias.audit_reference
-    assert webhook.status is ChannelMutationStatus.REPLAYED
-    assert webhook.replayed is True
+    assert webhook.status is ChannelMutationStatus.ACCEPTED
+    assert webhook.audit_reference
 
 
-def test_tenant_user_gets_preference_profile_and_safe_run_status() -> None:
-    dashboard = build_channel_telegram_briefing_dashboard(
+async def test_tenant_user_gets_preference_profile_and_safe_run_status(
+    session,
+    settings,
+) -> None:
+    seed = await seed_channel_telegram_briefing_live_data(session)
+    services = _services(session, settings)
+    dashboard = await build_channel_telegram_briefing_dashboard(
+        **services,
         scope=_tenant_scope(ACME_TENANT_ID, "Acme"),
         principal=_tenant_user_principal(),
         allowed_scope_options=_scope_options(),
     )
-    run_status = build_run_status_summary(
+    run_status = await build_run_status_summary(
+        runtime_repository=services["runtime_repository"],
         scope=_tenant_scope(ACME_TENANT_ID, "Acme"),
         principal=_tenant_user_principal(),
-        workflow_run_id=SAFE_RUN_ID,
+        workflow_run_id=str(seed.run_id),
     )
 
     assert dashboard.preference_profiles.current_user_profile is not None
@@ -123,10 +192,20 @@ def test_tenant_user_gets_preference_profile_and_safe_run_status() -> None:
     assert "run result" not in run_status.model_dump_json().lower()
 
 
-def test_preference_save_and_export_are_redaction_safe() -> None:
+async def test_preference_save_and_export_are_redaction_safe(session, settings) -> None:
+    await seed_channel_telegram_briefing_live_data(session)
+    services = _services(session, settings)
     scope = _tenant_scope(ACME_TENANT_ID, "Acme")
     principal = _tenant_user_principal()
-    save = build_preference_save_result(
+    profiles = await build_briefing_preferences(
+        briefing_service=services["briefing_service"],
+        briefing_repository=services["briefing_repository"],
+        scope=scope,
+        principal=principal,
+        allowed_scope_options=_scope_options(),
+    )
+    save = await build_preference_save_result(
+        briefing_service=services["briefing_service"],
         scope=scope,
         principal=principal,
         request=BriefingPreferenceSaveRequest(
@@ -139,17 +218,55 @@ def test_preference_save_and_export_are_redaction_safe() -> None:
             default_account_summary="2 masked account refs",
             output_style=BriefingOutputStyle.EXECUTIVE,
             scheduled_time_summary="Profile preference 07:45",
+            revision=profiles.current_user_profile.revision
+            if profiles.current_user_profile
+            else None,
         ),
     )
-    export = build_preference_export_result(
+    export = await build_preference_export_result(
+        briefing_service=services["briefing_service"],
         scope=scope,
         principal=principal,
         request=BriefingPreferenceExportRequest(format="json"),
     )
 
     assert save.status is ChannelMutationStatus.ACCEPTED
-    assert export.artifact_reference == "preference-export-artifact-qa036"
+    assert export.artifact_reference is not None
     assert "raw preference" not in export.model_dump_json().lower()
+
+
+async def test_delivery_diagnostics_are_bounded(session, settings) -> None:
+    await seed_channel_telegram_briefing_live_data(session)
+    services = _services(session, settings)
+    diagnostics = await build_delivery_diagnostics(
+        telegram_repository=services["telegram_repository"],
+        channel_repository=services["channel_repository"],
+        scope=_tenant_scope(ACME_TENANT_ID, "Acme"),
+        principal=_tenant_admin_principal(),
+        allowed_scope_options=_scope_options(),
+    )
+
+    assert len(diagnostics.attempts) <= 25
+    assert diagnostics.limit == 25
+    assert diagnostics.webhook_receipts
+
+
+def _services(session, settings):
+    telegram_repository = TelegramConfigRepository(session)
+    briefing_repository = BriefingPreferenceRepository(session)
+    channel_service = ChannelService(settings=settings)
+    return {
+        "telegram_repository": telegram_repository,
+        "telegram_service": TelegramConfigurationService(
+            repository=telegram_repository,
+            settings=settings,
+            channel_service=channel_service,
+        ),
+        "briefing_repository": briefing_repository,
+        "briefing_service": BriefingPreferenceService(briefing_repository),
+        "channel_repository": ChannelRepository(session),
+        "runtime_repository": RuntimeOrchestrationRepository(session),
+    }
 
 
 def _platform_scope() -> ReactAdminScope:

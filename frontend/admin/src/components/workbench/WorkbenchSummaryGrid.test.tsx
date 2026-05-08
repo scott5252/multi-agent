@@ -14,8 +14,8 @@ describe("WorkbenchSummaryGrid", () => {
       />,
     );
 
-    expect(screen.getByText("Health")).toBeInTheDocument();
-    expect(screen.getByText("Model gateway")).toBeInTheDocument();
+    expect(screen.getByText("System Health")).toBeInTheDocument();
+    expect(screen.getByText("Gateway")).toBeInTheDocument();
     expect(screen.getByText(/safe polling available/)).toBeInTheDocument();
   });
 });

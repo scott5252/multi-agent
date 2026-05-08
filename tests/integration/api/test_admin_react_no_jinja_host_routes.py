@@ -39,7 +39,7 @@ def test_react_admin_host_routes_are_non_jinja(
 
     assert root.status_code == 200
     assert root.headers["X-React-Admin-Host"] == "non-jinja"
-    assert "React Admin" in root.text
+    assert "Admin" in root.text
     assert "{%" not in root.text
     assert migration.status_code == 200
     assert migration.headers["X-React-Admin-Host"] == "non-jinja"

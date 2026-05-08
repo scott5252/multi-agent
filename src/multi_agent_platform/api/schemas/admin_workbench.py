@@ -8,7 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from multi_agent_platform.api.schemas.admin_patterns import (
     AdminAction,
     EvidenceSummary,
-    ExportSnapshot,
     FilterProfile,
     RefreshHint,
     safe_text,
@@ -38,9 +37,16 @@ def safe_workbench_text(value: str, *, max_length: int = 220) -> str:
 
 class WorkbenchStatus(StrEnum):
     READY = "ready"
+    AVAILABLE = "available"
     DEGRADED = "degraded"
     WARNING = "warning"
     CRITICAL = "critical"
+    EMPTY = "empty"
+    DENIED = "denied"
+    QUEUED = "queued"
+    VALIDATION = "validation"
+    CONFLICT = "conflict"
+    NOT_FOUND = "not_found"
     UNAVAILABLE = "unavailable"
 
 
@@ -48,6 +54,19 @@ class WorkbenchSeverity(StrEnum):
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
+
+
+class WorkbenchExportStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    EXPIRED = "expired"
+    EMPTY = "empty"
+    DENIED = "denied"
+    VALIDATION = "validation"
+    CONFLICT = "conflict"
+    UNAVAILABLE = "unavailable"
 
 
 class WorkbenchTimeRange(BaseModel):
@@ -370,7 +389,16 @@ class WorkbenchLogSummary(BaseModel):
         }
 
 
-class WorkbenchExportSnapshot(ExportSnapshot):
+class WorkbenchExportSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    export_id: str
+    status: WorkbenchExportStatus
+    summary: str
+    artifact_reference_id: str | None = None
+    progress_label: str | None = None
+    expires_at: datetime | None = None
+    audit_reference_id: str | None = None
     scope_label: str
     redaction_summary: str
     row_count: int = Field(default=0, ge=0)
@@ -387,6 +415,15 @@ class WorkbenchExportSnapshot(ExportSnapshot):
             return None
         return safe_workbench_text(value, max_length=180)
 
+    @field_validator("artifact_reference_id")
+    @classmethod
+    def artifact_reference_is_safe(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if value.startswith(("/", "file:")) or ".." in value:
+            raise ValueError("artifact reference must not expose a filesystem path")
+        return value
+
     @field_validator("scope_label", "redaction_summary")
     @classmethod
     def text_is_safe(cls, value: str) -> str:
@@ -399,6 +436,13 @@ class WorkbenchExportRequest(BaseModel):
     scope_type: str = "active"
     range: str = "60m"
     include_run_debug: bool = True
+    included_sections: tuple[str, ...] = (
+        "summary",
+        "logs",
+        "run_debug",
+        "reliability",
+        "exports",
+    )
 
 
 class RunDebugEnvelope(BaseModel):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import select
@@ -8,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from multi_agent_platform.db.models.skill_registry import (
     SkillAuditRecord,
     SkillInstallation,
+    SkillInstallationCredential,
+    SkillInstallationTest,
     SkillPackage,
     SkillPackageTenantGrant,
     SkillPackageVersion,
@@ -51,6 +54,24 @@ class SkillRegistryRepository:
         )
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
+    async def get_package_version_by_id(
+        self,
+        version_id: UUID,
+    ) -> SkillPackageVersion | None:
+        return await self.session.get(SkillPackageVersion, version_id)
+
+    async def list_package_versions(
+        self,
+        *,
+        limit: int = 50,
+    ) -> list[SkillPackageVersion]:
+        stmt = (
+            select(SkillPackageVersion)
+            .order_by(SkillPackageVersion.created_at.desc())
+            .limit(limit)
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
     async def list_available_versions(
         self,
         *,
@@ -81,6 +102,38 @@ class SkillRegistryRepository:
         self.session.add(grant)
         await self.session.flush()
         return grant
+
+    async def get_tenant_grant(
+        self,
+        *,
+        version_id: UUID,
+        tenant_id: UUID | None,
+    ) -> SkillPackageTenantGrant | None:
+        stmt = select(SkillPackageTenantGrant).where(
+            SkillPackageTenantGrant.skill_package_version_id == version_id,
+            SkillPackageTenantGrant.tenant_id == tenant_id,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def list_tenant_grants(
+        self,
+        *,
+        tenant_id: UUID | None = None,
+        version_ids: Sequence[UUID] | None = None,
+        limit: int = 100,
+    ) -> list[SkillPackageTenantGrant]:
+        stmt = select(SkillPackageTenantGrant)
+        if tenant_id is not None:
+            stmt = stmt.where(
+                (SkillPackageTenantGrant.tenant_id == tenant_id)
+                | (SkillPackageTenantGrant.tenant_id.is_(None))
+            )
+        if version_ids:
+            stmt = stmt.where(
+                SkillPackageTenantGrant.skill_package_version_id.in_(version_ids)
+            )
+        stmt = stmt.order_by(SkillPackageTenantGrant.granted_at.desc()).limit(limit)
+        return list((await self.session.execute(stmt)).scalars().all())
 
     async def add_installation(
         self,
@@ -114,8 +167,63 @@ class SkillRegistryRepository:
         *,
         tenant_id: UUID,
     ) -> list[SkillInstallation]:
-        stmt = select(SkillInstallation).where(SkillInstallation.tenant_id == tenant_id)
+        stmt = (
+            select(SkillInstallation)
+            .where(SkillInstallation.tenant_id == tenant_id)
+            .order_by(SkillInstallation.updated_at.desc())
+        )
         return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_credentials_for_installations(
+        self,
+        installation_ids: Sequence[UUID],
+    ) -> list[SkillInstallationCredential]:
+        if not installation_ids:
+            return []
+        stmt = (
+            select(SkillInstallationCredential)
+            .where(
+                SkillInstallationCredential.skill_installation_id.in_(
+                    tuple(installation_ids)
+                )
+            )
+            .order_by(SkillInstallationCredential.requirement_key.asc())
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_tests_for_installations(
+        self,
+        installation_ids: Sequence[UUID],
+        *,
+        limit: int = 100,
+    ) -> list[SkillInstallationTest]:
+        if not installation_ids:
+            return []
+        stmt = (
+            select(SkillInstallationTest)
+            .where(
+                SkillInstallationTest.skill_installation_id.in_(tuple(installation_ids))
+            )
+            .order_by(SkillInstallationTest.started_at.desc().nullslast())
+            .limit(limit)
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def add_installation_credential(
+        self,
+        credential: SkillInstallationCredential,
+    ) -> SkillInstallationCredential:
+        self.session.add(credential)
+        await self.session.flush()
+        return credential
+
+    async def add_installation_test(
+        self,
+        test: SkillInstallationTest,
+    ) -> SkillInstallationTest:
+        self.session.add(test)
+        await self.session.flush()
+        return test
 
     async def add_audit_record(
         self,

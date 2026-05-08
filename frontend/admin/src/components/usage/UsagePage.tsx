@@ -11,6 +11,7 @@ import type {
   UsageReactExportSummary,
   UsageReactGroupBy,
 } from "../../api/generated/reactAdminApi";
+import { buildIdempotencyKey } from "../../utils/adminActionMetadata";
 import { CommonState } from "../states/CommonState";
 import { UsageEventDrilldown } from "./UsageEventDrilldown";
 import { UsageExportPanel } from "./UsageExportPanel";
@@ -88,7 +89,7 @@ export function UsagePage({ usageUrl }: { usageUrl: string }) {
     setExportResult(
       await createUsageExport(withSearch("/admin/app/usage/exports"), {
         filters: filterSnapshot,
-        idempotency_key: "usage-export-ui-qa035",
+        idempotency_key: buildIdempotencyKey("usage-export"),
         requested_group_by: dashboard.filters.selected_group_by,
       }),
     );

@@ -33,6 +33,7 @@ describe("RoleGrantPanel", () => {
     await userEvent.click(screen.getByRole("button", { name: /Revoke/ }));
     expect(revoke).toHaveBeenCalledWith(
       "/admin/app/memberships/role-grants/grant-qa034-acme-maya/revoke",
+      null,
     );
   });
 });

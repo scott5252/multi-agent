@@ -30,6 +30,12 @@ export function PackageLifecyclePanel({
         <Badge tone="info">{versions.length} visible</Badge>
       </div>
       <div className="governance-card-grid">
+        {versions.length === 0 ? (
+          <article className="governance-card">
+            <strong>No package versions</strong>
+            <p>No persisted package versions are visible for publication actions.</p>
+          </article>
+        ) : null}
         {versions.map((version) => {
           const grant = version.tenant_grant_summary[0];
           const grantAction = version.authorized_actions.find(

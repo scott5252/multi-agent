@@ -1,0 +1,164 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "055",
+  "title": "Channels, Telegram, Briefing React Live Data",
+  "status": "completed",
+  "active_phase": "completed",
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "qa_docs": {
+      "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/055-channels-telegram-briefing-react-live-data",
+      "status": "passed",
+      "guide": "specs/055-channels-telegram-briefing-react-live-data/qa055.md",
+      "ui_walkthrough": "specs/055-channels-telegram-briefing-react-live-data/qa055_ui.md",
+      "environment": "specs/055-channels-telegram-briefing-react-live-data/.env.qa055",
+      "manual_user_guide": "specs/055-channels-telegram-briefing-react-live-data/qa055_user_guide.md"
+    },
+    "spec_qa": {
+      "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/055-channels-telegram-briefing-react-live-data/validation.yml",
+      "status": "passed",
+      "notes": "Validated qa055 database setup, seeded and empty channel routes, redaction assertions, full backend quality gates, focused channel tests, frontend tests, typecheck, and build."
+    },
+    "playwright": {
+      "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/055-channels-telegram-briefing-react-live-data/validation.yml --start-processes",
+      "status": "passed",
+      "screenshot": "output/playwright/qa055_ui/qa055-live-data-ui-api-smoke.png",
+      "action": "Logged in as tenant-user-acme, clicked Save Preferences, and verified Preference profile saved with redacted summaries."
+    },
+    "post_ui_database_check": {
+      "command": "uv run python scripts/qa/verify_channels_briefing_qa055.py",
+      "status": "passed",
+      "evidence": "configs=1 aliases=1 identities=1 token_audits=1 receipts=1 deliveries=1 runs=1 briefing_revision_number=2 briefing_revisions=2 profile_updated_audits=1"
+    },
+    "curl_test": {
+      "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa055-after-spec",
+      "status": "passed",
+      "artifact_dir": ".data/curl_test_runs/qa055-after-spec",
+      "database": "multi_agent_curl_test",
+      "failed_commands": []
+    }
+  },
+  "artifacts": {
+    "spec": "specs/055-channels-telegram-briefing-react-live-data/spec.md",
+    "requirements_checklist": "specs/055-channels-telegram-briefing-react-live-data/checklists/requirements.md",
+    "plan": "specs/055-channels-telegram-briefing-react-live-data/plan.md",
+    "research": "specs/055-channels-telegram-briefing-react-live-data/research.md",
+    "data_model": "specs/055-channels-telegram-briefing-react-live-data/data-model.md",
+    "quickstart": "specs/055-channels-telegram-briefing-react-live-data/quickstart.md",
+    "contracts": [
+      "specs/055-channels-telegram-briefing-react-live-data/contracts/channels-briefing-live-data.openapi.yaml",
+      "specs/055-channels-telegram-briefing-react-live-data/contracts/channels-briefing-live-data-ui.md"
+    ],
+    "agent_context": "AGENTS.md",
+    "tasks": "specs/055-channels-telegram-briefing-react-live-data/tasks.md",
+    "qa_guide": "specs/055-channels-telegram-briefing-react-live-data/qa055.md",
+    "qa_ui": "specs/055-channels-telegram-briefing-react-live-data/qa055_ui.md",
+    "qa_env": "specs/055-channels-telegram-briefing-react-live-data/.env.qa055",
+    "qa_user_guide": "specs/055-channels-telegram-briefing-react-live-data/qa055_user_guide.md",
+    "pr_notes": "specs/055-channels-telegram-briefing-react-live-data/pr_notes.md",
+    "qa_seed": "scripts/qa/seed_channels_briefing_qa055.py",
+    "qa_verify": "scripts/qa/verify_channels_briefing_qa055.py"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 055 specification from generated autopilot prompt after completing Spec 054 validation. Continuing with validated prior-spec changes in the dirty worktree and without requiring an intermediate Git commit."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 055 feature specification and completed requirements checklist with no unresolved clarification markers. The before_specify git feature hook was not used because the user explicitly requested continuing all specs in the current dirty worktree without intermediate commit gates."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification for channel, Telegram, briefing live-data source of truth, token/link-token visibility, alias and preference mutations, delivery/run evidence, and qa055 local-principal validation."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five autonomous clarification answers in spec.md covering authoritative services, scope resolution, Telegram/token redaction, durable action semantics, and qa055 local-principal persistence evidence. Optional clarify git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started planning after reconciling queue.json and status.json for Spec 055."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Generated plan.md, research.md, data-model.md, quickstart.md, channel/briefing live-data OpenAPI/UI contracts, and updated AGENTS.md to the Spec 055 plan. Optional plan git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation after reconciling queue.json and status.json for Spec 055."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated 39 dependency-ordered tasks for Spec 055 across setup, foundation, live state, redaction-safe evidence, durable actions, QA docs, validation, Playwright, post-UI verification, and curl regression. Optional tasks git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started cross-artifact analysis for Spec 055 before implementation."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Completed cross-artifact analysis. Auto-remediated one MEDIUM production-builder/test path consistency issue in plan.md, tasks.md, and quickstart.md; no CRITICAL or HIGH blockers remain. Optional analyze git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started implementation for Spec 055 after reconciling queue.json and status.json."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Replaced the QA036 fixed channel/Telegram/briefing React production projections with async service and repository-backed live builders; wired routes to live dependencies; added bounded repository helpers, live QA fixtures, scanner guardrails, QA scripts, docs, validation manifest, and marked all 39 tasks complete. Existing validated prior-spec changes remain in the dirty worktree per the user's no-intermediate-commit instruction."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "QA docs validation, full Spec QA, Playwright UI validation, post-UI database verification, and multi-agent curl regression all passed for Spec 055. Playwright screenshot: output/playwright/qa055_ui/qa055-live-data-ui-api-smoke.png. Curl artifacts: .data/curl_test_runs/qa055-after-spec."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 055 completed with .status completed, implement phase completed, and validation.status completed. queue.json should advance next_spec to 056 after reconciliation."
+    }
+  ],
+  "auto_clarifications": [
+    "Authoritative sources are Telegram config services/repositories, command alias services, link-token audit repositories, linked identity repositories, delivery/notification repositories, channel run APIs, briefing preference services, artifact metadata, and audit services.",
+    "Backend resolves platform, tenant, and user authority; browser state never expands scope and cross-tenant IDs fail closed.",
+    "Only safe readiness labels, masked Telegram identity labels, command names, safe delivery/run summaries, timestamps, trace references, artifact references, and audit references may render.",
+    "Alias, link-token, webhook validation, briefing preference, import/export, and diagnostic actions route through existing services/repositories with idempotency, revision, one-time token, artifact, denial, stale-conflict, and audit evidence.",
+    "qa055 uses real local-principal QA rows and no external Telegram/provider calls; Playwright proves one persisted action."
+  ],
+  "task_count": 39,
+  "analysis": {
+    "status": "completed",
+    "findings": [
+      {
+        "id": "C1",
+        "category": "Consistency",
+        "severity": "MEDIUM",
+        "summary": "Initial plan/tasks used a shorthand channel_telegram_briefing.py path while the actual production builder lives at admin/channel_telegram_briefing/react_channel_telegram_briefing.py.",
+        "remediation": "Updated Spec 055 plan, tasks, quickstart, and related task paths to reference the actual production builder and existing focused test locations before implementation."
+      }
+    ],
+    "rerun_summary": "No remaining CRITICAL or HIGH cross-artifact blockers after path remediation. Placeholder and unresolved-marker scan is clean apart from the expected checklist validation line."
+  }
+}

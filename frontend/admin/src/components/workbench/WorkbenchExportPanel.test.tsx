@@ -15,7 +15,7 @@ describe("WorkbenchExportPanel", () => {
       />,
     );
 
-    expect(screen.getByText("artifact-ref-qa029-platform")).toBeInTheDocument();
+    expect(screen.getByText(/operations-export:/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Export evidence" }));
     expect(onExport).toHaveBeenCalledTimes(1);
   });

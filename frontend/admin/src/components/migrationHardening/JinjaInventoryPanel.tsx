@@ -27,7 +27,7 @@ export function JinjaInventoryPanel({
       <div className="migration-panel-heading">
         <div>
           <p className="eyebrow">Decommission inventory</p>
-          <h2 id="jinja-inventory-title">React-only readiness</h2>
+          <h2 id="jinja-inventory-title">Browser UI readiness</h2>
         </div>
         <span className="migration-count">{summary.total_items} items</span>
       </div>

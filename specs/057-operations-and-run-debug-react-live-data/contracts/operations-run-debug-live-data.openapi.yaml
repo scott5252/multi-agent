@@ -1,0 +1,312 @@
+openapi: 3.1.0
+info:
+  title: Operations And Run Debug React Live Data
+  version: 0.1.0
+paths:
+  /admin/app/operations.json:
+    get:
+      summary: Load live operations workbench dashboard
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: range
+          in: query
+          schema:
+            type: string
+            enum: [60m]
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [info, warning, critical]
+        - name: subsystem
+          in: query
+          schema:
+            type: string
+            enum: [gateway, telegram, reliability, runtime, usage, skill_execution]
+      responses:
+        "200":
+          description: Live workbench projection or truthful empty state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationsWorkbenchEnvelope"
+        "400":
+          description: Unsupported filter
+        "401":
+          description: Missing or invalid principal
+        "403":
+          description: Scope denied
+  /admin/app/operations/runs/{workflow_run_id}.json:
+    get:
+      summary: Load live run debug projection
+      parameters:
+        - name: workflow_run_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Authorized live run debug projection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunDebugEnvelope"
+        "401":
+          description: Missing or invalid principal
+        "403":
+          description: Scope denied
+        "404":
+          description: Run not found
+  /admin/app/operations/export:
+    post:
+      summary: Create a durable workbench export
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkbenchExportRequest"
+      responses:
+        "200":
+          description: Persisted export summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkbenchExportSnapshot"
+        "401":
+          description: Missing or invalid principal
+        "403":
+          description: Scope denied
+components:
+  schemas:
+    OperationsWorkbenchEnvelope:
+      type: object
+      required:
+        - page_id
+        - title
+        - scope
+        - time_range
+        - summary_cards
+        - health_panels
+        - run_debug
+        - reliability
+        - logs
+        - exports
+      properties:
+        page_id:
+          type: string
+          const: react-operations-workbench
+        title:
+          type: string
+        description:
+          type: string
+        scope:
+          type: object
+        generated_at_label:
+          type: string
+        time_range:
+          $ref: "#/components/schemas/WorkbenchTimeRange"
+        summary_cards:
+          type: array
+          maxItems: 8
+          items:
+            $ref: "#/components/schemas/WorkbenchSummaryCard"
+        likely_causes:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/LikelyCauseSummary"
+        health_panels:
+          type: array
+          maxItems: 8
+          items:
+            type: object
+        run_debug:
+          $ref: "#/components/schemas/RunDebugEnvelope"
+        reliability:
+          type: object
+        logs:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+        exports:
+          $ref: "#/components/schemas/WorkbenchExportSnapshot"
+    WorkbenchTimeRange:
+      type: object
+      required: [preset, label]
+      properties:
+        preset:
+          type: string
+        label:
+          type: string
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+    WorkbenchSummaryCard:
+      type: object
+      required: [card_id, label, value, status, severity, summary]
+      properties:
+        card_id:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+        status:
+          $ref: "#/components/schemas/WorkbenchStatus"
+        severity:
+          $ref: "#/components/schemas/WorkbenchSeverity"
+        summary:
+          type: string
+        evidence_reference_id:
+          type: string
+          nullable: true
+    LikelyCauseSummary:
+      type: object
+      required:
+        - cause_id
+        - severity
+        - affected_subsystem
+        - symptom
+        - likely_cause_category
+        - recommended_next_step
+      properties:
+        cause_id:
+          type: string
+        severity:
+          $ref: "#/components/schemas/WorkbenchSeverity"
+        affected_subsystem:
+          type: string
+        symptom:
+          type: string
+        likely_cause_category:
+          type: string
+        recommended_next_step:
+          type: string
+        href:
+          type: string
+          nullable: true
+        evidence_reference_id:
+          type: string
+          nullable: true
+    RunDebugEnvelope:
+      type: object
+      required:
+        - workflow_run_id
+        - run_status
+        - safe_title
+        - timeline
+        - branches
+        - gateway_attempts
+        - tool_calls
+        - deliveries
+      properties:
+        workflow_run_id:
+          type: string
+        tenant_scope:
+          type: object
+          nullable: true
+        run_status:
+          $ref: "#/components/schemas/WorkbenchStatus"
+        safe_title:
+          type: string
+        timeline:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+        branches:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+        gateway_attempts:
+          type: array
+          maxItems: 25
+          items:
+            type: object
+        tool_calls:
+          type: array
+          maxItems: 25
+          items:
+            type: object
+        deliveries:
+          type: array
+          maxItems: 25
+          items:
+            type: object
+    WorkbenchExportRequest:
+      type: object
+      properties:
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+        include_run_debug:
+          type: boolean
+        include_reliability:
+          type: boolean
+        include_logs:
+          type: boolean
+        include_exports:
+          type: boolean
+        idempotency_key:
+          type: string
+          maxLength: 128
+    WorkbenchExportSnapshot:
+      type: object
+      required:
+        - export_id
+        - status
+        - summary
+        - audit_reference_id
+        - scope_label
+        - redaction_summary
+        - row_count
+      properties:
+        export_id:
+          type: string
+        status:
+          type: string
+        summary:
+          type: string
+        artifact_reference_id:
+          type: string
+          nullable: true
+        progress_label:
+          type: string
+        audit_reference_id:
+          type: string
+        scope_label:
+          type: string
+        redaction_summary:
+          type: string
+        row_count:
+          type: integer
+          minimum: 0
+    WorkbenchStatus:
+      type: string
+      enum: [ready, available, warning, degraded, unavailable, denied, empty]
+    WorkbenchSeverity:
+      type: string
+      enum: [info, warning, critical]

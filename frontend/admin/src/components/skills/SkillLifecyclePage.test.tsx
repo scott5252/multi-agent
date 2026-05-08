@@ -26,7 +26,7 @@ describe("SkillLifecyclePage", () => {
           ok: true,
           json: async () => ({
             ...skillLifecycleMutationFixture,
-            audit_reference_id: "audit-skill-candidate-qa032",
+            audit_reference_id: "audit-skill-candidate-live",
             summary: "Package candidate saved with safe manifest summary.",
           }),
         }),
@@ -40,12 +40,12 @@ describe("SkillLifecyclePage", () => {
     expect(screen.getByText("Legacy route redirects")).toBeInTheDocument();
     expect(screen.getByText("/admin/skill-registry/ui/packages")).toBeInTheDocument();
     expect(screen.getByText("/admin/app/skills/diagnostics")).toBeInTheDocument();
-    expect(screen.queryByText(/qa032-secret-value/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/live-secret-value/)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Save candidate/ }));
 
     await waitFor(() => {
-      expect(screen.getByText("audit-skill-candidate-qa032")).toBeInTheDocument();
+      expect(screen.getByText("audit-skill-candidate-live")).toBeInTheDocument();
     });
     expect(fetch).toHaveBeenCalledWith(
       "/admin/app/skills/packages/candidates",

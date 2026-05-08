@@ -56,6 +56,17 @@ class RuntimeOrchestrationRepository:
     async def get_run_by_id(self, *, workflow_run_id: UUID) -> WorkflowRunRecord | None:
         return await self.session.get(WorkflowRunRecord, workflow_run_id)
 
+    async def list_recent_runs(
+        self, *, tenant_id: UUID | None, platform_scope: bool, limit: int = 12
+    ) -> list[WorkflowRunRecord]:
+        stmt = select(WorkflowRunRecord)
+        if not platform_scope:
+            stmt = stmt.where(WorkflowRunRecord.tenant_id == tenant_id)
+        elif tenant_id is not None:
+            stmt = stmt.where(WorkflowRunRecord.tenant_id == tenant_id)
+        stmt = stmt.order_by(WorkflowRunRecord.updated_at.desc()).limit(limit)
+        return list((await self.session.execute(stmt)).scalars().all())
+
     async def get_execution_bundle(
         self, *, run_bundle_id: UUID
     ) -> RuntimeExecutionBundleRecord | None:

@@ -43,7 +43,7 @@ export function AdminShell({ bootstrap, children }: AdminShellProps) {
                 <h2>Shared shell ready</h2>
                 <p>
                   Backend contracts provide authorized scope, navigation,
-                  actions, safe states, and fallback links for future React pages.
+                  actions, safe states, and fallback links for admin pages.
                 </p>
               </div>
               <dl>

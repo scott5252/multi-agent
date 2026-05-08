@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import {
+  createWorkflowDraft,
   fetchWorkflowBuilder,
   fetchWorkflowLookups,
   publishWorkflowDraft,
@@ -14,6 +15,7 @@ import type {
   WorkflowReferenceCatalog,
   WorkflowValidationSummary,
 } from "../../api/generated/reactAdminApi";
+import { buildIdempotencyKey } from "../../utils/adminActionMetadata";
 import { CommonState } from "../states/CommonState";
 import { WorkflowGraphPanel } from "./WorkflowGraphPanel";
 import { WorkflowJsonInspector } from "./WorkflowJsonInspector";
@@ -51,10 +53,13 @@ export function WorkflowBuilderPage({
     null,
   );
   const [saveResult, setSaveResult] = useState<BuilderMutationResult | null>(null);
+  const [createResult, setCreateResult] =
+    useState<BuilderMutationResult | null>(null);
   const [validationResult, setValidationResult] =
     useState<BuilderMutationResult | null>(null);
   const [publishResult, setPublishResult] =
     useState<BuilderMutationResult | null>(null);
+  const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -68,18 +73,23 @@ export function WorkflowBuilderPage({
         }
         setEnvelope(builderPayload);
         setCatalog(lookupPayload);
-        setValidation(builderPayload.validation);
-        setPublishReadiness(builderPayload.publish_readiness);
-        setFormValues({
-          description: builderPayload.draft.description,
-          join_policy:
-            builderPayload.draft.graph.join_policies[0]?.policy_id ??
-            "wait_for_required_branches",
-          name: builderPayload.draft.name,
-          selected_profile_ref:
-            lookupPayload.profile_options[0]?.reference_id ?? null,
-          selected_prompt_ref: lookupPayload.prompt_options[0]?.reference_id ?? null,
-        });
+        setValidation(builderPayload.validation ?? null);
+        setPublishReadiness(builderPayload.publish_readiness ?? null);
+        setFormValues(
+          builderPayload.draft
+            ? {
+                description: builderPayload.draft.description,
+                join_policy:
+                  builderPayload.draft.graph.join_policies[0]?.policy_id ??
+                  "wait_for_required_branches",
+                name: builderPayload.draft.name,
+                selected_profile_ref:
+                  lookupPayload.profile_options[0]?.reference_id ?? null,
+                selected_prompt_ref:
+                  lookupPayload.prompt_options[0]?.reference_id ?? null,
+              }
+            : null,
+        );
         setDirty(false);
         setLoadError(null);
       })
@@ -117,8 +127,41 @@ export function WorkflowBuilderPage({
     )?.href;
   }
 
+  async function createDraft() {
+    if (!envelope?.create_state.create_action.href) {
+      return;
+    }
+    setCreating(true);
+    const slug = `admin-live-workflow-${Date.now().toString(36)}`;
+    const displayName = "Admin live workflow";
+    try {
+      const result = await createWorkflowDraft(
+        envelope.create_state.create_action.href,
+        {
+          created_from_version_id: null,
+          description: "Created from the admin workflow live-data page.",
+          display_name: displayName,
+          document: buildCreateDocument(slug, displayName),
+          idempotency_key: buildIdempotencyKey("workflow-create"),
+          scope_type:
+            envelope.scope.scope_type === "platform" ? "platform" : "tenant",
+          slug,
+          tenant_id: envelope.scope.tenant_id,
+          workflow_kind: "main_workflow",
+        },
+      );
+      setCreateResult(result);
+      setLoadError(null);
+    } catch (caught: unknown) {
+      setCreateResult(null);
+      setLoadError(caught instanceof Error ? caught.message : "Create failed");
+    } finally {
+      setCreating(false);
+    }
+  }
+
   async function saveDraft(forceStale = false) {
-    if (!envelope || !formValues || !saveActionHref()) {
+    if (!envelope?.draft || !formValues || !saveActionHref()) {
       return;
     }
     setSaving(true);
@@ -126,9 +169,9 @@ export function WorkflowBuilderPage({
       const result = await saveWorkflowDraft(saveActionHref() ?? "", {
         description: formValues.description,
         force_stale: forceStale,
-        idempotency_key: forceStale
-          ? "workflow-save-stale-ui-qa030"
-          : "workflow-save-ui-qa030",
+        idempotency_key: buildIdempotencyKey(
+          forceStale ? "workflow-save-stale" : "workflow-save",
+        ),
         join_policy: formValues.join_policy,
         name: formValues.name,
         revision: envelope.draft.revision,
@@ -145,7 +188,7 @@ export function WorkflowBuilderPage({
       if (result.status === "accepted") {
         setDirty(false);
         setEnvelope((current) =>
-          current
+          current?.draft
             ? {
                 ...current,
                 draft: {
@@ -189,16 +232,16 @@ export function WorkflowBuilderPage({
   }
 
   async function publishDraft(readyFixture: boolean, confirmed: boolean) {
-    if (!envelope || !publishActionHref()) {
+    if (!envelope?.draft || !publishActionHref()) {
       return;
     }
     setPublishing(true);
     try {
       const result = await publishWorkflowDraft(publishActionHref() ?? "", {
         confirmed,
-        idempotency_key: confirmed
-          ? "workflow-publish-confirm-ui-qa030"
-          : "workflow-publish-ui-qa030",
+        idempotency_key: buildIdempotencyKey(
+          confirmed ? "workflow-publish-confirm" : "workflow-publish",
+        ),
         ready_fixture: readyFixture,
         revision: envelope.draft.revision,
       });
@@ -228,7 +271,54 @@ export function WorkflowBuilderPage({
     );
   }
 
-  if (!envelope || !catalog || !formValues || !validation || !publishReadiness) {
+  if (!envelope || !catalog) {
+    return (
+      <CommonState
+        state={{
+          action: null,
+          state: "loading",
+          summary: "Loading draft, references, graph, and publish gates.",
+          title: "Loading workflow builder",
+          trace_id: null,
+        }}
+      />
+    );
+  }
+
+  if (!envelope.draft) {
+    return (
+      <div className="workflow-builder-page">
+        <section className="patterns-hero workflow-hero">
+          <p className="eyebrow">Workflows</p>
+          <h2>{envelope.title}</h2>
+          <p>{envelope.description}</p>
+        </section>
+        {loadError ? <p className="safe-error">{loadError}</p> : null}
+        <WorkflowRegistryPage registry={envelope.registry} />
+        <WorkflowCreatePage
+          createState={envelope.create_state}
+          creating={creating}
+          mutationResult={createResult}
+          onCreate={() => void createDraft()}
+        />
+        <CommonState
+          state={
+            envelope.state ?? {
+              action: null,
+              empty_state: envelope.empty_state ?? null,
+              provenance: envelope.provenance ?? null,
+              state: "empty",
+              summary: "No workflow draft is available for this scope.",
+              title: "No active workflow draft",
+              trace_id: null,
+            }
+          }
+        />
+      </div>
+    );
+  }
+
+  if (!formValues || !validation || !publishReadiness) {
     return (
       <CommonState
         state={{
@@ -251,7 +341,12 @@ export function WorkflowBuilderPage({
       </section>
       {loadError ? <p className="safe-error">{loadError}</p> : null}
       <WorkflowRegistryPage registry={envelope.registry} />
-      <WorkflowCreatePage createState={envelope.create_state} />
+      <WorkflowCreatePage
+        createState={envelope.create_state}
+        creating={creating}
+        mutationResult={createResult}
+        onCreate={() => void createDraft()}
+      />
       <WorkflowSectionForm
         dirty={dirty}
         draft={envelope.draft}
@@ -294,21 +389,74 @@ export function WorkflowBuilderPage({
       <WorkflowSharingPanel sharing={envelope.sharing} />
       <div className="workflow-review-grid">
         <WorkflowRevisionPanel revisions={envelope.revisions} />
-        <WorkflowJsonInspector inspector={envelope.json_inspector} />
+        {envelope.json_inspector ? (
+          <WorkflowJsonInspector inspector={envelope.json_inspector} />
+        ) : null}
       </div>
-      <section className="workflow-version-panel" aria-labelledby="version-title">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Published version</p>
-            <h2 id="version-title">{envelope.version_detail.display_name}</h2>
+      {envelope.version_detail ? (
+        <section className="workflow-version-panel" aria-labelledby="version-title">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Published version</p>
+              <h2 id="version-title">{envelope.version_detail.display_name}</h2>
+            </div>
           </div>
-        </div>
-        <p>{envelope.version_detail.summary}</p>
-        <small>
-          {envelope.version_detail.display_version} /{" "}
-          {envelope.version_detail.digest_label}
-        </small>
-      </section>
+          <p>{envelope.version_detail.summary}</p>
+          <small>
+            {envelope.version_detail.display_version} /{" "}
+            {envelope.version_detail.digest_label}
+          </small>
+        </section>
+      ) : null}
     </div>
   );
+}
+
+function buildCreateDocument(slug: string, displayName: string) {
+  return {
+    approval_gates: [],
+    contracts: [
+      {
+        contract_key: "request",
+        json_schema: { type: "object" },
+      },
+      {
+        contract_key: "result",
+        json_schema: { type: "object" },
+      },
+    ],
+    description: "Durable workflow draft created from the admin live-data UI.",
+    display_name: displayName,
+    edges: [],
+    entry_node_key: "start",
+    join_policies: [],
+    nodes: [
+      {
+        display_name: "Start",
+        node_key: "start",
+        node_type: "role",
+        role_key: "coordinator",
+      },
+    ],
+    roles: [
+      {
+        display_name: "Coordinator",
+        input_contract_key: "request",
+        output_contract_key: "result",
+        purpose: "Coordinate the workflow created from the admin UI.",
+        role_key: "coordinator",
+        skill_bindings: [
+          {
+            binding_key: "coordinator-review",
+            purpose: "Review workflow input.",
+            skill_slug: "coordinator-review",
+            skill_version: "2026.05.0",
+          },
+        ],
+      },
+    ],
+    subworkflow_refs: [],
+    workflow_key: slug,
+    workflow_kind: "main_workflow",
+  };
 }

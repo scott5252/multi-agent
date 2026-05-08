@@ -755,6 +755,17 @@ textarea {
   table-layout: fixed;
 }
 
+.live-data-table {
+  min-width: 72rem;
+  table-layout: fixed;
+}
+
+.live-data-supporting small {
+  color: var(--admin-muted);
+  display: block;
+  margin-top: var(--admin-space-1);
+}
+
 .migration-table td strong,
 .migration-table td small,
 .migration-budget-row strong,
@@ -875,18 +886,37 @@ textarea {
 
 .jinja-classification.react_parity_proven,
 .jinja-classification.safe_to_delete,
-.jinja-classification.redirectable {
+.jinja-classification.redirectable,
+.jinja-classification.allowed_computed_metadata,
+.jinja-classification.test_only {
   background: color-mix(in srgb, var(--admin-success) 16%, transparent);
   color: var(--admin-success);
 }
 
 .jinja-classification.react_parity_missing,
-.jinja-classification.non_jinja_compatibility_needed {
+.jinja-classification.non_jinja_compatibility_needed,
+.jinja-classification.mapped_legacy {
   background: color-mix(in srgb, var(--admin-warning) 16%, transparent);
   color: var(--admin-warning);
 }
 
-.jinja-classification.blocked_with_reason {
+.jinja-classification.blocked_with_reason,
+.jinja-classification.new_regression {
+  background: color-mix(in srgb, var(--admin-danger) 14%, transparent);
+  color: var(--admin-danger);
+}
+
+.live-ci-status.pass {
+  background: color-mix(in srgb, var(--admin-success) 16%, transparent);
+  color: var(--admin-success);
+}
+
+.live-ci-status.warning {
+  background: color-mix(in srgb, var(--admin-warning) 16%, transparent);
+  color: var(--admin-warning);
+}
+
+.live-ci-status.fail {
   background: color-mix(in srgb, var(--admin-danger) 14%, transparent);
   color: var(--admin-danger);
 }

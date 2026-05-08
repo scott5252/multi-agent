@@ -1,11 +1,7 @@
 import { useState } from "react";
 
-import { submitSampleAction } from "../api/client";
-import type {
-  MutationResult,
-  SampleActionRequest,
-  ValidationFieldError,
-} from "../api/generated/reactAdminApi";
+import { submitAdminMutation } from "../api/client";
+import type { MutationResult, ValidationFieldError } from "../api/generated/reactAdminApi";
 
 export function errorsByField(
   errors: ValidationFieldError[],
@@ -18,11 +14,11 @@ export function useAdminMutation(actionUrl: string) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function submit(payload: SampleActionRequest) {
+  async function submit(payload: Record<string, unknown> | undefined) {
     setSubmitting(true);
     setError(null);
     try {
-      const nextResult = await submitSampleAction(actionUrl, payload);
+      const nextResult = await submitAdminMutation(actionUrl, payload);
       setResult(nextResult);
       return nextResult;
     } catch (caught) {

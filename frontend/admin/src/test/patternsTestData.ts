@@ -1,6 +1,36 @@
-import type { AdminPageEnvelope, MutationResult } from "../api/generated/reactAdminApi";
+import type {
+  ExportSnapshot,
+  FilterProfile,
+  FormFieldDescriptor,
+  MutationResult,
+  PaginationState,
+  SortingState,
+} from "../api/generated/reactAdminApi";
 
-export const patternsEnvelopeFixture: AdminPageEnvelope = {
+interface PatternsEnvelopeFixture {
+  [key: string]: unknown;
+  data: {
+    [key: string]: unknown;
+    export_snapshot: ExportSnapshot;
+    form: {
+      [key: string]: unknown;
+      fields: FormFieldDescriptor[];
+    };
+    records: Array<{
+      [key: string]: unknown;
+      name: string;
+      owner_scope: string;
+      record_id: string;
+      status: string;
+      updated_label: string;
+    }>;
+  };
+  filters: FilterProfile;
+  pagination: PaginationState;
+  sorting: SortingState;
+}
+
+export const patternsEnvelopeFixture: PatternsEnvelopeFixture = {
   actions: [
     {
       action_id: "sample-submit",
@@ -76,7 +106,7 @@ export const patternsEnvelopeFixture: AdminPageEnvelope = {
       },
     ],
   },
-  description: "Harmless sample contracts for future React admin forms.",
+  description: "Harmless sample contracts for future admin forms.",
   evidence: [],
   filters: {
     active_chips: [],

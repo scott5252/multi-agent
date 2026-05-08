@@ -21,20 +21,25 @@ export function WorkbenchReliabilityPanel({
         </div>
       </div>
       <div className="recovery-list">
-        {items.map((item) => (
-          <article key={item.item_id}>
-            <div className="card-heading">
-              <strong>{item.label}</strong>
-              <Badge tone={item.status === "ready" ? "success" : "warning"}>
-                {item.status}
-              </Badge>
-            </div>
-            <p>{item.summary}</p>
-            {item.confirmation ? <small>{item.confirmation}</small> : null}
-            {item.href ? <a href={item.href}>Open recovery page</a> : null}
-          </article>
-        ))}
+        {items.length === 0 ? (
+          <p>No live recovery records match this scope.</p>
+        ) : (
+          items.map((item) => (
+            <article key={item.item_id}>
+              <div className="card-heading">
+                <strong>{item.label}</strong>
+                <Badge tone={item.status === "ready" || item.status === "empty" ? "success" : "warning"}>
+                  {item.status}
+                </Badge>
+              </div>
+              <p>{item.summary}</p>
+              {item.confirmation ? <small>{item.confirmation}</small> : null}
+              {item.href ? <a href={item.href}>Open recovery page</a> : null}
+            </article>
+          ))
+        )}
       </div>
+      {reliability.partial_reason ? <p>{reliability.partial_reason}</p> : null}
     </section>
   );
 }

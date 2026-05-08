@@ -5,10 +5,10 @@ import type {
 } from "../api/generated/reactAdminApi";
 
 export const usageExportSummary: UsageReactExportSummary = {
-  artifact_reference: "usage-export-artifact-qa035",
+  artifact_reference: "usage-export:56000000-0000-0000-0000-000000000056",
   artifact_size_label: "18 KB",
-  audit_reference: "audit-usage-qa035-export-created",
-  checksum_prefix: "sha256:qa035d",
+  audit_reference: "audit-usage-qa056-export-created",
+  checksum_prefix: "sha256:aaaaaaaaaaaa",
   completed_at: "2026-05-05T16:00:00Z",
   created_at: "2026-05-05T15:56:00Z",
   denial_reason: null,
@@ -20,7 +20,7 @@ export const usageExportSummary: UsageReactExportSummary = {
   row_count: 5,
   scope_label: "Platform",
   status: "completed",
-  usage_export_request_id: "35000000-0000-0000-0000-000000000035",
+  usage_export_request_id: "56000000-0000-0000-0000-000000000056",
 };
 
 export const usageDrilldown: UsageReactEventDrilldown = {
@@ -28,7 +28,7 @@ export const usageDrilldown: UsageReactEventDrilldown = {
   rows: [
     {
       agent_label: "Briefing coordinator",
-      audit_reference: "audit-usage-qa035-0001",
+      audit_reference: "audit-usage-qa056-0001",
       cost_status: "estimated",
       estimated_cost_display: "$0.0437",
       event_id: "35000000-0000-0000-0000-000000000001",
@@ -46,7 +46,7 @@ export const usageDrilldown: UsageReactEventDrilldown = {
       tenant_label: "Acme",
       tool_label: "Daily briefing calendar list",
       total_tokens: 12840,
-      trace_reference: "trace-qa035-0001",
+      trace_reference: "trace-qa056-0001",
       usage_status: "confirmed",
       workflow_label: "Daily briefing workflow",
     },
@@ -85,7 +85,7 @@ export const usageDashboard: UsageReactDashboard = {
     tenant_options: [{ disabled: false, disabled_reason: null, label: "Acme", selected: true, value: "11111111-1111-1111-1111-111111111111" }],
     workflow_options: [],
   },
-  page_id: "qa035-usage-analytics",
+  page_id: "usage-analytics-live",
   rollup: {
     group_by: "provider",
     limit: 25,

@@ -26,7 +26,7 @@ export function WorkbenchExportPanel({
       <dl className="export-facts">
         <div>
           <dt>Artifact</dt>
-          <dd>{exportSnapshot.artifact_reference_id}</dd>
+          <dd>{exportSnapshot.artifact_reference_id ?? exportSnapshot.status}</dd>
         </div>
         <div>
           <dt>Rows</dt>

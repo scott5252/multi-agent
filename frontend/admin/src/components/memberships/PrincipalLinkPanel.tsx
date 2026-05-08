@@ -2,6 +2,7 @@ import { Link } from "lucide-react";
 import { useState } from "react";
 
 import type { MembershipMutationResult } from "../../api/generated/reactAdminApi";
+import { buildIdempotencyKey } from "../../utils/adminActionMetadata";
 import { MembershipMutationResultPanel } from "./MembershipMutationResultPanel";
 
 interface PrincipalLinkPanelProps {
@@ -34,7 +35,7 @@ export function PrincipalLinkPanel({ mutationResult, onLink }: PrincipalLinkPane
               external_subject: overwriteConfirmed
                 ? "auth0-safe-existing-subject-7788"
                 : "auth0-safe-subject-7788",
-              idempotency_key: "principal-link-ui-qa034",
+              idempotency_key: buildIdempotencyKey("principal-link"),
               overwrite_confirmed: overwriteConfirmed,
               principal_identity_id: null,
             })

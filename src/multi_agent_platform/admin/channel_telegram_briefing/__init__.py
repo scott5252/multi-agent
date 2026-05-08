@@ -1,9 +1,6 @@
 """React-safe channel, Telegram, and briefing preference projections."""
 
 from .react_channel_telegram_briefing import (
-    ACME_TENANT_ID,
-    GLOBEX_TENANT_ID,
-    SAFE_RUN_ID,
     build_alias_action_result,
     build_alias_save_result,
     build_briefing_preferences,
@@ -19,9 +16,6 @@ from .react_channel_telegram_briefing import (
 )
 
 __all__ = (
-    "ACME_TENANT_ID",
-    "GLOBEX_TENANT_ID",
-    "SAFE_RUN_ID",
     "build_alias_action_result",
     "build_alias_save_result",
     "build_briefing_preferences",

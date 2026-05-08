@@ -9,18 +9,26 @@ export function WorkbenchTimeline({ runDebug }: { runDebug: RunDebugEnvelope }) 
           <p className="eyebrow">Run debug</p>
           <h2>{runDebug.safe_title}</h2>
         </div>
-        <Badge tone={runDebug.run_status === "ready" ? "success" : "warning"}>
+        <Badge tone={runDebug.run_status === "ready" || runDebug.run_status === "available" ? "success" : "warning"}>
           {runDebug.run_status}
         </Badge>
       </div>
       <ol className="timeline-list">
-        {runDebug.timeline.map((event) => (
-          <li key={event.event_id}>
-            <span>{event.occurred_at_label}</span>
-            <strong>{event.summary}</strong>
-            <small>{event.category}</small>
+        {runDebug.timeline.length === 0 ? (
+          <li>
+            <span>Live state</span>
+            <strong>No timeline rows are available for this run.</strong>
+            <small>empty</small>
           </li>
-        ))}
+        ) : (
+          runDebug.timeline.map((event) => (
+            <li key={event.event_id}>
+              <span>{event.occurred_at_label}</span>
+              <strong>{event.summary}</strong>
+              <small>{event.category}</small>
+            </li>
+          ))
+        )}
       </ol>
       <div className="branch-grid">
         {runDebug.branches.map((branch) => (

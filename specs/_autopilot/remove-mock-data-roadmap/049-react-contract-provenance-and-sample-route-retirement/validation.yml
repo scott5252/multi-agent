@@ -34,10 +34,32 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Admin"
+            "expect_text": "React-only browser UI"
+          },
+          {
+            "goto": "/admin/app/migration"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Live-data guardrails"
           },
           {
             "screenshot": "qa049-live-data-ui-api-smoke.png",
+            "full_page": true
+          },
+          {
+            "goto": "/admin/app/patterns"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "react admin route is unavailable"
+          },
+          {
+            "screenshot": "qa049-retired-patterns-route.png",
             "full_page": true
           }
         ]
@@ -45,7 +67,7 @@
     ]
   },
   "post_spec_validation": {
-    "playwright_database_requirement": "Before this spec is marked complete, update this manifest or the spec status evidence with the UI action exercised by Playwright and the backend API or QA database check proving the UI reflected or persisted live backend state.",
+    "playwright_database_requirement": "Playwright exercises the React migration workspace and the retired /admin/app/patterns route. Post-UI evidence must query /admin/app/bootstrap.json, /admin/app/search.json?q=patterns, /admin/app/patterns.json, /admin/app/patterns/actions/sample, and the QA database tenants table to prove the UI state is backend-owned and sample routes remain unavailable.",
     "curl_test": {
       "skill": "multi-agent-curl-test",
       "database": "multi_agent_curl_test",

@@ -29,8 +29,8 @@ describe("PackagePublicationPanel", () => {
     );
 
     expect(screen.getByText("Package publication")).toBeInTheDocument();
-    expect(screen.getByText("sha256:qa032dailybriefing")).toBeInTheDocument();
-    expect(screen.queryByText(/qa032-secret-value/)).not.toBeInTheDocument();
+    expect(screen.getByText("sha256:calendar-live-manifest")).toBeInTheDocument();
+    expect(screen.queryByText(/live-secret-value/)).not.toBeInTheDocument();
     expect(screen.queryByText(/raw manifest/i)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Save candidate/ }));
@@ -39,11 +39,11 @@ describe("PackagePublicationPanel", () => {
 
     expect(onSaveCandidate).toHaveBeenCalledWith("/admin/app/skills/packages/candidates");
     expect(onValidate).toHaveBeenCalledWith(
-      "/admin/app/skills/packages/candidates/qa032-candidate/validate",
+      "/admin/app/skills/packages/candidates/live-candidate/validate",
       true,
     );
     expect(onPublish).toHaveBeenCalledWith(
-      "/admin/app/skills/packages/candidates/qa032-candidate/publish",
+      "/admin/app/skills/packages/candidates/live-candidate/publish",
     );
   });
 });

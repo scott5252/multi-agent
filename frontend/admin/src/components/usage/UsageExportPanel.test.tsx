@@ -17,8 +17,10 @@ describe("UsageExportPanel", () => {
       />,
     );
 
-    expect(screen.getByText("usage-export-artifact-qa035")).toBeInTheDocument();
-    expect(screen.getByText("audit-usage-qa035-export-created")).toBeInTheDocument();
+    expect(
+      screen.getByText("usage-export:56000000-0000-0000-0000-000000000056"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("audit-usage-qa056-export-created")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Create export/ }));
     expect(onExport).toHaveBeenCalledOnce();
   });

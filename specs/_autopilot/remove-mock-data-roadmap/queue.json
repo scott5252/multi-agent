@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "roadmap_file": "remove_mock_data_specs.md",
   "spec_range": "048..059",
-  "next_spec": "048",
+  "next_spec": null,
   "specs": [
     {
       "number": "048",
@@ -13,16 +13,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/048-live-data-inventory-and-mock-guardrails/validation.yml",
       "feature_dir": "specs/048-live-data-inventory-and-mock-guardrails",
       "branch": "codex/048-live-data-inventory-and-mock-guardrails",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "049",
@@ -33,16 +33,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/049-react-contract-provenance-and-sample-route-retirement/validation.yml",
       "feature_dir": "specs/049-react-contract-provenance-and-sample-route-retirement",
       "branch": "codex/049-react-contract-provenance-and-sample-route-retirement",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "050",
@@ -53,16 +53,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/050-workflow-react-live-data/validation.yml",
       "feature_dir": "specs/050-workflow-react-live-data",
       "branch": "codex/050-workflow-react-live-data",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "051",
@@ -73,16 +73,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/051-governance-react-live-data/validation.yml",
       "feature_dir": "specs/051-governance-react-live-data",
       "branch": "codex/051-governance-react-live-data",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "052",
@@ -93,16 +93,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/052-skill-lifecycle-react-live-data/validation.yml",
       "feature_dir": "specs/052-skill-lifecycle-react-live-data",
       "branch": "codex/052-skill-lifecycle-react-live-data",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "053",
@@ -113,16 +113,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/053-test-bench-react-live-data/validation.yml",
       "feature_dir": "specs/053-test-bench-react-live-data",
       "branch": "codex/053-test-bench-react-live-data",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "054",
@@ -133,16 +133,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/054-membership-and-access-react-live-data/validation.yml",
       "feature_dir": "specs/054-membership-and-access-react-live-data",
       "branch": "codex/054-membership-and-access-react-live-data",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "055",
@@ -153,16 +153,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/055-channels-telegram-briefing-react-live-data/validation.yml",
       "feature_dir": "specs/055-channels-telegram-briefing-react-live-data",
       "branch": "codex/055-channels-telegram-briefing-react-live-data",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "056",
@@ -173,16 +173,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/056-usage-react-live-data/validation.yml",
       "feature_dir": "specs/056-usage-react-live-data",
       "branch": "codex/056-usage-react-live-data",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "057",
@@ -193,16 +193,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/057-operations-and-run-debug-react-live-data/validation.yml",
       "feature_dir": "specs/057-operations-and-run-debug-react-live-data",
       "branch": "codex/057-operations-and-run-debug-react-live-data",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "058",
@@ -213,16 +213,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/058-live-only-ui-decommission-gate/validation.yml",
       "feature_dir": "specs/058-live-only-ui-decommission-gate",
       "branch": "codex/058-live-only-ui-decommission-gate",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "059",
@@ -233,16 +233,16 @@
       "validation_file": "specs/_autopilot/remove-mock-data-roadmap/059-admin-ui-transitional-react-label-removal/validation.yml",
       "feature_dir": "specs/059-admin-ui-transitional-react-label-removal",
       "branch": "codex/059-admin-ui-transitional-react-label-removal",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     }
   ]
 }

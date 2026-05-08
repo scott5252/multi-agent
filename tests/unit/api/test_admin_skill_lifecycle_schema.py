@@ -11,6 +11,8 @@ from multi_agent_platform.api.schemas.admin_skill_lifecycle import (
     SkillLegacyRouteMapping,
     SkillLifecycleStatus,
     SkillPackageCandidate,
+    empty_skill_lifecycle_state,
+    live_skill_lifecycle_provenance,
     safe_skill_lifecycle_text,
 )
 
@@ -29,6 +31,28 @@ def test_skill_lifecycle_text_rejects_unsafe_markers() -> None:
     ):
         with pytest.raises(ValueError):
             safe_skill_lifecycle_text(unsafe)
+
+
+def test_skill_lifecycle_provenance_and_empty_state_are_safe() -> None:
+    provenance = live_skill_lifecycle_provenance(
+        source_label="Skill lifecycle records",
+        source_detail="Package and installation rows are read from repositories.",
+    )
+    empty_state = empty_skill_lifecycle_state(
+        title="No skill lifecycle records found",
+        summary="No packages, grants, installations, diagnostics, or audit rows exist.",
+        setup_hint="Create governed skill registry records before installing skills.",
+    )
+
+    assert provenance.source_kind == "live_repository"
+    assert empty_state.reason == "no_live_rows"
+    assert empty_state.provenance.source_kind == "empty_live_state"
+
+    with pytest.raises(ValidationError):
+        empty_skill_lifecycle_state(
+            title="No rows",
+            summary="tool payload copied into empty state",
+        )
 
 
 def test_package_candidate_rejects_manifest_echo() -> None:
@@ -143,7 +167,7 @@ def test_skill_legacy_route_mapping_is_redaction_safe() -> None:
         evidence=(
             "tests/integration/api/test_admin_skill_registry_legacy_redirects.py",
         ),
-        notes="Legacy route redirects to React without rendering Jinja.",
+        notes="Legacy route redirects to Admin without rendering Jinja.",
     )
 
     assert mapping.compatibility_status == "redirected"

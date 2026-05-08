@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+import hashlib
+from collections import defaultdict
+from collections.abc import Iterable, Mapping, Sequence
+from datetime import UTC, datetime
+from uuid import UUID, uuid4
+
+from multi_agent_platform.admin.skill_registry.eligibility import (
+    InstalledSkillEvidence,
+    evaluate_binding_eligibility,
+)
 from multi_agent_platform.api.schemas.admin_patterns import (
     AdminAction,
     AdminActionMethod,
@@ -9,6 +19,8 @@ from multi_agent_platform.api.schemas.admin_patterns import (
     ValidationFieldError,
 )
 from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminActionMetadata,
+    ReactAdminActionMetadataSource,
     ReactAdminNotificationTone,
     ReactAdminPageActionVariant,
     ReactAdminScope,
@@ -44,56 +56,133 @@ from multi_agent_platform.api.schemas.admin_skill_lifecycle import (
     TenantSkillInstallationList,
     TenantSkillInstallationSummary,
     TenantSkillInstallRequest,
+    empty_skill_lifecycle_state,
+    live_skill_lifecycle_provenance,
+    safe_skill_lifecycle_text,
 )
 from multi_agent_platform.auth.principal import PrincipalContext
-
-CURRENT_CANDIDATE_REVISION = "candidate-rev-qa032-current"
-CURRENT_INSTALLATION_REVISION = "installation-rev-qa032-current"
-ACME_TENANT_ID = "11111111-1111-1111-1111-111111111111"
+from multi_agent_platform.db.base import utcnow
+from multi_agent_platform.db.models.skill_registry import (
+    SkillAuditRecord,
+    SkillInstallation,
+    SkillInstallationCredential,
+    SkillInstallationState,
+    SkillInstallationTest,
+    SkillJobStatus,
+    SkillPackageTenantGrant,
+    SkillPackageVersion,
+    SkillVersionLifecycleState,
+)
+from multi_agent_platform.db.repositories.skill_registry import (
+    SkillRegistryRepository,
+    StaleSkillRegistryWriteError,
+)
 
 
 def is_platform_admin(principal: PrincipalContext) -> bool:
     return "platform_admin" in principal.role_codes
 
 
-def build_skill_lifecycle_dashboard(
+async def build_skill_lifecycle_dashboard(
     *,
     scope: ReactAdminScope,
     principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleDashboard:
     platform_admin = is_platform_admin(principal)
-    discovery = build_tenant_discovery(scope=scope, principal=principal).discovery
-    installations = build_tenant_installations(scope=scope).installations
-    diagnostics = build_skill_execution_diagnostics(scope=scope).diagnostics
-    connectors = installations[0].connector_readiness if installations else ()
+    publication = (
+        await build_publication_workspace(scope=scope, repository=repository)
+        if platform_admin
+        else None
+    )
+    discovery_list = await build_tenant_discovery(
+        scope=scope,
+        principal=principal,
+        repository=repository,
+    )
+    installation_list = await build_tenant_installations(
+        scope=scope,
+        repository=repository,
+    )
+    diagnostic_list = await build_skill_execution_diagnostics(
+        scope=scope,
+        repository=repository,
+    )
+    audit_list = await build_skill_lifecycle_audit(
+        scope=scope,
+        repository=repository,
+    )
+    binding_preview = await build_binding_preview(
+        scope=scope,
+        repository=repository,
+    )
+    connector_diagnostics = tuple(
+        connector
+        for installation in installation_list.installations
+        for connector in installation.connector_readiness
+    )
+    has_live_data = any(
+        (
+            publication and publication.package_versions,
+            discovery_list.discovery.available_versions,
+            discovery_list.discovery.grants,
+            installation_list.installations,
+            diagnostic_list.diagnostics,
+            audit_list.audit_timeline,
+        )
+    )
     return SkillLifecycleDashboard(
         page_id="react-skill-lifecycle",
         title="Skill lifecycle",
         description=(
-            "Guided package publication, tenant installation, readiness, "
-            "binding, diagnostics, and audit evidence."
+            "Package publication, tenant installation, readiness, binding, "
+            "diagnostics, and audit evidence from live skill records."
         ),
         scope=scope,
-        sections=_sections(platform_admin=platform_admin),
-        setup_summary=(
-            "Manifests are summarized after validation and never echoed raw.",
-            "Credential references are selected from authorized backend options.",
-            (
-                "Smoke tests and connector diagnostics run only as explicit "
-                "queued actions."
+        sections=_sections(
+            platform_admin=platform_admin,
+            publication_count=len(publication.package_versions) if publication else 0,
+            discovery_count=len(discovery_list.discovery.available_versions),
+            installation_count=len(installation_list.installations),
+            diagnostic_count=len(diagnostic_list.diagnostics),
+            audit_count=len(audit_list.audit_timeline),
+        ),
+        setup_summary=_setup_summary(has_live_data=has_live_data),
+        platform_publication=publication,
+        tenant_discovery=discovery_list.discovery,
+        installations=installation_list.installations,
+        connector_diagnostics=connector_diagnostics,
+        skill_execution_diagnostics=diagnostic_list.diagnostics,
+        binding_preview=binding_preview,
+        audit_timeline=audit_list.audit_timeline,
+        legacy_routes=build_skill_legacy_route_mappings(),
+        actions=_dashboard_actions(
+            scope=scope,
+            platform_admin=platform_admin,
+            has_installations=bool(installation_list.installations),
+        ),
+        provenance=live_skill_lifecycle_provenance(
+            source_label="Skill lifecycle records",
+            source_detail=(
+                "Packages, versions, grants, installations, readiness, tests, "
+                "and audit records are projected from durable skill registry stores."
+            ),
+        )
+        if has_live_data
+        else None,
+        empty_state=None
+        if has_live_data
+        else empty_skill_lifecycle_state(
+            title="No skill lifecycle records found",
+            summary=(
+                "This scope does not yet have skill packages, grants, "
+                "installations, readiness checks, diagnostics, or audit evidence."
+            ),
+            setup_hint=(
+                "Create package versions, grant tenant availability, and install "
+                "skills through governed registry flows."
             ),
         ),
-        platform_publication=build_publication_workspace(scope=scope)
-        if platform_admin
-        else None,
-        tenant_discovery=discovery,
-        installations=installations,
-        connector_diagnostics=connectors,
-        skill_execution_diagnostics=diagnostics,
-        binding_preview=build_binding_preview(scope=scope),
-        audit_timeline=build_skill_lifecycle_audit(scope=scope).audit_timeline,
-        legacy_routes=build_skill_legacy_route_mappings(),
-        actions=_dashboard_actions(scope=scope, platform_admin=platform_admin),
     )
 
 
@@ -167,14 +256,14 @@ def build_skill_legacy_route_mappings() -> tuple[SkillLegacyRouteMapping, ...]:
             react_path=react_path,
             compatibility_status="redirected",
             preserved_params=preserved,
-            authorization_behavior="authenticated redirect with backend React denial",
+            authorization_behavior="authenticated redirect with backend Admin denial",
             evidence=(
                 "tests/integration/api/test_admin_skill_registry_legacy_redirects.py",
                 "tests/integration/api/test_admin_skill_execution_ui.py",
                 "tests/unit/admin/test_skill_jinja_retirement.py",
             ),
             notes=(
-                "Legacy skill browser route redirects to React and no longer "
+                "Legacy skill browser route redirects to Admin and no longer "
                 "renders a skill registry or diagnostics Jinja template."
             ),
         )
@@ -182,49 +271,78 @@ def build_skill_legacy_route_mappings() -> tuple[SkillLegacyRouteMapping, ...]:
     )
 
 
-def build_publication_workspace(
+async def build_publication_workspace(
     *,
     scope: ReactAdminScope,
+    repository: SkillRegistryRepository,
 ) -> PackagePublicationWorkspace:
-    candidate = _candidate(
-        manifest_source="upload",
-        validation_status=SkillLifecycleStatus.READY,
-        publish_blockers=(),
+    versions = await _package_versions(
+        scope=scope,
+        repository=repository,
+        platform_admin=True,
     )
+    candidate = _candidate_unavailable()
     return PackagePublicationWorkspace(
         candidate=candidate,
         available_steps=(
             SkillLifecycleWizardStep(
                 step_id="candidate",
                 label="Candidate",
-                status=SkillLifecycleStatus.READY,
-                summary="Package candidate metadata is summarized for review.",
+                status=SkillLifecycleStatus.UNAVAILABLE,
+                summary="No active package candidate exists in the live registry.",
             ),
             SkillLifecycleWizardStep(
                 step_id="validation",
                 label="Validation",
-                status=SkillLifecycleStatus.READY,
-                summary="Manifest validation and smoke evidence are current.",
+                status=SkillLifecycleStatus.READY
+                if versions
+                else SkillLifecycleStatus.UNAVAILABLE,
+                summary=(
+                    "Published versions include persisted validation summaries."
+                    if versions
+                    else "Validation evidence appears after a version is persisted."
+                ),
             ),
             SkillLifecycleWizardStep(
                 step_id="grants",
                 label="Grants",
-                status=SkillLifecycleStatus.WARNING,
-                summary="Review tenant grant impact before publication.",
+                status=SkillLifecycleStatus.READY
+                if any(version.tenant_grant_summary for version in versions)
+                else SkillLifecycleStatus.UNAVAILABLE,
+                summary=(
+                    "Tenant grant impact is projected from stored grant records."
+                    if versions
+                    else "No persisted grant records are visible."
+                ),
             ),
             SkillLifecycleWizardStep(
                 step_id="publish",
                 label="Publish",
-                status=SkillLifecycleStatus.BLOCKED,
-                summary="Confirmation is required for immutable publication.",
+                status=SkillLifecycleStatus.READY
+                if versions
+                else SkillLifecycleStatus.UNAVAILABLE,
+                summary=(
+                    "Immutable package versions are visible from the registry."
+                    if versions
+                    else "No immutable package version has been published."
+                ),
             ),
         ),
-        package_versions=_package_versions(scope=scope, platform_admin=True),
+        package_versions=versions,
         validation_summary=(
-            "Candidate validation passed with safe summaries and evidence references."
+            "Live package versions include safe validation evidence references."
+            if versions
+            else (
+                "No active package candidate or persisted version evidence is "
+                "available."
+            )
         ),
-        grant_preview=_grant_preview(scope=scope, platform_admin=True),
-        publish_readiness=SkillLifecycleStatus.READY,
+        grant_preview=tuple(
+            grant for version in versions for grant in version.tenant_grant_summary
+        ),
+        publish_readiness=SkillLifecycleStatus.READY
+        if versions
+        else SkillLifecycleStatus.UNAVAILABLE,
         authorized_actions=(
             AdminAction(
                 action_id="candidate-create",
@@ -234,47 +352,38 @@ def build_publication_workspace(
                 variant=ReactAdminPageActionVariant.PRIMARY,
                 requires_idempotency_key=True,
             ),
-            AdminAction(
-                action_id="candidate-validate",
-                label="Validate candidate",
-                method=AdminActionMethod.POST,
-                href="/admin/app/skills/packages/candidates/qa032-candidate/validate",
-                variant=ReactAdminPageActionVariant.SECONDARY,
-            ),
-            AdminAction(
-                action_id="candidate-publish",
-                label="Publish version",
-                method=AdminActionMethod.POST,
-                href="/admin/app/skills/packages/candidates/qa032-candidate/publish",
-                variant=ReactAdminPageActionVariant.PRIMARY,
-                requires_confirmation=True,
-                requires_idempotency_key=True,
-            ),
         ),
     )
 
 
-def build_candidate_result(
+async def build_candidate_result(
     *,
     request: SkillPackageCandidateRequest,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleMutationResult:
     source = "upload" if request.uploaded_fixture_id else "paste"
-    candidate = _candidate(
-        manifest_source=source,
-        validation_status=SkillLifecycleStatus.READY,
-        publish_blockers=(),
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type="skill_package_candidate.saved",
+        actor_principal_id=principal.principal_id,
+        outcome="saved",
+        safe_summary={
+            "manifest_source": source,
+            "summary": "Candidate input was summarized for safe review.",
+        },
     )
     diagnostics = (
-        "Uploaded manifest fixture took precedence over pasted text."
+        "Uploaded fixture metadata took precedence over pasted input."
         if request.uploaded_fixture_id and request.manifest_text
-        else "Manifest input was summarized before returning to React."
+        else "Candidate input was summarized before returning to Admin."
     )
     return SkillLifecycleMutationResult(
         status=AdminMutationStatus.ACCEPTED,
-        summary="Package candidate saved with safe manifest summary.",
-        revision=candidate.candidate_revision,
+        summary="Package candidate saved with safe manifest metadata.",
+        revision=f"candidate-{audit_reference_id}",
         diagnostics=(diagnostics,),
-        audit_reference_id=candidate.audit_reference_id,
+        audit_reference_id=audit_reference_id,
         toast=ToastHint(
             tone=ReactAdminNotificationTone.SUCCESS,
             title="Candidate saved",
@@ -283,649 +392,1215 @@ def build_candidate_result(
     )
 
 
-def build_candidate_validation_result(
+async def build_candidate_validation_result(
     *,
     ready: bool = True,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleMutationResult:
     if not ready:
-        candidate = _candidate(
-            manifest_source="upload",
-            validation_status=SkillLifecycleStatus.BLOCKED,
-            publish_blockers=("Required smoke-test evidence is not current.",),
+        audit_reference_id = await _record_audit(
+            repository,
+            event_type="skill_package_candidate.validation_blocked",
+            actor_principal_id=principal.principal_id,
+            outcome="blocked",
+            safe_summary={"summary": "Candidate validation requires current evidence."},
         )
         return SkillLifecycleMutationResult(
             status=AdminMutationStatus.VALIDATION_ERROR,
             summary="Publication is blocked until validation evidence is current.",
-            revision=candidate.candidate_revision,
             diagnostics=("Validation findings are summarized by field category.",),
-            audit_reference_id=candidate.audit_reference_id,
+            audit_reference_id=audit_reference_id,
         )
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type="skill_package_candidate.validated",
+        actor_principal_id=principal.principal_id,
+        outcome="passed",
+        safe_summary={"summary": "Candidate validation completed with safe evidence."},
+    )
     return SkillLifecycleMutationResult(
         status=AdminMutationStatus.ACCEPTED,
         summary="Candidate validation passed with safe evidence references.",
-        revision=CURRENT_CANDIDATE_REVISION,
+        revision=f"candidate-validation-{audit_reference_id}",
         diagnostics=(
             "Manifest digest, tool policy, and smoke evidence are ready.",
-            "No manifest body or connector output was returned.",
+            "Manifest text and tool details were not returned.",
         ),
-        audit_reference_id="audit-skill-candidate-validation-qa032",
+        audit_reference_id=audit_reference_id,
     )
 
 
-def build_publish_result(
+async def build_publish_result(
     *,
     request: SkillPackagePublishRequest,
     scope: ReactAdminScope,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleMutationResult:
-    if request.candidate_revision != CURRENT_CANDIDATE_REVISION:
-        return SkillLifecycleMutationResult(
-            status=AdminMutationStatus.STALE_CONFLICT,
-            summary="Reload the latest candidate before publishing.",
-            stale_conflict=RevisionConflict(
-                submitted_revision=request.candidate_revision,
-                current_revision=CURRENT_CANDIDATE_REVISION,
-                message="The package candidate has a newer safe revision.",
-                reload_href="/admin/app/skills",
-            ),
-            audit_reference_id="audit-skill-publish-stale-qa032",
-        )
+    versions = await _package_versions(
+        scope=scope,
+        repository=repository,
+        platform_admin=True,
+    )
     if not request.confirmed:
+        audit_reference_id = await _record_audit(
+            repository,
+            event_type="skill_package_version.publish_confirmation_required",
+            actor_principal_id=principal.principal_id,
+            outcome="confirmation_required",
+            safe_summary={"summary": "Publication confirmation is required."},
+        )
         return SkillLifecycleMutationResult(
             status=AdminMutationStatus.CONFIRMATION_REQUIRED,
             summary="Confirm immutable publication after reviewing tenant grants.",
-            revision=CURRENT_CANDIDATE_REVISION,
-            audit_reference_id="audit-skill-publish-confirm-qa032",
+            revision=request.candidate_revision,
+            audit_reference_id=audit_reference_id,
         )
-    publication = _package_versions(scope=scope, platform_admin=True)[0]
+    if not versions:
+        audit_reference_id = await _record_audit(
+            repository,
+            event_type="skill_package_version.publish_unavailable",
+            actor_principal_id=principal.principal_id,
+            outcome="unavailable",
+            safe_summary={"summary": "No validated candidate is available to publish."},
+        )
+        return SkillLifecycleMutationResult(
+            status=AdminMutationStatus.DEPENDENCY_UNAVAILABLE,
+            summary="No validated live package candidate is available to publish.",
+            audit_reference_id=audit_reference_id,
+        )
+    publication = versions[0]
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type="skill_package_version.publish_reviewed",
+        actor_principal_id=principal.principal_id,
+        outcome="accepted",
+        package_slug=publication.package_slug,
+        package_version=publication.version_label,
+        safe_summary={"summary": "Publication review returned persisted version."},
+    )
     return SkillLifecycleMutationResult(
         status=AdminMutationStatus.ACCEPTED,
-        summary="Immutable skill package version published.",
-        revision="package-version-rev-qa032-v1",
+        summary="Immutable skill package version returned from live registry.",
+        revision=publication.version_id,
         publication=publication,
         diagnostics=(
-            (
-                "Validation, smoke evidence, tenant grant review, revision, "
-                "and audit gates passed."
-            ),
-            "Published package version is immutable.",
+            "Persisted package version and tenant grants were used for the result.",
         ),
-        audit_reference_id="audit-skill-publish-qa032",
+        audit_reference_id=audit_reference_id,
         toast=ToastHint(
             tone=ReactAdminNotificationTone.SUCCESS,
-            title="Package published",
+            title="Package reviewed",
             summary="Tenant grant impact is available for review.",
         ),
     )
 
 
-def build_tenant_grant_result(
+async def build_tenant_grant_result(
     *,
     request: TenantGrantMutationRequest,
     scope: ReactAdminScope,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleMutationResult:
-    _ = request
-    grant = _grant_preview(scope=scope, platform_admin=True)[0]
+    _ = scope
+    tenant_uuid = _parse_uuid(request.tenant_id)
+    version_uuid = _parse_uuid(request.version_id)
+    if tenant_uuid is None or version_uuid is None:
+        return _field_error_result(
+            field="version_id",
+            label="Package version",
+            message="Choose a persisted package version and tenant.",
+            code="invalid_identifier",
+            audit_reference_id="skill-grant-validation",
+        )
+    version = await repository.get_package_version_by_id(version_uuid)
+    if version is None:
+        return _field_error_result(
+            field="version_id",
+            label="Package version",
+            message="The selected package version is not available.",
+            code="not_found",
+            audit_reference_id="skill-grant-missing",
+        )
+    grant = await repository.get_tenant_grant(
+        version_id=version_uuid,
+        tenant_id=tenant_uuid,
+    )
+    if grant is None and request.grant_enabled:
+        grant = await repository.add_tenant_grant(
+            SkillPackageTenantGrant(
+                skill_package_version_id=version_uuid,
+                tenant_id=tenant_uuid,
+                status="active",
+                granted_by_principal_id=principal.principal_id,
+                reason="Granted from the admin skill lifecycle workspace.",
+            )
+        )
+    elif grant is not None:
+        grant.status = "active" if request.grant_enabled else "revoked"
+        grant.reason = "Updated from the admin skill lifecycle workspace."
+        if not request.grant_enabled:
+            grant.revoked_at = utcnow()
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type="skill_package_version.availability_updated",
+        actor_principal_id=principal.principal_id,
+        outcome="granted" if request.grant_enabled else "revoked",
+        tenant_id=tenant_uuid,
+        skill_package_version_id=version_uuid,
+        package_slug=version.slug,
+        package_version=version.semantic_version,
+        safe_summary={"summary": "Tenant availability was updated."},
+    )
     return SkillLifecycleMutationResult(
         status=AdminMutationStatus.ACCEPTED,
         summary="Tenant grant updated with safe availability summary.",
-        revision="grant-rev-qa032-next",
+        revision=str(grant.tenant_grant_id) if grant else request.version_id,
         diagnostics=("Grant mutation is restricted to platform administrators.",),
-        audit_reference_id="audit-skill-grant-qa032",
+        audit_reference_id=audit_reference_id,
         toast=ToastHint(
             tone=ReactAdminNotificationTone.SUCCESS,
             title="Grant updated",
-            summary=f"{grant.tenant_label} availability is ready.",
+            summary="Tenant availability is ready for review.",
         ),
     )
 
 
-def build_package_lifecycle_result(
+async def build_package_lifecycle_result(
     *,
     package_id: str,
     action: str,
     scope: ReactAdminScope,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleMutationResult:
-    version = _package_versions(scope=scope, platform_admin=True)[0].model_copy(
-        update={
-            "lifecycle_status": SkillLifecycleStatus.QUARANTINED
-            if action == "quarantine"
-            else SkillLifecycleStatus.WITHDRAWN,
-            "quarantine_summary": "Package is temporarily blocked for tenant installs."
-            if action == "quarantine"
-            else None,
-            "withdrawal_summary": "Package is withdrawn from new installations."
-            if action == "withdraw"
-            else None,
-        }
+    version_uuid = _parse_uuid(package_id)
+    if version_uuid is None:
+        return SkillLifecycleMutationResult(
+            status=AdminMutationStatus.VALIDATION_ERROR,
+            summary="Choose a persisted package version before updating lifecycle.",
+            audit_reference_id="skill-lifecycle-validation",
+        )
+    version = await repository.get_package_version_by_id(version_uuid)
+    if version is None:
+        return SkillLifecycleMutationResult(
+            status=AdminMutationStatus.DEPENDENCY_UNAVAILABLE,
+            summary="The package version is not available for lifecycle updates.",
+            audit_reference_id="skill-lifecycle-missing",
+        )
+    if action == "quarantine":
+        version.lifecycle_state = SkillVersionLifecycleState.QUARANTINED
+        version.quarantined_at = utcnow()
+        outcome = "quarantined"
+    else:
+        version.lifecycle_state = SkillVersionLifecycleState.WITHDRAWN
+        version.withdrawn_at = utcnow()
+        outcome = "withdrawn"
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type=f"skill_package_version.{outcome}",
+        actor_principal_id=principal.principal_id,
+        outcome=outcome,
+        skill_package_version_id=version.skill_package_version_id,
+        package_slug=version.slug,
+        package_version=version.semantic_version,
+        safe_summary={"summary": f"Package version was {outcome}."},
+    )
+    refreshed = _version_summary(
+        version,
+        grants=await repository.list_tenant_grants(
+            version_ids=(version.skill_package_version_id,)
+        ),
+        scope=scope,
+        platform_admin=True,
     )
     return SkillLifecycleMutationResult(
         status=AdminMutationStatus.ACCEPTED,
-        summary=f"Package {package_id} lifecycle state updated.",
-        publication=version,
-        revision=f"{package_id}-{action}-rev-qa032",
+        summary=f"Package version lifecycle state updated to {outcome}.",
+        publication=refreshed,
+        revision=str(version.skill_package_version_id),
         diagnostics=("Tenant installations receive safe lifecycle guidance.",),
-        audit_reference_id=f"audit-skill-{action}-qa032",
+        audit_reference_id=audit_reference_id,
     )
 
 
-def build_tenant_discovery(
+async def build_tenant_discovery(
     *,
     scope: ReactAdminScope,
     principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> TenantSkillDiscoveryList:
     platform_admin = is_platform_admin(principal)
-    return TenantSkillDiscoveryList(
-        discovery=TenantSkillDiscovery(
-            grants=_grant_preview(scope=scope, platform_admin=platform_admin),
-            available_versions=_package_versions(
-                scope=scope,
-                platform_admin=platform_admin,
-            ),
-            empty_state_summary=None,
+    tenant_id = _scope_tenant_uuid(scope)
+    versions = (
+        await repository.list_package_versions()
+        if scope.scope_type == ReactAdminScopeType.PLATFORM and platform_admin
+        else await repository.list_available_versions(tenant_id=tenant_id)
+        if tenant_id is not None
+        else []
+    )
+    grants = await repository.list_tenant_grants(
+        tenant_id=tenant_id,
+        version_ids=tuple(version.skill_package_version_id for version in versions),
+    )
+    available = tuple(
+        _version_summary(
+            version,
+            grants=grants,
+            scope=scope,
+            platform_admin=platform_admin,
         )
+        for version in versions
+    )
+    grant_preview = tuple(
+        _grant_summary(
+            grant=grant,
+            version=_version_for_grant(grant, versions),
+            scope=scope,
+            platform_admin=platform_admin,
+        )
+        for grant in grants
+        if _version_for_grant(grant, versions) is not None
+    )
+    discovery = TenantSkillDiscovery(
+        grants=grant_preview,
+        available_versions=available,
+        empty_state_summary=None
+        if available or grant_preview
+        else "No granted skill package versions are visible for this scope.",
+    )
+    has_live_data = bool(available or grant_preview)
+    return TenantSkillDiscoveryList(
+        discovery=discovery,
+        provenance=live_skill_lifecycle_provenance(
+            source_label="Skill grants",
+            source_detail=(
+                "Available versions and grants are read from skill registry rows."
+            ),
+        )
+        if has_live_data
+        else None,
+        empty_state=None
+        if has_live_data
+        else empty_skill_lifecycle_state(
+            title="No granted skills found",
+            summary=(
+                "No live package grants or available versions exist for this scope."
+            ),
+            source_label="Skill grants",
+        ),
     )
 
 
-def build_tenant_installations(
+async def build_tenant_installations(
     *,
     scope: ReactAdminScope,
+    repository: SkillRegistryRepository,
 ) -> TenantSkillInstallationList:
-    tenant_id = str(scope.tenant_id or ACME_TENANT_ID)
-    connectors = _connectors(scope=scope)
-    return TenantSkillInstallationList(
-        installations=(
-            TenantSkillInstallationSummary(
-                installation_id="install-qa032-daily-briefing",
-                tenant_id=tenant_id,
-                package_slug="daily-briefing-connectors",
-                installed_version="1.4.0",
-                installation_revision=CURRENT_INSTALLATION_REVISION,
-                installation_status=SkillLifecycleStatus.READY,
-                credential_readiness=SkillLifecycleStatus.READY,
-                smoke_test_readiness=SkillLifecycleStatus.PASSED,
-                connector_readiness=connectors,
-                binding_readiness=SkillLifecycleStatus.READY,
-                upgrade_path="1.5.0 available after smoke evidence refresh",
-                findings=("Connector readiness is fixture-backed and current.",),
-                credential_options=_credential_options(),
-                authorized_actions=_installation_actions(scope=scope),
-                audit_reference_id="audit-installation-qa032",
+    tenant_id = _scope_tenant_uuid(scope)
+    if tenant_id is None:
+        return TenantSkillInstallationList(
+            installations=(),
+            empty_state=empty_skill_lifecycle_state(
+                title="Tenant scope required",
+                summary=(
+                    "Installation readiness appears after selecting a tenant scope."
+                ),
+                source_label="Skill installations",
             ),
         )
+    installations = await repository.list_installations_for_tenant(tenant_id=tenant_id)
+    installation_ids = tuple(
+        installation.skill_installation_id for installation in installations
+    )
+    credentials_by_installation = _group_by_installation(
+        await repository.list_credentials_for_installations(installation_ids)
+    )
+    tests_by_installation = _group_tests_by_installation(
+        await repository.list_tests_for_installations(installation_ids)
+    )
+    summaries = tuple(
+        _installation_summary(
+            installation=installation,
+            scope=scope,
+            credentials=credentials_by_installation[installation.skill_installation_id],
+            tests=tests_by_installation[installation.skill_installation_id],
+        )
+        for installation in installations[:10]
+    )
+    has_live_data = bool(summaries)
+    return TenantSkillInstallationList(
+        installations=summaries,
+        provenance=live_skill_lifecycle_provenance(
+            source_label="Skill installations",
+            source_detail=(
+                "Installation readiness is projected from persisted tenant rows."
+            ),
+        )
+        if has_live_data
+        else None,
+        empty_state=None
+        if has_live_data
+        else empty_skill_lifecycle_state(
+            title="No skill installations found",
+            summary="No tenant skill installations exist for the active scope.",
+            source_label="Skill installations",
+        ),
     )
 
 
-def build_install_result(
+async def build_install_result(
     *,
+    installation_id: str,
     request: TenantSkillInstallRequest,
     scope: ReactAdminScope,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleMutationResult:
-    if request.revision == "stale-revision":
-        return SkillLifecycleMutationResult(
-            status=AdminMutationStatus.STALE_CONFLICT,
-            summary="Reload the latest installation state before retrying.",
-            stale_conflict=RevisionConflict(
-                submitted_revision=request.revision,
-                current_revision=CURRENT_INSTALLATION_REVISION,
-                message="The installation has newer safe readiness metadata.",
-                reload_href=_with_tenant_query("/admin/app/skills", scope),
-            ),
-            audit_reference_id="audit-installation-stale-qa032",
-        )
-    installation = build_tenant_installations(scope=scope).installations[0]
-    return SkillLifecycleMutationResult(
-        status=AdminMutationStatus.ACCEPTED,
-        summary="Skill package installed for the active tenant.",
-        revision="installation-rev-qa032-next",
-        installation=installation,
-        diagnostics=(
-            "Install action used idempotency and active tenant grant checks.",
-            "No external connector calls were made.",
-        ),
-        audit_reference_id="audit-installation-qa032",
-    )
-
-
-def build_credential_configuration_result(
-    *,
-    request: CredentialConfigurationRequest,
-) -> SkillLifecycleMutationResult:
-    options = _credential_options()
-    selected = next(
-        (
-            option
-            for option in options
-            if option.reference_id == request.selected_reference_id
-        ),
-        None,
-    )
-    if selected is None:
+    installation_uuid = _parse_uuid(installation_id)
+    if installation_uuid is None:
         return SkillLifecycleMutationResult(
             status=AdminMutationStatus.VALIDATION_ERROR,
-            summary="Choose an authorized credential reference.",
-            field_errors=(
-                ValidationFieldError(
-                    field="selected_reference_id",
-                    label="Credential reference",
-                    message="The selected reference is not available for this tenant.",
-                    code="unauthorized_reference",
-                ),
-            ),
-            audit_reference_id="audit-credential-denied-qa032",
+            summary="Choose a persisted installation before updating it.",
+            audit_reference_id="skill-install-validation",
         )
+    try:
+        installation = await repository.require_revision(
+            installation_id=installation_uuid,
+            expected_revision_token=request.revision,
+        )
+    except StaleSkillRegistryWriteError:
+        current = await repository.get_installation(installation_uuid)
+        return _stale_installation_result(
+            submitted_revision=request.revision,
+            current_revision=current.revision_token if current else "missing",
+            scope=scope,
+        )
+    except LookupError:
+        return SkillLifecycleMutationResult(
+            status=AdminMutationStatus.DEPENDENCY_UNAVAILABLE,
+            summary="The requested skill installation was not found.",
+            audit_reference_id="skill-install-missing",
+        )
+    installation.revision_token = _next_revision("install")
+    installation.updated_at = utcnow()
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type="skill_installation.updated",
+        actor_principal_id=principal.principal_id,
+        outcome="accepted",
+        tenant_id=installation.tenant_id,
+        skill_installation_id=installation.skill_installation_id,
+        skill_package_version_id=installation.skill_package_version_id,
+        package_slug=installation.slug,
+        package_version=installation.semantic_version,
+        safe_summary={"summary": "Installation metadata was refreshed."},
+    )
+    credentials = await repository.list_credentials_for_installations(
+        (installation.skill_installation_id,)
+    )
+    tests = await repository.list_tests_for_installations(
+        (installation.skill_installation_id,)
+    )
     return SkillLifecycleMutationResult(
         status=AdminMutationStatus.ACCEPTED,
-        summary="Credential reference configured without exposing resolved values.",
-        revision="credential-rev-qa032-next",
-        credential=selected,
+        summary="Skill installation refreshed for the active tenant.",
+        revision=installation.revision_token,
+        installation=_installation_summary(
+            installation=installation,
+            scope=scope,
+            credentials=credentials,
+            tests=tests,
+        ),
+        diagnostics=(
+            "Install action used idempotency and active tenant grant checks.",
+            "No external connector or provider calls were made.",
+        ),
+        audit_reference_id=audit_reference_id,
+    )
+
+
+async def build_credential_configuration_result(
+    *,
+    installation_id: str,
+    request: CredentialConfigurationRequest,
+    scope: ReactAdminScope,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
+) -> SkillLifecycleMutationResult:
+    installation_uuid = _parse_uuid(installation_id)
+    if installation_uuid is None:
+        return _field_error_result(
+            field="installation_id",
+            label="Installation",
+            message="Choose a persisted installation.",
+            code="invalid_identifier",
+            audit_reference_id="credential-validation",
+        )
+    try:
+        installation = await repository.require_revision(
+            installation_id=installation_uuid,
+            expected_revision_token=request.revision,
+        )
+    except StaleSkillRegistryWriteError:
+        current = await repository.get_installation(installation_uuid)
+        return _stale_installation_result(
+            submitted_revision=request.revision,
+            current_revision=current.revision_token if current else "missing",
+            scope=scope,
+        )
+    except LookupError:
+        return SkillLifecycleMutationResult(
+            status=AdminMutationStatus.DEPENDENCY_UNAVAILABLE,
+            summary="The requested skill installation was not found.",
+            audit_reference_id="credential-installation-missing",
+        )
+    credentials = await repository.list_credentials_for_installations(
+        (installation_uuid,)
+    )
+    selected = _selected_credential(credentials, request.selected_reference_id)
+    if selected is None:
+        return _field_error_result(
+            field="selected_reference_id",
+            label="Credential reference",
+            message="The selected reference is not available for this tenant.",
+            code="unauthorized_reference",
+            audit_reference_id="credential-reference-denied",
+        )
+    selected.status = "ready"
+    selected.configured_by_principal_id = principal.principal_id
+    selected.configured_at = utcnow()
+    selected.last_checked_at = utcnow()
+    selected.safe_summary = {
+        **(selected.safe_summary or {}),
+        "policy_reason": "Reference is authorized for this installation.",
+        "last_result": "Configured from the admin skill lifecycle workspace.",
+    }
+    installation.credential_status = _aggregate_status(
+        credential.status for credential in credentials
+    )
+    installation.readiness_state = (
+        SkillInstallationState.READY
+        if _installation_is_ready(installation)
+        else SkillInstallationState.BLOCKED
+    )
+    installation.binding_eligibility_status = (
+        "eligible" if _installation_is_ready(installation) else "denied"
+    )
+    installation.revision_token = _next_revision("credential")
+    installation.updated_at = utcnow()
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type="skill_installation.credentials_configured",
+        actor_principal_id=principal.principal_id,
+        outcome="ready",
+        tenant_id=installation.tenant_id,
+        skill_installation_id=installation.skill_installation_id,
+        skill_package_version_id=installation.skill_package_version_id,
+        package_slug=installation.slug,
+        package_version=installation.semantic_version,
+        safe_summary={"summary": "Credential reference metadata was configured."},
+    )
+    return SkillLifecycleMutationResult(
+        status=AdminMutationStatus.ACCEPTED,
+        summary="Credential reference configured without exposing values.",
+        revision=installation.revision_token,
+        credential=_credential_option(selected),
         diagnostics=(
             "Only authorized credential reference metadata was returned.",
-            "Secret values stayed outside React contracts.",
+            "Secret values stayed outside admin contracts.",
         ),
-        audit_reference_id="audit-credential-configured-qa032",
+        audit_reference_id=audit_reference_id,
+        toast=ToastHint(
+            tone=ReactAdminNotificationTone.SUCCESS,
+            title="Credential saved",
+            summary="Credential readiness was persisted for this installation.",
+        ),
     )
 
 
-def build_readiness_refresh_result(
+async def build_readiness_refresh_result(
     *,
+    installation_id: str,
     request: ReadinessRefreshRequest,
     scope: ReactAdminScope,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleMutationResult:
-    _ = request
-    smoke = _connectors(scope=scope)[0].model_copy(
-        update={
-            "readiness": SkillLifecycleStatus.QUEUED,
-            "smoke_test_status": SkillLifecycleStatus.QUEUED,
-            "last_safe_summary": (
-                "Readiness refresh is queued with deterministic evidence."
-            ),
-        }
+    installation_uuid = _parse_uuid(installation_id)
+    if installation_uuid is None:
+        return SkillLifecycleMutationResult(
+            status=AdminMutationStatus.VALIDATION_ERROR,
+            summary="Choose a persisted installation before refreshing readiness.",
+            audit_reference_id="readiness-validation",
+        )
+    try:
+        installation = await repository.require_revision(
+            installation_id=installation_uuid,
+            expected_revision_token=request.revision,
+        )
+    except StaleSkillRegistryWriteError:
+        current = await repository.get_installation(installation_uuid)
+        return _stale_installation_result(
+            submitted_revision=request.revision,
+            current_revision=current.revision_token if current else "missing",
+            scope=scope,
+        )
+    except LookupError:
+        return SkillLifecycleMutationResult(
+            status=AdminMutationStatus.DEPENDENCY_UNAVAILABLE,
+            summary="The requested skill installation was not found.",
+            audit_reference_id="readiness-installation-missing",
+        )
+    test = await repository.add_installation_test(
+        SkillInstallationTest(
+            skill_installation_id=installation.skill_installation_id,
+            tenant_id=installation.tenant_id,
+            skill_package_version_id=installation.skill_package_version_id,
+            installation_version=installation.installation_version,
+            fixture_key="readiness-refresh",
+            test_run_id=f"readiness-{uuid4()}",
+            idempotency_key=request.idempotency_key,
+            runner_status=SkillJobStatus.QUEUED,
+            outcome="queued",
+            credential_readiness_summary={"status": installation.credential_status},
+            policy_decision_summary={"status": installation.permission_status},
+            safe_output_summary={"summary": "Readiness refresh queued locally."},
+        )
     )
+    installation.smoke_test_status = "queued"
+    installation.revision_token = _next_revision("readiness")
+    installation.updated_at = utcnow()
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type="skill_installation.readiness_refresh_queued",
+        actor_principal_id=principal.principal_id,
+        outcome="queued",
+        tenant_id=installation.tenant_id,
+        skill_installation_id=installation.skill_installation_id,
+        skill_package_version_id=installation.skill_package_version_id,
+        package_slug=installation.slug,
+        package_version=installation.semantic_version,
+        safe_summary={"summary": "Readiness refresh was queued locally."},
+    )
+    smoke = _connector_from_test(installation=installation, test=test, scope=scope)
     return SkillLifecycleMutationResult(
         status=AdminMutationStatus.ACCEPTED,
         summary="Smoke-test readiness refresh queued.",
-        revision="readiness-rev-qa032-next",
+        revision=installation.revision_token,
         smoke_test=smoke,
-        diagnostics=(
-            "No unbounded polling or live connector side effect was started.",
-        ),
-        audit_reference_id="audit-readiness-refresh-qa032",
+        diagnostics=("No external connector or provider call was started.",),
+        audit_reference_id=audit_reference_id,
     )
 
 
-def build_connector_diagnostic_result(
+async def build_connector_diagnostic_result(
     *,
     scope: ReactAdminScope,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleMutationResult:
-    diagnostic = build_skill_execution_diagnostics(scope=scope).diagnostics[0]
+    tenant_id = _scope_tenant_uuid(scope)
+    if tenant_id is None:
+        return SkillLifecycleMutationResult(
+            status=AdminMutationStatus.DEPENDENCY_UNAVAILABLE,
+            summary="Select a tenant before running skill diagnostics.",
+            audit_reference_id="diagnostic-tenant-required",
+        )
+    installations = await repository.list_installations_for_tenant(tenant_id=tenant_id)
+    if not installations:
+        return SkillLifecycleMutationResult(
+            status=AdminMutationStatus.DEPENDENCY_UNAVAILABLE,
+            summary="No tenant skill installation is available for diagnostics.",
+            audit_reference_id="diagnostic-installation-missing",
+        )
+    installation = installations[0]
+    test = await repository.add_installation_test(
+        SkillInstallationTest(
+            skill_installation_id=installation.skill_installation_id,
+            tenant_id=installation.tenant_id,
+            skill_package_version_id=installation.skill_package_version_id,
+            installation_version=installation.installation_version,
+            fixture_key="gateway-diagnostic",
+            test_run_id=f"diagnostic-{uuid4()}",
+            idempotency_key=f"diagnostic-{uuid4()}",
+            runner_status=SkillJobStatus.QUEUED,
+            outcome="queued",
+            credential_readiness_summary={"status": installation.credential_status},
+            policy_decision_summary={"status": installation.permission_status},
+            safe_output_summary={"summary": "Gateway diagnostic queued locally."},
+        )
+    )
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type="skill_execution.diagnostic_queued",
+        actor_principal_id=principal.principal_id,
+        outcome="queued",
+        tenant_id=installation.tenant_id,
+        skill_installation_id=installation.skill_installation_id,
+        skill_package_version_id=installation.skill_package_version_id,
+        package_slug=installation.slug,
+        package_version=installation.semantic_version,
+        safe_summary={"summary": "Skill execution diagnostic was queued locally."},
+    )
+    diagnostic = _diagnostic_from_test(
+        installation=installation,
+        test=test,
+        audit_reference_id=audit_reference_id,
+    )
     return SkillLifecycleMutationResult(
         status=AdminMutationStatus.ACCEPTED,
         summary="Connector diagnostic queued with safe gateway summary.",
         diagnostic=diagnostic,
         diagnostics=(
-            "SkillExecutionGateway policy evidence is summarized.",
-            "Connector attempt payloads stayed outside the browser contract.",
+            "Skill execution policy evidence is summarized.",
+            "Adapter bodies stayed outside the browser contract.",
         ),
-        audit_reference_id=diagnostic.audit_reference_id,
+        audit_reference_id=audit_reference_id,
     )
 
 
-def build_binding_preview(
+async def build_binding_preview(
     *,
     scope: ReactAdminScope,
+    repository: SkillRegistryRepository,
     request: BindingEligibilityPreviewRequest | None = None,
 ) -> BindingEligibilityPreview:
+    tenant_id = _scope_tenant_uuid(scope)
     selected_context = (
         request.workflow_context
         if request is not None
-        else "Daily briefing workflow with briefing runtime profile"
+        else "Tenant skill binding readiness"
+    )
+    if tenant_id is None:
+        return _empty_binding_preview(
+            scope=scope,
+            selected_context=selected_context,
+            reason="Tenant scope is required before previewing binding eligibility.",
+        )
+    installations = await repository.list_installations_for_tenant(tenant_id=tenant_id)
+    installation = _select_installation_for_preview(installations, request)
+    if installation is None:
+        return _empty_binding_preview(
+            scope=scope,
+            selected_context=selected_context,
+            reason="No persisted skill installation is available for binding.",
+        )
+    action_categories = tuple(
+        _string_items(installation.manifest_summary, "action_categories")
+    )
+    tool_names = tuple(_tool_names(installation.manifest_summary))
+    decision = evaluate_binding_eligibility(
+        InstalledSkillEvidence(
+            tenant_id=str(installation.tenant_id),
+            installation_id=str(installation.skill_installation_id),
+            installation_version=installation.installation_version,
+            package_slug=installation.slug,
+            semantic_version=installation.semantic_version,
+            manifest_digest=installation.manifest_digest,
+            artifact_digest=installation.artifact_digest,
+            readiness_state=_value(installation.readiness_state),
+            credential_status=installation.credential_status,
+            compatibility_status=installation.compatibility_status,
+            permission_status=installation.permission_status,
+            quarantine_state=installation.quarantine_state,
+            runtime_blocked=installation.runtime_blocked,
+            action_categories=action_categories,
+            policy_summary=installation.policy_summary or {},
+        ),
+        required_action_categories={"read"} if action_categories else None,
+    )
+    policy_reasons = (
+        ("Tenant grant, readiness, and policy records allow read-only binding.",)
+        if decision.allowed
+        else tuple(reason.replace(".", " ") for reason in decision.reason_codes)
+    )
+    blocked = tuple(_string_items(installation.policy_summary, "blocked_tools")) or (
+        ("write tools",) if decision.allowed else ("all tools",)
     )
     return BindingEligibilityPreview(
-        preview_id="binding-preview-qa032",
+        preview_id=f"binding-preview-{installation.skill_installation_id}",
         tenant_label=scope.label,
         context_choices=(
             BindingContextChoice(
-                choice_id="workflow-daily-briefing",
-                label="Daily briefing workflow",
-                kind="workflow",
+                choice_id=f"installation-{installation.skill_installation_id}",
+                label=installation.slug,
+                kind="installation",
                 selected=True,
-            ),
-            BindingContextChoice(
-                choice_id="profile-briefing-runtime",
-                label="Briefing runtime profile",
-                kind="profile",
-            ),
-            BindingContextChoice(
-                choice_id="package-daily-briefing-connectors",
-                label="Daily briefing connectors",
-                kind="package",
             ),
         ),
         selected_context=selected_context,
-        eligible_tools=(
-            "calendar.read",
-            "gmail.search",
-            "news.lookup",
-            "weather.forecast",
-            "commute.estimate",
-        ),
-        blocked_tools=("email.send",),
-        policy_reasons=(
-            "Tenant grant and credential references are ready.",
-            "Only read-only connector bindings are eligible.",
-            "Preview did not execute tools or resolve live credentials.",
-        ),
-        missing_requirements=("Side-effectful email sending remains blocked.",),
-        remediation="Publish a new approved skill version before enabling write tools.",
-        audit_reference_id="audit-binding-preview-qa032",
+        eligible_tools=tool_names if decision.allowed else (),
+        blocked_tools=blocked,
+        policy_reasons=policy_reasons,
+        missing_requirements=()
+        if decision.allowed
+        else tuple(reason.replace(".", " ") for reason in decision.reason_codes),
+        remediation="No action needed."
+        if decision.allowed
+        else "Resolve readiness, credential, permission, or quarantine blockers.",
+        audit_reference_id=f"binding-preview-{installation.skill_installation_id}",
     )
 
 
-def build_binding_preview_result(
+async def build_binding_preview_result(
     *,
     scope: ReactAdminScope,
     request: BindingEligibilityPreviewRequest,
+    principal: PrincipalContext,
+    repository: SkillRegistryRepository,
 ) -> SkillLifecycleMutationResult:
-    preview = build_binding_preview(scope=scope, request=request)
+    preview = await build_binding_preview(
+        scope=scope,
+        repository=repository,
+        request=request,
+    )
+    audit_reference_id = await _record_audit(
+        repository,
+        event_type="skill_binding.previewed",
+        actor_principal_id=principal.principal_id,
+        outcome="allowed" if preview.eligible_tools else "denied",
+        tenant_id=_scope_tenant_uuid(scope),
+        package_slug=request.package_id,
+        safe_summary={"summary": "Binding eligibility preview was evaluated."},
+    )
     return SkillLifecycleMutationResult(
         status=AdminMutationStatus.ACCEPTED,
         summary="Read-only binding eligibility preview completed.",
-        binding_preview=preview,
-        diagnostics=(
-            (
-                "No live tools, credentials, Telegram delivery, model calls, "
-                "or connector side effects were invoked."
-            ),
+        binding_preview=preview.model_copy(
+            update={"audit_reference_id": audit_reference_id}
         ),
-        audit_reference_id=preview.audit_reference_id,
+        diagnostics=("No tools, credentials, delivery, model, or external calls ran.",),
+        audit_reference_id=audit_reference_id,
     )
 
 
-def build_skill_execution_diagnostics(
+async def build_skill_execution_diagnostics(
     *,
     scope: ReactAdminScope,
+    repository: SkillRegistryRepository,
 ) -> SkillExecutionDiagnosticList:
-    _ = scope
+    tenant_id = _scope_tenant_uuid(scope)
+    if tenant_id is None:
+        return SkillExecutionDiagnosticList(
+            diagnostics=(),
+            empty_state=empty_skill_lifecycle_state(
+                title="Tenant scope required",
+                summary="Skill execution diagnostics are tenant-scoped.",
+                source_label="Skill diagnostics",
+            ),
+        )
+    installations = await repository.list_installations_for_tenant(tenant_id=tenant_id)
+    tests = await repository.list_tests_for_installations(
+        tuple(installation.skill_installation_id for installation in installations),
+        limit=10,
+    )
+    by_installation = {item.skill_installation_id: item for item in installations}
+    diagnostics = tuple(
+        _diagnostic_from_test(
+            installation=by_installation[test.skill_installation_id],
+            test=test,
+            audit_reference_id=str(
+                test.audit_record_id or test.skill_installation_test_id
+            ),
+        )
+        for test in tests
+        if test.skill_installation_id in by_installation
+    )
+    has_live_data = bool(diagnostics)
     return SkillExecutionDiagnosticList(
-        diagnostics=(
-            SkillExecutionDiagnosticSummary(
-                diagnostic_id="diagnostic-qa032-calendar",
-                skill_package_version="daily-briefing-connectors 1.4.0",
-                tool_name="calendar.read",
-                gateway_decision="allowed_read_only",
-                side_effect_posture="read-only connector execution",
-                outbound_policy_status=SkillLifecycleStatus.READY,
-                credential_policy_status=SkillLifecycleStatus.READY,
-                connector_readiness=SkillLifecycleStatus.READY,
-                safe_attempt_summary=(
-                    "Deterministic gateway fixture verified calendar readiness."
-                ),
-                redaction_summary=(
-                    "Attempt details were summarized before React rendering."
-                ),
-                audit_reference_id="audit-gateway-diagnostic-qa032-calendar",
-                remediation="No action needed.",
-            ),
-            SkillExecutionDiagnosticSummary(
-                diagnostic_id="diagnostic-qa032-gmail",
-                skill_package_version="daily-briefing-connectors 1.4.0",
-                tool_name="gmail.search",
-                gateway_decision="allowed_read_only",
-                side_effect_posture="read-only connector execution",
-                outbound_policy_status=SkillLifecycleStatus.READY,
-                credential_policy_status=SkillLifecycleStatus.WARNING,
-                connector_readiness=SkillLifecycleStatus.DEGRADED,
-                safe_attempt_summary=(
-                    "Mocked Gmail diagnostic reported degraded scope readiness."
-                ),
-                redaction_summary="Message content and connector outputs are absent.",
-                audit_reference_id="audit-gateway-diagnostic-qa032-gmail",
-                remediation="Refresh tenant credential reference before binding.",
-            ),
+        diagnostics=diagnostics,
+        provenance=live_skill_lifecycle_provenance(
+            source_label="Skill diagnostics",
+            source_detail="Diagnostics are projected from persisted skill test runs.",
         )
-    )
-
-
-def build_skill_lifecycle_audit(*, scope: ReactAdminScope) -> SkillLifecycleAuditList:
-    return SkillLifecycleAuditList(
-        audit_timeline=(
-            SkillLifecycleAuditRecord(
-                record_id="audit-record-publish-qa032",
-                domain="package",
-                package_slug="daily-briefing-connectors",
-                version_label="1.4.0",
-                tenant_scope_label="Platform",
-                actor_label="Platform Admin",
-                timestamp_label="Today",
-                action="published_version",
-                outcome=SkillLifecycleStatus.PUBLISHED,
-                safe_diff_summary="Immutable version published after validation gates.",
-                audit_reference_id="audit-skill-publish-qa032",
+        if has_live_data
+        else None,
+        empty_state=None
+        if has_live_data
+        else empty_skill_lifecycle_state(
+            title="No skill diagnostics found",
+            summary=(
+                "No persisted skill execution diagnostic runs exist for this scope."
             ),
-            SkillLifecycleAuditRecord(
-                record_id="audit-record-install-qa032",
-                domain="installation",
-                package_slug="daily-briefing-connectors",
-                version_label="1.4.0",
-                tenant_scope_label=scope.label,
-                actor_label="Tenant Admin",
-                timestamp_label="Today",
-                action="configured_credentials",
-                outcome=SkillLifecycleStatus.READY,
-                safe_diff_summary="Credential reference fingerprint changed.",
-                audit_reference_id="audit-credential-configured-qa032",
-            ),
-            SkillLifecycleAuditRecord(
-                record_id="audit-record-diagnostic-qa032",
-                domain="diagnostic",
-                package_slug="daily-briefing-connectors",
-                version_label="1.4.0",
-                tenant_scope_label=scope.label,
-                actor_label="SkillExecutionGateway",
-                timestamp_label="Today",
-                action="diagnostic_refreshed",
-                outcome=SkillLifecycleStatus.DEGRADED,
-                safe_diff_summary=(
-                    "Gateway readiness summarized without adapter bodies."
-                ),
-                audit_reference_id="audit-gateway-diagnostic-qa032-gmail",
-            ),
-        )
-    )
-
-
-def _candidate(
-    *,
-    manifest_source: str,
-    validation_status: SkillLifecycleStatus,
-    publish_blockers: tuple[str, ...],
-) -> SkillPackageCandidate:
-    findings = (
-        (
-            ValidationFieldError(
-                field="smoke_evidence",
-                label="Smoke evidence",
-                message="Refresh smoke-test evidence before publication.",
-                code="stale_evidence",
-            ),
-        )
-        if publish_blockers
-        else ()
-    )
-    return SkillPackageCandidate(
-        candidate_id="qa032-candidate",
-        package_slug="daily-briefing-connectors",
-        candidate_revision=CURRENT_CANDIDATE_REVISION,
-        manifest_digest="sha256:qa032dailybriefing",
-        manifest_source=manifest_source,
-        safe_manifest_summary=(
-            "Daily briefing connector package with read-only calendar, Gmail, "
-            "news, weather, and commute tools."
-        ),
-        validation_status=validation_status,
-        validation_findings=findings,
-        safe_documentation_summary=(
-            "Documentation summary is stored as safe package metadata."
-        ),
-        smoke_evidence_status=SkillLifecycleStatus.PASSED
-        if not publish_blockers
-        else SkillLifecycleStatus.STALE,
-        publish_blockers=publish_blockers,
-        audit_reference_id="audit-skill-candidate-qa032",
-        authorized_actions=(
-            AdminAction(
-                action_id="candidate-validate",
-                label="Validate candidate",
-                method=AdminActionMethod.POST,
-                href="/admin/app/skills/packages/candidates/qa032-candidate/validate",
-                variant=ReactAdminPageActionVariant.SECONDARY,
-            ),
-            AdminAction(
-                action_id="candidate-publish",
-                label="Publish version",
-                method=AdminActionMethod.POST,
-                href="/admin/app/skills/packages/candidates/qa032-candidate/publish",
-                variant=ReactAdminPageActionVariant.PRIMARY,
-                requires_idempotency_key=True,
-            ),
+            source_label="Skill diagnostics",
         ),
     )
 
 
-def _package_versions(
+async def build_skill_lifecycle_audit(
     *,
     scope: ReactAdminScope,
+    repository: SkillRegistryRepository,
+) -> SkillLifecycleAuditList:
+    records = await repository.list_audit_records(
+        tenant_id=_scope_tenant_uuid(scope),
+        limit=20,
+    )
+    timeline = tuple(
+        _audit_record_summary(record=record, scope=scope) for record in records
+    )
+    has_live_data = bool(timeline)
+    return SkillLifecycleAuditList(
+        audit_timeline=timeline,
+        provenance=live_skill_lifecycle_provenance(
+            source_label="Skill audit records",
+            source_detail="Lifecycle timeline is read from skill audit rows.",
+        )
+        if has_live_data
+        else None,
+        empty_state=None
+        if has_live_data
+        else empty_skill_lifecycle_state(
+            title="No skill audit records found",
+            summary="No skill lifecycle audit records exist for the active scope.",
+            source_label="Skill audit records",
+        ),
+    )
+
+
+def _candidate_unavailable() -> SkillPackageCandidate:
+    return SkillPackageCandidate(
+        candidate_id="no-active-candidate",
+        package_slug="not-selected",
+        candidate_revision="candidate-unavailable",
+        manifest_digest="not-available",
+        manifest_source="none",
+        safe_manifest_summary=(
+            "No active package candidate exists in the live registry."
+        ),
+        validation_status=SkillLifecycleStatus.UNAVAILABLE,
+        validation_findings=(),
+        safe_documentation_summary=(
+            "Candidate documentation appears after safe validation."
+        ),
+        smoke_evidence_status=SkillLifecycleStatus.UNAVAILABLE,
+        publish_blockers=("No persisted candidate is available for publication.",),
+        audit_reference_id="candidate-unavailable",
+        authorized_actions=(),
+    )
+
+
+async def _package_versions(
+    *,
+    scope: ReactAdminScope,
+    repository: SkillRegistryRepository,
     platform_admin: bool,
 ) -> tuple[SkillPackageVersionSummary, ...]:
-    return (
-        SkillPackageVersionSummary(
-            package_id="package-daily-briefing-connectors",
-            package_slug="daily-briefing-connectors",
-            version_id="package-version-daily-briefing-1-4-0",
-            version_label="1.4.0",
-            lifecycle_status=SkillLifecycleStatus.PUBLISHED,
-            manifest_digest="sha256:qa032dailybriefing",
-            safe_manifest_summary=(
-                "Read-only briefing connector bundle for calendar, Gmail, "
-                "news, weather, and commute evidence."
-            ),
-            tenant_grant_summary=_grant_preview(
-                scope=scope,
-                platform_admin=platform_admin,
-            ),
-            validation_evidence_ref="validation-evidence-qa032",
-            smoke_evidence_ref="smoke-evidence-qa032",
-            quarantine_summary=None,
-            withdrawal_summary=None,
-            audit_reference_id="audit-skill-version-qa032",
-            authorized_actions=_package_actions(platform_admin=platform_admin),
-        ),
+    versions = await repository.list_package_versions()
+    grants = await repository.list_tenant_grants(
+        tenant_id=_scope_tenant_uuid(scope),
+        version_ids=tuple(version.skill_package_version_id for version in versions),
+    )
+    return tuple(
+        _version_summary(
+            version,
+            grants=grants,
+            scope=scope,
+            platform_admin=platform_admin,
+        )
+        for version in versions
     )
 
 
-def _grant_preview(
+def _version_summary(
+    version: SkillPackageVersion,
     *,
+    grants: Sequence[SkillPackageTenantGrant],
     scope: ReactAdminScope,
     platform_admin: bool,
-) -> tuple[TenantSkillGrantSummary, ...]:
-    tenant_id = str(scope.tenant_id or ACME_TENANT_ID)
-    tenant_label = (
-        scope.label if scope.scope_type == ReactAdminScopeType.TENANT else "Acme"
+) -> SkillPackageVersionSummary:
+    related_grants = tuple(
+        grant
+        for grant in grants
+        if grant.skill_package_version_id == version.skill_package_version_id
     )
-    return (
-        TenantSkillGrantSummary(
-            tenant_id=tenant_id,
-            tenant_label=tenant_label,
-            package_slug="daily-briefing-connectors",
-            version_label="1.4.0",
-            grant_status=SkillLifecycleStatus.READY,
-            allowed_versions=("1.4.0", "1.5.0 candidate"),
-            install_eligibility=SkillLifecycleStatus.READY,
-            restrictions=("Read-only tools only.",),
-            authorized_actions=_grant_actions(platform_admin=platform_admin),
+    return SkillPackageVersionSummary(
+        package_id=str(version.skill_package_id),
+        package_slug=version.slug,
+        version_id=str(version.skill_package_version_id),
+        version_label=version.semantic_version,
+        lifecycle_status=_version_status(version.lifecycle_state),
+        manifest_digest=_safe_identifier(version.manifest_digest),
+        safe_manifest_summary=_summary_from_mapping(
+            version.safe_manifest_summary,
+            fallback=f"{version.slug} {version.semantic_version} package summary.",
+        ),
+        tenant_grant_summary=tuple(
+            _grant_summary(
+                grant=grant,
+                version=version,
+                scope=scope,
+                platform_admin=platform_admin,
+            )
+            for grant in related_grants
+        ),
+        validation_evidence_ref=_evidence_reference(
+            "validation",
+            version.validation_summary,
+            version.validation_status,
+        ),
+        smoke_evidence_ref=_evidence_reference(
+            "smoke",
+            version.compatibility_metadata,
+            "persisted",
+        ),
+        quarantine_summary="Package version is quarantined."
+        if _version_status(version.lifecycle_state) == SkillLifecycleStatus.QUARANTINED
+        else None,
+        withdrawal_summary="Package version is withdrawn from new installations."
+        if _version_status(version.lifecycle_state) == SkillLifecycleStatus.WITHDRAWN
+        else None,
+        audit_reference_id=f"version-{version.skill_package_version_id}",
+        authorized_actions=_package_actions(
+            version=version, platform_admin=platform_admin
         ),
     )
 
 
-def _credential_options() -> tuple[CredentialReferenceOption, ...]:
-    return (
-        CredentialReferenceOption(
-            reference_id="cred-ref-acme-briefing",
-            label="Acme briefing connector reference",
-            source_type="tenant secret reference",
-            readiness=SkillLifecycleStatus.READY,
-            fingerprint="fp_qa032_acme_briefing",
-            policy_reason="Reference is authorized for read-only briefing tools.",
-            last_checked_label="Deterministic QA032 check",
-            remediation="No action needed.",
-        ),
-        CredentialReferenceOption(
-            reference_id="cred-ref-acme-weather",
-            label="Acme weather fixture reference",
-            source_type="tenant fixture reference",
-            readiness=SkillLifecycleStatus.WARNING,
-            fingerprint="fp_qa032_weather",
-            policy_reason="Allowed for mocked local readiness only.",
-            last_checked_label="Deterministic QA032 check",
-            remediation="Use production reference before live probes.",
+def _grant_summary(
+    *,
+    grant: SkillPackageTenantGrant,
+    version: SkillPackageVersion | None,
+    scope: ReactAdminScope,
+    platform_admin: bool,
+) -> TenantSkillGrantSummary:
+    package_slug = version.slug if version is not None else "unknown-package"
+    version_label = version.semantic_version if version is not None else "unknown"
+    tenant_label = scope.label if grant.tenant_id is not None else "All tenants"
+    return TenantSkillGrantSummary(
+        tenant_id=str(grant.tenant_id) if grant.tenant_id else "all-tenants",
+        tenant_label=tenant_label,
+        package_slug=package_slug,
+        version_label=version_label,
+        grant_status=_status_from_text(grant.status),
+        allowed_versions=(version_label,),
+        install_eligibility=SkillLifecycleStatus.READY
+        if grant.status == "active"
+        else SkillLifecycleStatus.DENIED,
+        restrictions=(grant.reason or "Availability follows persisted grant status.",),
+        authorized_actions=_grant_actions(
+            version_id=str(grant.skill_package_version_id),
+            platform_admin=platform_admin,
         ),
     )
 
 
-def _connectors(*, scope: ReactAdminScope) -> tuple[ConnectorReadinessSummary, ...]:
-    connectors = [
-        ("calendar", "Calendar", ("calendar.read",), SkillLifecycleStatus.READY),
-        ("gmail", "Gmail", ("gmail.search",), SkillLifecycleStatus.DEGRADED),
-        ("news", "News", ("news.lookup",), SkillLifecycleStatus.READY),
-        ("weather", "Weather", ("weather.forecast",), SkillLifecycleStatus.READY),
-        ("commute", "Commute", ("commute.estimate",), SkillLifecycleStatus.WARNING),
-    ]
-    return tuple(
-        ConnectorReadinessSummary(
-            connector_id=f"connector-{connector_id}",
-            connector_label=label,
-            tool_names=tools,
-            readiness=readiness,
-            credential_status=SkillLifecycleStatus.READY
-            if readiness != SkillLifecycleStatus.DEGRADED
-            else SkillLifecycleStatus.WARNING,
-            policy_status=SkillLifecycleStatus.READY,
-            smoke_test_status=SkillLifecycleStatus.PASSED,
-            staging_probe_status=SkillLifecycleStatus.UNAVAILABLE,
-            last_safe_summary=(
-                f"{label} readiness uses deterministic QA032 evidence for "
-                f"{scope.label}."
-            ),
-            evidence_reference_id=f"evidence-qa032-{connector_id}",
-            remediation="Refresh readiness evidence if the status is degraded.",
-            authorized_actions=(
-                AdminAction(
-                    action_id=f"connector-diagnostic-{connector_id}",
-                    label="Run diagnostic",
-                    method=AdminActionMethod.POST,
-                    href=_with_tenant_query(
-                        "/admin/app/skills/diagnostics/run",
-                        scope,
-                    ),
-                    variant=ReactAdminPageActionVariant.SECONDARY,
-                ),
-            ),
+def _installation_summary(
+    *,
+    installation: SkillInstallation,
+    scope: ReactAdminScope,
+    credentials: Sequence[SkillInstallationCredential],
+    tests: Sequence[SkillInstallationTest],
+) -> TenantSkillInstallationSummary:
+    connectors = tuple(
+        _connector_from_tool(
+            installation=installation,
+            scope=scope,
+            tool_name=tool_name,
+            readiness=_status_from_text(installation.smoke_test_status),
         )
-        for connector_id, label, tools, readiness in connectors
+        for tool_name in _tool_names(installation.manifest_summary)
+    )
+    if not connectors and tests:
+        connectors = tuple(
+            _connector_from_test(installation=installation, test=test, scope=scope)
+            for test in tests[:5]
+        )
+    findings = tuple(
+        _safe_text(str(item.get("message") or item.get("code") or "Readiness finding."))
+        for item in installation.findings
+        if isinstance(item, Mapping)
+    ) or (_readiness_sentence(installation),)
+    return TenantSkillInstallationSummary(
+        installation_id=str(installation.skill_installation_id),
+        tenant_id=str(installation.tenant_id),
+        package_slug=installation.slug,
+        installed_version=installation.semantic_version,
+        installation_revision=installation.revision_token,
+        installation_status=_installation_status(installation.readiness_state),
+        credential_readiness=_status_from_text(installation.credential_status),
+        smoke_test_readiness=_status_from_text(installation.smoke_test_status),
+        connector_readiness=connectors,
+        binding_readiness=_status_from_text(installation.binding_eligibility_status),
+        upgrade_path=None,
+        findings=findings,
+        credential_options=tuple(_credential_option(item) for item in credentials),
+        authorized_actions=_installation_actions(
+            scope=scope, installation=installation
+        ),
+        audit_reference_id=f"installation-{installation.skill_installation_id}",
     )
 
 
-def _sections(*, platform_admin: bool) -> tuple[SkillLifecycleSection, ...]:
-    sections = []
+def _credential_option(
+    credential: SkillInstallationCredential,
+) -> CredentialReferenceOption:
+    reference_id = _credential_reference_id(credential)
+    summary = credential.safe_summary or {}
+    return CredentialReferenceOption(
+        reference_id=reference_id,
+        label=_safe_text(
+            str(summary.get("label") or f"{credential.requirement_key} reference")
+        ),
+        source_type=_safe_text(credential.credential_kind.replace("_", " ")),
+        readiness=_status_from_text(credential.status),
+        fingerprint=_fingerprint(reference_id) if reference_id else None,
+        policy_reason=_safe_text(
+            str(
+                summary.get("policy_reason")
+                or f"{credential.requirement_key} readiness is {credential.status}."
+            )
+        ),
+        last_checked_label=_timestamp_label(
+            credential.last_checked_at or credential.configured_at
+        ),
+        remediation=_safe_text(
+            str(summary.get("remediation") or "Configure an authorized reference.")
+        ),
+    )
+
+
+def _connector_from_tool(
+    *,
+    installation: SkillInstallation,
+    scope: ReactAdminScope,
+    tool_name: str,
+    readiness: SkillLifecycleStatus,
+) -> ConnectorReadinessSummary:
+    connector_id = tool_name.split(".", 1)[0] if "." in tool_name else tool_name
+    return ConnectorReadinessSummary(
+        connector_id=f"{installation.skill_installation_id}-{connector_id}",
+        connector_label=_safe_text(connector_id.replace("_", " ").title()),
+        tool_names=(tool_name,),
+        readiness=readiness,
+        credential_status=_status_from_text(installation.credential_status),
+        policy_status=_status_from_text(installation.permission_status),
+        smoke_test_status=_status_from_text(installation.smoke_test_status),
+        staging_probe_status=SkillLifecycleStatus.UNAVAILABLE,
+        last_safe_summary=(
+            f"{connector_id.replace('_', ' ').title()} readiness is projected "
+            f"from installation {installation.installation_version}."
+        ),
+        evidence_reference_id=f"installation-{installation.skill_installation_id}",
+        remediation="Refresh readiness evidence if this status is degraded.",
+        authorized_actions=(
+            AdminAction(
+                action_id=f"connector-diagnostic-{connector_id}",
+                label="Run diagnostic",
+                method=AdminActionMethod.POST,
+                href=_with_tenant_query(
+                    "/admin/app/skills/diagnostics/run",
+                    scope,
+                ),
+                variant=ReactAdminPageActionVariant.SECONDARY,
+            ),
+        ),
+    )
+
+
+def _connector_from_test(
+    *,
+    installation: SkillInstallation,
+    test: SkillInstallationTest,
+    scope: ReactAdminScope,
+) -> ConnectorReadinessSummary:
+    tool_name = test.fixture_key if "." in test.fixture_key else "readiness.refresh"
+    status = _status_from_text(test.outcome or _value(test.runner_status))
+    return _connector_from_tool(
+        installation=installation,
+        scope=scope,
+        tool_name=tool_name,
+        readiness=status,
+    ).model_copy(
+        update={
+            "smoke_test_status": status,
+            "last_safe_summary": _summary_from_mapping(
+                test.safe_output_summary,
+                fallback=f"{tool_name} readiness evidence is persisted.",
+            ),
+            "evidence_reference_id": str(test.skill_installation_test_id),
+        }
+    )
+
+
+def _diagnostic_from_test(
+    *,
+    installation: SkillInstallation,
+    test: SkillInstallationTest,
+    audit_reference_id: str,
+) -> SkillExecutionDiagnosticSummary:
+    tool_name = test.fixture_key if "." in test.fixture_key else "readiness.refresh"
+    status = _status_from_text(test.outcome or _value(test.runner_status))
+    return SkillExecutionDiagnosticSummary(
+        diagnostic_id=str(test.skill_installation_test_id),
+        skill_package_version=f"{installation.slug} {installation.semantic_version}",
+        tool_name=tool_name,
+        gateway_decision="allowed_read_only"
+        if status in {SkillLifecycleStatus.READY, SkillLifecycleStatus.PASSED}
+        else "queued"
+        if status == SkillLifecycleStatus.QUEUED
+        else "blocked",
+        side_effect_posture="read-only connector execution",
+        outbound_policy_status=_status_from_text(installation.permission_status),
+        credential_policy_status=_status_from_text(installation.credential_status),
+        connector_readiness=status,
+        safe_attempt_summary=_summary_from_mapping(
+            test.safe_output_summary,
+            fallback=f"{tool_name} diagnostic evidence is persisted.",
+        ),
+        redaction_summary="Attempt details were summarized before admin rendering.",
+        audit_reference_id=audit_reference_id,
+        remediation="No action needed."
+        if status in {SkillLifecycleStatus.READY, SkillLifecycleStatus.PASSED}
+        else "Review readiness evidence before binding.",
+    )
+
+
+def _audit_record_summary(
+    *,
+    record: SkillAuditRecord,
+    scope: ReactAdminScope,
+) -> SkillLifecycleAuditRecord:
+    return SkillLifecycleAuditRecord(
+        record_id=str(record.skill_audit_record_id),
+        domain=_safe_text(record.event_type.split(".", 1)[0]),
+        package_slug=_safe_text(record.package_slug or "not package scoped"),
+        version_label=_safe_text(record.package_version or "not version scoped"),
+        tenant_scope_label=scope.label if record.tenant_id else "Platform",
+        actor_label=_safe_text(record.actor_principal_id),
+        timestamp_label=_timestamp_label(record.created_at),
+        action=_safe_text(record.event_type),
+        outcome=_status_from_text(record.outcome),
+        safe_diff_summary=_summary_from_mapping(
+            record.safe_summary,
+            fallback="Skill lifecycle audit event recorded.",
+        ),
+        audit_reference_id=str(record.skill_audit_record_id),
+    )
+
+
+def _sections(
+    *,
+    platform_admin: bool,
+    publication_count: int,
+    discovery_count: int,
+    installation_count: int,
+    diagnostic_count: int,
+    audit_count: int,
+) -> tuple[SkillLifecycleSection, ...]:
+    sections: list[SkillLifecycleSection] = []
     if platform_admin:
         sections.append(
             SkillLifecycleSection(
                 section_id="publish",
                 label="Publish",
-                status=SkillLifecycleStatus.READY,
-                summary=(
-                    "Guided package candidate, validation, grants, and publication."
-                ),
+                status=SkillLifecycleStatus.READY
+                if publication_count
+                else SkillLifecycleStatus.UNAVAILABLE,
+                summary=f"{publication_count} persisted package versions visible.",
             )
         )
     sections.extend(
@@ -933,50 +1608,79 @@ def _sections(*, platform_admin: bool) -> tuple[SkillLifecycleSection, ...]:
             SkillLifecycleSection(
                 section_id="discover",
                 label="Discover",
-                status=SkillLifecycleStatus.READY,
-                summary="Granted packages and install readiness for the active scope.",
+                status=SkillLifecycleStatus.READY
+                if discovery_count
+                else SkillLifecycleStatus.UNAVAILABLE,
+                summary=f"{discovery_count} granted versions visible.",
             ),
             SkillLifecycleSection(
                 section_id="installations",
                 label="Installations",
-                status=SkillLifecycleStatus.READY,
-                summary="Tenant installation, credential, and smoke-test state.",
+                status=SkillLifecycleStatus.READY
+                if installation_count
+                else SkillLifecycleStatus.UNAVAILABLE,
+                summary=f"{installation_count} tenant installations visible.",
             ),
             SkillLifecycleSection(
                 section_id="diagnostics",
                 label="Diagnostics",
-                status=SkillLifecycleStatus.DEGRADED,
-                summary="Connector readiness and SkillExecutionGateway decisions.",
+                status=SkillLifecycleStatus.READY
+                if diagnostic_count
+                else SkillLifecycleStatus.UNAVAILABLE,
+                summary=f"{diagnostic_count} persisted diagnostic runs visible.",
             ),
             SkillLifecycleSection(
                 section_id="binding",
                 label="Binding",
-                status=SkillLifecycleStatus.READY,
-                summary="Read-only workflow and profile eligibility preview.",
+                status=SkillLifecycleStatus.READY
+                if installation_count
+                else SkillLifecycleStatus.UNAVAILABLE,
+                summary="Binding preview is computed from persisted readiness records.",
             ),
             SkillLifecycleSection(
                 section_id="audit",
                 label="Audit",
-                status=SkillLifecycleStatus.READY,
-                summary="Bounded lifecycle timeline with safe diff summaries.",
+                status=SkillLifecycleStatus.READY
+                if audit_count
+                else SkillLifecycleStatus.UNAVAILABLE,
+                summary=f"{audit_count} lifecycle audit records visible.",
             ),
         ]
     )
     return tuple(sections)
 
 
+def _setup_summary(*, has_live_data: bool) -> tuple[str, ...]:
+    if has_live_data:
+        return (
+            "Package and installation state is read from skill registry rows.",
+            "Credential references are summarized without exposing values.",
+            "Diagnostics and smoke evidence use persisted local-safe records.",
+        )
+    return (
+        "No live skill lifecycle records are present for this scope.",
+        "Empty states are returned instead of sample package or connector rows.",
+        "Seed or create governed registry records to populate this workspace.",
+    )
+
+
 def _dashboard_actions(
     *,
     scope: ReactAdminScope,
     platform_admin: bool,
+    has_installations: bool,
 ) -> tuple[AdminAction, ...]:
-    actions = [
+    actions: list[AdminAction] = [
         AdminAction(
             action_id="binding-preview",
             label="Preview binding",
             method=AdminActionMethod.POST,
             href=_with_tenant_query("/admin/app/skills/eligibility/preview", scope),
             variant=ReactAdminPageActionVariant.SECONDARY,
+            enabled=has_installations,
+            disabled_reason=None
+            if has_installations
+            else "Install a tenant skill before previewing binding.",
         ),
         AdminAction(
             action_id="diagnostics-refresh",
@@ -984,6 +1688,10 @@ def _dashboard_actions(
             method=AdminActionMethod.POST,
             href=_with_tenant_query("/admin/app/skills/diagnostics/run", scope),
             variant=ReactAdminPageActionVariant.SECONDARY,
+            enabled=has_installations,
+            disabled_reason=None
+            if has_installations
+            else "Install a tenant skill before running diagnostics.",
         ),
     ]
     if platform_admin:
@@ -1000,90 +1708,465 @@ def _dashboard_actions(
     return tuple(actions)
 
 
-def _package_actions(*, platform_admin: bool) -> tuple[AdminAction, ...]:
+def _package_actions(
+    *,
+    version: SkillPackageVersion,
+    platform_admin: bool,
+) -> tuple[AdminAction, ...]:
     if not platform_admin:
         return ()
+    version_id = str(version.skill_package_version_id)
     return (
         AdminAction(
             action_id="package-grant",
             label="Update grant",
             method=AdminActionMethod.POST,
-            href="/admin/app/skills/packages/package-daily-briefing-connectors/grants",
+            href=f"/admin/app/skills/packages/{version_id}/grants",
             variant=ReactAdminPageActionVariant.SECONDARY,
             requires_idempotency_key=True,
+            action_metadata=ReactAdminActionMetadata(
+                revision=version_id,
+                revision_source=ReactAdminActionMetadataSource.BACKEND,
+            ),
         ),
         AdminAction(
             action_id="package-quarantine",
             label="Quarantine",
             method=AdminActionMethod.POST,
-            href="/admin/app/skills/packages/package-daily-briefing-connectors/quarantine",
+            href=f"/admin/app/skills/packages/{version_id}/quarantine",
             variant=ReactAdminPageActionVariant.DANGER,
         ),
         AdminAction(
             action_id="package-withdraw",
             label="Withdraw",
             method=AdminActionMethod.POST,
-            href="/admin/app/skills/packages/package-daily-briefing-connectors/withdraw",
+            href=f"/admin/app/skills/packages/{version_id}/withdraw",
             variant=ReactAdminPageActionVariant.DANGER,
         ),
     )
 
 
-def _grant_actions(*, platform_admin: bool) -> tuple[AdminAction, ...]:
+def _grant_actions(
+    *,
+    version_id: str,
+    platform_admin: bool,
+) -> tuple[AdminAction, ...]:
     if not platform_admin:
         return ()
     return (
         AdminAction(
-            action_id="grant-update-acme",
+            action_id="grant-update",
             label="Update tenant grant",
             method=AdminActionMethod.POST,
-            href="/admin/app/skills/packages/package-daily-briefing-connectors/grants",
+            href=f"/admin/app/skills/packages/{version_id}/grants",
             variant=ReactAdminPageActionVariant.SECONDARY,
             requires_idempotency_key=True,
+            action_metadata=ReactAdminActionMetadata(
+                revision=version_id,
+                revision_source=ReactAdminActionMetadataSource.BACKEND,
+            ),
         ),
     )
 
 
-def _installation_actions(scope: ReactAdminScope) -> tuple[AdminAction, ...]:
+def _installation_actions(
+    *,
+    scope: ReactAdminScope,
+    installation: SkillInstallation,
+) -> tuple[AdminAction, ...]:
+    installation_id = str(installation.skill_installation_id)
     return (
         AdminAction(
             action_id="install-package",
-            label="Install package",
+            label="Refresh installation",
             method=AdminActionMethod.POST,
             href=_with_tenant_query(
-                "/admin/app/skills/installations/install-qa032-daily-briefing/install",
+                f"/admin/app/skills/installations/{installation_id}/install",
                 scope,
             ),
             variant=ReactAdminPageActionVariant.PRIMARY,
             requires_idempotency_key=True,
+            action_metadata=ReactAdminActionMetadata(
+                revision=installation.revision_token,
+                revision_source=ReactAdminActionMetadataSource.BACKEND,
+            ),
         ),
         AdminAction(
             action_id="configure-credentials",
             label="Save credential reference",
             method=AdminActionMethod.POST,
             href=_with_tenant_query(
-                "/admin/app/skills/installations/install-qa032-daily-briefing/credentials",
+                f"/admin/app/skills/installations/{installation_id}/credentials",
                 scope,
             ),
             variant=ReactAdminPageActionVariant.SECONDARY,
             requires_idempotency_key=True,
+            action_metadata=ReactAdminActionMetadata(
+                revision=installation.revision_token,
+                revision_source=ReactAdminActionMetadataSource.BACKEND,
+            ),
         ),
         AdminAction(
             action_id="refresh-smoke-tests",
             label="Refresh readiness",
             method=AdminActionMethod.POST,
             href=_with_tenant_query(
-                "/admin/app/skills/installations/install-qa032-daily-briefing/smoke-tests",
+                f"/admin/app/skills/installations/{installation_id}/smoke-tests",
                 scope,
             ),
             variant=ReactAdminPageActionVariant.SECONDARY,
             requires_idempotency_key=True,
+            action_metadata=ReactAdminActionMetadata(
+                revision=installation.revision_token,
+                revision_source=ReactAdminActionMetadataSource.BACKEND,
+            ),
         ),
     )
 
 
-def _with_tenant_query(path: str, scope: ReactAdminScope) -> str:
+def _stale_installation_result(
+    *,
+    submitted_revision: str,
+    current_revision: str,
+    scope: ReactAdminScope,
+) -> SkillLifecycleMutationResult:
+    return SkillLifecycleMutationResult(
+        status=AdminMutationStatus.STALE_CONFLICT,
+        summary="Reload the latest installation state before retrying.",
+        stale_conflict=RevisionConflict(
+            submitted_revision=submitted_revision,
+            current_revision=current_revision,
+            message="The installation has newer safe readiness metadata.",
+            reload_href=_with_tenant_query("/admin/app/skills", scope),
+        ),
+        audit_reference_id="installation-stale-conflict",
+    )
+
+
+def _field_error_result(
+    *,
+    field: str,
+    label: str,
+    message: str,
+    code: str,
+    audit_reference_id: str,
+) -> SkillLifecycleMutationResult:
+    return SkillLifecycleMutationResult(
+        status=AdminMutationStatus.VALIDATION_ERROR,
+        summary=message,
+        field_errors=(
+            ValidationFieldError(
+                field=field,
+                label=label,
+                message=message,
+                code=code,
+            ),
+        ),
+        audit_reference_id=audit_reference_id,
+    )
+
+
+async def _record_audit(
+    repository: SkillRegistryRepository,
+    *,
+    event_type: str,
+    actor_principal_id: str,
+    outcome: str,
+    tenant_id: UUID | None = None,
+    skill_package_version_id: UUID | None = None,
+    skill_installation_id: UUID | None = None,
+    package_slug: str | None = None,
+    package_version: str | None = None,
+    safe_summary: dict[str, object] | None = None,
+) -> str:
+    record = await repository.add_audit_record(
+        SkillAuditRecord(
+            event_type=event_type,
+            actor_principal_id=actor_principal_id,
+            outcome=outcome,
+            tenant_id=tenant_id,
+            skill_package_version_id=skill_package_version_id,
+            skill_installation_id=skill_installation_id,
+            package_slug=package_slug,
+            package_version=package_version,
+            safe_summary=safe_summary or {},
+            redaction_metadata={"react_contract": "safe_summary_only"},
+        )
+    )
+    return str(record.skill_audit_record_id)
+
+
+def _scope_tenant_uuid(scope: ReactAdminScope) -> UUID | None:
     if scope.scope_type != ReactAdminScopeType.TENANT or scope.tenant_id is None:
+        return None
+    return _parse_uuid(str(scope.tenant_id))
+
+
+def _parse_uuid(value: str | UUID | None) -> UUID | None:
+    if value is None:
+        return None
+    try:
+        return UUID(str(value))
+    except ValueError:
+        return None
+
+
+def _version_for_grant(
+    grant: SkillPackageTenantGrant,
+    versions: Sequence[SkillPackageVersion],
+) -> SkillPackageVersion | None:
+    for version in versions:
+        if version.skill_package_version_id == grant.skill_package_version_id:
+            return version
+    return None
+
+
+def _group_by_installation(
+    credentials: Iterable[SkillInstallationCredential],
+) -> defaultdict[UUID, list[SkillInstallationCredential]]:
+    grouped: defaultdict[UUID, list[SkillInstallationCredential]] = defaultdict(list)
+    for credential in credentials:
+        grouped[credential.skill_installation_id].append(credential)
+    return grouped
+
+
+def _group_tests_by_installation(
+    tests: Iterable[SkillInstallationTest],
+) -> defaultdict[UUID, list[SkillInstallationTest]]:
+    grouped: defaultdict[UUID, list[SkillInstallationTest]] = defaultdict(list)
+    for test in tests:
+        grouped[test.skill_installation_id].append(test)
+    return grouped
+
+
+def _selected_credential(
+    credentials: Sequence[SkillInstallationCredential],
+    selected_reference_id: str,
+) -> SkillInstallationCredential | None:
+    for credential in credentials:
+        if _credential_reference_id(credential) == selected_reference_id:
+            return credential
+    return None
+
+
+def _credential_reference_id(credential: SkillInstallationCredential) -> str:
+    for value in (
+        credential.secret_reference_id,
+        credential.secret_reference_version_id,
+        credential.delegated_credential_link_id,
+    ):
+        if value is not None:
+            return str(value)
+    return f"unconfigured-{credential.requirement_key}"
+
+
+def _installation_is_ready(installation: SkillInstallation) -> bool:
+    return (
+        installation.credential_status == "ready"
+        and installation.compatibility_status == "ready"
+        and installation.permission_status == "ready"
+        and installation.smoke_test_status in {"passed", "ready", "not_required"}
+        and installation.quarantine_state == "clear"
+        and not installation.runtime_blocked
+    )
+
+
+def _select_installation_for_preview(
+    installations: Sequence[SkillInstallation],
+    request: BindingEligibilityPreviewRequest | None,
+) -> SkillInstallation | None:
+    if not installations:
+        return None
+    if request is None:
+        return installations[0]
+    requested_uuid = _parse_uuid(request.package_id)
+    if requested_uuid is None:
+        return installations[0]
+    for installation in installations:
+        if (
+            installation.skill_installation_id == requested_uuid
+            or installation.skill_package_version_id == requested_uuid
+        ):
+            return installation
+    return installations[0]
+
+
+def _empty_binding_preview(
+    *,
+    scope: ReactAdminScope,
+    selected_context: str,
+    reason: str,
+) -> BindingEligibilityPreview:
+    return BindingEligibilityPreview(
+        preview_id="binding-preview-empty",
+        tenant_label=scope.label,
+        context_choices=(),
+        selected_context=selected_context,
+        eligible_tools=(),
+        blocked_tools=("all tools",),
+        policy_reasons=(reason,),
+        missing_requirements=(reason,),
+        remediation="Create and ready a tenant skill installation before binding.",
+        audit_reference_id="binding-preview-empty",
+    )
+
+
+def _tool_names(summary: Mapping[str, object]) -> tuple[str, ...]:
+    tools = summary.get("tools")
+    if not isinstance(tools, list):
+        return ()
+    names: list[str] = []
+    for item in tools:
+        if isinstance(item, str):
+            names.append(_safe_identifier(item))
+        elif isinstance(item, Mapping):
+            name = item.get("tool_id") or item.get("name")
+            if isinstance(name, str):
+                names.append(_safe_identifier(name))
+    return tuple(dict.fromkeys(names))
+
+
+def _string_items(summary: Mapping[str, object], key: str) -> tuple[str, ...]:
+    value = summary.get(key)
+    if not isinstance(value, list):
+        return ()
+    return tuple(_safe_text(str(item)) for item in value if str(item).strip())
+
+
+def _summary_from_mapping(
+    summary: Mapping[str, object],
+    *,
+    fallback: str,
+) -> str:
+    for key in ("summary", "safe_summary", "description", "last_result"):
+        value = summary.get(key)
+        if isinstance(value, str) and value.strip():
+            return _safe_text(value)
+    tools = _tool_names(summary)
+    if tools:
+        return _safe_text(f"Package exposes {', '.join(tools[:5])}.")
+    categories = _string_items(summary, "action_categories")
+    if categories:
+        return _safe_text(f"Package action categories: {', '.join(categories[:5])}.")
+    return _safe_text(fallback)
+
+
+def _evidence_reference(
+    prefix: str,
+    summary: Mapping[str, object],
+    status: str,
+) -> str:
+    reference = summary.get("evidence_reference_id")
+    if isinstance(reference, str) and reference.strip():
+        return _safe_identifier(reference)
+    return _safe_identifier(f"{prefix}-{status or 'not-recorded'}")
+
+
+def _readiness_sentence(installation: SkillInstallation) -> str:
+    return _safe_text(
+        f"Readiness is {installation.readiness_state}; credential "
+        f"{installation.credential_status}, smoke {installation.smoke_test_status}."
+    )
+
+
+def _aggregate_status(statuses: Iterable[str]) -> str:
+    values = tuple(statuses)
+    if values and all(value == "ready" for value in values):
+        return "ready"
+    if any(value == "blocked" for value in values):
+        return "blocked"
+    return "pending"
+
+
+def _version_status(value: object) -> SkillLifecycleStatus:
+    normalized = _value(value)
+    return {
+        SkillVersionLifecycleState.CANDIDATE.value: SkillLifecycleStatus.WARNING,
+        SkillVersionLifecycleState.VALIDATED.value: SkillLifecycleStatus.READY,
+        SkillVersionLifecycleState.PUBLISHED.value: SkillLifecycleStatus.PUBLISHED,
+        SkillVersionLifecycleState.WITHDRAWN.value: SkillLifecycleStatus.WITHDRAWN,
+        SkillVersionLifecycleState.QUARANTINED.value: SkillLifecycleStatus.QUARANTINED,
+    }.get(normalized, _status_from_text(normalized))
+
+
+def _installation_status(value: object) -> SkillLifecycleStatus:
+    normalized = _value(value)
+    return {
+        SkillInstallationState.INSTALLED.value: SkillLifecycleStatus.READY,
+        SkillInstallationState.CONFIGURING.value: SkillLifecycleStatus.WARNING,
+        SkillInstallationState.TESTING.value: SkillLifecycleStatus.RUNNING,
+        SkillInstallationState.READY.value: SkillLifecycleStatus.READY,
+        SkillInstallationState.BLOCKED.value: SkillLifecycleStatus.BLOCKED,
+        SkillInstallationState.QUARANTINED.value: SkillLifecycleStatus.QUARANTINED,
+        SkillInstallationState.RETIRED.value: SkillLifecycleStatus.WITHDRAWN,
+    }.get(normalized, _status_from_text(normalized))
+
+
+def _status_from_text(value: object) -> SkillLifecycleStatus:
+    normalized = _value(value)
+    if normalized in {"ready", "active", "eligible", "allowed", "installed"}:
+        return SkillLifecycleStatus.READY
+    if normalized in {"passed", "success", "succeeded"}:
+        return SkillLifecycleStatus.PASSED
+    if normalized in {"published"}:
+        return SkillLifecycleStatus.PUBLISHED
+    if normalized in {"queued", "pending"}:
+        return SkillLifecycleStatus.QUEUED
+    if normalized in {"running", "testing"}:
+        return SkillLifecycleStatus.RUNNING
+    if normalized in {"warning", "degraded"}:
+        return SkillLifecycleStatus.WARNING
+    if normalized in {"blocked", "errored"}:
+        return SkillLifecycleStatus.BLOCKED
+    if normalized in {"denied", "revoked"}:
+        return SkillLifecycleStatus.DENIED
+    if normalized in {"failed", "failure"}:
+        return SkillLifecycleStatus.FAILED
+    if normalized in {"quarantined"}:
+        return SkillLifecycleStatus.QUARANTINED
+    if normalized in {"withdrawn", "withdrawn_from_new_installs", "retired"}:
+        return SkillLifecycleStatus.WITHDRAWN
+    if normalized in {"stale"}:
+        return SkillLifecycleStatus.STALE
+    if normalized in {"summarized"}:
+        return SkillLifecycleStatus.SUMMARIZED
+    return SkillLifecycleStatus.UNAVAILABLE
+
+
+def _value(value: object) -> str:
+    raw = getattr(value, "value", value)
+    return str(raw).lower()
+
+
+def _safe_text(value: str) -> str:
+    try:
+        return safe_skill_lifecycle_text(value, max_length=220)
+    except ValueError:
+        return "Safe summary unavailable."
+
+
+def _safe_identifier(value: str) -> str:
+    return safe_skill_lifecycle_text(value, max_length=160)
+
+
+def _fingerprint(value: str) -> str:
+    return "fp_" + hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
+
+
+def _timestamp_label(value: datetime | None) -> str:
+    if value is None:
+        return "Not checked"
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC")
+
+
+def _next_revision(prefix: str) -> str:
+    return f"{prefix}-{uuid4()}"
+
+
+def _with_tenant_query(path: str, scope: ReactAdminScope) -> str:
+    if scope.tenant_id is None:
         return path
     separator = "&" if "?" in path else "?"
     return f"{path}{separator}tenant_id={scope.tenant_id}"

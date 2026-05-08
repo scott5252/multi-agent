@@ -215,6 +215,13 @@ export const membershipDashboardFixture: MembershipDashboard = {
     },
   ],
   page_id: "qa034-membership-administration",
+  provenance: {
+    last_verified_at: "2026-05-07T00:00:00Z",
+    source_detail: "Membership projections are composed from persisted repository rows.",
+    source_kind: "live_repository",
+    source_label: "Membership repository snapshot",
+  },
+  empty_state: null,
   role_grant_form: {
     confirmation_copy: "Role changes require confirmation and audit evidence.",
     role_choices: [
@@ -237,6 +244,19 @@ export const membershipDashboardFixture: MembershipDashboard = {
     { label: "Directory", section_id: "directory", status: "ready", summary: "Users and membership status" },
   ],
   status_actions: [],
+  support_overrides: [
+    {
+      approver_label: "Platform Admin",
+      audit_reference_id: "support-override-qa054-live",
+      expires_label: "2026-05-07 14:00 UTC",
+      requester_label: "Platform Admin",
+      safe_summary: "Support override evidence is persisted and scoped.",
+      status: "active",
+      support_override_id: "support-override-qa054-live",
+      tenant_id: "11111111-1111-1111-1111-111111111111",
+      tenant_label: "Acme",
+    },
+  ],
   summary_cards: [
     { card_id: "directory", label: "Directory", status: "ready", summary: "Safe user rows are scoped.", value: "1" },
   ],

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   jinjaInventoryDashboard,
+  liveDataInventoryDashboard,
   migrationDashboard,
   migrationRollbackPlan,
   migrationRouteGroups,
@@ -24,27 +25,40 @@ describe("MigrationHardeningPage", () => {
         .mockResolvedValueOnce({ ok: true, json: async () => migrationRouteGroups })
         .mockResolvedValueOnce({ ok: true, json: async () => migrationRollbackPlan })
         .mockResolvedValueOnce({ ok: true, json: async () => jinjaInventoryDashboard })
+        .mockResolvedValueOnce({ ok: true, json: async () => liveDataInventoryDashboard })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => migrationDashboard.transitional_label_gate,
+        })
         .mockResolvedValueOnce({ ok: true, json: async () => migrationDashboard })
         .mockResolvedValueOnce({ ok: true, json: async () => migrationRouteGroups })
         .mockResolvedValueOnce({ ok: true, json: async () => migrationRollbackPlan })
-        .mockResolvedValueOnce({ ok: true, json: async () => jinjaInventoryDashboard }),
+        .mockResolvedValueOnce({ ok: true, json: async () => jinjaInventoryDashboard })
+        .mockResolvedValueOnce({ ok: true, json: async () => liveDataInventoryDashboard })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => migrationDashboard.transitional_label_gate,
+        }),
     );
 
     render(
       <MigrationHardeningPage dashboardUrl="/admin/app/migration/bootstrap.json" />,
     );
 
-    await screen.findByRole("heading", { name: "React-only browser UI" });
-    expect(screen.getByText("React admin home")).toBeInTheDocument();
+    await screen.findByRole("heading", { name: "Admin browser UI" });
+    expect(screen.getByText("Admin home")).toBeInTheDocument();
     expect(screen.getAllByText("Redirect").length).toBeGreaterThan(0);
-    expect(screen.getByText("React-only readiness")).toBeInTheDocument();
+    expect(screen.getByText("Browser UI readiness")).toBeInTheDocument();
     expect(screen.getByText("Final decommission summary")).toBeInTheDocument();
+    expect(screen.getByText("Live-data guardrails")).toBeInTheDocument();
+    expect(screen.getByText("Transitional label gate")).toBeInTheDocument();
+    expect(screen.getByText("qa058-live-only-source-scan")).toBeInTheDocument();
     expect(screen.getByText("Route safety plan")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Refresh" }));
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledTimes(8);
+      expect(fetch).toHaveBeenCalledTimes(12);
     });
     expect(screen.queryByText(/qa037-secret-value|raw prompt/i)).not.toBeInTheDocument();
   });

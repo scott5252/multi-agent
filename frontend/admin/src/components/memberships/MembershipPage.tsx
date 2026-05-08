@@ -14,6 +14,10 @@ import type {
   MembershipMutationResult,
   UserDirectoryEntry,
 } from "../../api/generated/reactAdminApi";
+import {
+  buildIdempotencyKey,
+  generatedRevisionMarker,
+} from "../../utils/adminActionMetadata";
 import { CommonState } from "../states/CommonState";
 import { AccessHistoryPanel } from "./AccessHistoryPanel";
 import { InvitationPanel } from "./InvitationPanel";
@@ -24,6 +28,7 @@ import { PrincipalLinkPanel } from "./PrincipalLinkPanel";
 import { RawIdentifierDetailPanel } from "./RawIdentifierDetailPanel";
 import { RoleGrantPanel } from "./RoleGrantPanel";
 import { StatusActionsPanel } from "./StatusActionsPanel";
+import { SupportOverridePanel } from "./SupportOverridePanel";
 import { UserDirectoryPanel } from "./UserDirectoryPanel";
 
 export function MembershipPage({ membershipsUrl }: { membershipsUrl: string }) {
@@ -113,35 +118,35 @@ export function MembershipPage({ membershipsUrl }: { membershipsUrl: string }) {
     setRoleResult(await saveMembershipRoleGrant(withSearch(url), payload));
   }
 
-  async function submitGrantRevoke(url: string) {
+  async function submitGrantRevoke(url: string, revision: string | null) {
     setRoleResult(
       await revokeMembershipRoleGrant(withSearch(url), {
         confirmed: true,
-        idempotency_key: "role-revoke-ui-qa034",
+        idempotency_key: buildIdempotencyKey("role-revoke"),
         reason: "Admin review",
-        revision: "membership-rev-qa034-current",
+        revision: revision ?? generatedRevisionMarker("role-revoke"),
       }),
     );
   }
 
-  async function submitPrincipalStatus(url: string) {
+  async function submitPrincipalStatus(url: string, revision: string | null) {
     setStatusResult(
       await updateMembershipPrincipalStatus(withSearch(url), {
         confirmed: true,
-        idempotency_key: "principal-status-ui-qa034",
+        idempotency_key: buildIdempotencyKey("principal-status"),
         reason: "Admin review",
-        revision: "membership-rev-qa034-current",
+        revision: revision ?? generatedRevisionMarker("principal-status"),
       }),
     );
   }
 
-  async function submitMembershipStatus(url: string) {
+  async function submitMembershipStatus(url: string, revision: string | null) {
     setStatusResult(
       await updateTenantMembershipStatus(withSearch(url), {
         confirmed: true,
-        idempotency_key: "membership-status-ui-qa034",
+        idempotency_key: buildIdempotencyKey("membership-status"),
         reason: "Admin review",
-        revision: "membership-rev-qa034-current",
+        revision: revision ?? generatedRevisionMarker("membership-status"),
       }),
     );
   }
@@ -189,16 +194,21 @@ export function MembershipPage({ membershipsUrl }: { membershipsUrl: string }) {
         grants={dashboard.role_grants}
         mutationResult={roleResult}
         onGrant={(url, payload) => void submitRoleGrant(url, payload)}
-        onRevoke={(url) => void submitGrantRevoke(url)}
+        onRevoke={(url, revision) => void submitGrantRevoke(url, revision)}
       />
       <StatusActionsPanel
         directory={dashboard.directory}
         membershipStatuses={dashboard.status_actions}
         mutationResult={statusResult}
-        onMembershipStatus={(url) => void submitMembershipStatus(url)}
-        onPrincipalStatus={(url) => void submitPrincipalStatus(url)}
+        onMembershipStatus={(url, revision) =>
+          void submitMembershipStatus(url, revision)
+        }
+        onPrincipalStatus={(url, revision) =>
+          void submitPrincipalStatus(url, revision)
+        }
       />
       <AccessHistoryPanel records={dashboard.access_history} />
+      <SupportOverridePanel overrides={dashboard.support_overrides} />
       <MembershipAuditPanel records={dashboard.audit_timeline} />
     </div>
   );

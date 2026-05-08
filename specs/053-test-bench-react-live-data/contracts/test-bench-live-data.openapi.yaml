@@ -1,0 +1,183 @@
+openapi: 3.1.0
+info:
+  title: Test Bench React Live Data Contract
+  version: 0.1.0
+  description: >
+    Contract notes for Spec 053. The canonical runtime schema is generated from
+    Pydantic models in src/multi_agent_platform/api/schemas/admin_test_bench.py.
+paths:
+  /admin/app/test-bench/bootstrap.json:
+    get:
+      summary: Live test bench dashboard
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Live dashboard or truthful empty state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestBenchDashboard"
+        "403":
+          description: Principal cannot access the requested tenant scope.
+  /admin/app/test-bench/suites:
+    get:
+      summary: Live suite list
+      responses:
+        "200":
+          description: Repository-backed suites for the active scope.
+    post:
+      summary: Persist suite authoring changes
+      responses:
+        "200":
+          description: Accepted, stale, denied, unavailable, or validation result.
+  /admin/app/test-bench/suites/{suite_id}/cases:
+    post:
+      summary: Persist case authoring changes
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Accepted, stale, denied, unavailable, or validation result.
+  /admin/app/test-bench/suites/{suite_id}/runs:
+    post:
+      summary: Launch a safe test bench run
+      parameters:
+        - name: suite_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Persisted run launch result or safe validation denial.
+  /admin/app/test-bench/runs/{run_id}.json:
+    get:
+      summary: Live run detail
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Repository-backed run detail.
+        "404":
+          description: Run is absent or not authorized for active scope.
+  /admin/app/test-bench/gates.json:
+    get:
+      summary: Live publish-gate evidence
+      responses:
+        "200":
+          description: Current repository-backed gate evidence or truthful empty state.
+  /admin/app/test-bench/audit.json:
+    get:
+      summary: Safe test bench audit timeline
+      responses:
+        "200":
+          description: Redaction-safe audit records for the active scope.
+components:
+  schemas:
+    TestBenchProvenance:
+      type: object
+      required: [source, generated_at, scope_type, source_counts]
+      properties:
+        source:
+          type: string
+          enum: [live_repository]
+        generated_at:
+          type: string
+          format: date-time
+        scope_type:
+          type: string
+        tenant_id:
+          type: string
+          nullable: true
+        source_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+    TestBenchEmptyState:
+      type: object
+      required: [state, title, summary]
+      properties:
+        state:
+          type: string
+          enum: [empty, unavailable, denied]
+        title:
+          type: string
+        summary:
+          type: string
+        action_label:
+          type: string
+          nullable: true
+        action_href:
+          type: string
+          nullable: true
+    TestBenchDashboard:
+      type: object
+      required:
+        - page_id
+        - title
+        - description
+        - scope
+        - provenance
+        - sections
+        - summary_cards
+        - suites
+        - recent_runs
+        - audit_timeline
+      properties:
+        page_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        scope:
+          type: object
+        provenance:
+          $ref: "#/components/schemas/TestBenchProvenance"
+        empty_state:
+          anyOf:
+            - $ref: "#/components/schemas/TestBenchEmptyState"
+            - type: "null"
+        sections:
+          type: array
+          items:
+            type: object
+        summary_cards:
+          type: array
+          items:
+            type: object
+        gate_alerts:
+          type: array
+          items:
+            type: object
+        suites:
+          type: array
+          items:
+            type: object
+        selected_suite:
+          type:
+            - object
+            - "null"
+        recent_runs:
+          type: array
+          items:
+            type: object
+        audit_timeline:
+          type: array
+          items:
+            type: object

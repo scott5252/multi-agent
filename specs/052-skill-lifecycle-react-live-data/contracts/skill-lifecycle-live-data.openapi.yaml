@@ -1,0 +1,131 @@
+openapi: 3.1.0
+info:
+  title: Skill Lifecycle React Live Data Contract
+  version: 0.1.0
+paths:
+  /admin/app/skills/bootstrap.json:
+    get:
+      summary: Return the live skill lifecycle dashboard envelope for the active scope.
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Live, empty, denied, blocked, or unavailable skill lifecycle dashboard envelope.
+        "401":
+          description: Missing or invalid principal.
+        "403":
+          description: Principal cannot access the requested scope.
+  /admin/app/skills/packages/candidates:
+    post:
+      summary: Create or refresh a package candidate from safe manifest metadata.
+      responses:
+        "200":
+          description: Candidate mutation result with safe manifest and revision evidence.
+        "403":
+          description: Platform package publication permission required.
+  /admin/app/skills/packages/candidates/{candidate_id}/validate:
+    post:
+      summary: Validate a package candidate using safe validation evidence.
+      parameters:
+        - name: candidate_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Candidate validation result or validation error evidence.
+  /admin/app/skills/packages/candidates/{candidate_id}/publish:
+    post:
+      summary: Publish a validated package candidate as a durable package version.
+      parameters:
+        - name: candidate_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Publication result with package/version evidence.
+        "409":
+          description: Stale candidate revision conflict.
+  /admin/app/skills/packages/{package_id}/grants:
+    post:
+      summary: Persist tenant availability for a package version.
+      responses:
+        "200":
+          description: Tenant grant mutation result.
+  /admin/app/skills/packages/{package_id}/quarantine:
+    post:
+      summary: Persist a package quarantine decision.
+      responses:
+        "200":
+          description: Quarantine mutation result.
+  /admin/app/skills/packages/{package_id}/withdraw:
+    post:
+      summary: Persist a package withdrawal decision.
+      responses:
+        "200":
+          description: Withdrawal mutation result.
+  /admin/app/skills/discovery.json:
+    get:
+      summary: Return authorized tenant skill discovery state.
+      responses:
+        "200":
+          description: Tenant discovery records plus provenance or empty-state metadata.
+  /admin/app/skills/installations.json:
+    get:
+      summary: Return authorized tenant skill installations.
+      responses:
+        "200":
+          description: Installation records plus readiness or empty-state metadata.
+  /admin/app/skills/installations/{installation_id}/install:
+    post:
+      summary: Persist a tenant skill installation request.
+      responses:
+        "200":
+          description: Installation mutation result.
+        "409":
+          description: Stale installation revision conflict.
+  /admin/app/skills/installations/{installation_id}/credentials:
+    post:
+      summary: Persist credential reference metadata for a tenant installation.
+      responses:
+        "200":
+          description: Credential readiness mutation result.
+        "409":
+          description: Stale installation revision conflict.
+  /admin/app/skills/installations/{installation_id}/smoke-tests:
+    post:
+      summary: Queue or record a mocked-safe smoke-test readiness refresh.
+      responses:
+        "200":
+          description: Smoke-test readiness mutation result.
+  /admin/app/skills/diagnostics.json:
+    get:
+      summary: Return safe connector and SkillExecutionGateway diagnostics.
+      responses:
+        "200":
+          description: Diagnostic records plus provenance or empty-state metadata.
+  /admin/app/skills/diagnostics/run:
+    post:
+      summary: Record or queue a safe connector diagnostic.
+      responses:
+        "200":
+          description: Diagnostic mutation result.
+  /admin/app/skills/eligibility/preview:
+    post:
+      summary: Return safe binding eligibility evidence.
+      responses:
+        "200":
+          description: Eligibility preview result.
+  /admin/app/skills/audit.json:
+    get:
+      summary: Return bounded lifecycle audit records for the active scope.
+      responses:
+        "200":
+          description: Audit records from live skill lifecycle state.

@@ -18,10 +18,10 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "/admin/app/manifest.json" in schema["paths"]
     assert "/admin/app/search.json" in schema["paths"]
     assert "/auth/local-login.json" in schema["paths"]
-    assert "/admin/app/patterns" in schema["paths"]
-    assert "/admin/app/patterns.json" in schema["paths"]
-    assert "/admin/app/patterns/actions/sample" in schema["paths"]
-    assert "/admin/app/patterns/export" in schema["paths"]
+    assert "/admin/app/patterns" not in schema["paths"]
+    assert "/admin/app/patterns.json" not in schema["paths"]
+    assert "/admin/app/patterns/actions/sample" not in schema["paths"]
+    assert "/admin/app/patterns/export" not in schema["paths"]
     assert "/admin/app/workflows" in schema["paths"]
     assert "/admin/app/workflows/new" in schema["paths"]
     assert "/admin/app/workflows/registry.json" in schema["paths"]
@@ -164,9 +164,10 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "ReactAdminPrincipal" in schema["components"]["schemas"]
     assert "ReactAdminShellChrome" in schema["components"]["schemas"]
     assert "ReactAdminCommandSearch" in schema["components"]["schemas"]
-    assert "AdminPageEnvelope" in schema["components"]["schemas"]
-    assert "MutationResult" in schema["components"]["schemas"]
-    assert "ExportSnapshot" in schema["components"]["schemas"]
+    assert "AdminPageEnvelope" not in schema["components"]["schemas"]
+    assert "ReactAdminPageProvenance" in schema["components"]["schemas"]
+    assert "ReactAdminEmptyStateMetadata" in schema["components"]["schemas"]
+    assert "ReactAdminActionMetadata" in schema["components"]["schemas"]
     assert "SafeProblemDetail" in schema["components"]["schemas"]
     assert "OperationsWorkbenchEnvelope" in schema["components"]["schemas"]
     assert "RunDebugEnvelope" in schema["components"]["schemas"]
@@ -266,18 +267,18 @@ def test_contract_document_lists_safe_problem_responses() -> None:
     assert "/admin/app/search.json" in contract
 
 
-def test_patterns_contract_document_lists_form_and_data_contracts() -> None:
+def test_contract_provenance_document_lists_retired_patterns_and_metadata() -> None:
     contract = Path(
-        "specs/028-react-admin-data-contracts-and-form-patterns/contracts/"
-        "react-admin-patterns.openapi.yaml"
+        "specs/049-react-contract-provenance-and-sample-route-retirement/contracts/"
+        "react-contract-provenance.openapi.yaml"
     ).read_text(encoding="utf-8")
 
-    assert "AdminPatternsPageEnvelope" in contract
-    assert "SafeProblemDetail" in contract
-    assert "MutationResult" in contract
-    assert "ExportSnapshot" in contract
+    assert "ReactAdminPageProvenance" in contract
+    assert "ReactAdminEmptyStateMetadata" in contract
+    assert "ReactAdminActionMetadata" in contract
+    assert "Retired production sample route" in contract
     assert "/admin/app/patterns.json" in contract
-    assert "/admin/app/patterns/actions/sample" in contract
+    assert "/admin/app/patterns/actions/sample" not in contract
 
 
 def test_operations_workbench_contract_document_lists_debug_and_export() -> None:

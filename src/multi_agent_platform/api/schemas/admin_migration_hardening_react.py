@@ -345,6 +345,280 @@ class JinjaInventoryDashboard(SafeMigrationHardeningModel):
     evidence: tuple[JinjaInventoryEvidence, ...] = Field(default_factory=tuple)
 
 
+class LiveDataInventorySeverity(StrEnum):
+    BLOCKING = "blocking"
+    WARNING = "warning"
+    INFO = "info"
+
+
+class LiveDataInventoryStatus(StrEnum):
+    MAPPED_LEGACY = "mapped_legacy"
+    ALLOWED_COMPUTED_METADATA = "allowed_computed_metadata"
+    NEW_REGRESSION = "new_regression"
+    TEST_ONLY = "test_only"
+
+
+class LiveDataMarkerKind(StrEnum):
+    QA_MARKER = "qa_marker"
+    FAKE_AUDIT_REFERENCE = "fake_audit_reference"
+    FAKE_ARTIFACT_REFERENCE = "fake_artifact_reference"
+    FAKE_RUN_ID = "fake_run_id"
+    FAKE_LINK_TOKEN = "fake_link_token"
+    FIXTURE_COLLECTION = "fixture_collection"
+    FAKE_MUTATION_SUCCESS = "fake_mutation_success"
+    HARDCODED_DOMAIN_ENTITY = "hardcoded_domain_entity"
+    TEST_FIXTURE_IMPORT = "test_fixture_import"
+
+
+class LiveDataReachability(StrEnum):
+    PRODUCTION_RESPONSE = "production_response"
+    PRODUCTION_SOURCE = "production_source"
+    GENERATED_CONTRACT = "generated_contract"
+    BUILT_ASSET = "built_asset"
+    COMPUTED_METADATA = "computed_metadata"
+    TEST_ONLY = "test_only"
+
+
+class LiveDataCiStatus(StrEnum):
+    PASS = "pass"
+    WARNING = "warning"
+    FAIL = "fail"
+
+
+class LiveDataInventoryEvidenceType(StrEnum):
+    SCANNER = "scanner"
+    ROUTE_RESPONSE_SCAN = "route_response_scan"
+    CONTRACT_TEST = "contract_test"
+    BACKEND_ROUTE_TEST = "backend_route_test"
+    FRONTEND_TEST = "frontend_test"
+    PLAYWRIGHT = "playwright"
+    QA_DOC = "qa_doc"
+    REVIEWER_NOTE = "reviewer_note"
+    CURL_TEST = "curl_test"
+
+
+class LiveDataInventoryFinding(SafeMigrationHardeningModel):
+    finding_id: str
+    severity: LiveDataInventorySeverity
+    status: LiveDataInventoryStatus
+    marker_kind: LiveDataMarkerKind
+    source_path: str
+    route_path: str | None = None
+    owner_spec: str | None = None
+    replacement_spec: str | None = None
+    durable_source: str
+    reachability: LiveDataReachability
+    safe_excerpt: str
+
+    @model_validator(mode="after")
+    def source_paths_must_be_relative(self) -> LiveDataInventoryFinding:
+        if self.source_path.startswith("/"):
+            raise ValueError("live-data inventory paths must be repository-relative")
+        if self.status == LiveDataInventoryStatus.NEW_REGRESSION and (
+            self.severity != LiveDataInventorySeverity.BLOCKING
+        ):
+            raise ValueError("new live-data regressions must be blocking")
+        return self
+
+
+class LiveDataAllowlistEntry(SafeMigrationHardeningModel):
+    allowlist_id: str
+    scope: str
+    marker_kind: LiveDataMarkerKind
+    reason: str
+    derivation_source: str
+    owner: str
+    expires_with_spec: str | None = None
+
+    @model_validator(mode="after")
+    def allowlist_must_be_narrow(self) -> LiveDataAllowlistEntry:
+        if self.scope in {"src", "src/", "frontend", "frontend/"}:
+            raise ValueError("live-data allowlist scope is too broad")
+        if not self.reason or not self.derivation_source:
+            raise ValueError("live-data allowlist requires reason and source")
+        return self
+
+
+class LiveDataRouteTarget(SafeMigrationHardeningModel):
+    target_id: str
+    method: str
+    path: str
+    principal: str
+    tenant_scope: str
+    empty_state_required: bool
+    seeded_state_required: bool
+    computed_metadata_only: bool
+    replacement_spec: str | None = None
+
+    @model_validator(mode="after")
+    def route_target_must_be_admin_app_json(self) -> LiveDataRouteTarget:
+        if self.method not in {"GET", "POST"}:
+            raise ValueError("live-data route targets use GET or POST")
+        if not self.path.startswith("/admin/app"):
+            raise ValueError("live-data route target must be under /admin/app")
+        return self
+
+
+class LiveDataScanSummary(SafeMigrationHardeningModel):
+    total_findings: int = Field(ge=0)
+    blocking_findings: int = Field(ge=0)
+    mapped_legacy_findings: int = Field(ge=0)
+    allowed_computed_metadata: int = Field(ge=0)
+    test_only_markers: int = Field(ge=0)
+    route_targets: int = Field(ge=0)
+    empty_state_scans: int = Field(ge=0)
+    seeded_state_scans: int = Field(ge=0)
+    ci_status: LiveDataCiStatus
+    next_step: str
+
+    @model_validator(mode="after")
+    def ci_status_matches_blocking_findings(self) -> LiveDataScanSummary:
+        if self.ci_status == LiveDataCiStatus.FAIL and self.blocking_findings == 0:
+            raise ValueError("failed live-data scan requires blocking findings")
+        if self.empty_state_scans > self.route_targets:
+            raise ValueError("empty scan count cannot exceed route targets")
+        if self.seeded_state_scans > self.route_targets:
+            raise ValueError("seeded scan count cannot exceed route targets")
+        return self
+
+
+class LiveDataInventoryEvidence(SafeMigrationHardeningModel):
+    evidence_id: str
+    evidence_type: LiveDataInventoryEvidenceType
+    reference: str
+    status: MigrationEvidenceStatus
+
+    @model_validator(mode="after")
+    def evidence_reference_must_be_relative(self) -> LiveDataInventoryEvidence:
+        if self.reference.startswith("/"):
+            raise ValueError("live-data evidence references must be relative")
+        return self
+
+
+class LiveDataInventoryDashboard(SafeMigrationHardeningModel):
+    page_id: str
+    generated_at: datetime
+    summary: LiveDataScanSummary
+    findings: tuple[LiveDataInventoryFinding, ...] = Field(default_factory=tuple)
+    allowlist: tuple[LiveDataAllowlistEntry, ...] = Field(default_factory=tuple)
+    route_targets: tuple[LiveDataRouteTarget, ...] = Field(default_factory=tuple)
+    evidence: tuple[LiveDataInventoryEvidence, ...] = Field(default_factory=tuple)
+    states: tuple[MigrationProblem, ...] = Field(default_factory=tuple, max_length=12)
+
+    @model_validator(mode="after")
+    def summary_matches_payload(self) -> LiveDataInventoryDashboard:
+        if self.summary.total_findings != len(self.findings):
+            raise ValueError("live-data summary total must match findings")
+        if self.summary.route_targets != len(self.route_targets):
+            raise ValueError("live-data summary route count must match targets")
+        return self
+
+
+class TransitionalLabelSeverity(StrEnum):
+    BLOCKING = "blocking"
+    WARNING = "warning"
+    INFO = "info"
+
+
+class TransitionalLabelClassification(StrEnum):
+    BLOCKING_TRANSITIONAL_LABEL = "blocking_transitional_label"
+    ALLOWED_IMPLEMENTATION_REFERENCE = "allowed_implementation_reference"
+    TECHNICAL_QA_CONTEXT = "technical_qa_context"
+    HISTORICAL_REFERENCE = "historical_reference"
+    INTERNAL_GENERATED_IDENTIFIER = "internal_generated_identifier"
+
+
+class TransitionalLabelEvidenceType(StrEnum):
+    SCANNER = "scanner"
+    ROUTE_RESPONSE = "route_response"
+    PLAYWRIGHT = "playwright"
+    DOCS = "docs"
+    CURL = "curl"
+
+
+class TransitionalLabelFinding(SafeMigrationHardeningModel):
+    finding_id: str
+    surface_id: str
+    matched_text: str
+    classification: TransitionalLabelClassification
+    severity: TransitionalLabelSeverity
+    rationale: str
+    owner: str
+    remediation: str | None = None
+
+    @model_validator(mode="after")
+    def blocking_labels_require_blocking_severity(
+        self,
+    ) -> TransitionalLabelFinding:
+        if (
+            self.classification
+            == TransitionalLabelClassification.BLOCKING_TRANSITIONAL_LABEL
+            and self.severity != TransitionalLabelSeverity.BLOCKING
+        ):
+            raise ValueError("blocking transitional labels must be blocking")
+        if self.severity == TransitionalLabelSeverity.BLOCKING and not self.remediation:
+            raise ValueError("blocking transitional labels require remediation")
+        return self
+
+
+class TransitionalLabelGateSummary(SafeMigrationHardeningModel):
+    blocked_count: int = Field(ge=0)
+    allowed_reference_count: int = Field(ge=0)
+    surfaces_scanned: int = Field(ge=0)
+    routes_scanned: int = Field(ge=0)
+    screenshots_checked: int = Field(ge=0)
+    ci_status: LiveDataCiStatus
+    next_step: str
+
+    @model_validator(mode="after")
+    def ci_status_matches_blockers(self) -> TransitionalLabelGateSummary:
+        if self.ci_status == LiveDataCiStatus.FAIL and self.blocked_count == 0:
+            raise ValueError("failed transitional label gate requires blockers")
+        if self.ci_status == LiveDataCiStatus.PASS and self.blocked_count:
+            raise ValueError("passing transitional label gate cannot have blockers")
+        return self
+
+
+class TransitionalLabelEvidence(SafeMigrationHardeningModel):
+    evidence_id: str
+    evidence_type: TransitionalLabelEvidenceType
+    reference: str
+    status: MigrationEvidenceStatus
+
+    @model_validator(mode="after")
+    def evidence_reference_must_be_relative(self) -> TransitionalLabelEvidence:
+        if self.reference.startswith("/"):
+            raise ValueError("transitional label evidence references must be relative")
+        return self
+
+
+class TransitionalLabelGate(SafeMigrationHardeningModel):
+    page_id: str
+    generated_at: datetime
+    summary: TransitionalLabelGateSummary
+    findings: tuple[TransitionalLabelFinding, ...] = Field(default_factory=tuple)
+    evidence: tuple[TransitionalLabelEvidence, ...] = Field(default_factory=tuple)
+    states: tuple[MigrationProblem, ...] = Field(default_factory=tuple, max_length=12)
+
+    @model_validator(mode="after")
+    def summary_matches_findings(self) -> TransitionalLabelGate:
+        blocked = sum(
+            finding.classification
+            == TransitionalLabelClassification.BLOCKING_TRANSITIONAL_LABEL
+            for finding in self.findings
+        )
+        allowed = sum(
+            finding.classification
+            != TransitionalLabelClassification.BLOCKING_TRANSITIONAL_LABEL
+            for finding in self.findings
+        )
+        if self.summary.blocked_count != blocked:
+            raise ValueError("transitional label blocked count must match findings")
+        if self.summary.allowed_reference_count != allowed:
+            raise ValueError("transitional label allowed count must match findings")
+        return self
+
+
 class AdminMigrationHardeningDashboard(SafeMigrationHardeningModel):
     page_id: str
     title: str
@@ -362,4 +636,6 @@ class AdminMigrationHardeningDashboard(SafeMigrationHardeningModel):
     redaction_sweep: MigrationSweepSummary
     tenant_isolation_sweep: MigrationSweepSummary
     jinja_inventory: JinjaInventoryDashboard
+    live_data_inventory: LiveDataInventoryDashboard | None = None
+    transitional_label_gate: TransitionalLabelGate | None = None
     states: tuple[MigrationProblem, ...] = Field(default_factory=tuple, max_length=12)

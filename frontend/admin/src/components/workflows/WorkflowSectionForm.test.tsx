@@ -14,9 +14,9 @@ import {
 describe("WorkflowSectionForm", () => {
   it("renders draft metadata, dirty state, save, and stale controls", async () => {
     const values: WorkflowDraftFormValues = {
-      description: workflowBuilderEnvelope.draft.description,
+      description: workflowBuilderEnvelope.draft!.description,
       join_policy: "wait_for_required_branches",
-      name: workflowBuilderEnvelope.draft.name,
+      name: workflowBuilderEnvelope.draft!.name,
       selected_profile_ref: "profile-briefing-safe",
       selected_prompt_ref: "prompt-daily-briefing-v3",
     };
@@ -27,9 +27,9 @@ describe("WorkflowSectionForm", () => {
     render(
       <WorkflowSectionForm
         dirty
-        draft={workflowBuilderEnvelope.draft}
+        draft={workflowBuilderEnvelope.draft!}
         error={null}
-        joinPolicies={workflowBuilderEnvelope.draft.graph.join_policies}
+        joinPolicies={workflowBuilderEnvelope.draft!.graph.join_policies}
         mutationResult={acceptedWorkflowMutation}
         onChange={onChange}
         onForceStale={onForceStale}

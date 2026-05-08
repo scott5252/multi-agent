@@ -4,10 +4,17 @@ import type {
   ExportSnapshot,
   FilterProfile,
   PaginationState,
-  SampleRecord,
   SortingState,
 } from "../../api/generated/reactAdminApi";
 import { Badge, Button } from "../primitives";
+
+export interface AdminTableRecord {
+  record_id: string;
+  name: string;
+  status: string;
+  owner_scope: string;
+  updated_label: string;
+}
 
 export function AdminDataTable({
   exportSnapshot,
@@ -21,7 +28,7 @@ export function AdminDataTable({
   filters: FilterProfile;
   onExport: () => void;
   pagination: PaginationState;
-  records: SampleRecord[];
+  records: AdminTableRecord[];
   sorting: SortingState;
 }) {
   return (

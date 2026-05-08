@@ -7,6 +7,7 @@ from sqlalchemy import Select, false, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.db.base import utcnow
+from multi_agent_platform.db.models.tenant import Tenant
 from multi_agent_platform.db.models.usage import (
     LlmPricingVersion,
     LlmUsageEvent,
@@ -180,6 +181,46 @@ class UsageRepository:
         if export.tenant_id == access_scope.tenant_id:
             return export
         raise UsageAccessDeniedError("usage export is outside tenant scope")
+
+    async def list_export_requests(
+        self,
+        *,
+        access_scope: UsageAccessScope,
+        filters: UsageFilters,
+        limit: int = 10,
+    ) -> list[UsageExportRequest]:
+        stmt = select(UsageExportRequest)
+        if access_scope.scope_type is UsageScopeType.PLATFORM:
+            if filters.tenant_id is not None:
+                stmt = stmt.where(UsageExportRequest.tenant_id == filters.tenant_id)
+        else:
+            stmt = stmt.where(UsageExportRequest.tenant_id == access_scope.tenant_id)
+        stmt = stmt.order_by(UsageExportRequest.created_at.desc()).limit(limit)
+        result = await self._session.execute(stmt)
+        return list(result.scalars())
+
+    async def list_tenant_labels(
+        self,
+        *,
+        access_scope: UsageAccessScope,
+        tenant_ids: set[UUID],
+    ) -> dict[UUID, str]:
+        if not tenant_ids:
+            return {}
+        visible_tenant_ids = set(tenant_ids)
+        if (
+            access_scope.scope_type is UsageScopeType.TENANT
+            and access_scope.tenant_id is not None
+        ):
+            visible_tenant_ids = {access_scope.tenant_id} & visible_tenant_ids
+        if not visible_tenant_ids:
+            return {}
+        result = await self._session.execute(
+            select(Tenant.tenant_id, Tenant.display_name).where(
+                Tenant.tenant_id.in_(visible_tenant_ids)
+            )
+        )
+        return {tenant_id: display_name for tenant_id, display_name in result.all()}
 
     async def record_reconciliation(
         self,

@@ -1,0 +1,246 @@
+openapi: 3.1.0
+info:
+  title: Spec 048 Live Data Inventory
+  version: 0.1.0
+paths:
+  /admin/app/migration/live-data-inventory.json:
+    get:
+      summary: Return live-data inventory and mock guardrail evidence
+      operationId: getLiveDataInventory
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Redaction-safe live-data inventory dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveDataInventoryDashboard"
+        "401":
+          description: Missing or invalid principal
+        "403":
+          description: Unauthorized role or cross-tenant access
+        "503":
+          description: Scanner unavailable with safe problem details
+components:
+  schemas:
+    LiveDataInventoryDashboard:
+      type: object
+      required:
+        - page_id
+        - generated_at
+        - summary
+        - findings
+        - allowlist
+        - route_targets
+        - evidence
+        - states
+      properties:
+        page_id:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        summary:
+          $ref: "#/components/schemas/LiveDataScanSummary"
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDataInventoryFinding"
+        allowlist:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDataAllowlistEntry"
+        route_targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDataRouteTarget"
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDataInventoryEvidence"
+        states:
+          type: array
+          items:
+            type: string
+    LiveDataScanSummary:
+      type: object
+      required:
+        - total_findings
+        - blocking_findings
+        - mapped_legacy_findings
+        - allowed_computed_metadata
+        - test_only_markers
+        - route_targets
+        - empty_state_scans
+        - seeded_state_scans
+        - ci_status
+        - next_step
+      properties:
+        total_findings:
+          type: integer
+          minimum: 0
+        blocking_findings:
+          type: integer
+          minimum: 0
+        mapped_legacy_findings:
+          type: integer
+          minimum: 0
+        allowed_computed_metadata:
+          type: integer
+          minimum: 0
+        test_only_markers:
+          type: integer
+          minimum: 0
+        route_targets:
+          type: integer
+          minimum: 0
+        empty_state_scans:
+          type: integer
+          minimum: 0
+        seeded_state_scans:
+          type: integer
+          minimum: 0
+        ci_status:
+          enum:
+            - pass
+            - warning
+            - fail
+        next_step:
+          type: string
+    LiveDataInventoryFinding:
+      type: object
+      required:
+        - finding_id
+        - severity
+        - status
+        - marker_kind
+        - source_path
+        - route_path
+        - owner_spec
+        - replacement_spec
+        - durable_source
+        - reachability
+        - safe_excerpt
+      properties:
+        finding_id:
+          type: string
+        severity:
+          enum:
+            - blocking
+            - warning
+            - info
+        status:
+          enum:
+            - mapped_legacy
+            - allowed_computed_metadata
+            - new_regression
+            - test_only
+        marker_kind:
+          type: string
+        source_path:
+          type: string
+        route_path:
+          type:
+            - string
+            - "null"
+        owner_spec:
+          type:
+            - string
+            - "null"
+        replacement_spec:
+          type:
+            - string
+            - "null"
+        durable_source:
+          type: string
+        reachability:
+          type: string
+        safe_excerpt:
+          type: string
+    LiveDataAllowlistEntry:
+      type: object
+      required:
+        - allowlist_id
+        - scope
+        - marker_kind
+        - reason
+        - derivation_source
+        - owner
+        - expires_with_spec
+      properties:
+        allowlist_id:
+          type: string
+        scope:
+          type: string
+        marker_kind:
+          type: string
+        reason:
+          type: string
+        derivation_source:
+          type: string
+        owner:
+          type: string
+        expires_with_spec:
+          type:
+            - string
+            - "null"
+    LiveDataRouteTarget:
+      type: object
+      required:
+        - target_id
+        - method
+        - path
+        - principal
+        - tenant_scope
+        - empty_state_required
+        - seeded_state_required
+        - computed_metadata_only
+        - replacement_spec
+      properties:
+        target_id:
+          type: string
+        method:
+          enum:
+            - GET
+            - POST
+        path:
+          type: string
+        principal:
+          type: string
+        tenant_scope:
+          type: string
+        empty_state_required:
+          type: boolean
+        seeded_state_required:
+          type: boolean
+        computed_metadata_only:
+          type: boolean
+        replacement_spec:
+          type:
+            - string
+            - "null"
+    LiveDataInventoryEvidence:
+      type: object
+      required:
+        - evidence_id
+        - evidence_type
+        - reference
+        - status
+      properties:
+        evidence_id:
+          type: string
+        evidence_type:
+          type: string
+        reference:
+          type: string
+        status:
+          enum:
+            - pass
+            - warning
+            - fail

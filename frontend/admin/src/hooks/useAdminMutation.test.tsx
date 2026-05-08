@@ -15,7 +15,7 @@ describe("useAdminMutation", () => {
     });
   });
 
-  it("submits sample actions and exposes mutation results", async () => {
+  it("submits admin actions and exposes mutation results", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -24,15 +24,13 @@ describe("useAdminMutation", () => {
       }),
     );
     const { result } = renderHook(() =>
-      useAdminMutation("/admin/app/patterns/actions/sample"),
+      useAdminMutation("/admin/app/admin-actions/test"),
     );
 
     await act(async () => {
       await result.current.submit({
         confirmed: false,
         idempotency_key: "key-1",
-        outcome: "accepted",
-        revision: "sample-revision-current",
         sample_name: "",
       });
     });

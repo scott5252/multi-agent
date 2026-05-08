@@ -11,7 +11,7 @@ export function MigrationParityMatrix({
       <div className="migration-panel-heading">
         <div>
           <p className="eyebrow">Route parity</p>
-          <h2 id="migration-parity-title">React and legacy destinations</h2>
+          <h2 id="migration-parity-title">Admin and legacy destinations</h2>
         </div>
       </div>
       <div className="migration-route-groups">
@@ -30,7 +30,7 @@ export function MigrationParityMatrix({
                   <thead>
                     <tr>
                       <th scope="col">Area</th>
-                      <th scope="col">React path</th>
+                      <th scope="col">Admin path</th>
                       <th scope="col">Legacy path</th>
                       <th scope="col">Decision</th>
                       <th scope="col">Evidence</th>

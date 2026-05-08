@@ -45,7 +45,7 @@ def test_platform_dashboard_includes_all_route_groups_and_evidence() -> None:
     )
     assert all(entry.parity_evidence for entry in entries if entry.retirement_allowed)
     assert "qa037-secret-value" not in dashboard.model_dump_json()
-    assert dashboard.title == "React-only browser UI"
+    assert dashboard.title == "Admin browser UI"
     assert dashboard.jinja_inventory.summary.template_count == 0
     assert "qa038-secret-value" not in dashboard.model_dump_json()
 

@@ -44,7 +44,7 @@ export function PublishGateEvidencePanel({
               <small>{gate.target_revision}</small>
               {refreshAction ? (
                 <Button
-                  onClick={() => onRefreshGate("/admin/app/test-bench/gates/qa033-required-suite/refresh")}
+                  onClick={() => onRefreshGate(refreshAction.href)}
                   type="button"
                   variant="secondary"
                 >

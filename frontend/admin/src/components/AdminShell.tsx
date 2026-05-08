@@ -11,7 +11,7 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
       <aside className="sidebar" aria-label="Admin navigation">
         <a className="brand" href="/admin/app">
           <span>Admin</span>
-          <strong>React Foundation</strong>
+          <strong>Foundation</strong>
         </a>
         <nav>
           {bootstrap.navigation.map((group) => (
@@ -24,7 +24,7 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
                   key={item.item_id}
                 >
                   <span>{item.label}</span>
-                  <small>{item.fallback_kind === "jinja" ? "Retired link" : item.fallback_kind}</small>
+                  <small>{item.fallback_kind === "jinja" ? "Retired link" : "Admin"}</small>
                 </a>
               ))}
             </section>
@@ -35,7 +35,7 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
         <header className="topbar">
           <div>
             <p className="eyebrow">Admin</p>
-            <h1>React Admin</h1>
+            <h1>Admin</h1>
           </div>
           <a className="secondary-link" href="/admin">
             Existing console
@@ -46,8 +46,8 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
           <div>
             <h2>Foundation ready</h2>
             <p>
-              This React shell is authenticated through the existing FastAPI admin service.
-              Browser pages now use React routes with safe compatibility links for older URLs.
+              This admin shell is authenticated through the existing FastAPI admin service.
+              Browser pages now use safe compatibility links for older URLs.
             </p>
           </div>
           <dl>

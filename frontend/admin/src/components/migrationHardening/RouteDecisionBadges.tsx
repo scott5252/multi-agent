@@ -11,7 +11,7 @@ type BadgeTone = "neutral" | "info" | "success" | "warning" | "critical";
 const decisionLabels: Record<MigrationRouteDecision, string> = {
   alias: "Alias",
   blocked: "Blocked",
-  react_primary: "React primary",
+  react_primary: "Admin primary",
   redirect: "Redirect",
   retained_fallback: "Retained fallback",
   retirement_candidate: "Retirement candidate",

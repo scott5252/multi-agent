@@ -7,10 +7,9 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminActionMetadata,
     ReactAdminNotificationTone,
     ReactAdminPageActionVariant,
-    ReactAdminScope,
-    ReactAdminShellState,
 )
 
 UNSAFE_TEXT_MARKERS = (
@@ -35,7 +34,7 @@ def safe_text(value: str, *, max_length: int = 220) -> str:
         raise ValueError("safe text is required")
     lowered = normalized.lower()
     if any(marker in lowered for marker in UNSAFE_TEXT_MARKERS):
-        raise ValueError("unsafe text cannot be rendered in React admin contracts")
+        raise ValueError("unsafe text cannot be rendered in admin contracts")
     return normalized[:max_length]
 
 
@@ -147,6 +146,7 @@ class AdminAction(BaseModel):
     confirmation: ConfirmationRequirement | None = None
     requires_idempotency_key: bool = False
     action_token: str | None = None
+    action_metadata: ReactAdminActionMetadata | None = None
     enabled: bool = True
     disabled_reason: str | None = None
 
@@ -366,22 +366,6 @@ class RefreshHint(BaseModel):
     interval_seconds: int | None = Field(default=None, ge=5, le=300)
 
 
-class SampleRecord(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    record_id: str
-    name: str
-    status: str
-    owner_scope: str
-    updated_label: str
-    revision: str
-
-    @field_validator("name", "status", "owner_scope", "updated_label")
-    @classmethod
-    def text_is_safe(cls, value: str) -> str:
-        return safe_text(value, max_length=120)
-
-
 class FormFieldDescriptor(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -397,56 +381,6 @@ class FormFieldDescriptor(BaseModel):
         if value is None:
             return None
         return safe_text(value, max_length=160)
-
-
-class SampleFormDescriptor(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    fields: tuple[FormFieldDescriptor, ...] = Field(default_factory=tuple)
-    default_values: dict[str, str | bool] = Field(default_factory=dict)
-    revision: str
-    idempotency_key: str
-
-
-class PatternsSampleData(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    records: tuple[SampleRecord, ...] = Field(default_factory=tuple)
-    form: SampleFormDescriptor
-    export_snapshot: ExportSnapshot
-    details: tuple[EvidenceSummary, ...] = Field(default_factory=tuple)
-
-
-class AdminPageEnvelope(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    page_id: str
-    title: str
-    description: str
-    scope: ReactAdminScope
-    state: ReactAdminShellState | None = None
-    data: PatternsSampleData
-    filters: FilterProfile
-    pagination: PaginationState
-    sorting: SortingState
-    actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
-    evidence: tuple[EvidenceSummary, ...] = Field(default_factory=tuple)
-    refresh: RefreshHint | None = None
-
-    @field_validator("title", "description")
-    @classmethod
-    def text_is_safe(cls, value: str) -> str:
-        return safe_text(value, max_length=180)
-
-
-class SampleActionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    sample_name: str = ""
-    revision: str = ""
-    idempotency_key: str = ""
-    confirmed: bool = False
-    outcome: str = "accepted"
 
 
 def redacted_dict(payload: dict[str, Any]) -> dict[str, Any]:

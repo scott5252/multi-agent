@@ -217,7 +217,7 @@ export function UserRunPage({ runId: initialRunId = null, search = "" }: UserRun
           <h1>Run workspace</h1>
           <p>
             Start a workflow, track safe progress, review action state, and keep legacy
-            run links on React.
+            run links on Admin.
           </p>
         </div>
         <div className="channel-header__meta">

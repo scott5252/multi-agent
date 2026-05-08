@@ -28,7 +28,7 @@ export function ShellSidebar({
               >
                 <span>{item.label}</span>
                 <small>
-                  {item.fallback_kind === "jinja" ? "Retired link" : item.fallback_kind}
+                  {item.fallback_kind === "jinja" ? "Retired link" : "Admin"}
                 </small>
                 <ChevronRight aria-hidden="true" size={15} />
               </a>

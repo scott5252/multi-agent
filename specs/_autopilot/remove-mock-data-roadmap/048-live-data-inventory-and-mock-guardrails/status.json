@@ -1,0 +1,161 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "048",
+  "title": "Live Data Inventory And Mock Guardrails",
+  "status": "completed",
+  "active_phase": null,
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "spec_qa": {
+      "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/048-live-data-inventory-and-mock-guardrails/validation.yml",
+      "result": "passed"
+    },
+    "playwright": {
+      "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/048-live-data-inventory-and-mock-guardrails/validation.yml --start-processes",
+      "result": "passed",
+      "screenshot": "output/playwright/qa048_ui/qa048-live-data-ui-api-smoke.png"
+    },
+    "post_ui_api_database": {
+      "api_command": "TestClient GET /admin/app/migration/live-data-inventory.json?tenant_id=11111111-1111-1111-1111-111111111111 as tenant-admin-acme",
+      "api_result": "status=200 page_id=qa048-live-data-inventory blocking_findings=0 mapped_legacy_findings=68 route_targets=88 ci_status=warning",
+      "database_command": "docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa048 -tAc \"SELECT COUNT(*) FROM tenants WHERE slug IN ('acme','globex');\"",
+      "database_result": "2 qa tenants present"
+    },
+    "curl_test": {
+      "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa048-after-spec",
+      "result": "passed",
+      "database": "multi_agent_curl_test",
+      "base_url": "http://127.0.0.1:8000",
+      "output_dir": ".data/curl_test_runs/qa048-after-spec",
+      "failed_commands": "none"
+    }
+  },
+  "artifacts": {
+    "spec": "specs/048-live-data-inventory-and-mock-guardrails/spec.md",
+    "requirements_checklist": "specs/048-live-data-inventory-and-mock-guardrails/checklists/requirements.md",
+    "plan": "specs/048-live-data-inventory-and-mock-guardrails/plan.md",
+    "research": "specs/048-live-data-inventory-and-mock-guardrails/research.md",
+    "data_model": "specs/048-live-data-inventory-and-mock-guardrails/data-model.md",
+    "contracts": [
+      "specs/048-live-data-inventory-and-mock-guardrails/contracts/live-data-inventory-contract.md",
+      "specs/048-live-data-inventory-and-mock-guardrails/contracts/live-data-inventory.openapi.yaml"
+    ],
+    "quickstart": "specs/048-live-data-inventory-and-mock-guardrails/quickstart.md",
+    "tasks": "specs/048-live-data-inventory-and-mock-guardrails/tasks.md"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 048 specification phase from generated autopilot prompt."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 048 specification and completed requirements checklist."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification using roadmap defaults."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five roadmap-default autonomous clarifications in spec.md."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started implementation planning phase."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created plan, research, data model, quickstart, contracts, and updated AGENTS plan pointer."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation phase."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated 40 dependency-ordered tasks for scanner, contracts, UI evidence, QA, Playwright, API/database verification, and curl validation."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started cross-artifact analysis phase."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Remediated one HIGH route-coverage task gap; no CRITICAL or HIGH findings remain."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started implementation phase."
+    },
+    {
+      "phase": "implement",
+      "status": "validation_in_progress",
+      "note": "Spec QA, Playwright UI, and post-UI API/database verification passed; curl regression remains."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Completed all 40 tasks; Spec QA, Playwright UI, post-UI API/database verification, and multi-agent curl regression passed."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Spec QA, Playwright UI, post-UI API/database verification, and multi-agent-curl-test all passed for Spec 048."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 048 closed with queue.json advanced to next_spec 049."
+    }
+  ],
+  "auto_clarifications": [
+    "Prohibited mock data is fixed domain/evidence/mutation data in production responses; computed metadata must be derivable and documented.",
+    "Sample routes may remain only dev/test gated or classified for Spec 049 retirement.",
+    "QA seed data must be created through documented durable setup flows or APIs.",
+    "qa0xx markers are prohibited in production responses, production bundles, generated contracts, and builders unless scanner-derived/computed.",
+    "Production source, contracts, built assets, and route response scans are CI-blocking for new unallowlisted findings."
+  ],
+  "task_count": 40,
+  "analysis": {
+    "findings": [
+      {
+        "id": "C1",
+        "severity": "HIGH",
+        "category": "Coverage Gap",
+        "summary": "Route scan tasks needed an explicit missed-route coverage assertion against the actual admin_react.py JSON route inventory.",
+        "remediation": "Updated plan.md and tasks.md to require route target coverage against admin_react.py routes and missed-route helper tests.",
+        "status": "remediated"
+      }
+    ],
+    "critical_remaining": 0,
+    "high_remaining": 0
+  },
+  "implementation": {
+    "completed_tasks": 40,
+    "remaining_tasks": [],
+    "focused_backend": "uv run pytest --no-cov tests/unit/admin/test_live_data_inventory_scanner.py tests/contract/test_admin_live_data_inventory_contract.py tests/integration/api/test_admin_live_data_inventory_routes.py tests/performance/migration_hardening/test_react_migration_hardening_queries.py -q => 14 passed",
+    "frontend": "npm test -- --run src/components/migrationHardening src/App.test.tsx => 24 passed; npm run build => passed",
+    "static_checks": "uv run ruff check .; uv run ruff format --check .; uv run mypy src => passed"
+  }
+}

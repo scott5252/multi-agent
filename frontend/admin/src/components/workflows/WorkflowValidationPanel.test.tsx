@@ -17,7 +17,7 @@ describe("WorkflowValidationPanel", () => {
         lastResult={acceptedWorkflowMutation}
         onValidate={onValidate}
         validating={false}
-        validation={workflowBuilderEnvelope.validation}
+        validation={workflowBuilderEnvelope.validation!}
       />,
     );
 

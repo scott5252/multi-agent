@@ -251,3 +251,39 @@ async def test_usage_repository_export_access_scope(session, seeded_tenant) -> N
                 principal_id="other-admin",
             ),
         )
+
+
+async def test_usage_repository_lists_exports_and_tenant_labels(
+    session,
+    seeded_tenant,
+) -> None:
+    repository = UsageRepository(session)
+    export = await repository.create_export_request(
+        access_scope=UsageAccessScope(
+            scope_type=UsageScopeType.TENANT,
+            tenant_id=seeded_tenant.tenant_id,
+            principal_id="tenant-admin",
+        ),
+        filters=UsageFilters(),
+        status=UsageExportStatus.PENDING,
+    )
+
+    exports = await repository.list_export_requests(
+        access_scope=UsageAccessScope(
+            scope_type=UsageScopeType.TENANT,
+            tenant_id=seeded_tenant.tenant_id,
+            principal_id="tenant-admin",
+        ),
+        filters=UsageFilters(),
+    )
+    labels = await repository.list_tenant_labels(
+        access_scope=UsageAccessScope(
+            scope_type=UsageScopeType.PLATFORM,
+            principal_id="platform-admin",
+            platform_admin=True,
+        ),
+        tenant_ids={seeded_tenant.tenant_id},
+    )
+
+    assert exports == [export]
+    assert labels == {seeded_tenant.tenant_id: "Acme"}

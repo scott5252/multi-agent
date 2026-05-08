@@ -27,7 +27,7 @@ export function ShellTopbar({
         />
         <div>
           <Breadcrumbs items={bootstrap.shell.breadcrumbs} />
-          <h1>React Admin</h1>
+          <h1>Admin</h1>
           <p>Shared shell and design system for governed admin work.</p>
         </div>
       </div>

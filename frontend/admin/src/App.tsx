@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import { fetchBootstrap } from "./api/client";
-import { PatternsPage } from "./components/patterns/PatternsPage";
 import { ChannelTelegramBriefingPage } from "./components/channelTelegramBriefing/ChannelTelegramBriefingPage";
 import { GovernancePage } from "./components/governance/GovernancePage";
 import { MembershipPage } from "./components/memberships/MembershipPage";
@@ -23,6 +22,18 @@ interface AppProps {
   bootstrapUrl?: string;
 }
 
+function workflowQueryString(): string {
+  const params = new URLSearchParams(window.location.search);
+  const draftMatch = window.location.pathname.match(
+    /^\/admin\/app\/workflows\/drafts\/([^/]+)/,
+  );
+  if (draftMatch?.[1]) {
+    params.set("workflow_draft_id", draftMatch[1]);
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
   const [bootstrap, setBootstrap] = useState<ReactAdminBootstrap | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +50,7 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
       })
       .catch((caught: unknown) => {
         if (alive) {
-          setError(caught instanceof Error ? caught.message : "React admin unavailable");
+          setError(caught instanceof Error ? caught.message : "Admin unavailable");
         }
       });
     return () => {
@@ -50,7 +61,7 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
   if (error) {
     return (
       <StatePanel
-        title="React admin unavailable"
+        title="Admin unavailable"
         summary={error}
         actionHref="/auth/local-login?redirect_to=/admin/app"
         actionLabel="Open local login"
@@ -70,7 +81,7 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
   if (disabledRoute) {
     return (
       <StatePanel
-        title="React route not migrated"
+        title="Admin route unavailable"
         summary="This admin area still opens in the existing authorized console."
         actionHref={disabledRouteFallbacks[disabledRoute]}
         actionLabel="Open existing page"
@@ -91,14 +102,6 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
     );
   }
 
-  if (window.location.pathname === "/admin/app/patterns") {
-    return (
-      <AdminShell bootstrap={bootstrap}>
-        <PatternsPage patternsUrl={`/admin/app/patterns.json${window.location.search}`} />
-      </AdminShell>
-    );
-  }
-
   if (window.location.pathname === "/admin/app/operations") {
     return (
       <AdminShell bootstrap={bootstrap}>
@@ -108,11 +111,12 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
   }
 
   if (window.location.pathname.startsWith("/admin/app/workflows")) {
+    const workflowQuery = workflowQueryString();
     return (
       <AdminShell bootstrap={bootstrap}>
         <WorkflowBuilderPage
-          builderUrl={`/admin/app/workflows/builder.json${window.location.search}`}
-          lookupsUrl={`/admin/app/workflows/lookups.json${window.location.search}`}
+          builderUrl={`/admin/app/workflows/builder.json${workflowQuery}`}
+          lookupsUrl={`/admin/app/workflows/lookups.json${workflowQuery}`}
         />
       </AdminShell>
     );

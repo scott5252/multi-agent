@@ -29,7 +29,7 @@ export function MigrationSummaryHeader({
       </div>
       <dl className="migration-summary-grid" aria-label="Migration route counts">
         <Metric label="Destinations" value={summary.total_destinations} />
-        <Metric label="React primary" value={summary.react_primary_count} />
+        <Metric label="Admin primary" value={summary.react_primary_count} />
         <Metric label="Redirects" value={summary.redirect_count} />
         <Metric label="Legacy fallbacks" value={summary.retained_fallback_count} />
         <Metric label="Retirement ready" value={summary.retirement_candidate_count} />

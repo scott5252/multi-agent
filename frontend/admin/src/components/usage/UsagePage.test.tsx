@@ -40,8 +40,8 @@ describe("UsagePage", () => {
     await userEvent.click(screen.getAllByRole("button", { name: /Export CSV|Create export/ })[0]);
 
     await waitFor(() => {
-      expect(screen.getByText("usage-export-artifact-qa035")).toBeInTheDocument();
+      expect(screen.getByText("usage-export:56000000-0000-0000-0000-000000000056")).toBeInTheDocument();
     });
-    expect(screen.queryByText(/qa035-secret-value|raw prompt/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/qa056-secret-value|raw prompt/i)).not.toBeInTheDocument();
   });
 });

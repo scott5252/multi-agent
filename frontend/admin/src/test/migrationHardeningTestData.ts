@@ -1,6 +1,7 @@
 import type {
   AdminMigrationHardeningDashboard,
   JinjaInventoryDashboard,
+  LiveDataInventoryDashboard,
   MigrationRollbackPlan,
   MigrationRouteGroup,
 } from "../api/generated/reactAdminApi";
@@ -8,13 +9,13 @@ import type {
 export const migrationRouteGroups: MigrationRouteGroup[] = [
   {
     group_id: "foundation-shell-qa037",
-    label: "React foundation and shell",
+    label: "Admin foundation and shell",
     spec_refs: ["026", "027", "028"],
     group_status: "ready",
     entries: [
       {
         entry_id: "react-home-qa037",
-        admin_area: "React admin home",
+        admin_area: "Admin home",
         legacy_route: "/admin",
         react_route: "/admin/app",
         decision: "react_primary",
@@ -26,21 +27,6 @@ export const migrationRouteGroups: MigrationRouteGroup[] = [
         retirement_allowed: true,
         rollback_reference: "rollback-plan-qa047",
         audit_reference: "audit-qa047-react-home",
-      },
-      {
-        entry_id: "patterns-qa037",
-        admin_area: "Shared data and form patterns",
-        legacy_route: "/admin/patterns",
-        react_route: "/admin/app/patterns",
-        decision: "react_primary",
-        scope_requirement: "mixed",
-        auth_modes: ["auth0-shaped", "local-principal"],
-        parity_evidence: ["qa028-react-patterns"],
-        redirect_preserves: ["tenant scope", "query filters"],
-        fallback_notice: null,
-        retirement_allowed: true,
-        rollback_reference: "rollback-plan-qa047",
-        audit_reference: "audit-qa047-patterns",
       },
     ],
   },
@@ -126,14 +112,14 @@ export const migrationRollbackPlan: MigrationRollbackPlan = {
   plan_id: "rollback-plan-qa047",
   status: "ready",
   feature_flag_label: "Release rollback",
-  asset_version_label: "React asset manifest qa047-safe",
+  asset_version_label: "Admin asset manifest qa047-safe",
   steps: [
     "Redeploy the previous reviewed release if rollback is required.",
     "Keep backend domain services running without data rollback.",
-    "Verify React app, local login, and retained direct links after redeploy.",
+    "Verify the admin app, local login, and retained direct links after redeploy.",
   ],
   verification_steps: [
-    "Open React admin as platform administrator.",
+    "Open Admin as platform administrator.",
     "Open Acme tenant route with tenant scope preserved.",
   ],
   owner_label: "Platform operations",
@@ -173,9 +159,104 @@ export const jinjaInventoryDashboard: JinjaInventoryDashboard = {
   ],
 };
 
+export const liveDataInventoryDashboard: LiveDataInventoryDashboard = {
+  page_id: "qa058-live-only-gate",
+  generated_at: "2026-05-08T12:30:00Z",
+  summary: {
+    total_findings: 2,
+    blocking_findings: 0,
+    mapped_legacy_findings: 0,
+    allowed_computed_metadata: 1,
+    test_only_markers: 24,
+    route_targets: 6,
+    empty_state_scans: 3,
+    seeded_state_scans: 3,
+    ci_status: "pass",
+    next_step: "Live-only gate passed for production admin UI routes.",
+  },
+  findings: [
+    {
+      finding_id: "qa058-bootstrap-transitional-marker",
+      severity: "warning",
+      status: "allowed_computed_metadata",
+      marker_kind: "qa_marker",
+      source_path: "src/multi_agent_platform/api/routers/admin_react.py",
+      route_path: "/admin/app/bootstrap.json",
+      owner_spec: "027",
+      replacement_spec: null,
+      durable_source: "scanner-derived counts",
+      reachability: "computed_metadata",
+      safe_excerpt: "scanner summary only",
+    },
+    {
+      finding_id: "qa058-summary-counts",
+      severity: "info",
+      status: "allowed_computed_metadata",
+      marker_kind: "qa_marker",
+      source_path: "src/multi_agent_platform/admin/migration_hardening/live_data_inventory.py",
+      route_path: "/admin/app/migration/live-data-inventory.json",
+      owner_spec: "048",
+      replacement_spec: null,
+      durable_source: "scanner-derived counts",
+      reachability: "computed_metadata",
+      safe_excerpt: "scanner summary only",
+    },
+  ],
+  allowlist: [
+    {
+      allowlist_id: "qa058-scanner-summary",
+      scope: "scanner-derived live-data inventory metadata",
+      marker_kind: "qa_marker",
+      reason: "Computed inventory counts report already-mapped markers without serving domain data.",
+      derivation_source: "live data scanner",
+      owner: "platform-admin",
+      expires_with_spec: null,
+    },
+  ],
+  route_targets: [
+    {
+      target_id: "qa048-memberships-empty",
+      method: "GET",
+      path: "/admin/app/memberships.json",
+      principal: "tenant-admin",
+      tenant_scope: "Acme",
+      empty_state_required: true,
+      seeded_state_required: false,
+      computed_metadata_only: false,
+      replacement_spec: "049",
+    },
+    {
+      target_id: "qa048-operations-seeded",
+      method: "GET",
+      path: "/admin/app/operations.json",
+      principal: "platform-admin",
+      tenant_scope: "platform",
+      empty_state_required: false,
+      seeded_state_required: true,
+      computed_metadata_only: false,
+      replacement_spec: "050",
+    },
+  ],
+  evidence: [
+    {
+      evidence_id: "qa058-live-only-source-scan",
+      evidence_type: "scanner",
+      reference: "tests/unit/admin/test_live_data_inventory_scanner.py",
+      status: "pass",
+    },
+    {
+      evidence_id: "qa058-route-response-scan",
+      evidence_type: "backend_route_test",
+      reference: "tests/integration/api/test_admin_live_data_inventory_routes.py",
+      status: "pass",
+    },
+  ],
+  states: [],
+};
+
 export const migrationDashboard: AdminMigrationHardeningDashboard = {
   page_id: "qa047-react-admin-decommission",
-  title: "React-only browser UI",
+  title: "Admin browser UI",
   description:
     "Final decommission evidence for route parity, direct-link safety, dependency removal, accessibility, redaction, and tenant isolation.",
   scope: {
@@ -185,14 +266,14 @@ export const migrationDashboard: AdminMigrationHardeningDashboard = {
   },
   updated_at: "2026-05-07T12:00:00Z",
   summary: {
-    total_destinations: 6,
-    react_primary_count: 4,
+    total_destinations: 5,
+    react_primary_count: 3,
     redirect_count: 1,
     retained_fallback_count: 0,
     retirement_candidate_count: 0,
     blocked_count: 0,
     overall_status: "ready",
-    next_step: "Browser UI is React-only; keep safe redirects for old links.",
+    next_step: "Admin UI is live-only; keep safe redirects for old links.",
   },
   route_groups: migrationRouteGroups,
   rollback_plan: migrationRollbackPlan,
@@ -206,7 +287,7 @@ export const migrationDashboard: AdminMigrationHardeningDashboard = {
     measurements: [
       {
         measurement_id: "bootstrap-home-qa037",
-        label: "React admin home bootstrap",
+        label: "Admin home bootstrap",
         value: 214,
         unit: "ms",
         limit: 500,
@@ -257,14 +338,72 @@ export const migrationDashboard: AdminMigrationHardeningDashboard = {
     evidence_reference: "tenant-isolation-qa037",
   },
   jinja_inventory: jinjaInventoryDashboard,
+  live_data_inventory: liveDataInventoryDashboard,
+  transitional_label_gate: {
+    page_id: "qa059-transitional-label-gate",
+    generated_at: "2026-05-08T13:00:00Z",
+    summary: {
+      blocked_count: 0,
+      allowed_reference_count: 3,
+      surfaces_scanned: 12,
+      routes_scanned: 6,
+      screenshots_checked: 2,
+      ci_status: "pass",
+      next_step: "Admin terminology gate passed for production-visible surfaces.",
+    },
+    findings: [
+      {
+        finding_id: "allowed-internal-generated-react-admin-identifiers",
+        surface_id: "generated-contract-identifiers",
+        matched_text: "ReactAdmin",
+        classification: "internal_generated_identifier",
+        severity: "info",
+        rationale:
+          "Generated TypeScript and Python model identifiers keep stable ReactAdmin names for compatibility, but they are not rendered as product labels.",
+        owner: "admin platform",
+        remediation: null,
+      },
+      {
+        finding_id: "allowed-historical-react-evidence-ids",
+        surface_id: "migration-evidence-identifiers",
+        matched_text: "qaNNN-react-*",
+        classification: "historical_reference",
+        severity: "info",
+        rationale:
+          "Historical QA evidence identifiers remain stable so reviewers can trace migration artifacts without changing past records.",
+        owner: "migration hardening",
+        remediation: null,
+      },
+      {
+        finding_id: "allowed-technical-react-implementation-context",
+        surface_id: "developer-only-migration-evidence",
+        matched_text: "React implementation context",
+        classification: "technical_qa_context",
+        severity: "info",
+        rationale:
+          "Developer-only migration evidence may refer to the implementation framework when it is not ordinary navigation, title, fallback, or end-user copy.",
+        owner: "platform reviewers",
+        remediation: null,
+      },
+    ],
+    evidence: [
+      {
+        evidence_id: "qa059-source-visible-text-scan",
+        evidence_type: "scanner",
+        reference: "tests/unit/admin/test_transitional_label_scanner.py",
+        status: "pass",
+      },
+    ],
+    states: [],
+  },
   states: [
     {
-      reason: "react_only_complete",
-      title: "React-only browser UI active",
+      reason: "admin_ui_complete",
+      title: "Admin browser UI active",
       detail: "Server-side template rendering is removed from runtime paths.",
       next_action: "Keep compatibility redirects monitored for old browser links.",
       severity: "info",
-      audit_reference: "audit-qa047-react-only-complete",
+      audit_reference: "audit-qa047-admin-ui-complete",
     },
   ],
 };

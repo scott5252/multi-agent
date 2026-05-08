@@ -63,4 +63,66 @@ describe("WorkflowBuilderPage", () => {
       expect.objectContaining({ method: "POST" }),
     );
   });
+
+  it("renders truthful empty state metadata when no workflow draft exists", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            ...workflowBuilderEnvelope,
+            actions: [],
+            draft: null,
+            empty_state: {
+              reason: "no_records",
+              setup_hint: "Create a workflow draft to populate this page.",
+              summary: "The active scope has no durable workflow draft.",
+              title: "No active workflow draft",
+            },
+            json_inspector: null,
+            publish_readiness: null,
+            registry: {
+              ...workflowBuilderEnvelope.registry,
+              empty_state: {
+                reason: "no_records",
+                setup_hint: "Create a workflow draft to populate the registry.",
+                summary: "The active scope has no durable workflow records.",
+                title: "No workflows found",
+              },
+              items: [],
+              pagination: {
+                ...workflowBuilderEnvelope.registry.pagination!,
+                total_items: 0,
+              },
+            },
+            sharing: null,
+            state: null,
+            validation: null,
+            version_detail: null,
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => workflowReferenceCatalog,
+        }),
+    );
+
+    render(
+      <WorkflowBuilderPage
+        builderUrl="/admin/app/workflows/builder.json"
+        lookupsUrl="/admin/app/workflows/lookups.json"
+      />,
+    );
+
+    expect(await screen.findAllByText("No active workflow draft")).toHaveLength(2);
+    expect(screen.getAllByText("No workflows found")).toHaveLength(2);
+    expect(
+      screen.getAllByText("The active scope has no durable workflow records."),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByRole("button", { name: /Save draft/ }),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -28,13 +28,28 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "click": "form:has(input[value=\"platform-admin\"]) button"
+            "click": "form:has(input[value=\"tenant-admin-acme\"]) button"
           },
           {
             "wait_for_load_state": "networkidle"
           },
           {
             "expect_text": "Membership"
+          },
+          {
+            "expect_text": "Maya Chen"
+          },
+          {
+            "expect_text": "Role grant created from qa054 live seed."
+          },
+          {
+            "click": "button:has-text(\"Invite\")"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Invitation created in persisted membership state."
           },
           {
             "screenshot": "qa054-live-data-ui-api-smoke.png",
@@ -44,8 +59,157 @@
       }
     ]
   },
+  "setup_commands": [
+    {
+      "id": "backup-env",
+      "command": "test ! -f .env || test -f .env.autopilot-backup || cp .env .env.autopilot-backup",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "copy-qa-env",
+      "command": "test -f ${qa_env_file} && cp ${qa_env_file} .env",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "install-deps",
+      "command": "uv sync",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "start-postgres",
+      "command": "docker compose up -d postgres",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "reset-qa-db",
+      "command": "docker compose exec -T postgres sh -c 'dropdb -U postgres --if-exists ${qa_database} && createdb -U postgres ${qa_database}'",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "migrate-db",
+      "command": "uv run alembic upgrade head",
+      "expect_exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "seed-local-tenants",
+      "command": "docker compose exec -T postgres psql -U postgres -d ${qa_database} -v ON_ERROR_STOP=1 -c \"INSERT INTO tenants (tenant_id, slug, display_name, status, created_at, updated_at) VALUES ('11111111-1111-1111-1111-111111111111', 'acme', 'Acme', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP), ('22222222-2222-2222-2222-222222222222', 'globex', 'Globex', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (slug) DO NOTHING\"",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "seed-membership-live-data",
+      "command": "uv run python scripts/qa/seed_membership_qa054.py",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120,
+      "expect_contains": "Seeded QA054 membership live records"
+    },
+    {
+      "id": "create-artifact-root",
+      "command": "mkdir -p ${artifact_root} ${playwright_output_dir}",
+      "expect_exit_code": 0
+    }
+  ],
+  "extra_commands": [
+    {
+      "id": "membership-bootstrap-seeded",
+      "command": "curl --fail --silent -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/memberships/bootstrap.json?tenant_id=11111111-1111-1111-1111-111111111111'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Membership Administration",
+        "Maya Chen",
+        "Role grant created from qa054 live seed.",
+        "Support overrides"
+      ],
+      "expect_not_contains": [
+        "qa034-secret-value",
+        "qa034",
+        "raw email",
+        "full subject",
+        "authorization header",
+        "provider token",
+        "credential value",
+        "Globex Tenant Admin"
+      ]
+    },
+    {
+      "id": "membership-access-history-seeded",
+      "command": "curl --fail --silent -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/memberships/access-history.json?tenant_id=11111111-1111-1111-1111-111111111111'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Open membership workspace",
+        "trace-qa054-allow"
+      ],
+      "expect_not_contains": [
+        "authorization header",
+        "raw email",
+        "provider token"
+      ]
+    },
+    {
+      "id": "membership-audit-seeded",
+      "command": "curl --fail --silent -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/memberships/audit.json?tenant_id=11111111-1111-1111-1111-111111111111'",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Role grant created from qa054 live seed.",
+        "role_grant_created"
+      ],
+      "expect_not_contains": [
+        "raw email",
+        "full subject",
+        "stack trace"
+      ]
+    },
+    {
+      "id": "membership-cross-tenant-empty",
+      "command": "curl --fail --silent -H 'X-Local-Principal: tenant-admin-globex' 'http://127.0.0.1:8000/admin/app/memberships/bootstrap.json?tenant_id=22222222-2222-2222-2222-222222222222'",
+      "expect_exit_code": 0,
+      "expect_contains": "No live membership rows",
+      "expect_not_contains": [
+        "Maya Chen",
+        "Role grant created from qa054 live seed.",
+        "Safe qa054 support review"
+      ]
+    }
+  ],
+  "extra_quality_commands": [
+    {
+      "id": "generated-admin-react-types",
+      "command": "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "focused-membership-backend-tests",
+      "command": "uv run pytest --no-cov tests/unit/admin/memberships/test_react_membership_service.py tests/unit/api/test_admin_membership_react_schema.py tests/unit/db/test_membership_repository.py tests/performance/memberships/test_react_membership_queries.py tests/integration/test_admin_react_routes.py tests/unit/admin/test_live_data_inventory_scanner.py -k 'membership or live_data_inventory' -q",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-membership-tests",
+      "command": "npm run --prefix frontend/admin test -- --run Membership SupportOverride AccessHistory RoleGrant Invitation PrincipalLink StatusActions RawIdentifier",
+      "expect_exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "frontend-typecheck",
+      "command": "npm run --prefix frontend/admin typecheck",
+      "expect_exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "frontend-build",
+      "command": "npm run --prefix frontend/admin build",
+      "expect_exit_code": 0,
+      "timeout_seconds": 180
+    }
+  ],
   "post_spec_validation": {
-    "playwright_database_requirement": "Before this spec is marked complete, update this manifest or the spec status evidence with the UI action exercised by Playwright and the backend API or QA database check proving the UI reflected or persisted live backend state.",
+    "playwright_database_requirement": "Playwright logs in as tenant-admin-acme, renders seeded QA054 membership live rows, clicks Invite, verifies the accepted mutation result, and captures a screenshot. Post-UI verification must run scripts/qa/verify_membership_qa054.py against multi_agent_platform_qa054 to prove the invitation and audit evidence were persisted through the backend.",
+    "post_ui_database_check": "uv run python scripts/qa/verify_membership_qa054.py",
     "curl_test": {
       "skill": "multi-agent-curl-test",
       "database": "multi_agent_curl_test",

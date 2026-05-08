@@ -253,9 +253,7 @@ def render_policy(spec: RoadmapSpec) -> dict[str, object]:
             "record_auto_choices_in_spec": True,
         },
         "validation": {
-            "required_playwright_flows": [
-                f"qa{spec.number}-live-data-ui-api-smoke"
-            ],
+            "required_playwright_flows": [f"qa{spec.number}-live-data-ui-api-smoke"],
             "required_post_spec_commands": [
                 "post-ui-api-or-database-verification",
                 "multi-agent-curl-test",
@@ -274,17 +272,11 @@ def render_validation(spec: RoadmapSpec) -> dict[str, object]:
                 {
                     "id": f"qa{spec.number}-live-data-ui-api-smoke",
                     "steps": [
-                        {
-                            "goto": (
-                                "/auth/local-login?redirect_to="
-                                f"{hint.route}"
-                            )
-                        },
+                        {"goto": (f"/auth/local-login?redirect_to={hint.route}")},
                         {"wait_for_load_state": "networkidle"},
                         {
                             "click": (
-                                "form:has(input[value="
-                                f"\"{hint.principal}\"]) button"
+                                f'form:has(input[value="{hint.principal}"]) button'
                             )
                         },
                         {"wait_for_load_state": "networkidle"},

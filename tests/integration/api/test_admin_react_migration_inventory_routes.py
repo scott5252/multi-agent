@@ -27,6 +27,10 @@ def test_local_principal_decommission_inventory_is_authorized_and_safe(
     app = create_app()
 
     with TestClient(app) as client:
+        platform_response = client.get(
+            "/admin/app/migration/decommission-inventory.json",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
         tenant_response = client.get(
             f"/admin/app/migration/decommission-inventory.json?tenant_id={tenant_id}",
             headers={"X-Local-Principal": "tenant-admin-acme"},
@@ -36,8 +40,10 @@ def test_local_principal_decommission_inventory_is_authorized_and_safe(
             headers={"X-Local-Principal": "tenant-admin-acme"},
         )
 
+    assert platform_response.status_code == 200
     assert tenant_response.status_code == 200
     assert cross_tenant.status_code == 403
+    assert platform_response.json()["summary"]["template_count"] == 0
     tenant_payload = tenant_response.json()
     assert tenant_payload["summary"]["template_count"] == 0
     assert tenant_payload["summary"]["total_items"] == 0
@@ -82,3 +88,26 @@ def test_auth0_shaped_decommission_inventory_principal_is_safe(
     payload = response.json()
     assert payload["summary"]["total_items"] == 0
     assert "auth0|hidden" not in json.dumps(payload)
+
+
+def test_migration_bootstrap_exposes_final_live_only_gate_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tenant_id = uuid4()
+    _configure_env(monkeypatch, tmp_path, tenant_id, uuid4())
+    app = create_app()
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/admin/app/migration/bootstrap.json",
+            headers={"X-Local-Principal": "platform-admin"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    live_data = payload["live_data_inventory"]
+    assert live_data["page_id"] == "qa058-live-only-gate"
+    assert live_data["summary"]["blocking_findings"] == 0
+    assert live_data["summary"]["mapped_legacy_findings"] == 0
+    assert live_data["evidence"][0]["evidence_id"] == "qa058-live-only-source-scan"

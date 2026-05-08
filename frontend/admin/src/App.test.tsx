@@ -7,11 +7,11 @@ import { governanceDashboardFixture } from "./test/governanceTestData";
 import { membershipDashboardFixture } from "./test/membershipTestData";
 import {
   jinjaInventoryDashboard,
+  liveDataInventoryDashboard,
   migrationDashboard,
   migrationRollbackPlan,
   migrationRouteGroups,
 } from "./test/migrationHardeningTestData";
-import { patternsEnvelopeFixture } from "./test/patternsTestData";
 import { bootstrapFixture } from "./test/shellTestData";
 import { skillLifecycleDashboardFixture } from "./test/skillLifecycleTestData";
 import { usageDashboard } from "./test/usageTestData";
@@ -37,7 +37,7 @@ describe("App", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders safe principal scope and React-only migration evidence", async () => {
+  it("renders safe principal scope and admin migration evidence", async () => {
     vi.stubGlobal(
       "fetch",
       vi
@@ -61,6 +61,14 @@ describe("App", () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => jinjaInventoryDashboard,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => liveDataInventoryDashboard,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => migrationDashboard.transitional_label_gate,
         }),
     );
 
@@ -69,20 +77,20 @@ describe("App", () => {
     expect(screen.getByText("Loading admin shell")).toBeInTheDocument();
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "React-only browser UI" }),
+        screen.getByRole("heading", { name: "Admin browser UI" }),
       ).toBeInTheDocument();
     });
 
     expect(screen.getAllByText("Multi-Agent Admin").length).toBeGreaterThan(0);
     expect(screen.getByLabelText("Admin scope")).toHaveTextContent("Acme");
     expect(
-      screen.getByRole("link", { name: "Workflow Registry react" }),
+      screen.getByRole("link", { name: "Workflow Registry Admin" }),
     ).toHaveAttribute(
       "href",
       "/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111",
     );
     expect(screen.getByText("Route safety plan")).toBeInTheDocument();
-    expect(screen.getByText("React-only readiness")).toBeInTheDocument();
+    expect(screen.getByText("Browser UI readiness")).toBeInTheDocument();
   });
 
   it("renders the channel workspace route inside the shell", async () => {
@@ -290,28 +298,23 @@ describe("App", () => {
     expect(screen.getByText("Read-only policy preview")).toBeInTheDocument();
   });
 
-  it("renders the sample data and form patterns route inside the shell", async () => {
+  it("does not render the retired sample patterns route in the shell", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => bootstrapFixture,
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => patternsEnvelopeFixture,
-        }),
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => bootstrapFixture,
+      }),
     );
     window.history.pushState({}, "", "/admin/app/patterns");
 
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText("Forms and data patterns")).toBeInTheDocument();
+      expect(screen.getAllByText("Multi-Agent Admin").length).toBeGreaterThan(0);
     });
-    expect(screen.getByText("Workflow readiness review")).toBeInTheDocument();
+    expect(screen.queryByText("Forms and data patterns")).not.toBeInTheDocument();
+    expect(screen.queryByText("Workflow readiness review")).not.toBeInTheDocument();
   });
 
   it("renders the operations workbench route inside the shell", async () => {
@@ -335,7 +338,9 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText("Operations workbench")).toBeInTheDocument();
     });
-    expect(screen.getByText("Daily briefing graph run")).toBeInTheDocument();
+    expect(
+      screen.getByText("Workflow run 11111111 from live audit evidence"),
+    ).toBeInTheDocument();
   });
 
   it("renders the workflow builder route inside the shell", async () => {
@@ -380,7 +385,7 @@ describe("App", () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText("React admin unavailable")).toBeInTheDocument();
+      expect(screen.getByText("Admin unavailable")).toBeInTheDocument();
     });
     expect(screen.getByText("insufficient_role")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open local login" })).toHaveAttribute(

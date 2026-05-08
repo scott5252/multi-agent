@@ -30,6 +30,13 @@ export function TenantSkillLifecyclePanel({
         <Badge tone="info">{discovery?.grants.length ?? 0} grants</Badge>
       </div>
       <div className="governance-card-grid">
+        {(discovery?.available_versions.length ?? 0) === 0 &&
+        installations.length === 0 ? (
+          <article className="governance-card">
+            <strong>No tenant skill records</strong>
+            <p>{discovery?.empty_state_summary ?? "No live skill grants or installations are visible."}</p>
+          </article>
+        ) : null}
         {discovery?.available_versions.map((version) => (
           <article className="governance-card" key={version.version_id}>
             <div className="card-heading">

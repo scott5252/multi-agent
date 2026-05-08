@@ -25,7 +25,7 @@ vi.mock("@xyflow/react", () => ({
 
 describe("WorkflowGraphPanel", () => {
   it("renders graph canvas and keyboard-readable node and edge lists", () => {
-    render(<WorkflowGraphPanel graph={workflowBuilderEnvelope.draft.graph} />);
+    render(<WorkflowGraphPanel graph={workflowBuilderEnvelope.draft!.graph} />);
 
     expect(screen.getByLabelText("Workflow graph canvas")).toBeInTheDocument();
     expect(screen.getByTestId("graph-controls")).toBeInTheDocument();

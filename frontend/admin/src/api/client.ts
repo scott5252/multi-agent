@@ -1,5 +1,4 @@
 import {
-  assertAdminPageEnvelope,
   assertBuilderMutationResult,
   assertGovernanceDashboard,
   assertGovernanceMutationResult,
@@ -9,6 +8,8 @@ import {
   assertMembershipMutationResult,
   assertAdminMigrationHardeningDashboard,
   assertJinjaInventoryDashboard,
+  assertLiveDataInventoryDashboard,
+  assertTransitionalLabelGate,
   assertBriefingPreferenceList,
   assertBriefingPreferenceMutationResult,
   assertChannelMutationResult,
@@ -26,7 +27,6 @@ import {
   assertPromptGovernanceList,
   assertProviderGovernanceList,
   assertSafePromptPreview,
-  assertExportSnapshot,
   assertMutationResult,
   assertOperationsWorkbenchEnvelope,
   assertLocalLoginEnvelope,
@@ -61,13 +61,11 @@ import {
   assertRunResultResponse,
   assertRunStatusResponse,
   assertTimelineResponse,
-  type AdminPageEnvelope,
   type ArtifactDownloadUrlResponse,
   type ArtifactListResponse,
   type BuilderMutationResult,
   type CallbackRegistrationRequest,
   type CallbackRegistrationResponse,
-  type ExportSnapshot,
   type GovernanceDashboard,
   type GovernanceMutationResult,
   type MembershipAccessHistoryList,
@@ -78,6 +76,8 @@ import {
   type MembershipMutationResult,
   type AdminMigrationHardeningDashboard,
   type JinjaInventoryDashboard,
+  type LiveDataInventoryDashboard,
+  type TransitionalLabelGate,
   type BriefingPreferenceExportRequest,
   type BriefingPreferenceImportRequest,
   type BriefingPreferenceList,
@@ -131,7 +131,6 @@ import {
   type RoleGrantSaveRequest,
   type SafePromptPreview,
   type RunDebugEnvelope,
-  type SampleActionRequest,
   type SkillExecutionDiagnosticList,
   type SkillLifecycleAuditList,
   type SkillLifecycleDashboard,
@@ -156,9 +155,12 @@ import {
   type TestSuiteList,
   type TestSuiteSaveRequest,
   type WorkflowBuilderEnvelope,
+  type WorkflowDraftCopyActionRequest,
+  type WorkflowDraftCreateActionRequest,
   type WorkflowDraftSaveRequest,
   type WorkflowPublishRequest,
   type WorkflowReferenceCatalog,
+  type WorkflowRevisionRestoreActionRequest,
   type WorkbenchExportRequest,
   type WorkbenchExportSnapshot,
 } from "./generated/reactAdminApi";
@@ -247,26 +249,12 @@ export async function fetchCommandSearch(
   return assertReactAdminCommandSearch(await response.json());
 }
 
-export async function fetchPatternsEnvelope(
-  patternsUrl: string,
-): Promise<AdminPageEnvelope> {
-  const response = await fetch(patternsUrl, {
-    credentials: "same-origin",
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) {
-    const detail = await safeErrorDetail(response);
-    throw new Error(detail);
-  }
-  return assertAdminPageEnvelope(await response.json());
-}
-
-export async function submitSampleAction(
+export async function submitAdminMutation(
   actionUrl: string,
-  payload: SampleActionRequest,
+  payload: Record<string, unknown> | undefined,
 ): Promise<MutationResult> {
   const response = await fetch(actionUrl, {
-    body: JSON.stringify(payload),
+    body: payload === undefined ? undefined : JSON.stringify(payload),
     credentials: "same-origin",
     headers: {
       Accept: "application/json",
@@ -279,21 +267,6 @@ export async function submitSampleAction(
     throw new Error(detail);
   }
   return assertMutationResult(await response.json());
-}
-
-export async function requestSampleExport(
-  exportUrl: string,
-): Promise<ExportSnapshot> {
-  const response = await fetch(exportUrl, {
-    credentials: "same-origin",
-    headers: { Accept: "application/json" },
-    method: "POST",
-  });
-  if (!response.ok) {
-    const detail = await safeErrorDetail(response);
-    throw new Error(detail);
-  }
-  return assertExportSnapshot(await response.json());
 }
 
 export async function fetchOperationsWorkbench(
@@ -376,11 +349,71 @@ export async function fetchWorkflowLookups(
   return assertWorkflowReferenceCatalog(await response.json());
 }
 
+export async function createWorkflowDraft(
+  createUrl: string,
+  payload: WorkflowDraftCreateActionRequest,
+): Promise<BuilderMutationResult> {
+  const response = await fetch(createUrl, {
+    body: JSON.stringify(payload),
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertBuilderMutationResult(await response.json());
+}
+
 export async function saveWorkflowDraft(
   saveUrl: string,
   payload: WorkflowDraftSaveRequest,
 ): Promise<BuilderMutationResult> {
   const response = await fetch(saveUrl, {
+    body: JSON.stringify(payload),
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertBuilderMutationResult(await response.json());
+}
+
+export async function restoreWorkflowRevision(
+  restoreUrl: string,
+  payload: WorkflowRevisionRestoreActionRequest,
+): Promise<BuilderMutationResult> {
+  const response = await fetch(restoreUrl, {
+    body: JSON.stringify(payload),
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertBuilderMutationResult(await response.json());
+}
+
+export async function copyWorkflowDraft(
+  copyUrl: string,
+  payload: WorkflowDraftCopyActionRequest,
+): Promise<BuilderMutationResult> {
+  const response = await fetch(copyUrl, {
     body: JSON.stringify(payload),
     credentials: "same-origin",
     headers: {
@@ -1087,6 +1120,34 @@ export async function fetchJinjaInventoryDashboard(
   return assertJinjaInventoryDashboard(await response.json());
 }
 
+export async function fetchLiveDataInventoryDashboard(
+  liveDataInventoryUrl: string,
+): Promise<LiveDataInventoryDashboard> {
+  const response = await fetch(liveDataInventoryUrl, {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertLiveDataInventoryDashboard(await response.json());
+}
+
+export async function fetchTransitionalLabelGate(
+  transitionalLabelGateUrl: string,
+): Promise<TransitionalLabelGate> {
+  const response = await fetch(transitionalLabelGateUrl, {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertTransitionalLabelGate(await response.json());
+}
+
 export async function fetchTestBenchDashboard(
   testBenchUrl: string,
 ): Promise<TestBenchDashboard> {
@@ -1330,7 +1391,7 @@ async function safeErrorDetail(response: Response): Promise<string> {
       return payload.error.message;
     }
   } catch {
-    return `React admin request failed with ${response.status}`;
+    return `Admin request failed with ${response.status}`;
   }
-  return `React admin request failed with ${response.status}`;
+  return `Admin request failed with ${response.status}`;
 }

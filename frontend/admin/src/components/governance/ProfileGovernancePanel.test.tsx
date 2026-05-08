@@ -23,17 +23,19 @@ describe("ProfileGovernancePanel", () => {
       />,
     );
 
-    expect(screen.getByText("Briefing runtime profile")).toBeInTheDocument();
-    expect(screen.getByText("openai-primary through ModelGateway")).toBeInTheDocument();
+    expect(screen.getByText("Governance runtime profile")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(governanceDashboardFixture.providers[0].provider_id),
+    ).toHaveLength(2);
 
     await userEvent.click(screen.getByRole("button", { name: /Resolve/ }));
     await userEvent.click(screen.getByRole("button", { name: /Save profile/ }));
 
     expect(onResolve).toHaveBeenCalledWith(
-      "/admin/app/governance/profiles/briefing-runtime/resolve",
+      governanceDashboardFixture.profiles[0].authorized_actions[1].href,
     );
     expect(onSave).toHaveBeenCalledWith(
-      "/admin/app/governance/profiles/briefing-runtime/save",
+      governanceDashboardFixture.profiles[0].authorized_actions[0].href,
       governanceDashboardFixture.profiles[0],
     );
   });

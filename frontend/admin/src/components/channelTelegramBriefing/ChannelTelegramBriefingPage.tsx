@@ -19,6 +19,7 @@ import type {
   TelegramAliasRecord,
   TelegramTenantConfiguration,
 } from "../../api/generated/reactAdminApi";
+import { buildIdempotencyKey } from "../../utils/adminActionMetadata";
 import { CommonState } from "../states/CommonState";
 import { AliasManagementPanel } from "./AliasManagementPanel";
 import { BriefingPreferenceAdminPanel } from "./BriefingPreferenceAdminPanel";
@@ -74,7 +75,7 @@ export function ChannelTelegramBriefingPage({ channelsUrl }: { channelsUrl: stri
       await saveTelegramConfig(withSearch("/admin/app/channels/telegram/config"), {
         bot_token_reference_label: config.bot_token_reference_label,
         enabled: config.enabled,
-        idempotency_key: "qa036-config-save",
+        idempotency_key: buildIdempotencyKey("telegram-config-save"),
         revision: config.revision,
         webhook_signing_reference_label: config.webhook_signing_reference_label,
       }),
@@ -86,7 +87,7 @@ export function ChannelTelegramBriefingPage({ channelsUrl }: { channelsUrl: stri
       await validateTelegramWebhook(
         withSearch("/admin/app/channels/telegram/webhook/validate"),
         {
-          idempotency_key: "qa036-webhook",
+          idempotency_key: buildIdempotencyKey("telegram-webhook"),
           revision: config.revision,
           tenant_id: config.tenant_id,
         },
@@ -99,9 +100,9 @@ export function ChannelTelegramBriefingPage({ channelsUrl }: { channelsUrl: stri
       await saveTelegramAlias(withSearch("/admin/app/channels/telegram/aliases"), {
         alias_id: null,
         alias_text: "Morning briefing",
-        idempotency_key: "qa036-alias-create",
+        idempotency_key: buildIdempotencyKey("telegram-alias-create"),
         revision: null,
-        target_summary: "Daily briefing workflow",
+        target_summary: "Configured workflow",
       }),
     );
   }
@@ -111,7 +112,7 @@ export function ChannelTelegramBriefingPage({ channelsUrl }: { channelsUrl: stri
       await runTelegramAliasAction(
         withSearch(`/admin/app/channels/telegram/aliases/${alias.alias_id}/${action}`),
         {
-          idempotency_key: `qa036-alias-${action}`,
+          idempotency_key: buildIdempotencyKey(`telegram-alias-${action}`),
           revision: alias.revision,
         },
       ),
@@ -124,7 +125,7 @@ export function ChannelTelegramBriefingPage({ channelsUrl }: { channelsUrl: stri
         withSearch("/admin/app/channels/telegram/link-tokens"),
         {
           expires_in_minutes: 10,
-          idempotency_key: "qa036-link-token",
+          idempotency_key: buildIdempotencyKey("telegram-link-token"),
           principal_label: "Acme briefing user",
         },
       ),
@@ -136,7 +137,7 @@ export function ChannelTelegramBriefingPage({ channelsUrl }: { channelsUrl: stri
       await saveBriefingPreferences(withSearch("/admin/app/channels/briefing/preferences"), {
         commute_mode: "transit",
         default_account_summary: "2 masked account refs",
-        idempotency_key: "qa036-preference-save",
+        idempotency_key: buildIdempotencyKey("briefing-preference-save"),
         location_summary: "Metro area summary",
         news_topics_summary: "4 topic categories",
         output_style: "executive",
@@ -154,9 +155,11 @@ export function ChannelTelegramBriefingPage({ channelsUrl }: { channelsUrl: stri
       await importBriefingPreferences(
         withSearch("/admin/app/channels/briefing/preferences/import"),
         {
-          artifact_reference: "preference-artifact-qa036",
+          artifact_reference:
+            dashboard?.preference_profiles.import_export_evidence[0] ??
+            "client-selected-preference-artifact",
           field_count: 9,
-          idempotency_key: "qa036-preference-import",
+          idempotency_key: buildIdempotencyKey("briefing-preference-import"),
         },
       ),
     );
@@ -168,7 +171,7 @@ export function ChannelTelegramBriefingPage({ channelsUrl }: { channelsUrl: stri
         withSearch("/admin/app/channels/briefing/preferences/export"),
         {
           format: "json",
-          idempotency_key: "qa036-preference-export",
+          idempotency_key: buildIdempotencyKey("briefing-preference-export"),
         },
       ),
     );

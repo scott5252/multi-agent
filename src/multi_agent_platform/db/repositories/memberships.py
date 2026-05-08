@@ -30,7 +30,9 @@ from multi_agent_platform.db.models.access_control import (
     RoleGrant,
     RoleGrantStatus,
     RoleScopeType,
+    SupportOverrideRequest,
 )
+from multi_agent_platform.db.models.tenant import Tenant
 from multi_agent_platform.db.models.user_management import (
     MembershipAuditRecord,
     TenantMembership,
@@ -380,3 +382,21 @@ class MembershipRepository:
             stmt = stmt.where(MembershipAuditRecord.tenant_id == tenant_id)
         stmt = stmt.order_by(MembershipAuditRecord.created_at.desc()).limit(limit)
         return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_support_overrides(
+        self, *, tenant_id: UUID | None, platform_scope: bool, limit: int = 50
+    ) -> list[SupportOverrideRequest]:
+        stmt = select(SupportOverrideRequest)
+        if not platform_scope:
+            stmt = stmt.where(SupportOverrideRequest.target_tenant_id == tenant_id)
+        elif tenant_id is not None:
+            stmt = stmt.where(SupportOverrideRequest.target_tenant_id == tenant_id)
+        stmt = stmt.order_by(SupportOverrideRequest.requested_at.desc()).limit(limit)
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def tenant_labels_for_ids(self, tenant_ids: set[UUID]) -> dict[UUID, str]:
+        if not tenant_ids:
+            return {}
+        stmt = select(Tenant).where(Tenant.tenant_id.in_(tenant_ids))
+        tenants = (await self.session.execute(stmt)).scalars().all()
+        return {tenant.tenant_id: tenant.display_name for tenant in tenants}

@@ -9,7 +9,7 @@ import {
 import { PromptGovernancePanel } from "./PromptGovernancePanel";
 
 describe("PromptGovernancePanel", () => {
-  it("renders prompt history and fixture-safe preview controls", async () => {
+  it("renders prompt history and safe preview controls", async () => {
     const onPreview = vi.fn();
     const onSave = vi.fn();
 
@@ -23,19 +23,20 @@ describe("PromptGovernancePanel", () => {
       />,
     );
 
-    expect(screen.getByText("Daily briefing prompt")).toBeInTheDocument();
-    expect(screen.getByText("Daily briefing preview uses safe fixture summaries.")).toBeInTheDocument();
+    expect(screen.getByText("Governance prompt")).toBeInTheDocument();
+    expect(screen.getByText("Prompt preview is summarized before rendering.")).toBeInTheDocument();
     expect(screen.queryByText(/raw prompt/i)).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /Preview unsafe fixture/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Preview redaction check/ }));
     await userEvent.click(screen.getByRole("button", { name: /Save summary/ }));
 
     expect(onPreview).toHaveBeenCalledWith(
-      "/admin/app/governance/prompts/daily-briefing/preview",
+      governanceDashboardFixture.prompts[0].authorized_actions[1].href,
       true,
     );
     expect(onSave).toHaveBeenCalledWith(
-      "/admin/app/governance/prompts/daily-briefing/save",
+      governanceDashboardFixture.prompts[0].authorized_actions[0].href,
+      governanceDashboardFixture.prompts[0],
     );
   });
 });

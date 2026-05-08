@@ -3,15 +3,33 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+from multi_agent_platform.api.schemas.admin_patterns import (
+    AdminAction,
+    AdminActionMethod,
+    PaginationState,
+    SortField,
+    SortingState,
+)
+from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminEmptyStateMetadata,
+    ReactAdminEmptyStateReason,
+    ReactAdminPageActionVariant,
+    ReactAdminPageProvenance,
+    ReactAdminScope,
+    ReactAdminScopeType,
+    ReactAdminSourceKind,
+)
 from multi_agent_platform.api.schemas.admin_workflow_builder import (
     ValidationFinding,
     WorkflowBuilderSeverity,
     WorkflowBuilderStatus,
+    WorkflowCreateEnvelope,
     WorkflowEvidenceSummary,
     WorkflowGraphNode,
     WorkflowJsonInspector,
     WorkflowPublishReadiness,
     WorkflowReferenceOption,
+    WorkflowRegistryEnvelope,
     WorkflowValidationSummary,
 )
 
@@ -33,7 +51,7 @@ def test_workflow_builder_reference_text_rejects_unsafe_markers() -> None:
             label="Daily briefing prompt",
             kind="prompt",
             readiness_status=WorkflowBuilderStatus.READY,
-            safe_summary="raw prompt copied into React",
+            safe_summary="raw prompt copied into Admin",
         )
 
 
@@ -111,3 +129,57 @@ def test_json_inspector_and_publish_readiness_are_safe() -> None:
             redaction_summary="provider authorization header is visible",
             safe_document_preview={"workflow": "Daily briefing workflow"},
         )
+
+
+def test_registry_and_create_envelopes_accept_live_metadata() -> None:
+    scope = ReactAdminScope(
+        scope_type=ReactAdminScopeType.TENANT,
+        tenant_id="11111111-1111-1111-1111-111111111111",
+        label="Acme",
+    )
+    provenance = ReactAdminPageProvenance(
+        source_kind=ReactAdminSourceKind.EMPTY_LIVE_STATE,
+        source_label="Workflow registry records",
+        source_detail="Read from durable workflow registry tables.",
+    )
+    empty_state = ReactAdminEmptyStateMetadata(
+        reason=ReactAdminEmptyStateReason.NO_LIVE_ROWS,
+        title="No workflows found",
+        summary="No authorized workflow records exist for this scope.",
+        setup_hint="Create a workflow draft to populate the registry.",
+        provenance=provenance,
+    )
+    create_action = AdminAction(
+        action_id="workflow-create",
+        label="Create workflow",
+        method=AdminActionMethod.GET,
+        href="/admin/app/workflows/new",
+        variant=ReactAdminPageActionVariant.PRIMARY,
+    )
+
+    registry = WorkflowRegistryEnvelope(
+        page_id="workflow-registry-react",
+        title="Workflow registry",
+        summary="Live workflow registry.",
+        scope=scope,
+        pagination=PaginationState(page_size=10, total_items=0),
+        sorting=SortingState(
+            active=SortField(key="updated_desc", label="Latest updated")
+        ),
+        create_action=create_action,
+        provenance=provenance,
+        empty_state=empty_state,
+    )
+    create = WorkflowCreateEnvelope(
+        page_id="workflow-create-react",
+        title="Create workflow",
+        summary="Start a durable workflow draft.",
+        create_action=create_action,
+        provenance=provenance,
+        empty_state=empty_state,
+    )
+
+    assert registry.pagination is not None
+    assert registry.pagination.total_items == 0
+    assert registry.empty_state == empty_state
+    assert create.provenance == provenance

@@ -20,13 +20,13 @@ describe("CredentialReadinessPanel", () => {
 
     expect(screen.getByText("Reference readiness")).toBeInTheDocument();
     expect(screen.getByText("Acme briefing connector reference")).toBeInTheDocument();
-    expect(screen.getByText("fp_qa032_acme_briefing")).toBeInTheDocument();
+    expect(screen.getByText("fp_live_calendar")).toBeInTheDocument();
     expect(screen.queryByText(/resolved credential/i)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Save reference/ }));
 
     expect(onConfigure).toHaveBeenCalledWith(
-      "/admin/app/skills/installations/install-qa032-daily-briefing/credentials",
+      "/admin/app/skills/installations/install-live-calendar/credentials",
       installation,
       "cred-ref-acme-briefing",
     );

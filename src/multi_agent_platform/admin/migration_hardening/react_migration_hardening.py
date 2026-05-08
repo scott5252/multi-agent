@@ -32,6 +32,11 @@ from multi_agent_platform.api.schemas.admin_react import (
 )
 from multi_agent_platform.auth.principal import PrincipalContext
 
+from .live_data_inventory import (
+    build_live_data_inventory_projection,
+    build_transitional_label_gate,
+)
+
 ACME_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
 QA037_NOW = datetime(2026, 5, 5, 18, 0, tzinfo=UTC)
 QA047_NOW = datetime(2026, 5, 7, 12, 0, tzinfo=UTC)
@@ -56,7 +61,7 @@ def build_migration_dashboard(
     entries = tuple(entry for group in groups for entry in group.entries)
     return AdminMigrationHardeningDashboard(
         page_id="qa047-react-admin-decommission",
-        title="React-only browser UI",
+        title="Admin browser UI",
         description=(
             "Final decommission evidence for route parity, direct-link safety, "
             "dependency removal, accessibility, redaction, and tenant isolation."
@@ -74,6 +79,12 @@ def build_migration_dashboard(
         redaction_sweep=_redaction_sweep(),
         tenant_isolation_sweep=_tenant_isolation_sweep(actor),
         jinja_inventory=build_decommission_inventory_dashboard(),
+        live_data_inventory=build_live_data_inventory_projection(),
+        transitional_label_gate=build_transitional_label_gate(
+            scope=scope,
+            principal=principal,
+            source_scan=False,
+        ),
         states=_states(entries, actor),
     )
 
@@ -109,7 +120,7 @@ def build_decommission_inventory_dashboard() -> JinjaInventoryDashboard:
                 status=MigrationEvidenceStatus.PASS,
             ),
             JinjaInventoryEvidence(
-                evidence_id="react-only-playwright-qa047",
+                evidence_id="admin-ui-playwright-qa047",
                 evidence_type=JinjaInventoryEvidenceType.PLAYWRIGHT,
                 reference="output/playwright/qa047_ui/qa047-react-ui2-smoke.png",
                 status=MigrationEvidenceStatus.PASS,
@@ -145,14 +156,17 @@ def build_migration_rollback_plan(
         plan_id="rollback-plan-qa047",
         status=MigrationOverallStatus.READY,
         feature_flag_label="Release rollback",
-        asset_version_label="React asset manifest qa047-safe",
+        asset_version_label="Admin asset manifest qa047-safe",
         steps=(
             "Redeploy the previous reviewed release if rollback is required.",
             "Keep backend domain services running without data rollback.",
-            "Verify React app, local login, and retained direct links after redeploy.",
+            (
+                "Verify the admin app, local login, and retained direct links "
+                "after redeploy."
+            ),
         ),
         verification_steps=(
-            "Open React admin as platform administrator.",
+            "Open Admin as platform administrator.",
             "Open Acme tenant route with tenant scope preserved.",
             "Confirm redaction sweep still reports zero unsafe matches.",
         ),
@@ -203,7 +217,7 @@ def _summary(
             entry.decision == MigrationRouteDecision.BLOCKED for entry in entries
         )
         else MigrationOverallStatus.PARTIAL,
-        next_step="Browser UI is React-only; keep safe redirects for old links.",
+        next_step="Admin UI is live-only; keep safe redirects for old links.",
     )
 
 
@@ -241,28 +255,19 @@ def _all_route_groups() -> tuple[MigrationRouteGroup, ...]:
     groups: list[MigrationRouteGroup] = [
         MigrationRouteGroup(
             group_id="foundation-shell-qa037",
-            label="React foundation and shell",
+            label="Admin foundation and shell",
             spec_refs=("026", "027", "028"),
             group_status=MigrationOverallStatus.READY,
             entries=(
                 _entry(
                     entry_id="react-home-qa037",
-                    admin_area="React admin home",
+                    admin_area="Admin home",
                     legacy_route="/admin",
                     react_route="/admin/app",
                     decision=MigrationRouteDecision.REACT_PRIMARY,
                     scope_requirement=MigrationScopeRequirement.MIXED,
                     evidence=("qa037-react-home", "audit-qa037-shell"),
                     retirement_allowed=True,
-                ),
-                _entry(
-                    entry_id="patterns-qa037",
-                    admin_area="Shared data and form patterns",
-                    legacy_route="/admin/patterns",
-                    react_route="/admin/app/patterns",
-                    decision=MigrationRouteDecision.REACT_PRIMARY,
-                    scope_requirement=MigrationScopeRequirement.MIXED,
-                    evidence=("qa028-react-patterns",),
                 ),
             ),
         ),
@@ -428,7 +433,7 @@ def _performance_budget() -> MigrationPerformanceBudget:
         measurements=(
             MigrationPerformanceMeasurement(
                 measurement_id="bootstrap-home-qa037",
-                label="React admin home bootstrap",
+                label="Admin home bootstrap",
                 value=214,
                 unit="ms",
                 limit=500,
@@ -446,7 +451,7 @@ def _performance_budget() -> MigrationPerformanceBudget:
             ),
             MigrationPerformanceMeasurement(
                 measurement_id="compressed-assets-qa037",
-                label="React admin compressed assets",
+                label="Admin compressed assets",
                 value=159,
                 unit="kb",
                 limit=250,
@@ -505,12 +510,12 @@ def _states(
 ) -> tuple[MigrationProblem, ...]:
     states = [
         MigrationProblem(
-            reason="react_only_complete",
-            title="React-only browser UI active",
+            reason="admin_ui_complete",
+            title="Admin browser UI active",
             detail="Server-side template rendering is removed from runtime paths.",
             next_action="Keep compatibility redirects monitored for old browser links.",
             severity=MigrationProblemSeverity.INFO,
-            audit_reference="audit-qa047-react-only-complete",
+            audit_reference="audit-qa047-admin-ui-complete",
         )
     ]
     if any(not entry.retirement_allowed for entry in entries):

@@ -10,7 +10,7 @@ describe("WorkflowRevisionPanel and WorkflowJsonInspector", () => {
     render(
       <>
         <WorkflowRevisionPanel revisions={workflowBuilderEnvelope.revisions} />
-        <WorkflowJsonInspector inspector={workflowBuilderEnvelope.json_inspector} />
+        <WorkflowJsonInspector inspector={workflowBuilderEnvelope.json_inspector!} />
       </>,
     );
 

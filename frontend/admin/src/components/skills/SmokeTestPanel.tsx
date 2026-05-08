@@ -26,6 +26,12 @@ export function SmokeTestPanel({
         </div>
       </div>
       <div className="governance-card-grid">
+        {installations.length === 0 ? (
+          <article className="governance-card">
+            <strong>No readiness checks</strong>
+            <p>No tenant skill installation is available for smoke-test readiness.</p>
+          </article>
+        ) : null}
         {installations.map((installation) => {
           const refreshAction = installation.authorized_actions.find(
             (action) => action.action_id === "refresh-smoke-tests",

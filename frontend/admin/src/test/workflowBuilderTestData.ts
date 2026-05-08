@@ -4,6 +4,13 @@ import type {
   WorkflowReferenceCatalog,
 } from "../api/generated/reactAdminApi";
 
+const workflowProvenance = {
+  last_verified_at: null,
+  source_detail: "Workflow test data mirrors durable live-data projections.",
+  source_kind: "live_repository" as const,
+  source_label: "Workflow live data",
+};
+
 export const workflowReferenceCatalog: WorkflowReferenceCatalog = {
   profile_options: [
     {
@@ -142,6 +149,8 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
       variant: "primary",
     },
     page_id: "workflow-create-react",
+    empty_state: null,
+    provenance: workflowProvenance,
     summary:
       "Start from a minimal ready workflow or a blocked-readiness fixture that exercises publish gates.",
     templates: [
@@ -287,6 +296,7 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
       sort: "updated",
       status: "all",
     },
+    empty_state: null,
     items: [
       {
         actions: [
@@ -319,13 +329,36 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
       },
     ],
     page_id: "workflow-registry-react",
+    pagination: {
+      next_cursor: null,
+      page_size: 10,
+      page_size_options: [10, 25, 50],
+      previous_cursor: null,
+      total_items: 1,
+      total_known: true,
+    },
+    provenance: workflowProvenance,
     scope: {
       label: "Acme",
       scope_type: "tenant",
       tenant_id: "11111111-1111-1111-1111-111111111111",
     },
+    sorting: {
+      active: {
+        direction: "desc",
+        key: "updated",
+        label: "Latest updated",
+      },
+      allowed: [
+        {
+          direction: "desc",
+          key: "updated",
+          label: "Latest updated",
+        },
+      ],
+    },
     summary:
-      "React workflow registry with draft, published version, required evidence, and sharing summaries.",
+      "Admin workflow registry with draft, published version, required evidence, and sharing summaries.",
     title: "Workflow registry",
   },
   json_inspector: {
@@ -426,6 +459,8 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
     },
   ],
   state: null,
+  provenance: workflowProvenance,
+  empty_state: null,
   title: "Workflow builder",
   validation: {
     artifact_reference_ids: ["artifact-ref-qa030-validation"],

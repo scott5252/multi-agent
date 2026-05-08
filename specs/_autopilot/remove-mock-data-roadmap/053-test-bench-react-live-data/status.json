@@ -1,0 +1,166 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "053",
+  "title": "Test Bench React Live Data",
+  "status": "completed",
+  "active_phase": "completed",
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      {
+        "name": "qa-docs",
+        "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/053-test-bench-react-live-data",
+        "status": "passed"
+      },
+      {
+        "name": "spec-qa",
+        "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/053-test-bench-react-live-data/validation.yml",
+        "status": "passed"
+      },
+      {
+        "name": "playwright-ui",
+        "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/053-test-bench-react-live-data/validation.yml --start-processes",
+        "status": "passed",
+        "screenshot": "output/playwright/qa053_ui/qa053-live-data-ui-api-smoke.png"
+      },
+      {
+        "name": "post-ui-verifier",
+        "command": "uv run python scripts/qa/verify_test_bench_qa053.py",
+        "status": "passed",
+        "summary": "suite_revision=3; case_revision=3; passed_runs=1; artifact_id=53000000-0000-0000-0000-000000000008"
+      },
+      {
+        "name": "curl-test",
+        "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa053-after-spec",
+        "status": "passed",
+        "artifact_dir": ".data/curl_test_runs/qa053-after-spec"
+      }
+    ]
+  },
+  "artifacts": {
+    "spec": "specs/053-test-bench-react-live-data/spec.md",
+    "requirements_checklist": "specs/053-test-bench-react-live-data/checklists/requirements.md",
+    "plan": "specs/053-test-bench-react-live-data/plan.md",
+    "research": "specs/053-test-bench-react-live-data/research.md",
+    "data_model": "specs/053-test-bench-react-live-data/data-model.md",
+    "contracts": [
+      "specs/053-test-bench-react-live-data/contracts/test-bench-live-data-ui.md",
+      "specs/053-test-bench-react-live-data/contracts/test-bench-live-data.openapi.yaml"
+    ],
+    "quickstart": "specs/053-test-bench-react-live-data/quickstart.md",
+    "tasks": "specs/053-test-bench-react-live-data/tasks.md",
+    "qa_docs": [
+      "specs/053-test-bench-react-live-data/qa053.md",
+      "specs/053-test-bench-react-live-data/qa053_ui.md",
+      "specs/053-test-bench-react-live-data/qa053_user_guide.md",
+      "specs/053-test-bench-react-live-data/pr_notes.md"
+    ],
+    "validation": {
+      "qa_env": "specs/053-test-bench-react-live-data/.env.qa053",
+      "qa_seed": "scripts/qa/seed_test_bench_qa053.py",
+      "post_ui_verifier": "scripts/qa/verify_test_bench_qa053.py",
+      "playwright_screenshot": "output/playwright/qa053_ui/qa053-live-data-ui-api-smoke.png",
+      "curl_test_dir": ".data/curl_test_runs/qa053-after-spec"
+    }
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 053 specification from generated autopilot prompt after completing Spec 052 validation, retaining prior validated dirty-worktree changes without requiring a commit."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 053 feature specification and completed requirements checklist with no clarification markers."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification using roadmap defaults for suite/case authoring, local-safe execution, target references, launch idempotency, progress polling, artifact access, publish-gate freshness, trace redaction, and QA seed runs."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five autopilot clarifications covering source-of-truth services, local-safe execution, target and publish-gate reference resolution, durable launch/progress behavior, and safe evidence rendering."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started implementation planning for live test bench projections, durable safe actions, QA seeding, contracts, tests, scanner updates, and validation."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created plan, research, data model, quickstart, test bench live-data contracts, and updated AGENTS plan pointer."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation for live test bench projections, durable safe actions, empty/seeded tests, frontend updates, scanner checks, QA docs, Playwright, post-UI verification, and curl validation."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated 63 dependency-ordered tasks covering live test bench projections, safe details, durable test bench actions, QA docs, generated contracts, Playwright, post-UI API/database verification, and curl validation."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started cross-artifact consistency analysis across spec.md, plan.md, and tasks.md."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Completed cross-artifact consistency analysis; no CRITICAL or HIGH findings remain."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started implementation phase for Spec 053."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Completed Spec 053 implementation: test bench React production routes now use live repository-backed suite, case, run, artifact, gate, audit, and durable safe mutation projections with truthful empty/unavailable states."
+    },
+    {
+      "phase": "validation",
+      "status": "in_progress",
+      "note": "Started mandatory Spec 053 validation after implementation; dirty validated worktree remains intentionally uncommitted per user instruction."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Passed QA docs, run_spec_qa, Playwright UI with screenshot output/playwright/qa053_ui/qa053-live-data-ui-api-smoke.png, post-UI persistence verifier, and multi-agent curl test in .data/curl_test_runs/qa053-after-spec."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 053 completed and ready to advance queue next_spec to 054 without requiring an intermediate Git commit."
+    }
+  ],
+  "auto_clarifications": [
+    "Use AgentTestBenchService, AgentTestRepository, artifact storage references, workflow publish-gate services, usage summaries, and audit records as the source of truth; React receives only backend-owned projections.",
+    "Use mocked-safe or deterministic local execution modes only; no real provider, connector, credential, external tool, or outbound calls run unless an explicit approved artifact marks a live probe path.",
+    "Resolve only persisted, authorized, current-scope workflow, profile, suite, case, and publish-gate requirement records; missing, stale, or cross-tenant references return unavailable, stale, or denied states.",
+    "Persist run launch requests with idempotency and revision evidence, poll durable run and step state, and show pending or unavailable progress when evidence is absent rather than fabricating completion.",
+    "Display safe summaries, artifact references, hashes, access outcomes, timestamps, and audit references only; raw transcripts, prompts, completions, run payloads, traces, local paths, stack traces, and unsafe artifact content never render."
+  ],
+  "task_count": 63,
+  "analysis": {
+    "findings": [],
+    "coverage_summary": "All FR/SC items have direct task coverage across setup, foundational contracts, US1 live state, US2 redaction-safe details, US3 durable mutations, and validation gates.",
+    "critical_remaining": 0,
+    "high_remaining": 0
+  }
+}

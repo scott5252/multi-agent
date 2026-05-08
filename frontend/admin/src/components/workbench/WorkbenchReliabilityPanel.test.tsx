@@ -10,8 +10,7 @@ describe("WorkbenchReliabilityPanel", () => {
       <WorkbenchReliabilityPanel reliability={workbenchEnvelopeFixture.reliability} />,
     );
 
-    expect(screen.getByText("Model gateway breaker")).toBeInTheDocument();
-    expect(screen.getByText("Replay requires confirmation")).toBeInTheDocument();
-    expect(screen.getByText("Confirm safe replay preview")).toBeInTheDocument();
+    expect(screen.getByText("Open breakers")).toBeInTheDocument();
+    expect(screen.getByText("1 open breaker records.")).toBeInTheDocument();
   });
 });

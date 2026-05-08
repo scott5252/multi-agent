@@ -14,6 +14,12 @@ export function ProvenancePanel({
         </div>
       </div>
       <div className="governance-card-grid">
+        {provenance.length === 0 ? (
+          <article className="governance-card">
+            <strong>No run provenance found</strong>
+            <p>No redaction-safe run provenance exists for this scope.</p>
+          </article>
+        ) : null}
         {provenance.map((run) => (
           <article className="governance-card" key={run.run_id}>
             <div className="card-heading">

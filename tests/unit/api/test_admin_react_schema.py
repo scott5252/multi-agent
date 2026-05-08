@@ -6,10 +6,14 @@ import pytest
 from pydantic import ValidationError
 
 from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminActionMetadata,
     ReactAdminCommandSearchResult,
+    ReactAdminEmptyStateMetadata,
+    ReactAdminPageProvenance,
     ReactAdminPrincipal,
     ReactAdminScope,
     ReactAdminShellNotification,
+    ReactAdminShellState,
 )
 from multi_agent_platform.auth.principal import (
     AuthMode,
@@ -80,4 +84,62 @@ def test_shell_summaries_are_trimmed_and_reject_empty_values() -> None:
             tone="info",
             title=" ",
             summary="safe",
+        )
+
+
+def test_react_admin_provenance_and_empty_state_are_safe() -> None:
+    provenance = ReactAdminPageProvenance(
+        source_kind="empty_live_state",
+        source_label="Workflow repository",
+        source_detail="Repository returned no rows for the active tenant.",
+    )
+    empty_state = ReactAdminEmptyStateMetadata(
+        reason="no_live_rows",
+        title="No workflows",
+        summary="Create a workflow draft before publish-gate evidence appears.",
+        setup_hint="Use the workflow builder.",
+        provenance=provenance,
+    )
+    shell_state = ReactAdminShellState(
+        state="empty",
+        title="No live records",
+        summary="The page has no persisted rows for this scope.",
+        provenance=provenance,
+        empty_state=empty_state,
+    )
+
+    assert shell_state.provenance.source_kind == "empty_live_state"
+    assert shell_state.empty_state.reason == "no_live_rows"
+
+    with pytest.raises(ValidationError):
+        ReactAdminPageProvenance(
+            source_kind="computed_metadata",
+            source_label="/Users/scott/raw.json",
+        )
+
+    with pytest.raises(ValidationError):
+        ReactAdminEmptyStateMetadata(
+            reason="dependency_unavailable",
+            title="Provider payload",
+            summary="safe",
+            provenance=provenance,
+        )
+
+
+def test_react_admin_action_metadata_rejects_raw_identifiers() -> None:
+    metadata = ReactAdminActionMetadata(
+        revision="backend-revision-current",
+        revision_source="backend",
+        idempotency_key="client-generated-key",
+        idempotency_source="generated_client_state",
+        request_id="client-request-id",
+        request_id_source="generated_client_state",
+    )
+
+    assert metadata.idempotency_source == "generated_client_state"
+
+    with pytest.raises(ValidationError):
+        ReactAdminActionMetadata(
+            idempotency_key="/Users/scott/secrets/request",
+            idempotency_source="generated_client_state",
         )

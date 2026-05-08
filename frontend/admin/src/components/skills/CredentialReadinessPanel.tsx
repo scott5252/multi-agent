@@ -30,6 +30,12 @@ export function CredentialReadinessPanel({
         </div>
       </div>
       <div className="governance-card-grid">
+        {installations.length === 0 ? (
+          <article className="governance-card">
+            <strong>No credential readiness records</strong>
+            <p>No tenant skill installation has credential metadata yet.</p>
+          </article>
+        ) : null}
         {installations.map((installation) => {
           const credentialAction = installation.authorized_actions.find(
             (action) => action.action_id === "configure-credentials",

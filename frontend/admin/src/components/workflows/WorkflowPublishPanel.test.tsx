@@ -25,7 +25,7 @@ describe("WorkflowPublishPanel", () => {
         }}
         onPublish={onPublish}
         publishing={false}
-        readiness={workflowBuilderEnvelope.publish_readiness}
+        readiness={workflowBuilderEnvelope.publish_readiness!}
       />,
     );
 

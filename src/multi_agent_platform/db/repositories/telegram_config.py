@@ -406,3 +406,14 @@ class TelegramConfigRepository:
         self.session.add(record)
         await self.session.flush()
         return record
+
+    async def list_update_receipts(
+        self, *, tenant_id: UUID | None, platform_scope: bool, limit: int = 25
+    ) -> list[TelegramUpdateReceipt]:
+        stmt = select(TelegramUpdateReceipt)
+        if not platform_scope:
+            stmt = stmt.where(TelegramUpdateReceipt.tenant_id == tenant_id)
+        elif tenant_id is not None:
+            stmt = stmt.where(TelegramUpdateReceipt.tenant_id == tenant_id)
+        stmt = stmt.order_by(TelegramUpdateReceipt.received_at.desc()).limit(limit)
+        return list((await self.session.execute(stmt)).scalars().all())

@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "057",
+  "title": "Operations And Run Debug React Live Data",
+  "status": "completed",
+  "active_phase": null,
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "summary": "Spec 057 implementation validated with QA document checks, full Spec QA, Playwright UI/API export smoke, post-UI database verification, and multi-agent curl regression.",
+    "commands": [
+      {
+        "name": "qa_documents",
+        "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/057-operations-and-run-debug-react-live-data",
+        "status": "passed"
+      },
+      {
+        "name": "run_spec_qa",
+        "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/057-operations-and-run-debug-react-live-data/validation.yml",
+        "status": "passed"
+      },
+      {
+        "name": "playwright_ui",
+        "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/057-operations-and-run-debug-react-live-data/validation.yml --start-processes",
+        "status": "passed",
+        "evidence": "output/playwright/qa057_ui/qa057-live-data-ui-api-smoke.png"
+      },
+      {
+        "name": "post_ui_database_check",
+        "command": "uv run python scripts/qa/verify_operations_qa057.py",
+        "status": "passed",
+        "evidence": {
+          "tenant_id": "11111111-1111-1111-1111-111111111111",
+          "workflow_run_id": "57000000-0000-0000-0000-000000000057",
+          "acme_timeline_events": 3,
+          "globex_timeline_events": 0,
+          "run_traces": 2,
+          "gateway_attempts": 1,
+          "capacity_snapshots": 1,
+          "browser_export_reference": "operations-export:d343d066-807f-425c-8829-0080775db330",
+          "browser_export_rows": 6,
+          "browser_export_checksum": "sha256:af04144e6498"
+        }
+      },
+      {
+        "name": "multi_agent_curl_test",
+        "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa057-after-spec",
+        "status": "passed",
+        "evidence": ".data/curl_test_runs/qa057-after-spec"
+      }
+    ]
+  },
+  "artifacts": {
+    "spec": "specs/057-operations-and-run-debug-react-live-data/spec.md",
+    "requirements_checklist": "specs/057-operations-and-run-debug-react-live-data/checklists/requirements.md",
+    "plan": "specs/057-operations-and-run-debug-react-live-data/plan.md",
+    "research": "specs/057-operations-and-run-debug-react-live-data/research.md",
+    "data_model": "specs/057-operations-and-run-debug-react-live-data/data-model.md",
+    "openapi_contract": "specs/057-operations-and-run-debug-react-live-data/contracts/operations-run-debug-live-data.openapi.yaml",
+    "ui_contract": "specs/057-operations-and-run-debug-react-live-data/contracts/operations-run-debug-live-data-ui.md",
+    "quickstart": "specs/057-operations-and-run-debug-react-live-data/quickstart.md",
+    "tasks": "specs/057-operations-and-run-debug-react-live-data/tasks.md"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 057 from queue.json next_spec after completing and reconciling Spec 056. Continuing with validated prior-spec changes in the dirty worktree and without requiring an intermediate Git commit."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 057 feature specification and completed requirements checklist with no unresolved clarification markers in spec.md. Optional git feature and commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification for operations/run-debug live data after reconciling queue.json and status.json for Spec 057."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five autonomous clarification answers in spec.md covering live workbench source of truth, tenant visibility, bounded qa057 time range, direct run-debug resolution, and deterministic likely-cause/export metadata behavior. Optional clarify git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started planning after reconciling queue.json and status.json for Spec 057."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created Spec 057 plan, research, data model, OpenAPI/UI contracts, and quickstart. Updated AGENTS.md SPECKIT latest plan pointer to specs/057-operations-and-run-debug-react-live-data/plan.md."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation after plan artifacts were created and queue/status JSON was valid."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated Spec 057 tasks.md with 54 file-specific tasks covering live operations workbench, run-debug, durable exports, QA seeding, scanner updates, docs, Playwright, post-UI verifier, and curl validation. Optional task git commit hook was skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started Spec 057 cross-artifact analysis after reconciling queue/status. Optional before_analyze git commit hook was skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Cross-artifact analysis completed after local remediation. Added explicit testing/documentation/PR-review sections to spec.md, added README/docs review task T043, made T007 file-specific, and verified no remaining critical/high findings. Optional after_analyze git commit hook was skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started Spec 057 implementation with validated prior-spec changes retained in the dirty worktree."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Completed Spec 057 implementation: live operations workbench/run-debug/export builders, tenant-scoped redaction, QA057 seed/verifier/docs, scanner updates, frontend workbench updates, generated contracts, and focused coverage. Optional git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Validated Spec 057 with QA docs, full run_spec_qa, Playwright UI/API export smoke, post-UI database verifier, and multi-agent curl regression. Screenshot: output/playwright/qa057_ui/qa057-live-data-ui-api-smoke.png. Curl artifacts: .data/curl_test_runs/qa057-after-spec."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 057 completed with status.json and queue.json reconciled. Advancing queue next_spec to 058 while retaining validated changes in the dirty worktree for the final user-managed commit."
+    }
+  ],
+  "auto_clarifications": [
+    "Use live OperationsConsoleService, dependency health, reliability/runtime/provider/channel/skill/usage repositories, and computed system state; persisted snapshots are optional evidence, never fallback fixture rows.",
+    "Tenant admins see tenant-scoped run, delivery, usage, reliability, export, and safe log evidence only; platform-only database, provider, worker, queue, and storage pressure renders hidden or unavailable.",
+    "Default to the last 60 minutes, seed qa057 evidence inside that window, and allow only bounded presets backed by bounded queries.",
+    "Resolve requested run IDs from authorized runtime and audit-debug records; missing runs return not found, unauthorized runs fail closed, and no deterministic fallback run is rendered.",
+    "Derive likely causes deterministically from live symptoms and persist exports with safe storage metadata; UI artifact references must not expose storage URLs or local paths."
+  ],
+  "analysis": {
+    "status": "completed",
+    "findings": [
+      {
+        "id": "C1",
+        "severity": "critical",
+        "category": "Constitution Alignment",
+        "summary": "Initial tasks omitted explicit README/docs quickstart review required by constitution documentation discipline.",
+        "remediation": "Added Testing Instructions, Documentation Impact, PR Review Guidance, and task T043 for README/docs quickstart review or no-update rationale."
+      },
+      {
+        "id": "C2",
+        "severity": "critical",
+        "category": "Constitution Alignment",
+        "summary": "Initial task T007 referenced repository modules broadly rather than exact files.",
+        "remediation": "Updated T007 to name channels, skill_registry, model_providers, usage, and reliability repository files explicitly."
+      }
+    ],
+    "rerun_result": "No remaining critical/high findings; placeholders absent outside checklist self-reference; 55 tasks numbered and file-specific."
+  }
+}

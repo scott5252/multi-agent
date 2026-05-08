@@ -15,7 +15,7 @@ describe("Governance provenance panels", () => {
     );
 
     expect(screen.getByText("Credential reference metadata was reviewed.")).toBeInTheDocument();
-    expect(screen.getByText("Credential reference fingerprint was ready.")).toBeInTheDocument();
+    expect(screen.getByText("1 secret reference(s)")).toBeInTheDocument();
     expect(screen.queryByText(/raw completion/i)).not.toBeInTheDocument();
   });
 });

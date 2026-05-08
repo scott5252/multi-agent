@@ -39,6 +39,18 @@ def test_safe_usage_text_rejects_unsafe_markers() -> None:
             safe_usage_text(marker)
 
 
+def test_usage_react_status_enums_cover_live_data_states() -> None:
+    assert UsageReactConfidenceStatus.MISSING.value == "missing"
+    assert (
+        UsageReactConfidenceStatus.RECONCILIATION_PENDING.value
+        == "reconciliation_pending"
+    )
+    assert UsageReactExportStatus.QUEUED.value == "queued"
+    assert UsageReactExportStatus.VALIDATION.value == "validation"
+    assert UsageReactExportStatus.CONFLICT.value == "conflict"
+    assert UsageReactExportStatus.UNAVAILABLE.value == "unavailable"
+
+
 def test_dashboard_query_validates_range() -> None:
     now = datetime.now(UTC)
     with pytest.raises(ValueError):

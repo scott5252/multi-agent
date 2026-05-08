@@ -1,0 +1,258 @@
+openapi: 3.1.0
+info:
+  title: Membership And Access React Live Data
+  version: 0.1.0
+  description: Backend-owned contracts for the React membership workspace after deterministic QA034 data removal.
+paths:
+  /admin/app/memberships/bootstrap.json:
+    get:
+      summary: Return the live membership dashboard for the authorized active scope.
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 120
+      responses:
+        "200":
+          description: Live, empty, denied, or unavailable membership dashboard.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipDashboard"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/memberships/invitations:
+    post:
+      summary: Create or replay a membership invitation through durable membership services.
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipInvitationSaveRequest"
+      responses:
+        "200":
+          description: Persisted invitation result or safe denial/conflict/unavailable result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipMutationResult"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/memberships/principals/link:
+    post:
+      summary: Link a principal identity when platform authority allows it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrincipalLinkRequest"
+      responses:
+        "200":
+          description: Persisted principal link result or safe conflict/denial.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipMutationResult"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/memberships/role-grants:
+    post:
+      summary: Create or replay a role grant through membership guardrails.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleGrantSaveRequest"
+      responses:
+        "200":
+          description: Persisted grant result or safe denial/conflict/unavailable result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipMutationResult"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/memberships/role-grants/{role_grant_id}/revoke:
+    post:
+      summary: Revoke a live role grant when guardrails allow it.
+      parameters:
+        - name: role_grant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipConfirmationRequest"
+      responses:
+        "200":
+          description: Persisted revoke result or safe denial/conflict/unavailable result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipMutationResult"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/memberships/principals/{principal_identity_id}/{status_action}:
+    post:
+      summary: Suspend or reactivate a live principal identity when platform authority allows it.
+      parameters:
+        - name: principal_identity_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status_action
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [suspend, reactivate]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipConfirmationRequest"
+      responses:
+        "200":
+          description: Persisted status result or safe denial/conflict/unavailable result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipMutationResult"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/memberships/memberships/{tenant_membership_id}/{membership_status}:
+    post:
+      summary: Update a tenant membership status through durable membership services.
+      parameters:
+        - name: tenant_membership_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: membership_status
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [active, suspended, removed]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipConfirmationRequest"
+      responses:
+        "200":
+          description: Persisted membership status result or safe denial/conflict/unavailable result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipMutationResult"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/memberships/access-history.json:
+    get:
+      summary: Return bounded live access decision summaries for the active scope.
+      responses:
+        "200":
+          description: Access decision list with safe summaries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipAccessHistoryList"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+  /admin/app/memberships/audit.json:
+    get:
+      summary: Return bounded live membership audit summaries for the active scope.
+      responses:
+        "200":
+          description: Membership audit list with safe summaries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipAuditList"
+        "401":
+          $ref: "#/components/responses/SafeProblem"
+        "403":
+          $ref: "#/components/responses/SafeProblem"
+components:
+  responses:
+    SafeProblem:
+      description: Redaction-safe problem detail.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [detail]
+            properties:
+              detail:
+                type: string
+  schemas:
+    MembershipDashboard:
+      type: object
+      description: Generated Pydantic schema `MembershipDashboard`; arrays may be empty and must be live, denied, or unavailable.
+    MembershipMutationResult:
+      type: object
+      description: Generated Pydantic schema `MembershipMutationResult`; success requires persisted state or idempotent replay.
+    MembershipInvitationSaveRequest:
+      type: object
+      description: Generated Pydantic schema for creating/replaying invitations.
+    PrincipalLinkRequest:
+      type: object
+      description: Generated Pydantic schema for principal linking.
+    RoleGrantSaveRequest:
+      type: object
+      description: Generated Pydantic schema for role grant creation.
+    MembershipConfirmationRequest:
+      type: object
+      description: Generated Pydantic schema for confirmation or revision-aware membership actions.
+    MembershipAccessHistoryList:
+      type: object
+      description: Generated Pydantic schema for bounded access decision summaries.
+    MembershipAuditList:
+      type: object
+      description: Generated Pydantic schema for bounded membership audit summaries.

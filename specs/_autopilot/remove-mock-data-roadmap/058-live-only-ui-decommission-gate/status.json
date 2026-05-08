@@ -1,0 +1,176 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "058",
+  "title": "Live-Only UI Decommission Gate",
+  "status": "completed",
+  "active_phase": null,
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "summary": "Spec 058 implementation validated with QA document checks, full Spec QA, Playwright live-only gate smoke, post-UI verifier, and multi-agent curl regression.",
+    "commands": [
+      {
+        "name": "qa_documents",
+        "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/058-live-only-ui-decommission-gate",
+        "status": "passed"
+      },
+      {
+        "name": "run_spec_qa",
+        "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/058-live-only-ui-decommission-gate/validation.yml",
+        "status": "passed"
+      },
+      {
+        "name": "playwright_ui",
+        "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/058-live-only-ui-decommission-gate/validation.yml --start-processes",
+        "status": "passed",
+        "evidence": "output/playwright/qa058_ui/qa058-live-data-ui-api-smoke.png"
+      },
+      {
+        "name": "post_ui_verifier",
+        "command": "uv run python scripts/qa/verify_live_only_gate_qa058.py",
+        "status": "passed",
+        "evidence": {
+          "ci_status": "warning",
+          "blocking_findings": 0,
+          "mapped_legacy_findings": 1,
+          "allowed_computed_metadata": 4,
+          "route_targets": 88,
+          "route_probe_expectations": 86,
+          "missed_static_routes": 0,
+          "built_asset_blockers": 0,
+          "report": ".data/qa058-artifacts/live-only-gate-report.json"
+        }
+      },
+      {
+        "name": "multi_agent_curl_test",
+        "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa058-after-spec",
+        "status": "passed",
+        "evidence": ".data/curl_test_runs/qa058-after-spec"
+      }
+    ]
+  },
+  "artifacts": {
+    "spec": "specs/058-live-only-ui-decommission-gate/spec.md",
+    "requirements_checklist": "specs/058-live-only-ui-decommission-gate/checklists/requirements.md",
+    "plan": "specs/058-live-only-ui-decommission-gate/plan.md",
+    "research": "specs/058-live-only-ui-decommission-gate/research.md",
+    "data_model": "specs/058-live-only-ui-decommission-gate/data-model.md",
+    "openapi_contract": "specs/058-live-only-ui-decommission-gate/contracts/live-only-ui-gate.openapi.yaml",
+    "ui_contract": "specs/058-live-only-ui-decommission-gate/contracts/live-only-ui-gate-ui.md",
+    "quickstart": "specs/058-live-only-ui-decommission-gate/quickstart.md",
+    "tasks": "specs/058-live-only-ui-decommission-gate/tasks.md",
+    "qa_guide": "specs/058-live-only-ui-decommission-gate/qa058.md",
+    "qa_ui_guide": "specs/058-live-only-ui-decommission-gate/qa058_ui.md",
+    "qa_user_guide": "specs/058-live-only-ui-decommission-gate/qa058_user_guide.md",
+    "pr_notes": "specs/058-live-only-ui-decommission-gate/pr_notes.md",
+    "validation_manifest": "specs/_autopilot/remove-mock-data-roadmap/058-live-only-ui-decommission-gate/validation.yml"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 058 from queue.json next_spec after completing and reconciling Spec 057. Continuing with validated prior-spec changes in the dirty worktree and without requiring an intermediate Git commit."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 058 feature specification and completed requirements checklist with no unresolved clarification markers. Optional git feature and commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification for the live-only decommission gate after reconciling queue.json and status.json for Spec 058."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded six autonomous clarification answers in spec.md covering scanner scope, QA marker policy, built asset scanning, route probe authentication, QA seed requirements, and delete-versus-retain rules. Optional clarify git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started planning after reconciling queue.json and status.json for Spec 058."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created Spec 058 plan, research, data model, live-only gate contracts, and quickstart. Updated AGENTS.md SPECKIT latest plan pointer to specs/058-live-only-ui-decommission-gate/plan.md. Optional plan git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation after plan artifacts were created and queue/status JSON was valid."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated Spec 058 tasks.md with 62 file-specific tasks covering final inventory, scanner hardening, route response scans, built asset scans, empty/seeded QA evidence, frontend cleanup, docs, Playwright, post-UI verifier, and curl validation. Optional task git commit hook was skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started Spec 058 cross-artifact analysis after reconciling queue/status. Optional before_analyze git commit hook was skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Cross-artifact and current scanner analysis completed. No critical/high findings remained; source scan had no blocking findings and missed static route count was zero. One mapped bootstrap QA marker is deferred to Spec 059. Optional after_analyze git commit hook was skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started Spec 058 implementation with validated prior-spec changes retained in the dirty worktree."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Completed Spec 058 implementation: final live-only gate scanner policy, built asset and generated contract classification, route probe expectations, QA058 seed/verifier/docs, migration live-data panel updates, auth protected-surface entries for the new inventory routes, generated contracts, and focused coverage. Optional git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Validated Spec 058 with QA docs, full run_spec_qa, Playwright live-only gate UI smoke, post-UI verifier, and multi-agent curl regression. Screenshot: output/playwright/qa058_ui/qa058-live-data-ui-api-smoke.png. Verifier report: .data/qa058-artifacts/live-only-gate-report.json. Curl artifacts: .data/curl_test_runs/qa058-after-spec."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 058 completed with status.json and queue.json reconciled. Advancing queue next_spec to 059 while retaining validated changes in the dirty worktree for the final user-managed commit."
+    }
+  ],
+  "auto_clarifications": [
+    "Scan production admin UI route handlers, projection services, generated contracts, built production assets, navigation/bootstrap responses, and route response probes; categorize test/docs/QA/historical paths by policy.",
+    "Block fixed QA markers and fixture-like IDs in production code/assets/responses when they masquerade as domain data; allow them in tests, QA, docs, manifests, and historical specs with explicit categorization.",
+    "Scan production-shipped built assets/manifests for prohibited user-visible fixture/domain markers while ignoring hashes, generated module identifiers, sourcemap-only references, and schema names unless they surface fake domain data.",
+    "Authenticate route probes with deterministic local-principal and Auth0-shaped platform/tenant principals; fail closed when an authorized probe is missing.",
+    "Seed representative persisted records for completed live-data admin surfaces and a fresh empty-state path; document computed/empty routes with no seed requirement when appropriate.",
+    "Delete or disconnect obsolete deterministic production builders after production imports are gone; retain fixtures only under test, QA, docs, or historical-spec boundaries with policy entries and rollback guidance."
+  ],
+  "analysis": {
+    "status": "completed",
+    "findings": [
+      {
+        "id": "A1",
+        "severity": "info",
+        "category": "Source Scan Baseline",
+        "summary": "Existing live-data scanner reports no blocking findings and no missed static admin React JSON routes before implementation.",
+        "remediation": "Proceed with Spec 058 implementation and harden the gate so this remains true in QA/CI validation."
+      },
+      {
+        "id": "A2",
+        "severity": "info",
+        "category": "Deferred Spec 059 Marker",
+        "summary": "The only mapped legacy scanner warning is the admin bootstrap design token QA marker assigned to Spec 059 transitional label cleanup.",
+        "remediation": "Keep this mapped/non-blocking for Spec 058 and let Spec 059 remove the remaining transitional marker."
+      }
+    ],
+    "rerun_result": "No critical/high cross-artifact findings; no blocking live-data scanner findings; missed static route count is zero."
+  }
+}

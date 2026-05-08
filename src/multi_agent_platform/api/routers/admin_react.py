@@ -11,6 +11,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from multi_agent_platform.admin.briefing_preferences.service import (
+    BriefingPreferenceService,
+)
 from multi_agent_platform.admin.channel_telegram_briefing import (
     build_alias_action_result,
     build_alias_save_result,
@@ -53,12 +56,18 @@ from multi_agent_platform.admin.memberships.react_memberships import (
     build_principal_status_result,
     build_role_grant_result,
 )
+from multi_agent_platform.admin.memberships.service import (
+    MembershipAdministrationService,
+)
 from multi_agent_platform.admin.migration_hardening import (
     build_decommission_inventory_dashboard,
+    build_live_data_inventory_dashboard,
     build_migration_dashboard,
     build_migration_rollback_plan,
     build_migration_route_groups,
+    build_transitional_label_gate,
 )
+from multi_agent_platform.admin.service import AdminService
 from multi_agent_platform.admin.skill_lifecycle import (
     build_binding_preview_result,
     build_candidate_result,
@@ -79,15 +88,22 @@ from multi_agent_platform.admin.skill_lifecycle import (
 from multi_agent_platform.admin.skill_lifecycle import (
     build_publish_result as build_skill_publish_result,
 )
+from multi_agent_platform.admin.telegram_config.service import (
+    TelegramConfigurationService,
+)
 from multi_agent_platform.admin.usage.react_usage import (
+    UsageReactExportNotFoundError,
     build_usage_dashboard,
     build_usage_events,
     build_usage_export_detail,
     build_usage_export_result,
 )
 from multi_agent_platform.admin.workflow_builder import (
+    build_copy_result,
+    build_create_result,
+    build_publish_readiness,
     build_publish_result,
-    build_reference_catalog,
+    build_restore_result,
     build_save_result,
     build_validation_result,
     build_workflow_builder_envelope,
@@ -95,6 +111,13 @@ from multi_agent_platform.admin.workflow_builder import (
     build_workflow_legacy_route_mappings,
     build_workflow_registry_envelope,
     build_workflow_version_detail,
+)
+from multi_agent_platform.admin.workflow_registry.service import (
+    DraftConflictError,
+    PublishConflictError,
+    WorkflowAccessError,
+    WorkflowNotFoundError,
+    WorkflowRegistryError,
 )
 from multi_agent_platform.api.deps import ContainerDep, get_session
 from multi_agent_platform.api.routers.admin_console import (
@@ -148,40 +171,15 @@ from multi_agent_platform.api.schemas.admin_membership_react import (
 from multi_agent_platform.api.schemas.admin_migration_hardening_react import (
     AdminMigrationHardeningDashboard,
     JinjaInventoryDashboard,
+    LiveDataInventoryDashboard,
     MigrationRollbackPlan,
     MigrationRouteGroup,
+    TransitionalLabelGate,
 )
 from multi_agent_platform.api.schemas.admin_patterns import (
-    AdminAction,
-    AdminActionMethod,
-    AdminExportStatus,
-    AdminMutationStatus,
-    AdminPageEnvelope,
     AdminProblemReason,
-    AdminSortDirection,
-    ConfirmationRequirement,
-    EvidenceReferenceType,
-    EvidenceSummary,
-    ExportSnapshot,
-    FilterChip,
-    FilterCriterion,
-    FilterOption,
-    FilterProfile,
-    FormFieldDescriptor,
-    IdempotencyReplay,
-    MutationResult,
-    PaginationState,
-    PatternsSampleData,
-    RefreshHint,
     RevisionConflict,
     SafeProblemDetail,
-    SampleActionRequest,
-    SampleFormDescriptor,
-    SampleRecord,
-    SavedFilterSummary,
-    SortField,
-    SortingState,
-    ToastHint,
     ValidationFieldError,
 )
 from multi_agent_platform.api.schemas.admin_react import (
@@ -192,6 +190,8 @@ from multi_agent_platform.api.schemas.admin_react import (
     ReactAdminCommandSearch,
     ReactAdminCommandSearchResult,
     ReactAdminConfig,
+    ReactAdminEmptyStateMetadata,
+    ReactAdminEmptyStateReason,
     ReactAdminFallbackKind,
     ReactAdminFeatureFlags,
     ReactAdminNavigationGroup,
@@ -199,6 +199,7 @@ from multi_agent_platform.api.schemas.admin_react import (
     ReactAdminNotificationTone,
     ReactAdminPageAction,
     ReactAdminPageActionVariant,
+    ReactAdminPageProvenance,
     ReactAdminPrincipal,
     ReactAdminRequiredScope,
     ReactAdminScope,
@@ -208,6 +209,7 @@ from multi_agent_platform.api.schemas.admin_react import (
     ReactAdminShellNotification,
     ReactAdminShellState,
     ReactAdminShellStateKind,
+    ReactAdminSourceKind,
     ReactAdminVersion,
 )
 from multi_agent_platform.api.schemas.admin_skill_lifecycle import (
@@ -261,13 +263,32 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     BuilderMutationResult,
     WorkflowBuilderEnvelope,
     WorkflowCreateEnvelope,
+    WorkflowDraftCopyActionRequest,
+    WorkflowDraftCreateActionRequest,
     WorkflowDraftSaveRequest,
     WorkflowLegacyRouteMapping,
     WorkflowPublishReadiness,
     WorkflowPublishRequest,
     WorkflowReferenceCatalog,
     WorkflowRegistryEnvelope,
+    WorkflowRevisionRestoreActionRequest,
     WorkflowVersionDetail,
+)
+from multi_agent_platform.api.schemas.workflow_editor import PublishGateRequest
+from multi_agent_platform.api.schemas.workflow_registry import (
+    CopyDraftRequest as RegistryCopyDraftRequest,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    PublishDraftRequest,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    RestoreRevisionRequest as RegistryRestoreRevisionRequest,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    WorkflowDraftCreateRequest as RegistryWorkflowDraftCreateRequest,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    WorkflowDraftSaveRequest as RegistryWorkflowDraftSaveRequest,
 )
 from multi_agent_platform.api.ui.admin_console import (
     AdminConsoleAccessError,
@@ -284,14 +305,44 @@ from multi_agent_platform.api.ui.admin_console import (
 from multi_agent_platform.audit.service import AuditService
 from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
+from multi_agent_platform.channels.service import ChannelService
+from multi_agent_platform.db.repositories.agent_profiles import AgentProfileRepository
+from multi_agent_platform.db.repositories.agent_tests import AgentTestRepository
+from multi_agent_platform.db.repositories.artifact import ArtifactRepository
 from multi_agent_platform.db.repositories.audit import AuditRepository
+from multi_agent_platform.db.repositories.briefing_preferences import (
+    BriefingPreferenceRepository,
+)
+from multi_agent_platform.db.repositories.channels import ChannelRepository
+from multi_agent_platform.db.repositories.memberships import MembershipRepository
+from multi_agent_platform.db.repositories.model_providers import ModelProviderRepository
+from multi_agent_platform.db.repositories.model_skill_config import (
+    ModelSkillConfigRepository,
+)
+from multi_agent_platform.db.repositories.prompts import PromptRepository
+from multi_agent_platform.db.repositories.runtime_orchestration import (
+    RuntimeOrchestrationRepository,
+)
+from multi_agent_platform.db.repositories.skill_registry import SkillRegistryRepository
+from multi_agent_platform.db.repositories.telegram_config import (
+    TelegramConfigRepository,
+)
+from multi_agent_platform.db.repositories.usage import (
+    UsageAccessDeniedError,
+    UsageRepository,
+)
+from multi_agent_platform.db.repositories.workflow_registry import (
+    WorkflowRegistryRepository,
+)
 from multi_agent_platform.observability.metrics import (
     record_admin_shell_audit_failure,
 )
+from multi_agent_platform.operations.service import OperationsConsoleService
 from multi_agent_platform.operations.workbench import (
+    RunDebugNotFoundError,
     build_operations_workbench_envelope,
     build_run_debug_envelope,
-    build_workbench_export_snapshot,
+    create_workbench_export_snapshot,
 )
 from multi_agent_platform.testing.agent_bench.react_test_bench import (
     build_artifact_reference,
@@ -307,6 +358,8 @@ from multi_agent_platform.testing.agent_bench.react_test_bench import (
     build_test_suite_detail,
     build_test_suite_list,
 )
+from multi_agent_platform.testing.agent_bench.service import AgentTestBenchService
+from multi_agent_platform.usage.service import UsageAnalyticsService
 
 router = APIRouter(tags=["admin-react"])
 PrincipalDep = Annotated[PrincipalContext, Depends(require_authorized_principal)]
@@ -317,10 +370,6 @@ REACT_BOOTSTRAP_URL = "/admin/app/bootstrap.json"
 REACT_CONFIG_URL = "/admin/app/config.json"
 REACT_MANIFEST_URL = "/admin/app/manifest.json"
 REACT_SEARCH_URL = "/admin/app/search.json"
-REACT_PATTERNS_PATH = "/admin/app/patterns"
-REACT_PATTERNS_URL = "/admin/app/patterns.json"
-REACT_PATTERNS_ACTION_URL = "/admin/app/patterns/actions/sample"
-REACT_PATTERNS_EXPORT_URL = "/admin/app/patterns/export"
 REACT_WORKFLOWS_PATH = "/admin/app/workflows"
 REACT_WORKFLOWS_URL = "/admin/app/workflows/builder.json"
 REACT_WORKFLOWS_LOOKUPS_URL = "/admin/app/workflows/lookups.json"
@@ -342,10 +391,24 @@ REACT_OPERATIONS_PATH = "/admin/app/operations"
 REACT_OPERATIONS_URL = "/admin/app/operations.json"
 REACT_OPERATIONS_EXPORT_URL = "/admin/app/operations/export"
 VITE_ENTRY_KEY = "src/main.tsx"
-DESIGN_TOKEN_VERSION = "qa034"
+DESIGN_TOKEN_VERSION = "admin-shell-2026-05"
 DISABLED_REACT_FALLBACKS: dict[str, str] = {
     "operations": "/admin/operations",
 }
+
+
+def _build_workflow_admin_service(
+    session: AsyncSession,
+    container: ContainerDep,
+) -> AdminService:
+    return AdminService(
+        workflow_repository=WorkflowRegistryRepository(session),
+        artifact_repository=ArtifactRepository(session),
+        audit_service=AuditService(AuditRepository(session)),
+        storage_provider=container.storage_provider,
+        workflow_registry_artifact_prefix=container.settings.workflow_registry_artifact_prefix,
+        logger=container.logger,
+    )
 
 
 @router.get("/admin/app", response_class=HTMLResponse)
@@ -357,7 +420,7 @@ async def react_admin_app(
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> HTMLResponse:
     if not container.settings.react_admin_enabled:
-        raise HTTPException(status_code=404, detail="react admin is disabled")
+        raise HTTPException(status_code=404, detail="admin app is disabled")
     try:
         shell = await build_react_shell(
             request=request,
@@ -388,7 +451,7 @@ async def react_admin_bootstrap(
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> ReactAdminBootstrap:
     if not container.settings.react_admin_enabled:
-        raise HTTPException(status_code=404, detail="react admin is disabled")
+        raise HTTPException(status_code=404, detail="admin app is disabled")
     try:
         shell = await build_react_shell(
             request=request,
@@ -417,7 +480,7 @@ async def react_admin_migration_app(
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> HTMLResponse:
     if not container.settings.react_admin_enabled:
-        raise HTTPException(status_code=404, detail="react admin is disabled")
+        raise HTTPException(status_code=404, detail="admin app is disabled")
     await _migration_shell(
         request=request,
         principal=principal,
@@ -541,6 +604,66 @@ async def react_admin_migration_decommission_inventory(
 
 
 @router.get(
+    "/admin/app/migration/live-data-inventory.json",
+    response_model=LiveDataInventoryDashboard,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_migration_live_data_inventory(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+    ci_mode: Annotated[bool, Query()] = False,
+    source_scan: Annotated[bool, Query()] = True,
+) -> LiveDataInventoryDashboard:
+    shell = await _migration_shell(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    return build_live_data_inventory_dashboard(
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        ci_mode=ci_mode,
+        source_scan=source_scan,
+    )
+
+
+@router.get(
+    "/admin/app/migration/transitional-labels.json",
+    response_model=TransitionalLabelGate,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_migration_transitional_labels(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+    ci_mode: Annotated[bool, Query()] = False,
+    source_scan: Annotated[bool, Query()] = True,
+) -> TransitionalLabelGate:
+    shell = await _migration_shell(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    return build_transitional_label_gate(
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        ci_mode=ci_mode,
+        source_scan=source_scan,
+    )
+
+
+@router.get(
     "/admin/app/migration/jinja-inventory.json",
     response_model=JinjaInventoryDashboard,
     include_in_schema=False,
@@ -633,117 +756,6 @@ async def react_admin_search(
     return react_admin_command_search_from_shell(shell=shell, query=query)
 
 
-@router.get("/admin/app/patterns", response_class=HTMLResponse)
-async def react_admin_patterns_app(
-    request: Request,
-    principal: PrincipalDep,
-    session: SessionDep,
-    container: ContainerDep,
-    tenant_id: Annotated[str | None, Query()] = None,
-) -> HTMLResponse:
-    return await react_admin_app(
-        request=request,
-        principal=principal,
-        session=session,
-        container=container,
-        tenant_id=tenant_id,
-    )
-
-
-@router.get(
-    "/admin/app/patterns.json",
-    response_model=AdminPageEnvelope,
-    responses={
-        400: {"model": SafeProblemDetail},
-        401: {"model": SafeProblemDetail},
-        403: {"model": SafeProblemDetail},
-    },
-)
-async def react_admin_patterns_envelope(
-    request: Request,
-    principal: PrincipalDep,
-    session: SessionDep,
-    status_filter: Annotated[str | None, Query(alias="status")] = None,
-    sort: Annotated[str, Query(max_length=40)] = "name",
-    page_size: Annotated[int, Query(ge=1, le=50)] = 10,
-    tenant_id: Annotated[str | None, Query()] = None,
-) -> AdminPageEnvelope:
-    try:
-        shell = await build_react_shell(
-            request=request,
-            principal=principal,
-            session=session,
-            tenant_id=tenant_id,
-        )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=_problem_detail(
-                reason=AdminProblemReason.TENANT_SCOPE_DENIED
-                if exc.status_code == status.HTTP_403_FORBIDDEN
-                else AdminProblemReason.AUTH_REQUIRED,
-                status_code=exc.status_code,
-                title="Patterns unavailable",
-                detail=exc.reason_category,
-                trace_id=principal.trace_id,
-            ).model_dump(mode="json"),
-        ) from exc
-    return _patterns_envelope(
-        shell=shell,
-        status_filter=status_filter,
-        sort=sort,
-        page_size=page_size,
-    )
-
-
-@router.post(
-    "/admin/app/patterns/actions/sample",
-    response_model=MutationResult,
-)
-async def react_admin_patterns_sample_action(
-    request: Request,
-    payload: SampleActionRequest,
-    principal: PrincipalDep,
-    session: SessionDep,
-    tenant_id: Annotated[str | None, Query()] = None,
-) -> MutationResult:
-    try:
-        shell = await build_react_shell(
-            request=request,
-            principal=principal,
-            session=session,
-            tenant_id=tenant_id,
-        )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return _sample_mutation_result(shell=shell, payload=payload)
-
-
-@router.post("/admin/app/patterns/export", response_model=ExportSnapshot)
-async def react_admin_patterns_export(
-    request: Request,
-    principal: PrincipalDep,
-    session: SessionDep,
-    tenant_id: Annotated[str | None, Query()] = None,
-) -> ExportSnapshot:
-    try:
-        shell = await build_react_shell(
-            request=request,
-            principal=principal,
-            session=session,
-            tenant_id=tenant_id,
-        )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return _export_snapshot(shell)
-
-
 @router.get("/admin/app/workflows", response_class=HTMLResponse)
 async def react_admin_workflows_app(
     request: Request,
@@ -778,20 +790,13 @@ async def react_admin_workflows_new_app(
     )
 
 
-@router.get(
-    "/admin/app/workflows/registry.json",
-    response_model=WorkflowRegistryEnvelope,
-    responses={
-        401: {"model": SafeProblemDetail},
-        403: {"model": SafeProblemDetail},
-    },
-)
-async def react_admin_workflow_registry(
+async def _react_workflow_scope(
+    *,
     request: Request,
-    principal: PrincipalDep,
-    session: SessionDep,
-    tenant_id: Annotated[str | None, Query()] = None,
-) -> WorkflowRegistryEnvelope:
+    principal: PrincipalContext,
+    session: AsyncSession,
+    tenant_id: str | None,
+) -> ReactAdminScope:
     try:
         shell = await build_react_shell(
             request=request,
@@ -804,7 +809,123 @@ async def react_admin_workflow_registry(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_workflow_registry_envelope(scope=_scope_response(shell.active_scope))
+    return _scope_response(shell.active_scope)
+
+
+def _uuid_or_404(value: str, label: str) -> UUID:
+    try:
+        return UUID(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=f"{label} not found") from exc
+
+
+async def _workflow_builder_payload(
+    *,
+    scope: ReactAdminScope,
+    principal: PrincipalContext,
+    service: AdminService,
+    workflow_draft_id: UUID | None = None,
+) -> WorkflowBuilderEnvelope:
+    try:
+        registry_items = await service.list_workflows(principal=principal)
+        selected_draft_id = workflow_draft_id
+        if selected_draft_id is None:
+            selected_draft_id = next(
+                (
+                    item.workflow_draft_id
+                    for item in registry_items
+                    if item.workflow_draft_id is not None
+                ),
+                None,
+            )
+        if selected_draft_id is None:
+            return build_workflow_builder_envelope(
+                scope=scope,
+                principal=principal,
+                registry_items=registry_items,
+            )
+        draft = await service.get_workflow_draft(
+            principal=principal,
+            workflow_draft_id=selected_draft_id,
+        )
+        lookups = await service.get_workflow_editor_lookups(
+            principal=principal,
+            workflow_draft_id=selected_draft_id,
+        )
+        graph = await service.get_workflow_graph_preview(
+            principal=principal,
+            workflow_draft_id=selected_draft_id,
+        )
+        revisions = await service.list_workflow_draft_revisions(
+            principal=principal,
+            workflow_draft_id=selected_draft_id,
+        )
+        gate = await service.evaluate_workflow_publish_gate(
+            principal=principal,
+            workflow_draft_id=selected_draft_id,
+            payload=PublishGateRequest(),
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except DraftConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return build_workflow_builder_envelope(
+        scope=scope,
+        principal=principal,
+        registry_items=registry_items,
+        draft=draft,
+        lookups=lookups,
+        graph_preview=graph,
+        revisions=revisions,
+        publish_gate=gate,
+    )
+
+
+@router.get(
+    "/admin/app/workflows/registry.json",
+    response_model=WorkflowRegistryEnvelope,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_registry(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+    scope_filter: Annotated[str, Query()] = "all",
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    search_query: Annotated[str | None, Query(alias="q")] = None,
+) -> WorkflowRegistryEnvelope:
+    scope = await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    service = _build_workflow_admin_service(session, container)
+    try:
+        items = await service.list_workflows(
+            principal=principal,
+            scope_filter=scope_filter,
+            status=status_filter,
+            search_query=search_query,
+        )
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return build_workflow_registry_envelope(
+        scope=scope,
+        items=items,
+        filters={
+            "status": status_filter or "all",
+            "scope_filter": scope_filter,
+            "sort": "updated_desc",
+        },
+    )
 
 
 @router.get(
@@ -821,19 +942,13 @@ async def react_admin_workflow_create_state(
     session: SessionDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> WorkflowCreateEnvelope:
-    try:
-        shell = await build_react_shell(
-            request=request,
-            principal=principal,
-            session=session,
-            tenant_id=tenant_id,
-        )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return build_workflow_create_envelope(scope=_scope_response(shell.active_scope))
+    scope = await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    return build_workflow_create_envelope(scope=scope)
 
 
 @router.get(
@@ -850,20 +965,14 @@ async def react_admin_workflow_legacy_routes(
     session: SessionDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> tuple[WorkflowLegacyRouteMapping, ...]:
-    try:
-        shell = await build_react_shell(
-            request=request,
-            principal=principal,
-            session=session,
-            tenant_id=tenant_id,
-        )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
+    scope = await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
     return build_workflow_legacy_route_mappings(
-        scope=_scope_response(shell.active_scope),
+        scope=scope,
     )
 
 
@@ -879,27 +988,23 @@ async def react_admin_workflow_builder(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
     workflow_draft_id: Annotated[str | None, Query()] = None,
-    large: Annotated[bool, Query()] = False,
 ) -> WorkflowBuilderEnvelope:
-    try:
-        shell = await build_react_shell(
-            request=request,
-            principal=principal,
-            session=session,
-            tenant_id=tenant_id,
-        )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return build_workflow_builder_envelope(
-        scope=_scope_response(shell.active_scope),
+    scope = await _react_workflow_scope(
+        request=request,
         principal=principal,
-        workflow_draft_id=workflow_draft_id,
-        large=large,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    return await _workflow_builder_payload(
+        scope=scope,
+        principal=principal,
+        service=_build_workflow_admin_service(session, container),
+        workflow_draft_id=_uuid_or_404(workflow_draft_id, "workflow draft")
+        if workflow_draft_id
+        else None,
     )
 
 
@@ -916,24 +1021,20 @@ async def react_admin_workflow_draft_detail(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> WorkflowBuilderEnvelope:
-    try:
-        shell = await build_react_shell(
-            request=request,
-            principal=principal,
-            session=session,
-            tenant_id=tenant_id,
-        )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return build_workflow_builder_envelope(
-        scope=_scope_response(shell.active_scope),
+    scope = await _react_workflow_scope(
+        request=request,
         principal=principal,
-        workflow_draft_id=workflow_draft_id,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    return await _workflow_builder_payload(
+        scope=scope,
+        principal=principal,
+        service=_build_workflow_admin_service(session, container),
+        workflow_draft_id=_uuid_or_404(workflow_draft_id, "workflow draft"),
     )
 
 
@@ -950,25 +1051,32 @@ async def react_admin_workflow_publish_gate_detail(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> WorkflowPublishReadiness:
-    _ = workflow_draft_id
-    try:
-        shell = await build_react_shell(
-            request=request,
-            principal=principal,
-            session=session,
-            tenant_id=tenant_id,
-        )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return build_workflow_builder_envelope(
-        scope=_scope_response(shell.active_scope),
+    await _react_workflow_scope(
+        request=request,
         principal=principal,
-    ).publish_readiness
+        session=session,
+        tenant_id=tenant_id,
+    )
+    service = _build_workflow_admin_service(session, container)
+    draft_id = _uuid_or_404(workflow_draft_id, "workflow draft")
+    try:
+        draft = await service.get_workflow_draft(
+            principal=principal,
+            workflow_draft_id=draft_id,
+        )
+        gate = await service.evaluate_workflow_publish_gate(
+            principal=principal,
+            workflow_draft_id=draft_id,
+            payload=PublishGateRequest(),
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return build_publish_readiness(draft=draft, gate=gate)
 
 
 @router.get(
@@ -984,22 +1092,32 @@ async def react_admin_workflow_version_detail(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> WorkflowVersionDetail:
-    _ = workflow_version_bundle_id
+    scope = await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    service = _build_workflow_admin_service(session, container)
     try:
-        shell = await build_react_shell(
-            request=request,
+        version = await service.get_workflow_version(
             principal=principal,
-            session=session,
-            tenant_id=tenant_id,
+            workflow_version_bundle_id=_uuid_or_404(
+                workflow_version_bundle_id,
+                "workflow version",
+            ),
         )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return build_workflow_version_detail(scope=_scope_response(shell.active_scope))
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    detail = build_workflow_version_detail(scope=scope, version=version)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="workflow version not found")
+    return detail
 
 
 @router.get(
@@ -1014,21 +1132,81 @@ async def react_admin_workflow_builder_lookups(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
+    workflow_draft_id: Annotated[str | None, Query()] = None,
 ) -> WorkflowReferenceCatalog:
+    scope = await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    service = _build_workflow_admin_service(session, container)
     try:
-        shell = await build_react_shell(
-            request=request,
+        lookups = await service.get_workflow_editor_lookups(
             principal=principal,
-            session=session,
-            tenant_id=tenant_id,
+            workflow_draft_id=_uuid_or_404(workflow_draft_id, "workflow draft")
+            if workflow_draft_id
+            else None,
         )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return build_reference_catalog(scope=_scope_response(shell.active_scope))
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return build_workflow_builder_envelope(
+        scope=scope,
+        principal=principal,
+        lookups=lookups,
+    ).reference_catalog
+
+
+@router.post(
+    "/admin/app/workflows",
+    response_model=BuilderMutationResult,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+        409: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_create(
+    payload: WorkflowDraftCreateActionRequest,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> BuilderMutationResult:
+    scope = await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    service = _build_workflow_admin_service(session, container)
+    try:
+        draft = await service.create_workflow_draft(
+            principal=principal,
+            payload=RegistryWorkflowDraftCreateRequest(
+                scope_type=payload.scope_type,
+                tenant_id=payload.tenant_id,
+                workflow_kind=payload.workflow_kind,
+                slug=payload.slug,
+                display_name=payload.display_name,
+                description=payload.description,
+                created_from_version_id=payload.created_from_version_id,
+                document=payload.document,
+            ),
+        )
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except WorkflowRegistryError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return build_create_result(draft=draft, scope=scope)
 
 
 @router.post(
@@ -1045,22 +1223,70 @@ async def react_admin_workflow_builder_save(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> BuilderMutationResult:
-    _ = workflow_draft_id
+    scope = await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    _ = scope
+    service = _build_workflow_admin_service(session, container)
+    draft_id = _uuid_or_404(workflow_draft_id, "workflow draft")
     try:
-        shell = await build_react_shell(
-            request=request,
+        current = await service.get_workflow_draft(
             principal=principal,
-            session=session,
-            tenant_id=tenant_id,
+            workflow_draft_id=draft_id,
         )
-    except AdminConsoleAccessError as exc:
+        document = current.document.model_copy(
+            update={
+                "display_name": payload.name,
+                "description": payload.description,
+            }
+        )
+        base_revision = int(payload.revision)
+        if payload.force_stale:
+            base_revision = max(base_revision - 1, -1)
+        saved = await service.save_workflow_draft(
+            principal=principal,
+            workflow_draft_id=draft_id,
+            payload=RegistryWorkflowDraftSaveRequest(
+                base_revision_number=base_revision,
+                display_name=payload.name,
+                description=payload.description,
+                document=document,
+                change_summary="Admin workflow draft save",
+            ),
+        )
+    except ValueError as exc:
         raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
+            status_code=409, detail="workflow draft revision is stale"
         ) from exc
-    return build_save_result(scope=_scope_response(shell.active_scope), request=payload)
+    except DraftConflictError:
+        current = await service.get_workflow_draft(
+            principal=principal,
+            workflow_draft_id=draft_id,
+        )
+        return build_save_result(
+            conflict=RevisionConflict(
+                submitted_revision=payload.revision,
+                current_revision=str(current.current_revision_number),
+                message="Reload the current draft revision before saving again.",
+                reload_href=(
+                    f"/admin/app/workflows?tenant_id={scope.tenant_id}"
+                    if scope.scope_type == ReactAdminScopeType.TENANT
+                    and scope.tenant_id is not None
+                    else "/admin/app/workflows"
+                ),
+            )
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return build_save_result(draft=saved)
 
 
 @router.post(
@@ -1076,23 +1302,44 @@ async def react_admin_workflow_builder_validate(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     ready: Annotated[bool, Query()] = False,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> BuilderMutationResult:
-    _ = workflow_draft_id
+    _ = ready
+    await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    service = _build_workflow_admin_service(session, container)
+    draft_id = _uuid_or_404(workflow_draft_id, "workflow draft")
     try:
-        await build_react_shell(
-            request=request,
+        validation = await service.validate_workflow_draft(
             principal=principal,
-            session=session,
-            tenant_id=tenant_id,
+            workflow_draft_id=draft_id,
         )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return build_validation_result(ready=ready)
+        draft = await service.get_workflow_draft(
+            principal=principal,
+            workflow_draft_id=draft_id,
+        )
+        gate = await service.evaluate_workflow_publish_gate(
+            principal=principal,
+            workflow_draft_id=draft_id,
+            payload=PublishGateRequest(
+                validation_result_id=str(validation.validation_result_id),
+            ),
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except DraftConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return build_validation_result(
+        draft=draft, validation=validation, publish_gate=gate
+    )
 
 
 @router.post(
@@ -1109,22 +1356,159 @@ async def react_admin_workflow_builder_publish(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> BuilderMutationResult:
-    _ = workflow_draft_id
+    await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    service = _build_workflow_admin_service(session, container)
+    draft_id = _uuid_or_404(workflow_draft_id, "workflow draft")
     try:
-        await build_react_shell(
-            request=request,
+        draft = await service.get_workflow_draft(
             principal=principal,
-            session=session,
-            tenant_id=tenant_id,
+            workflow_draft_id=draft_id,
         )
-    except AdminConsoleAccessError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.reason_category,
-        ) from exc
-    return build_publish_result(request=payload)
+        gate = await service.evaluate_workflow_publish_gate(
+            principal=principal,
+            workflow_draft_id=draft_id,
+            payload=PublishGateRequest(),
+        )
+        if gate.status != "ready" or gate.validation_result_id is None:
+            return build_publish_result(draft=draft, gate=gate)
+        if not payload.confirmed:
+            return build_publish_result(
+                draft=draft,
+                gate=gate,
+                confirmation_required=True,
+            )
+        version = await service.publish_workflow_draft(
+            principal=principal,
+            workflow_draft_id=draft_id,
+            payload=PublishDraftRequest(
+                validation_result_id=UUID(gate.validation_result_id),
+                publish_gate_id=gate.publish_gate_id,
+            ),
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except (DraftConflictError, PublishConflictError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return build_publish_result(draft=draft, version=version, gate=gate)
+
+
+@router.post(
+    "/admin/app/workflows/drafts/{workflow_draft_id}/restore",
+    response_model=BuilderMutationResult,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_builder_restore(
+    workflow_draft_id: str,
+    payload: WorkflowRevisionRestoreActionRequest,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> BuilderMutationResult:
+    scope = await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    service = _build_workflow_admin_service(session, container)
+    draft_id = _uuid_or_404(workflow_draft_id, "workflow draft")
+    try:
+        draft = await service.restore_workflow_revision(
+            principal=principal,
+            workflow_draft_id=draft_id,
+            payload=RegistryRestoreRevisionRequest(
+                revision_number=payload.revision_number,
+                base_revision_number=payload.base_revision_number,
+                change_summary=payload.change_summary,
+            ),
+        )
+    except DraftConflictError:
+        current = await service.get_workflow_draft(
+            principal=principal,
+            workflow_draft_id=draft_id,
+        )
+        return build_restore_result(
+            conflict=RevisionConflict(
+                submitted_revision=str(payload.base_revision_number),
+                current_revision=str(current.current_revision_number),
+                message="Reload the current draft revision before restoring.",
+                reload_href=(
+                    f"/admin/app/workflows?tenant_id={scope.tenant_id}"
+                    if scope.scope_type == ReactAdminScopeType.TENANT
+                    and scope.tenant_id is not None
+                    else "/admin/app/workflows"
+                ),
+            )
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return build_restore_result(draft=draft)
+
+
+@router.post(
+    "/admin/app/workflows/drafts/{workflow_draft_id}/copy",
+    response_model=BuilderMutationResult,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_workflow_builder_copy(
+    workflow_draft_id: str,
+    payload: WorkflowDraftCopyActionRequest,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> BuilderMutationResult:
+    scope = await _react_workflow_scope(
+        request=request,
+        principal=principal,
+        session=session,
+        tenant_id=tenant_id,
+    )
+    service = _build_workflow_admin_service(session, container)
+    draft_id = _uuid_or_404(workflow_draft_id, "workflow draft")
+    try:
+        draft = await service.copy_workflow_draft(
+            principal=principal,
+            workflow_draft_id=draft_id,
+            payload=RegistryCopyDraftRequest(
+                source_revision_number=payload.source_revision_number,
+                new_slug=payload.new_slug,
+                display_name=payload.display_name,
+                description=payload.description,
+                scope_type=payload.scope_type,
+                tenant_id=payload.tenant_id,
+                change_summary=payload.change_summary,
+            ),
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except WorkflowRegistryError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return build_copy_result(draft=draft, scope=scope)
 
 
 @router.get("/admin/app/governance", response_class=HTMLResponse)
@@ -1170,9 +1554,14 @@ async def react_admin_governance_bootstrap(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_governance_dashboard(
-        scope=_scope_response(shell.active_scope),
+    scope = _scope_response(shell.active_scope)
+    return await build_governance_dashboard(
+        scope=scope,
         principal=principal,
+        provider_repository=ModelProviderRepository(session),
+        prompt_repository=PromptRepository(session),
+        profile_repository=AgentProfileRepository(session),
+        config_repository=ModelSkillConfigRepository(session),
     )
 
 
@@ -1202,8 +1591,10 @@ async def react_admin_governance_providers(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_provider_list(
-        scope=_scope_response(shell.active_scope), principal=principal
+    return await build_provider_list(
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        provider_repository=ModelProviderRepository(session),
     )
 
 
@@ -1258,7 +1649,11 @@ async def react_admin_governance_provider_probe(
         session=session,
         tenant_id=None,
     )
-    return build_provider_probe_result(provider_id)
+    return await build_provider_probe_result(
+        provider_id=provider_id,
+        provider_repository=ModelProviderRepository(session),
+        principal=principal,
+    )
 
 
 @router.post(
@@ -1282,7 +1677,11 @@ async def react_admin_governance_provider_credential_reference(
         session=session,
         tenant_id=None,
     )
-    return build_credential_reference_result(provider_id=provider_id, request=payload)
+    return await build_credential_reference_result(
+        provider_id=provider_id,
+        request=payload,
+        provider_repository=ModelProviderRepository(session),
+    )
 
 
 @router.get(
@@ -1311,7 +1710,11 @@ async def react_admin_governance_prompts(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_prompt_list(scope=_scope_response(shell.active_scope))
+    return await build_prompt_list(
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        prompt_repository=PromptRepository(session),
+    )
 
 
 @router.post(
@@ -1342,8 +1745,11 @@ async def react_admin_governance_prompt_save(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_prompt_save_result(
-        prompt_lineage_id=prompt_lineage_id, request=payload
+    return await build_prompt_save_result(
+        prompt_lineage_id=prompt_lineage_id,
+        request=payload,
+        prompt_repository=PromptRepository(session),
+        principal=principal,
     )
 
 
@@ -1375,7 +1781,11 @@ async def react_admin_governance_prompt_preview(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_prompt_preview(prompt_lineage_id=prompt_lineage_id, request=payload)
+    return await build_prompt_preview(
+        prompt_lineage_id=prompt_lineage_id,
+        request=payload,
+        prompt_repository=PromptRepository(session),
+    )
 
 
 @router.get(
@@ -1404,7 +1814,11 @@ async def react_admin_governance_profiles(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_profile_list(scope=_scope_response(shell.active_scope))
+    return await build_profile_list(
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        profile_repository=AgentProfileRepository(session),
+    )
 
 
 @router.post(
@@ -1435,7 +1849,12 @@ async def react_admin_governance_profile_save(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_profile_save_result(profile_id=profile_id, request=payload)
+    return await build_profile_save_result(
+        profile_id=profile_id,
+        request=payload,
+        profile_repository=AgentProfileRepository(session),
+        principal=principal,
+    )
 
 
 @router.post(
@@ -1454,7 +1873,7 @@ async def react_admin_governance_profile_resolve(
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> ProfileResolutionPreview:
     try:
-        await build_react_shell(
+        shell = await build_react_shell(
             request=request,
             principal=principal,
             session=session,
@@ -1465,7 +1884,11 @@ async def react_admin_governance_profile_resolve(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_profile_resolution(profile_id)
+    return await build_profile_resolution(
+        profile_id=profile_id,
+        scope=_scope_response(shell.active_scope),
+        profile_repository=AgentProfileRepository(session),
+    )
 
 
 @router.post(
@@ -1495,9 +1918,10 @@ async def react_admin_governance_routing_preview(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_routing_preview_mutation(
+    return await build_routing_preview_mutation(
         scope=_scope_response(shell.active_scope),
         request=payload,
+        config_repository=ModelSkillConfigRepository(session),
     )
 
 
@@ -1527,7 +1951,10 @@ async def react_admin_governance_history(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_policy_history(scope=_scope_response(shell.active_scope))
+    return await build_policy_history(
+        scope=_scope_response(shell.active_scope),
+        config_repository=ModelSkillConfigRepository(session),
+    )
 
 
 @router.get(
@@ -1558,10 +1985,11 @@ async def react_admin_governance_provenance(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    for provenance in build_run_provenance(scope=_scope_response(shell.active_scope)):
-        if provenance.run_id == run_id:
-            return provenance
-    raise HTTPException(status_code=404, detail="run_provenance_not_found")
+    return await build_run_provenance(
+        scope=_scope_response(shell.active_scope),
+        run_id=run_id,
+        config_repository=ModelSkillConfigRepository(session),
+    )
 
 
 @router.get("/admin/app/skills", response_class=HTMLResponse)
@@ -1607,9 +2035,10 @@ async def react_admin_skills_bootstrap(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_skill_lifecycle_dashboard(
+    return await build_skill_lifecycle_dashboard(
         scope=_scope_response(shell.active_scope),
         principal=principal,
+        repository=SkillRegistryRepository(session),
     )
 
 
@@ -1662,7 +2091,11 @@ async def react_admin_skills_candidate_create(
         session=session,
         tenant_id=None,
     )
-    return build_candidate_result(request=payload)
+    return await build_candidate_result(
+        request=payload,
+        principal=principal,
+        repository=SkillRegistryRepository(session),
+    )
 
 
 @router.post(
@@ -1680,14 +2113,18 @@ async def react_admin_skills_candidate_validate(
     session: SessionDep,
     ready: Annotated[bool, Query()] = True,
 ) -> SkillLifecycleMutationResult:
-    _ = candidate_id
     await _require_platform_admin(
         request=request,
         principal=principal,
         session=session,
         tenant_id=None,
     )
-    return build_candidate_validation_result(ready=ready)
+    _ = candidate_id
+    return await build_candidate_validation_result(
+        ready=ready,
+        principal=principal,
+        repository=SkillRegistryRepository(session),
+    )
 
 
 @router.post(
@@ -1705,16 +2142,18 @@ async def react_admin_skills_candidate_publish(
     principal: PrincipalDep,
     session: SessionDep,
 ) -> SkillLifecycleMutationResult:
-    _ = candidate_id
     shell = await _require_platform_admin(
         request=request,
         principal=principal,
         session=session,
         tenant_id=None,
     )
-    return build_skill_publish_result(
+    _ = candidate_id
+    return await build_skill_publish_result(
         request=payload,
         scope=_scope_response(shell.active_scope),
+        principal=principal,
+        repository=SkillRegistryRepository(session),
     )
 
 
@@ -1733,16 +2172,18 @@ async def react_admin_skills_package_grants(
     principal: PrincipalDep,
     session: SessionDep,
 ) -> SkillLifecycleMutationResult:
-    _ = package_id
     shell = await _require_platform_admin(
         request=request,
         principal=principal,
         session=session,
         tenant_id=None,
     )
-    return build_tenant_grant_result(
+    _ = package_id
+    return await build_tenant_grant_result(
         request=payload,
         scope=_scope_response(shell.active_scope),
+        principal=principal,
+        repository=SkillRegistryRepository(session),
     )
 
 
@@ -1766,10 +2207,12 @@ async def react_admin_skills_package_quarantine(
         session=session,
         tenant_id=None,
     )
-    return build_package_lifecycle_result(
+    return await build_package_lifecycle_result(
         package_id=package_id,
         action="quarantine",
         scope=_scope_response(shell.active_scope),
+        principal=principal,
+        repository=SkillRegistryRepository(session),
     )
 
 
@@ -1793,10 +2236,12 @@ async def react_admin_skills_package_withdraw(
         session=session,
         tenant_id=None,
     )
-    return build_package_lifecycle_result(
+    return await build_package_lifecycle_result(
         package_id=package_id,
         action="withdraw",
         scope=_scope_response(shell.active_scope),
+        principal=principal,
+        repository=SkillRegistryRepository(session),
     )
 
 
@@ -1826,9 +2271,10 @@ async def react_admin_skills_discovery(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_tenant_discovery(
+    return await build_tenant_discovery(
         scope=_scope_response(shell.active_scope),
         principal=principal,
+        repository=SkillRegistryRepository(session),
     )
 
 
@@ -1858,7 +2304,10 @@ async def react_admin_skills_installations(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_tenant_installations(scope=_scope_response(shell.active_scope))
+    return await build_tenant_installations(
+        scope=_scope_response(shell.active_scope),
+        repository=SkillRegistryRepository(session),
+    )
 
 
 @router.post(
@@ -1877,7 +2326,6 @@ async def react_admin_skills_install(
     session: SessionDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> SkillLifecycleMutationResult:
-    _ = installation_id
     try:
         shell = await build_react_shell(
             request=request,
@@ -1890,9 +2338,12 @@ async def react_admin_skills_install(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_install_result(
+    return await build_install_result(
+        installation_id=installation_id,
         request=payload,
         scope=_scope_response(shell.active_scope),
+        principal=principal,
+        repository=SkillRegistryRepository(session),
     )
 
 
@@ -1912,9 +2363,8 @@ async def react_admin_skills_credentials(
     session: SessionDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> SkillLifecycleMutationResult:
-    _ = installation_id
     try:
-        await build_react_shell(
+        shell = await build_react_shell(
             request=request,
             principal=principal,
             session=session,
@@ -1925,7 +2375,13 @@ async def react_admin_skills_credentials(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_credential_configuration_result(request=payload)
+    return await build_credential_configuration_result(
+        installation_id=installation_id,
+        request=payload,
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        repository=SkillRegistryRepository(session),
+    )
 
 
 @router.post(
@@ -1944,7 +2400,6 @@ async def react_admin_skills_smoke_tests(
     session: SessionDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> SkillLifecycleMutationResult:
-    _ = installation_id
     try:
         shell = await build_react_shell(
             request=request,
@@ -1957,9 +2412,12 @@ async def react_admin_skills_smoke_tests(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_readiness_refresh_result(
+    return await build_readiness_refresh_result(
+        installation_id=installation_id,
         request=payload,
         scope=_scope_response(shell.active_scope),
+        principal=principal,
+        repository=SkillRegistryRepository(session),
     )
 
 
@@ -1989,7 +2447,10 @@ async def react_admin_skills_diagnostics(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_skill_execution_diagnostics(scope=_scope_response(shell.active_scope))
+    return await build_skill_execution_diagnostics(
+        scope=_scope_response(shell.active_scope),
+        repository=SkillRegistryRepository(session),
+    )
 
 
 @router.post(
@@ -2018,7 +2479,11 @@ async def react_admin_skills_diagnostics_run(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_connector_diagnostic_result(scope=_scope_response(shell.active_scope))
+    return await build_connector_diagnostic_result(
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        repository=SkillRegistryRepository(session),
+    )
 
 
 @router.post(
@@ -2058,9 +2523,11 @@ async def react_admin_skills_eligibility_preview(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_binding_preview_result(
+    return await build_binding_preview_result(
         scope=_scope_response(shell.active_scope),
         request=payload,
+        principal=principal,
+        repository=SkillRegistryRepository(session),
     )
 
 
@@ -2090,7 +2557,10 @@ async def react_admin_skills_audit(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_skill_lifecycle_audit(scope=_scope_response(shell.active_scope))
+    return await build_skill_lifecycle_audit(
+        scope=_scope_response(shell.active_scope),
+        repository=SkillRegistryRepository(session),
+    )
 
 
 @router.get("/admin/app/test-bench", response_class=HTMLResponse)
@@ -2136,7 +2606,8 @@ async def react_admin_test_bench_bootstrap(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_test_bench_dashboard(
+    return await build_test_bench_dashboard(
+        repository=AgentTestRepository(session),
         scope=_scope_response(shell.active_scope),
         principal=principal,
     )
@@ -2168,7 +2639,10 @@ async def react_admin_test_bench_suites(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_test_suite_list(scope=_scope_response(shell.active_scope))
+    return await build_test_suite_list(
+        repository=AgentTestRepository(session),
+        scope=_scope_response(shell.active_scope),
+    )
 
 
 @router.post(
@@ -2198,9 +2672,13 @@ async def react_admin_test_bench_suite_save(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_suite_save_result(
+    repository = AgentTestRepository(session)
+    return await build_suite_save_result(
+        repository=repository,
+        service=AgentTestBenchService(repository),
         request=payload,
         scope=_scope_response(shell.active_scope),
+        principal=principal,
     )
 
 
@@ -2232,10 +2710,16 @@ async def react_admin_test_bench_suite_detail(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_test_suite_detail(
-        suite_id=suite_id,
-        scope=_scope_response(shell.active_scope),
-    )
+    try:
+        return await build_test_suite_detail(
+            repository=AgentTestRepository(session),
+            suite_id=suite_id,
+            scope=_scope_response(shell.active_scope),
+        )
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="not_found"
+        ) from exc
 
 
 @router.post(
@@ -2266,11 +2750,20 @@ async def react_admin_test_bench_case_save(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_case_save_result(
-        suite_id=suite_id,
-        request=payload,
-        scope=_scope_response(shell.active_scope),
-    )
+    repository = AgentTestRepository(session)
+    try:
+        return await build_case_save_result(
+            repository=repository,
+            service=AgentTestBenchService(repository),
+            suite_id=suite_id,
+            request=payload,
+            scope=_scope_response(shell.active_scope),
+            principal=principal,
+        )
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="not_found"
+        ) from exc
 
 
 @router.post(
@@ -2301,11 +2794,20 @@ async def react_admin_test_bench_run_launch(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_run_launch_result(
-        suite_id=suite_id,
-        request=payload,
-        scope=_scope_response(shell.active_scope),
-    )
+    repository = AgentTestRepository(session)
+    try:
+        return await build_run_launch_result(
+            repository=repository,
+            service=AgentTestBenchService(repository),
+            suite_id=suite_id,
+            request=payload,
+            scope=_scope_response(shell.active_scope),
+            principal=principal,
+        )
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="not_found"
+        ) from exc
 
 
 @router.get(
@@ -2334,7 +2836,10 @@ async def react_admin_test_bench_runs(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_test_run_list(scope=_scope_response(shell.active_scope))
+    return await build_test_run_list(
+        repository=AgentTestRepository(session),
+        scope=_scope_response(shell.active_scope),
+    )
 
 
 @router.get(
@@ -2365,10 +2870,16 @@ async def react_admin_test_bench_run_detail(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_test_run_detail(
-        run_id=run_id,
-        scope=_scope_response(shell.active_scope),
-    )
+    try:
+        return await build_test_run_detail(
+            repository=AgentTestRepository(session),
+            run_id=run_id,
+            scope=_scope_response(shell.active_scope),
+        )
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="not_found"
+        ) from exc
 
 
 @router.get(
@@ -2397,7 +2908,10 @@ async def react_admin_test_bench_gates(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_publish_gate_evidence(scope=_scope_response(shell.active_scope))
+    return await build_publish_gate_evidence(
+        repository=AgentTestRepository(session),
+        scope=_scope_response(shell.active_scope),
+    )
 
 
 @router.post(
@@ -2416,9 +2930,8 @@ async def react_admin_test_bench_gate_refresh(
     session: SessionDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> TestBenchMutationResult:
-    _ = gate_id
     try:
-        await build_react_shell(
+        shell = await build_react_shell(
             request=request,
             principal=principal,
             session=session,
@@ -2429,7 +2942,12 @@ async def react_admin_test_bench_gate_refresh(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_gate_refresh_result(request=payload)
+    return await build_gate_refresh_result(
+        repository=AgentTestRepository(session),
+        gate_id=gate_id,
+        request=payload,
+        scope=_scope_response(shell.active_scope),
+    )
 
 
 @router.get(
@@ -2449,7 +2967,7 @@ async def react_admin_test_bench_artifact(
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> ArtifactReferenceSummary:
     try:
-        await build_react_shell(
+        shell = await build_react_shell(
             request=request,
             principal=principal,
             session=session,
@@ -2460,7 +2978,16 @@ async def react_admin_test_bench_artifact(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_artifact_reference(artifact_reference_id=artifact_reference_id)
+    try:
+        return await build_artifact_reference(
+            repository=AgentTestRepository(session),
+            artifact_reference_id=artifact_reference_id,
+            scope=_scope_response(shell.active_scope),
+        )
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="not_found"
+        ) from exc
 
 
 @router.get(
@@ -2489,7 +3016,10 @@ async def react_admin_test_bench_audit(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_test_bench_audit(scope=_scope_response(shell.active_scope))
+    return await build_test_bench_audit(
+        repository=AgentTestRepository(session),
+        scope=_scope_response(shell.active_scope),
+    )
 
 
 @router.get("/admin/app/memberships", response_class=HTMLResponse)
@@ -2536,7 +3066,10 @@ async def react_admin_memberships_bootstrap(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_membership_dashboard(
+    membership_repository, membership_service = _membership_service(session)
+    return await build_membership_dashboard(
+        repository=membership_repository,
+        service=membership_service,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         allowed_scope_options=tuple(
@@ -2567,7 +3100,10 @@ async def react_admin_memberships_invitation(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_invitation_result(
+    membership_repository, membership_service = _membership_service(session)
+    return await build_invitation_result(
+        service=membership_service,
+        repository=membership_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -2595,7 +3131,10 @@ async def react_admin_memberships_principal_link(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_principal_link_result(
+    membership_repository, membership_service = _membership_service(session)
+    return await build_principal_link_result(
+        service=membership_service,
+        repository=membership_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -2623,7 +3162,10 @@ async def react_admin_memberships_role_grant(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_role_grant_result(
+    membership_repository, membership_service = _membership_service(session)
+    return await build_role_grant_result(
+        service=membership_service,
+        repository=membership_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -2652,7 +3194,10 @@ async def react_admin_memberships_role_grant_revoke(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_grant_revoke_result(
+    membership_repository, membership_service = _membership_service(session)
+    return await build_grant_revoke_result(
+        service=membership_service,
+        repository=membership_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         role_grant_id=role_grant_id,
@@ -2685,7 +3230,10 @@ async def react_admin_memberships_principal_status(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_principal_status_result(
+    membership_repository, membership_service = _membership_service(session)
+    return await build_principal_status_result(
+        service=membership_service,
+        repository=membership_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         principal_identity_id=principal_identity_id,
@@ -2719,7 +3267,10 @@ async def react_admin_memberships_membership_status(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_membership_status_result(
+    membership_repository, membership_service = _membership_service(session)
+    return await build_membership_status_result(
+        service=membership_service,
+        repository=membership_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         tenant_membership_id=tenant_membership_id,
@@ -2748,7 +3299,9 @@ async def react_admin_memberships_access_history(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_membership_access_history(
+    _, membership_service = _membership_service(session)
+    return await build_membership_access_history(
+        service=membership_service,
         scope=_scope_response(shell.active_scope),
         principal=principal,
     )
@@ -2774,7 +3327,9 @@ async def react_admin_memberships_audit(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_membership_audit(
+    _, membership_service = _membership_service(session)
+    return await build_membership_audit(
+        service=membership_service,
         scope=_scope_response(shell.active_scope),
         principal=principal,
     )
@@ -2789,7 +3344,7 @@ async def react_admin_channels_app(
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> HTMLResponse:
     if not container.settings.react_admin_enabled:
-        raise HTTPException(status_code=404, detail="react admin is disabled")
+        raise HTTPException(status_code=404, detail="admin app is disabled")
     await _channel_shell(
         request=request,
         principal=principal,
@@ -2885,6 +3440,7 @@ async def react_admin_channels_bootstrap(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> ChannelTelegramBriefingDashboard:
     shell = await _channel_shell(
@@ -2893,7 +3449,21 @@ async def react_admin_channels_bootstrap(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_channel_telegram_briefing_dashboard(
+    (
+        telegram_repository,
+        telegram_service,
+        briefing_repository,
+        briefing_service,
+        channel_repository,
+        runtime_repository,
+    ) = _channel_telegram_briefing_services(session=session, container=container)
+    return await build_channel_telegram_briefing_dashboard(
+        telegram_service=telegram_service,
+        telegram_repository=telegram_repository,
+        briefing_service=briefing_service,
+        briefing_repository=briefing_repository,
+        channel_repository=channel_repository,
+        runtime_repository=runtime_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         allowed_scope_options=tuple(
@@ -2912,6 +3482,7 @@ async def react_admin_channels_telegram_config(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> ChannelMutationResult:
     shell = await _channel_shell(
@@ -2920,7 +3491,12 @@ async def react_admin_channels_telegram_config(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_telegram_config_result(
+    _repository, telegram_service, *_rest = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_telegram_config_result(
+        telegram_service=telegram_service,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -2937,6 +3513,7 @@ async def react_admin_channels_webhook_validate(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> ChannelMutationResult:
     shell = await _channel_shell(
@@ -2945,7 +3522,12 @@ async def react_admin_channels_webhook_validate(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_webhook_validation_result(
+    _repository, telegram_service, *_rest = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_webhook_validation_result(
+        telegram_service=telegram_service,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -2962,6 +3544,7 @@ async def react_admin_channels_alias_save(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> ChannelMutationResult:
     shell = await _channel_shell(
@@ -2970,7 +3553,12 @@ async def react_admin_channels_alias_save(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_alias_save_result(
+    _repository, telegram_service, *_rest = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_alias_save_result(
+        telegram_service=telegram_service,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -2989,6 +3577,7 @@ async def react_admin_channels_alias_action(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> ChannelMutationResult:
     shell = await _channel_shell(
@@ -2997,7 +3586,13 @@ async def react_admin_channels_alias_action(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_alias_action_result(
+    telegram_repository, telegram_service, *_rest = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_alias_action_result(
+        telegram_service=telegram_service,
+        telegram_repository=telegram_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         alias_id=alias_id,
@@ -3016,6 +3611,7 @@ async def react_admin_channels_link_token(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> LinkTokenResult:
     shell = await _channel_shell(
@@ -3024,7 +3620,12 @@ async def react_admin_channels_link_token(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_link_token_result(
+    _repository, telegram_service, *_rest = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_link_token_result(
+        telegram_service=telegram_service,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -3040,6 +3641,7 @@ async def react_admin_channels_deliveries(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> DeliveryDiagnosticList:
     shell = await _channel_shell(
@@ -3048,9 +3650,25 @@ async def react_admin_channels_deliveries(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_delivery_diagnostics(
+    (
+        telegram_repository,
+        _telegram_service,
+        _briefing_repository,
+        _briefing_service,
+        channel_repository,
+        _runtime_repository,
+    ) = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_delivery_diagnostics(
+        telegram_repository=telegram_repository,
+        channel_repository=channel_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
+        allowed_scope_options=tuple(
+            _scope_option_response(option) for option in shell.available_scopes
+        ),
     )
 
 
@@ -3068,6 +3686,7 @@ async def react_admin_channels_run_status(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> RunStatusSummary:
     shell = await _channel_shell(
@@ -3076,7 +3695,12 @@ async def react_admin_channels_run_status(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_run_status_summary(
+    *_rest, runtime_repository = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_run_status_summary(
+        runtime_repository=runtime_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         workflow_run_id=workflow_run_id,
@@ -3092,6 +3716,7 @@ async def react_admin_channels_briefing_preferences(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> BriefingPreferenceList:
     shell = await _channel_shell(
@@ -3100,7 +3725,19 @@ async def react_admin_channels_briefing_preferences(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_briefing_preferences(
+    (
+        _telegram_repository,
+        _telegram_service,
+        briefing_repository,
+        briefing_service,
+        *_rest,
+    ) = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_briefing_preferences(
+        briefing_service=briefing_service,
+        briefing_repository=briefing_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         allowed_scope_options=tuple(
@@ -3119,6 +3756,7 @@ async def react_admin_channels_briefing_preference_save(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> BriefingPreferenceMutationResult:
     shell = await _channel_shell(
@@ -3127,7 +3765,18 @@ async def react_admin_channels_briefing_preference_save(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_preference_save_result(
+    (
+        _telegram_repository,
+        _telegram_service,
+        _briefing_repository,
+        briefing_service,
+        *_rest,
+    ) = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_preference_save_result(
+        briefing_service=briefing_service,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -3144,6 +3793,7 @@ async def react_admin_channels_briefing_preference_import(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> BriefingPreferenceMutationResult:
     shell = await _channel_shell(
@@ -3152,7 +3802,18 @@ async def react_admin_channels_briefing_preference_import(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_preference_import_result(
+    (
+        _telegram_repository,
+        _telegram_service,
+        briefing_repository,
+        _briefing_service,
+        *_rest,
+    ) = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_preference_import_result(
+        briefing_repository=briefing_repository,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -3169,6 +3830,7 @@ async def react_admin_channels_briefing_preference_export(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> BriefingPreferenceMutationResult:
     shell = await _channel_shell(
@@ -3177,7 +3839,18 @@ async def react_admin_channels_briefing_preference_export(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_preference_export_result(
+    (
+        _telegram_repository,
+        _telegram_service,
+        _briefing_repository,
+        briefing_service,
+        *_rest,
+    ) = _channel_telegram_briefing_services(
+        session=session,
+        container=container,
+    )
+    return await build_preference_export_result(
+        briefing_service=briefing_service,
         scope=_scope_response(shell.active_scope),
         principal=principal,
         request=payload,
@@ -3213,6 +3886,7 @@ async def react_admin_usage_bootstrap(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
     start: Annotated[datetime | None, Query()] = None,
     end: Annotated[datetime | None, Query()] = None,
@@ -3236,12 +3910,15 @@ async def react_admin_usage_bootstrap(
         model_id=model_id,
         usage_status=usage_status,
     )
-    return build_usage_dashboard(
+    repository = UsageRepository(session)
+    return await build_usage_dashboard(
         scope=_scope_response(shell.active_scope),
         principal=principal,
         allowed_scope_options=tuple(
             _scope_option_response(option) for option in shell.available_scopes
         ),
+        repository=repository,
+        service=UsageAnalyticsService(repository),
         query=query,
     )
 
@@ -3258,6 +3935,7 @@ async def react_admin_usage_events(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
     start: Annotated[datetime | None, Query()] = None,
     end: Annotated[datetime | None, Query()] = None,
@@ -3283,9 +3961,12 @@ async def react_admin_usage_events(
         model_id=model_id,
         usage_status=usage_status,
     )
-    return build_usage_events(
+    _ = container
+    repository = UsageRepository(session)
+    return await build_usage_events(
         scope=_scope_response(shell.active_scope),
         principal=principal,
+        repository=repository,
         query=query,
     )
 
@@ -3303,6 +3984,7 @@ async def react_admin_usage_export(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> UsageReactExportSummary:
     shell = await _usage_shell(
@@ -3311,9 +3993,13 @@ async def react_admin_usage_export(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_usage_export_result(
+    repository = UsageRepository(session)
+    return await build_usage_export_result(
         scope=_scope_response(shell.active_scope),
         principal=principal,
+        repository=repository,
+        service=UsageAnalyticsService(repository),
+        storage_provider=container.storage_provider,
         request=payload,
     )
 
@@ -3332,6 +4018,7 @@ async def react_admin_usage_export_detail(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> UsageReactExportSummary:
     shell = await _usage_shell(
@@ -3340,11 +4027,18 @@ async def react_admin_usage_export_detail(
         session=session,
         tenant_id=tenant_id,
     )
-    return build_usage_export_detail(
-        scope=_scope_response(shell.active_scope),
-        principal=principal,
-        usage_export_request_id=usage_export_request_id,
-    )
+    _ = container
+    try:
+        return await build_usage_export_detail(
+            scope=_scope_response(shell.active_scope),
+            principal=principal,
+            repository=UsageRepository(session),
+            usage_export_request_id=usage_export_request_id,
+        )
+    except UsageReactExportNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="usage export not found") from exc
+    except UsageAccessDeniedError as exc:
+        raise HTTPException(status_code=403, detail="usage export denied") from exc
 
 
 @router.get("/admin/app/operations", response_class=HTMLResponse)
@@ -3377,6 +4071,7 @@ async def react_admin_operations_workbench(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     range_preset: Annotated[str, Query(alias="range", max_length=20)] = "60m",
     severity: Annotated[str | None, Query(max_length=40)] = None,
     subsystem: Annotated[str | None, Query(max_length=40)] = None,
@@ -3421,9 +4116,13 @@ async def react_admin_operations_workbench(
             ).model_dump(mode="json"),
         )
     if subsystem is not None and subsystem not in {
+        "audit",
+        "channel",
         "gateway",
-        "telegram",
         "reliability",
+        "runtime",
+        "telegram",
+        "tool",
     }:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -3455,9 +4154,10 @@ async def react_admin_operations_workbench(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_operations_workbench_envelope(
+    return await build_operations_workbench_envelope(
         scope=_scope_response(shell.active_scope),
         principal=principal,
+        service=OperationsConsoleService(session=session, container=container),
         range_preset=range_preset,
         severity=severity,
         subsystem=subsystem,
@@ -3478,6 +4178,7 @@ async def react_admin_operations_run_debug(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> RunDebugEnvelope:
     try:
@@ -3492,10 +4193,15 @@ async def react_admin_operations_run_debug(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_run_debug_envelope(
-        scope=_scope_response(shell.active_scope),
-        workflow_run_id=workflow_run_id,
-    )
+    try:
+        return await build_run_debug_envelope(
+            scope=_scope_response(shell.active_scope),
+            principal=principal,
+            service=OperationsConsoleService(session=session, container=container),
+            workflow_run_id=workflow_run_id,
+        )
+    except RunDebugNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="run debug not found") from exc
 
 
 @router.post(
@@ -3510,6 +4216,7 @@ async def react_admin_operations_export(
     request: Request,
     principal: PrincipalDep,
     session: SessionDep,
+    container: ContainerDep,
     payload: WorkbenchExportRequest | None = None,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> WorkbenchExportSnapshot:
@@ -3525,8 +4232,11 @@ async def react_admin_operations_export(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return build_workbench_export_snapshot(
+    return await create_workbench_export_snapshot(
         scope=_scope_response(shell.active_scope),
+        principal=principal,
+        service=OperationsConsoleService(session=session, container=container),
+        storage_provider=container.storage_provider,
         request=payload,
     )
 
@@ -3556,7 +4266,7 @@ async def react_admin_spa_fallback(
             container=container,
             tenant_id=tenant_id,
         )
-    raise HTTPException(status_code=404, detail="react admin route is unavailable")
+    raise HTTPException(status_code=404, detail="admin route is unavailable")
 
 
 async def build_react_shell(
@@ -3567,7 +4277,7 @@ async def build_react_shell(
     tenant_id: str | None,
     allow_tenant_user: bool = False,
     current_path: str = REACT_MOUNT_PATH,
-    tenant_user_label: str = "React Admin",
+    tenant_user_label: str = "Admin",
 ) -> AdminShellContext:
     if allow_tenant_user and not set(principal.role_codes) & {
         "tenant_admin",
@@ -3600,10 +4310,10 @@ async def build_react_shell(
         principal=principal,
         active_scope=active_scope,
         current_path=current_path,
-        title="React Admin",
+        title="Admin",
         breadcrumbs=(
             BreadcrumbItem(label="Admin", href="/admin"),
-            BreadcrumbItem(label="React Admin", href=current_path, active=True),
+            BreadcrumbItem(label="Admin", href=current_path, active=True),
         ),
         available_scopes=await available_scope_options_for_request(
             principal=principal,
@@ -3625,7 +4335,7 @@ async def build_react_shell(
             reason=exc.__class__.__name__,
         )
         raise AdminConsoleAccessError(
-            "react admin audit persistence is unavailable",
+            "admin audit persistence is unavailable",
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             reason_category="audit_unavailable",
         ) from exc
@@ -3680,6 +4390,13 @@ async def _membership_shell(
         ) from exc
 
 
+def _membership_service(
+    session: AsyncSession,
+) -> tuple[MembershipRepository, MembershipAdministrationService]:
+    repository = MembershipRepository(session)
+    return repository, MembershipAdministrationService(repository)
+
+
 async def _usage_shell(
     *,
     request: Request,
@@ -3723,6 +4440,44 @@ async def _channel_shell(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
+
+
+def _channel_service(container: ContainerDep) -> ChannelService:
+    service = container.state.get("channel_service")
+    if isinstance(service, ChannelService):
+        return service
+    service = ChannelService(settings=container.settings)
+    container.state["channel_service"] = service
+    return service
+
+
+def _channel_telegram_briefing_services(
+    *,
+    session: AsyncSession,
+    container: ContainerDep,
+) -> tuple[
+    TelegramConfigRepository,
+    TelegramConfigurationService,
+    BriefingPreferenceRepository,
+    BriefingPreferenceService,
+    ChannelRepository,
+    RuntimeOrchestrationRepository,
+]:
+    telegram_repository = TelegramConfigRepository(session)
+    briefing_repository = BriefingPreferenceRepository(session)
+    channel_repository = ChannelRepository(session)
+    return (
+        telegram_repository,
+        TelegramConfigurationService(
+            repository=telegram_repository,
+            settings=container.settings,
+            channel_service=_channel_service(container),
+        ),
+        briefing_repository,
+        BriefingPreferenceService(briefing_repository),
+        channel_repository,
+        RuntimeOrchestrationRepository(session),
+    )
 
 
 async def _migration_shell(
@@ -3785,7 +4540,7 @@ async def _tenant_user_react_shell(
         selected=True,
     )
     shell = AdminShellContext(
-        title="React Admin",
+        title="Admin",
         active_scope=active_scope,
         available_scopes=(scope_option,),
         navigation_groups=(),
@@ -3813,7 +4568,7 @@ async def _tenant_user_react_shell(
             reason=exc.__class__.__name__,
         )
         raise AdminConsoleAccessError(
-            "react tenant user audit persistence is unavailable",
+            "admin tenant user audit persistence is unavailable",
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             reason_category="audit_unavailable",
         ) from exc
@@ -3901,344 +4656,6 @@ def react_admin_command_search_from_shell(
             )
         )
     return ReactAdminCommandSearch(query=query[:80], results=results[:12])
-
-
-def _patterns_envelope(
-    *,
-    shell: AdminShellContext,
-    status_filter: str | None,
-    sort: str,
-    page_size: int,
-) -> AdminPageEnvelope:
-    allowed_statuses = {"ready", "needs_review", "paused"}
-    if status_filter is not None and status_filter not in allowed_statuses:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=_problem_detail(
-                reason=AdminProblemReason.VALIDATION_ERROR,
-                status_code=status.HTTP_400_BAD_REQUEST,
-                title="Filter unavailable",
-                detail="This filter is not available for the current admin page.",
-                trace_id=None,
-                field_errors=(
-                    ValidationFieldError(
-                        field="status",
-                        label="Status",
-                        message="Choose an allowed status filter.",
-                        code="unsupported_filter",
-                    ),
-                ),
-            ).model_dump(mode="json"),
-        )
-    allowed_sorts = {"name", "status", "-updated"}
-    if sort not in allowed_sorts:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=_problem_detail(
-                reason=AdminProblemReason.VALIDATION_ERROR,
-                status_code=status.HTTP_400_BAD_REQUEST,
-                title="Sort unavailable",
-                detail="This sort order is not available for the current admin page.",
-                trace_id=None,
-                field_errors=(
-                    ValidationFieldError(
-                        field="sort",
-                        label="Sort",
-                        message="Choose an allowed sort option.",
-                        code="unsupported_sort",
-                    ),
-                ),
-            ).model_dump(mode="json"),
-        )
-    records = _sample_records(shell)
-    if status_filter:
-        records = tuple(record for record in records if record.status == status_filter)
-    records = _sort_records(records, sort)
-    page_size = min(page_size, 50)
-    visible_records = records[:page_size]
-    return AdminPageEnvelope(
-        page_id="react-admin-patterns",
-        title="Forms and data patterns",
-        description=(
-            "Harmless sample contracts for future React admin forms, tables, "
-            "filters, exports, and safe mutation feedback."
-        ),
-        scope=_scope_response(shell.active_scope),
-        state=None if visible_records else _empty_patterns_state(),
-        data=PatternsSampleData(
-            records=visible_records,
-            form=SampleFormDescriptor(
-                fields=(
-                    FormFieldDescriptor(
-                        field="sample_name",
-                        label="Sample name",
-                        required=True,
-                        help_text="Use a harmless label for the sample action.",
-                    ),
-                    FormFieldDescriptor(
-                        field="outcome",
-                        label="Outcome",
-                        required=True,
-                        help_text=(
-                            "Choose accepted, validation, stale, replay, or "
-                            "confirmation to preview safe feedback."
-                        ),
-                    ),
-                ),
-                default_values={
-                    "sample_name": "",
-                    "outcome": "accepted",
-                    "confirmed": False,
-                },
-                revision="sample-revision-current",
-                idempotency_key="sample-idempotency-key",
-            ),
-            export_snapshot=_export_snapshot(shell),
-            details=(
-                EvidenceSummary(
-                    evidence_id="patterns-audit-sample",
-                    label="Audit reference",
-                    summary="Sample actions return safe audit reference ids.",
-                    reference_type=EvidenceReferenceType.AUDIT,
-                ),
-            ),
-        ),
-        filters=_filter_profile(shell=shell, status_filter=status_filter),
-        pagination=PaginationState(
-            page_size=page_size,
-            next_cursor="next-sample-cursor" if len(records) > page_size else None,
-            total_items=len(records),
-        ),
-        sorting=SortingState(
-            active=_sort_field(sort),
-            allowed=(
-                SortField(key="name", label="Name", direction=AdminSortDirection.ASC),
-                SortField(
-                    key="status",
-                    label="Status",
-                    direction=AdminSortDirection.ASC,
-                ),
-                SortField(
-                    key="-updated",
-                    label="Recently updated",
-                    direction=AdminSortDirection.DESC,
-                ),
-            ),
-        ),
-        actions=(
-            AdminAction(
-                action_id="sample-submit",
-                label="Preview form result",
-                method=AdminActionMethod.POST,
-                href=_with_tenant_query(
-                    REACT_PATTERNS_ACTION_URL,
-                    shell.active_scope,
-                ),
-                variant=ReactAdminPageActionVariant.PRIMARY,
-                requires_idempotency_key=True,
-            ),
-            AdminAction(
-                action_id="sample-export",
-                label="Preview export",
-                method=AdminActionMethod.POST,
-                href=_with_tenant_query(REACT_PATTERNS_EXPORT_URL, shell.active_scope),
-                variant=ReactAdminPageActionVariant.SECONDARY,
-            ),
-        ),
-        evidence=(
-            EvidenceSummary(
-                evidence_id="patterns-validation",
-                label="Validation evidence",
-                summary="Contracts are generated from backend schemas.",
-                reference_type=EvidenceReferenceType.VALIDATION,
-            ),
-        ),
-        refresh=RefreshHint(mode="manual"),
-    )
-
-
-def _sample_records(shell: AdminShellContext) -> tuple[SampleRecord, ...]:
-    scope_label = shell.active_scope.label or "Current scope"
-    return (
-        SampleRecord(
-            record_id="sample-ready",
-            name="Workflow readiness review",
-            status="ready",
-            owner_scope=scope_label,
-            updated_label="Updated today",
-            revision="sample-revision-current",
-        ),
-        SampleRecord(
-            record_id="sample-review",
-            name="Credential policy review",
-            status="needs_review",
-            owner_scope=scope_label,
-            updated_label="Updated yesterday",
-            revision="sample-revision-review",
-        ),
-        SampleRecord(
-            record_id="sample-paused",
-            name="Export safety preview",
-            status="paused",
-            owner_scope=scope_label,
-            updated_label="Updated last week",
-            revision="sample-revision-paused",
-        ),
-    )
-
-
-def _sort_records(
-    records: tuple[SampleRecord, ...],
-    sort: str,
-) -> tuple[SampleRecord, ...]:
-    if sort == "status":
-        return tuple(sorted(records, key=lambda record: record.status))
-    if sort == "-updated":
-        return tuple(reversed(records))
-    return tuple(sorted(records, key=lambda record: record.name))
-
-
-def _sort_field(sort: str) -> SortField:
-    if sort == "status":
-        return SortField(key="status", label="Status", direction=AdminSortDirection.ASC)
-    if sort == "-updated":
-        return SortField(
-            key="-updated",
-            label="Recently updated",
-            direction=AdminSortDirection.DESC,
-        )
-    return SortField(key="name", label="Name", direction=AdminSortDirection.ASC)
-
-
-def _filter_profile(
-    *,
-    shell: AdminShellContext,
-    status_filter: str | None,
-) -> FilterProfile:
-    base_href = _with_tenant_query(REACT_PATTERNS_PATH, shell.active_scope)
-    chips: tuple[FilterChip, ...] = ()
-    if status_filter:
-        chips = (
-            FilterChip(
-                key="status",
-                label=f"Status: {status_filter.replace('_', ' ')}",
-                value=status_filter,
-                href=base_href,
-            ),
-        )
-    return FilterProfile(
-        profile_id="patterns-sample-filters",
-        criteria=(
-            FilterCriterion(
-                key="status",
-                label="Status",
-                options=(
-                    FilterOption(value="ready", label="Ready"),
-                    FilterOption(value="needs_review", label="Needs review"),
-                    FilterOption(value="paused", label="Paused"),
-                ),
-            ),
-        ),
-        active_chips=chips,
-        saved_filters=(
-            SavedFilterSummary(
-                filter_id="patterns-ready",
-                label="Ready samples",
-                href=f"{base_href}{'&' if '?' in base_href else '?'}status=ready",
-            ),
-        ),
-    )
-
-
-def _sample_mutation_result(
-    *,
-    shell: AdminShellContext,
-    payload: SampleActionRequest,
-) -> MutationResult:
-    audit_reference = f"audit-react-patterns-{shell.active_scope.scope_type}"
-    if not payload.sample_name.strip():
-        return MutationResult(
-            status=AdminMutationStatus.VALIDATION_ERROR,
-            summary="Review the highlighted fields before submitting again.",
-            toast=ToastHint(
-                tone=ReactAdminNotificationTone.WARNING,
-                title="Validation needed",
-                summary="Sample name is required.",
-            ),
-            field_errors=(
-                ValidationFieldError(
-                    field="sample_name",
-                    label="Sample name",
-                    message="Enter a sample name.",
-                    code="required",
-                ),
-            ),
-            audit_reference_id=audit_reference,
-        )
-    if payload.outcome == "stale" or payload.revision == "stale-revision":
-        return MutationResult(
-            status=AdminMutationStatus.STALE_CONFLICT,
-            summary="Reload the latest sample state before submitting again.",
-            stale_conflict=RevisionConflict(
-                submitted_revision=payload.revision or "stale-revision",
-                current_revision="sample-revision-current",
-                message="The sample has a newer safe revision.",
-                reload_href=_with_tenant_query(REACT_PATTERNS_PATH, shell.active_scope),
-            ),
-            audit_reference_id=audit_reference,
-        )
-    if payload.outcome == "replay" or payload.idempotency_key == "replay-key":
-        return MutationResult(
-            status=AdminMutationStatus.REPLAYED,
-            summary="This idempotency key already has a recorded sample result.",
-            idempotency=IdempotencyReplay(
-                idempotency_key=payload.idempotency_key or "replay-key",
-                replayed=True,
-                original_result_reference="sample-result-previous",
-                summary="No duplicate side effect was applied.",
-            ),
-            audit_reference_id=audit_reference,
-        )
-    if payload.outcome == "confirmation" and not payload.confirmed:
-        return MutationResult(
-            status=AdminMutationStatus.CONFIRMATION_REQUIRED,
-            summary="Confirm the sample action before previewing the result.",
-            confirmation=ConfirmationRequirement(
-                title="Confirm sample action",
-                summary="This preview uses a safe confirmation pattern.",
-                confirm_label="Confirm preview",
-            ),
-            audit_reference_id=audit_reference,
-        )
-    return MutationResult(
-        status=AdminMutationStatus.ACCEPTED,
-        summary="Sample form result accepted without applying domain side effects.",
-        toast=ToastHint(
-            tone=ReactAdminNotificationTone.SUCCESS,
-            title="Sample accepted",
-            summary="The pattern returned a safe audit-aware result.",
-        ),
-        audit_reference_id=audit_reference,
-    )
-
-
-def _export_snapshot(shell: AdminShellContext) -> ExportSnapshot:
-    return ExportSnapshot(
-        export_id=f"sample-export-{shell.active_scope.scope_type}",
-        status=AdminExportStatus.COMPLETE,
-        summary="Sample export snapshot is ready as a safe artifact reference.",
-        artifact_reference_id=f"artifact-ref-qa028-{shell.active_scope.scope_type}",
-        progress_label="Complete",
-        audit_reference_id=f"audit-export-qa028-{shell.active_scope.scope_type}",
-    )
-
-
-def _empty_patterns_state() -> ReactAdminShellState:
-    return ReactAdminShellState(
-        state=ReactAdminShellStateKind.FILTERED_EMPTY,
-        title="No matching sample records",
-        summary="Clear filters to review all authorized sample records.",
-    )
 
 
 def _problem_detail(
@@ -4369,7 +4786,7 @@ def render_react_admin_host(
     else:
         reason = html.escape(asset_manifest.unavailable_reason or "unavailable")
         fallback_body = (
-            "<p>React admin built assets are unavailable: "
+            "<p>Admin built assets are unavailable: "
             f"{reason}.</p>"
             '<p><a href="/auth/local-login?redirect_to=/admin/app">'
             "Open local login</a></p>"
@@ -4379,7 +4796,7 @@ def render_react_admin_host(
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>React Admin</title>
+    <title>Admin</title>
 {stylesheet_links}
   </head>
   <body>
@@ -4403,7 +4820,7 @@ def render_react_admin_host(
         <p style="font-weight: 700; text-transform: uppercase;">
           Admin
         </p>
-        <h1 style="font-size: 2rem; margin: 0 0 0.75rem;">React Admin</h1>
+        <h1 style="font-size: 2rem; margin: 0 0 0.75rem;">Admin</h1>
         {fallback_body}
       </main>
     </div>
@@ -4550,7 +4967,7 @@ def _shell_chrome_response(shell: AdminShellContext) -> ReactAdminShellChrome:
                 title="Existing pages remain active",
                 summary=(
                     "Domain pages still open through the authorized console "
-                    "until their React migration specs pass."
+                    "until their admin migration checks pass."
                 ),
                 href="/admin",
             ),
@@ -4562,17 +4979,90 @@ def _shell_chrome_response(shell: AdminShellContext) -> ReactAdminShellChrome:
     )
 
 
+def _provenance(
+    *,
+    source_kind: ReactAdminSourceKind,
+    source_label: str,
+    source_detail: str | None = None,
+) -> ReactAdminPageProvenance:
+    return ReactAdminPageProvenance(
+        source_kind=source_kind,
+        source_label=source_label,
+        source_detail=source_detail,
+        last_verified_at=datetime.now(UTC),
+    )
+
+
+def _empty_metadata(
+    *,
+    reason: ReactAdminEmptyStateReason,
+    title: str,
+    summary: str,
+    setup_hint: str | None,
+    provenance: ReactAdminPageProvenance,
+) -> ReactAdminEmptyStateMetadata:
+    return ReactAdminEmptyStateMetadata(
+        reason=reason,
+        title=title,
+        summary=summary,
+        setup_hint=setup_hint,
+        provenance=provenance,
+    )
+
+
 def _common_shell_states() -> tuple[ReactAdminShellState, ...]:
+    computed_shell = _provenance(
+        source_kind=ReactAdminSourceKind.COMPUTED_METADATA,
+        source_label="Admin shell",
+        source_detail=(
+            "Derived from authorized navigation, scope, settings, and asset "
+            "manifest metadata."
+        ),
+    )
+    empty_scope = _provenance(
+        source_kind=ReactAdminSourceKind.EMPTY_LIVE_STATE,
+        source_label="Authorized live data scope",
+        source_detail=(
+            "No persisted rows are available for this authorized admin scope."
+        ),
+    )
+    denied_scope = _provenance(
+        source_kind=ReactAdminSourceKind.DENIED,
+        source_label="Backend authorization decision",
+        source_detail="The backend denied access before returning tenant-scoped data.",
+    )
+    dependency_unavailable = _provenance(
+        source_kind=ReactAdminSourceKind.DEPENDENCY_UNAVAILABLE,
+        source_label="Backend dependency state",
+        source_detail=(
+            "A required dependency is unavailable and no substitute rows were "
+            "generated."
+        ),
+    )
     return (
         ReactAdminShellState(
             state=ReactAdminShellStateKind.LOADING,
             title="Loading admin workspace",
             summary="Checking your signed-in principal and active scope.",
+            provenance=computed_shell,
         ),
         ReactAdminShellState(
             state=ReactAdminShellStateKind.EMPTY,
             title="No records yet",
             summary="This area has no records available for your current scope.",
+            provenance=empty_scope,
+            empty_state=_empty_metadata(
+                reason=ReactAdminEmptyStateReason.NO_LIVE_ROWS,
+                title="No records yet",
+                summary=(
+                    "No persisted rows are available for your current authorized scope."
+                ),
+                setup_hint=(
+                    "Create or seed live records through the documented admin "
+                    "setup flow."
+                ),
+                provenance=empty_scope,
+            ),
         ),
         ReactAdminShellState(
             state=ReactAdminShellStateKind.FILTERED_EMPTY,
@@ -4580,27 +5070,52 @@ def _common_shell_states() -> tuple[ReactAdminShellState, ...]:
             summary=(
                 "Adjust filters or clear the search to review all authorized records."
             ),
+            provenance=empty_scope,
+            empty_state=_empty_metadata(
+                reason=ReactAdminEmptyStateReason.FILTERED_EMPTY,
+                title="No matching results",
+                summary=(
+                    "Filters returned no persisted rows for the current "
+                    "authorized scope."
+                ),
+                setup_hint="Clear filters to review all authorized live records.",
+                provenance=empty_scope,
+            ),
         ),
         ReactAdminShellState(
             state=ReactAdminShellStateKind.DENIED,
             title="Access denied",
             summary="Your current principal is not authorized for this admin area.",
+            provenance=denied_scope,
         ),
         ReactAdminShellState(
             state=ReactAdminShellStateKind.NOT_FOUND,
             title="Page not found",
             summary="The requested admin destination is unavailable for this route.",
+            provenance=computed_shell,
         ),
         ReactAdminShellState(
             state=ReactAdminShellStateKind.VALIDATION_ERROR,
             title="Review required fields",
             summary="Fix the highlighted values and try again.",
+            provenance=computed_shell,
         ),
         ReactAdminShellState(
             state=ReactAdminShellStateKind.DEPENDENCY_UNAVAILABLE,
             title="Dependency unavailable",
             summary=(
                 "A required admin dependency is not ready. Try again after it recovers."
+            ),
+            provenance=dependency_unavailable,
+            empty_state=_empty_metadata(
+                reason=ReactAdminEmptyStateReason.DEPENDENCY_UNAVAILABLE,
+                title="Dependency unavailable",
+                summary=(
+                    "A required dependency is unavailable, so no fallback "
+                    "records were generated."
+                ),
+                setup_hint="Retry after the dependency reports healthy readiness.",
+                provenance=dependency_unavailable,
             ),
         ),
         ReactAdminShellState(
@@ -4610,11 +5125,13 @@ def _common_shell_states() -> tuple[ReactAdminShellState, ...]:
                 "Some optional summaries are unavailable, but authorized "
                 "navigation is ready."
             ),
+            provenance=computed_shell,
         ),
         ReactAdminShellState(
             state=ReactAdminShellStateKind.UNEXPECTED_ERROR,
             title="Unexpected error",
             summary="The admin shell could not complete this request safely.",
+            provenance=dependency_unavailable,
         ),
     )
 

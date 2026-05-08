@@ -1,0 +1,169 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "049",
+  "title": "React Contract Provenance And Sample Route Retirement",
+  "status": "completed",
+  "active_phase": null,
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "qa_docs": {
+      "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/049-react-contract-provenance-and-sample-route-retirement",
+      "result": "passed"
+    },
+    "focused_backend": {
+      "commands": [
+        "uv run pytest --no-cov tests/unit/api/test_admin_react_schema.py tests/contract/test_admin_react_contract.py -q",
+        "uv run pytest --no-cov tests/unit/admin/test_live_data_inventory_scanner.py -q",
+        "uv run pytest --no-cov tests/integration/test_admin_react_routes.py -q"
+      ],
+      "result": "passed"
+    },
+    "frontend": {
+      "commands": [
+        "cd frontend/admin && npm run typecheck",
+        "cd frontend/admin && npm test -- --run",
+        "cd frontend/admin && npm run build"
+      ],
+      "result": "passed"
+    },
+    "generated_contracts": {
+      "command": "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "result": "passed"
+    },
+    "spec_qa": {
+      "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/049-react-contract-provenance-and-sample-route-retirement/validation.yml",
+      "result": "passed"
+    },
+    "playwright": {
+      "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/049-react-contract-provenance-and-sample-route-retirement/validation.yml --start-processes",
+      "result": "passed",
+      "screenshots": [
+        "output/playwright/qa049_ui/qa049-live-data-ui-api-smoke.png",
+        "output/playwright/qa049_ui/qa049-retired-patterns-route.png"
+      ]
+    },
+    "post_ui_api_database": {
+      "api_command": "TestClient GET /admin/app/bootstrap.json, GET /admin/app/search.json?q=patterns, GET /admin/app/patterns.json, POST /admin/app/patterns/actions/sample, POST /admin/app/patterns/export as platform-admin",
+      "api_result": "bootstrap_status=200 search_status=200 patterns_json_status=404 patterns_action_status=405 patterns_export_status=405 metadata_state_count=3 patterns_in_bootstrap=false patterns_in_search=false",
+      "database_command": "docker compose exec -T postgres psql -U postgres -d multi_agent_platform_qa049 -tAc \"SELECT count(*) FROM tenants WHERE slug IN ('acme','globex');\"",
+      "database_result": "2 qa tenants present"
+    },
+    "curl_test": {
+      "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa049-after-spec",
+      "result": "passed",
+      "database": "multi_agent_curl_test",
+      "base_url": "http://127.0.0.1:8000",
+      "output_dir": ".data/curl_test_runs/qa049-after-spec",
+      "failed_commands": "none"
+    }
+  },
+  "artifacts": {
+    "spec": "specs/049-react-contract-provenance-and-sample-route-retirement/spec.md",
+    "requirements_checklist": "specs/049-react-contract-provenance-and-sample-route-retirement/checklists/requirements.md",
+    "plan": "specs/049-react-contract-provenance-and-sample-route-retirement/plan.md",
+    "research": "specs/049-react-contract-provenance-and-sample-route-retirement/research.md",
+    "data_model": "specs/049-react-contract-provenance-and-sample-route-retirement/data-model.md",
+    "contracts": [
+      "specs/049-react-contract-provenance-and-sample-route-retirement/contracts/react-contract-provenance-contract.md",
+      "specs/049-react-contract-provenance-and-sample-route-retirement/contracts/react-contract-provenance.openapi.yaml"
+    ],
+    "quickstart": "specs/049-react-contract-provenance-and-sample-route-retirement/quickstart.md",
+    "tasks": "specs/049-react-contract-provenance-and-sample-route-retirement/tasks.md"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 049 specification from generated autopilot prompt while retaining validated Spec 048 dirty-worktree changes."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 049 feature specification and requirements checklist."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification using roadmap defaults for provenance, sample route behavior, empty states, action defaults, and generated contracts."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five roadmap-default autonomous clarifications in spec.md."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started implementation planning for shared provenance, sample route retirement, action metadata cleanup, tests, and validation."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created plan, research, data model, quickstart, contracts, and updated AGENTS plan pointer."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation for shared metadata, sample route retirement, frontend action defaults, scanner updates, QA, and validation."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated 46 dependency-ordered tasks covering tests, implementation, QA docs, Playwright, API/database verification, and curl validation."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started cross-artifact consistency analysis across spec.md, plan.md, and tasks.md."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "No CRITICAL or HIGH findings found; all functional requirements and validation gates have task coverage."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Completed all 46 tasks covering shared React provenance/empty-state metadata, production sample route retirement, generated action metadata, frontend cleanup, scanner mapping updates, QA docs, Playwright, post-UI API/database verification, and curl regression."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "QA docs, focused backend tests, generated contract check, frontend typecheck/tests/build, full Spec QA, Playwright UI, post-UI API/database verification, and multi-agent-curl-test all passed for Spec 049."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 049 closed; queue.json advanced to next_spec 050 while retaining validated dirty-worktree changes for later commit."
+    }
+  ],
+  "auto_clarifications": [
+    "Use shared backend-owned provenance and empty-state metadata with page-specific typed metadata as needed.",
+    "Hide /admin/app/patterns from production navigation and production-like route responses; retain only explicit development-only access if needed.",
+    "Empty states describe missing durable setup or unavailable dependencies without inventing rows or identifiers.",
+    "Action defaults come from backend action metadata or generated client state, not fixed qa0xx strings.",
+    "Generated TypeScript contracts carry provenance, empty-state, and action metadata fields, with sample route contracts absent or development-gated."
+  ],
+  "task_count": 46,
+  "analysis": {
+    "findings": [],
+    "critical_remaining": 0,
+    "high_remaining": 0
+  },
+  "implementation": {
+    "completed_tasks": 46,
+    "remaining_tasks": [],
+    "focused_backend": "uv run pytest --no-cov tests/unit/api/test_admin_react_schema.py tests/contract/test_admin_react_contract.py -q => 18 passed; uv run pytest --no-cov tests/unit/admin/test_live_data_inventory_scanner.py -q => 8 passed; uv run pytest --no-cov tests/integration/test_admin_react_routes.py -q => 26 passed",
+    "frontend": "cd frontend/admin && npm run typecheck => passed; npm test -- --run => 70 files and 100 tests passed; npm run build => passed",
+    "static_checks": "uv run python scripts/frontend/generate_admin_react_types.py --check => passed; uv run ruff check focused touched Python files => passed; full run_spec_qa static/type/test gates => passed"
+  }
+}

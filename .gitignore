@@ -16,6 +16,8 @@ coverage/
 *.log
 .env
 .env*
+.env.autopilot-backup
+!specs/*/.env.qa*
 .env.local
 !specs/012-prompt-runtime-profiles/.env.qa012
 !specs/013-admin-workflow-builder/.env.qa013

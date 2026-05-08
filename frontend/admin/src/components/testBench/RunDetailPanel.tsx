@@ -67,7 +67,7 @@ export function RunDetailPanel({ run }: RunDetailPanelProps) {
           </div>
         </>
       ) : (
-        <p className="safe-note">Open a deterministic run to review diagnostics.</p>
+        <p className="safe-note">Open a live run to review diagnostics.</p>
       )}
     </section>
   );

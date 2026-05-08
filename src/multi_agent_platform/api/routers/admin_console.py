@@ -234,7 +234,7 @@ async def render_admin_error(
       <h1>{title_text}</h1>
       <p>{summary_text}</p>
       <p>Trace: <code>{trace_text}</code></p>
-      <p><a href="/admin/app">Open React admin</a></p>
+      <p><a href="/admin/app">Open Admin</a></p>
     </main>
   </body>
 </html>

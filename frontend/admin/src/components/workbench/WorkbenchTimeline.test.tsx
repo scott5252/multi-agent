@@ -8,10 +8,10 @@ describe("WorkbenchTimeline", () => {
   it("renders run timeline, branch, gateway, tool, and delivery summaries", () => {
     render(<WorkbenchTimeline runDebug={workbenchEnvelopeFixture.run_debug!} />);
 
-    expect(screen.getByText("Daily briefing graph run")).toBeInTheDocument();
-    expect(screen.getByText("Weather branch")).toBeInTheDocument();
+    expect(screen.getByText("Workflow run 11111111 from live audit evidence")).toBeInTheDocument();
+    expect(screen.getByText("Gateway evidence")).toBeInTheDocument();
     expect(screen.getByText("OpenAI provider")).toBeInTheDocument();
-    expect(screen.getByText("Daily briefing weather")).toBeInTheDocument();
-    expect(screen.getByText("Morning briefing alias")).toBeInTheDocument();
+    expect(screen.getByText("Weather live summary")).toBeInTheDocument();
+    expect(screen.getByText("Live briefing alias")).toBeInTheDocument();
   });
 });

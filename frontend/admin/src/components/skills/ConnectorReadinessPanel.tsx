@@ -27,6 +27,12 @@ export function ConnectorReadinessPanel({
         <Badge tone="info">{connectors.length} connectors</Badge>
       </div>
       <div className="connector-grid">
+        {connectors.length === 0 ? (
+          <article className="governance-card">
+            <strong>No connector readiness records</strong>
+            <p>No persisted connector readiness evidence is visible.</p>
+          </article>
+        ) : null}
         {connectors.map((connector) => {
           const diagnosticAction = connector.authorized_actions[0];
           return (

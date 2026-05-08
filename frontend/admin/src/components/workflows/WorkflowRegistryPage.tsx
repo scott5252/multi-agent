@@ -1,11 +1,24 @@
 import type { WorkflowRegistryEnvelope } from "../../api/generated/reactAdminApi";
 import { Badge } from "../primitives";
+import { CommonState } from "../states/CommonState";
 
 interface WorkflowRegistryPageProps {
   registry: WorkflowRegistryEnvelope;
 }
 
 export function WorkflowRegistryPage({ registry }: WorkflowRegistryPageProps) {
+  const emptyAction = registry.create_action
+    ? {
+        action_id: registry.create_action.action_id,
+        action_metadata: registry.create_action.action_metadata ?? null,
+        disabled_reason: registry.create_action.disabled_reason ?? null,
+        href: registry.create_action.href,
+        label: registry.create_action.label,
+        method: "get" as const,
+        variant: registry.create_action.variant,
+      }
+    : null;
+
   return (
     <section className="workflow-registry-panel" aria-labelledby="workflow-registry-title">
       <div className="section-heading">
@@ -20,6 +33,33 @@ export function WorkflowRegistryPage({ registry }: WorkflowRegistryPageProps) {
         ) : null}
       </div>
       <p>{registry.summary}</p>
+      <dl className="workflow-draft-facts">
+        <div>
+          <dt>Sort</dt>
+          <dd>{registry.sorting?.active.label ?? registry.filters.sort ?? "Latest"}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>{registry.filters.status ?? "all"}</dd>
+        </div>
+        <div>
+          <dt>Rows</dt>
+          <dd>{registry.pagination?.total_items ?? registry.items.length}</dd>
+        </div>
+      </dl>
+      {registry.items.length === 0 && registry.empty_state ? (
+        <CommonState
+          state={{
+            action: emptyAction,
+            empty_state: registry.empty_state,
+            provenance: registry.provenance,
+            state: "empty",
+            summary: registry.empty_state.summary,
+            title: registry.empty_state.title,
+            trace_id: null,
+          }}
+        />
+      ) : null}
       <div className="workflow-registry-list">
         {registry.items.map((item) => (
           <article className="workflow-registry-item" key={item.href}>

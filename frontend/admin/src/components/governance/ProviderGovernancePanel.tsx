@@ -30,6 +30,12 @@ export function ProviderGovernancePanel({
         <Badge tone="info">{providers.length} visible</Badge>
       </div>
       <div className="governance-card-grid">
+        {providers.length === 0 ? (
+          <article className="governance-card">
+            <strong>No provider connections found</strong>
+            <p>No authorized live provider connections exist for this scope.</p>
+          </article>
+        ) : null}
         {providers.map((provider) => {
           const probeAction = provider.authorized_actions.find((action) =>
             action.action_id.startsWith("provider-probe"),

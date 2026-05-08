@@ -47,20 +47,24 @@ from multi_agent_platform.api.schemas.admin_membership_react import (
 from multi_agent_platform.api.schemas.admin_migration_hardening_react import (
     AdminMigrationHardeningDashboard,
     JinjaInventoryDashboard,
+    LiveDataInventoryDashboard,
     MigrationRollbackPlan,
     MigrationRouteGroup,
+    TransitionalLabelGate,
 )
 from multi_agent_platform.api.schemas.admin_patterns import (
-    AdminPageEnvelope,
     ExportSnapshot,
     MutationResult,
     SafeProblemDetail,
 )
 from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminActionMetadata,
     ReactAdminAssetManifestSummary,
     ReactAdminBootstrap,
     ReactAdminCommandSearch,
     ReactAdminConfig,
+    ReactAdminEmptyStateMetadata,
+    ReactAdminPageProvenance,
     SafeProblem,
 )
 from multi_agent_platform.api.schemas.admin_skill_lifecycle import (
@@ -107,7 +111,10 @@ from multi_agent_platform.api.schemas.admin_workbench import (
 from multi_agent_platform.api.schemas.admin_workflow_builder import (
     BuilderMutationResult,
     WorkflowBuilderEnvelope,
+    WorkflowDraftCopyActionRequest,
+    WorkflowDraftCreateActionRequest,
     WorkflowReferenceCatalog,
+    WorkflowRevisionRestoreActionRequest,
 )
 from multi_agent_platform.api.schemas.auth import (
     LocalLoginEnvelope,
@@ -140,7 +147,11 @@ def schema_payload() -> dict[str, Any]:
         "ReactAdminBootstrap": ReactAdminBootstrap.model_json_schema(),
         "ReactAdminConfig": ReactAdminConfig.model_json_schema(),
         "ReactAdminCommandSearch": ReactAdminCommandSearch.model_json_schema(),
-        "AdminPageEnvelope": AdminPageEnvelope.model_json_schema(),
+        "ReactAdminPageProvenance": ReactAdminPageProvenance.model_json_schema(),
+        "ReactAdminEmptyStateMetadata": (
+            ReactAdminEmptyStateMetadata.model_json_schema()
+        ),
+        "ReactAdminActionMetadata": ReactAdminActionMetadata.model_json_schema(),
         "MutationResult": MutationResult.model_json_schema(),
         "ExportSnapshot": ExportSnapshot.model_json_schema(),
         "SafeProblemDetail": SafeProblemDetail.model_json_schema(),
@@ -152,6 +163,15 @@ def schema_payload() -> dict[str, Any]:
         "WorkflowBuilderEnvelope": WorkflowBuilderEnvelope.model_json_schema(),
         "WorkflowReferenceCatalog": WorkflowReferenceCatalog.model_json_schema(),
         "BuilderMutationResult": BuilderMutationResult.model_json_schema(),
+        "WorkflowDraftCreateActionRequest": (
+            WorkflowDraftCreateActionRequest.model_json_schema()
+        ),
+        "WorkflowRevisionRestoreActionRequest": (
+            WorkflowRevisionRestoreActionRequest.model_json_schema()
+        ),
+        "WorkflowDraftCopyActionRequest": (
+            WorkflowDraftCopyActionRequest.model_json_schema()
+        ),
         "GovernanceDashboard": GovernanceDashboard.model_json_schema(),
         "ProviderGovernanceList": ProviderGovernanceList.model_json_schema(),
         "PromptGovernanceList": PromptGovernanceList.model_json_schema(),
@@ -247,6 +267,8 @@ def schema_payload() -> dict[str, Any]:
             AdminMigrationHardeningDashboard.model_json_schema()
         ),
         "JinjaInventoryDashboard": JinjaInventoryDashboard.model_json_schema(),
+        "LiveDataInventoryDashboard": (LiveDataInventoryDashboard.model_json_schema()),
+        "TransitionalLabelGate": TransitionalLabelGate.model_json_schema(),
         "MigrationRouteGroup": MigrationRouteGroup.model_json_schema(),
         "MigrationRollbackPlan": MigrationRollbackPlan.model_json_schema(),
         "ReactAdminAssetManifestSummary": (
@@ -322,7 +344,12 @@ export type AdminExportStatus =
   | "running"
   | "complete"
   | "failed"
-  | "expired";
+  | "expired"
+  | "empty"
+  | "denied"
+  | "validation"
+  | "conflict"
+  | "unavailable";
 export type EvidenceReferenceType =
   | "audit"
   | "export"
@@ -341,11 +368,34 @@ export type ReactAdminShellStateKind =
   | "partial_data"
   | "unexpected_error";
 export type ReactAdminNotificationTone = "info" | "success" | "warning" | "critical";
+export type ReactAdminSourceKind =
+  | "live_repository"
+  | "computed_metadata"
+  | "empty_live_state"
+  | "denied"
+  | "dependency_unavailable";
+export type ReactAdminEmptyStateReason =
+  | "no_live_rows"
+  | "setup_required"
+  | "filtered_empty"
+  | "tenant_scope_empty"
+  | "dependency_unavailable";
+export type ReactAdminActionMetadataSource =
+  | "backend"
+  | "generated_client_state"
+  | "not_required";
 export type WorkbenchStatus =
   | "ready"
+  | "available"
   | "degraded"
   | "warning"
   | "critical"
+  | "empty"
+  | "denied"
+  | "queued"
+  | "validation"
+  | "conflict"
+  | "not_found"
   | "unavailable";
 export type WorkbenchSeverity = "info" | "warning" | "critical";
 export type WorkflowBuilderStatus =
@@ -621,6 +671,53 @@ export type JinjaInventoryEvidenceType =
   | "redaction"
   | "tenant_isolation"
   | "reviewer_note";
+export type LiveDataInventorySeverity = "blocking" | "warning" | "info";
+export type LiveDataInventoryStatus =
+  | "mapped_legacy"
+  | "allowed_computed_metadata"
+  | "new_regression"
+  | "test_only";
+export type LiveDataMarkerKind =
+  | "qa_marker"
+  | "fake_audit_reference"
+  | "fake_artifact_reference"
+  | "fake_run_id"
+  | "fake_link_token"
+  | "fixture_collection"
+  | "fake_mutation_success"
+  | "hardcoded_domain_entity"
+  | "test_fixture_import";
+export type LiveDataReachability =
+  | "production_response"
+  | "production_source"
+  | "generated_contract"
+  | "built_asset"
+  | "computed_metadata"
+  | "test_only";
+export type LiveDataCiStatus = "pass" | "warning" | "fail";
+export type LiveDataInventoryEvidenceType =
+  | "scanner"
+  | "route_response_scan"
+  | "contract_test"
+  | "backend_route_test"
+  | "frontend_test"
+  | "playwright"
+  | "qa_doc"
+  | "reviewer_note"
+  | "curl_test";
+export type TransitionalLabelSeverity = "blocking" | "warning" | "info";
+export type TransitionalLabelClassification =
+  | "blocking_transitional_label"
+  | "allowed_implementation_reference"
+  | "technical_qa_context"
+  | "historical_reference"
+  | "internal_generated_identifier";
+export type TransitionalLabelEvidenceType =
+  | "scanner"
+  | "route_response"
+  | "playwright"
+  | "docs"
+  | "curl";
 
 export interface ReactAdminPrincipal {{
   principal_id: string;
@@ -667,6 +764,30 @@ export interface ReactAdminBreadcrumb {{
   active: boolean;
 }}
 
+export interface ReactAdminPageProvenance {{
+  source_kind: ReactAdminSourceKind;
+  source_label: string;
+  source_detail: string | null;
+  last_verified_at: string | null;
+}}
+
+export interface ReactAdminEmptyStateMetadata {{
+  reason: ReactAdminEmptyStateReason;
+  title: string;
+  summary: string;
+  setup_hint: string | null;
+  provenance: ReactAdminPageProvenance;
+}}
+
+export interface ReactAdminActionMetadata {{
+  revision: string | null;
+  revision_source: ReactAdminActionMetadataSource;
+  idempotency_key: string | null;
+  idempotency_source: ReactAdminActionMetadataSource;
+  request_id: string | null;
+  request_id_source: ReactAdminActionMetadataSource;
+}}
+
 export interface ReactAdminPageAction {{
   action_id: string;
   label: string;
@@ -674,6 +795,7 @@ export interface ReactAdminPageAction {{
   method: ReactAdminPageActionMethod;
   variant: ReactAdminPageActionVariant;
   disabled_reason: string | null;
+  action_metadata?: ReactAdminActionMetadata | null;
 }}
 
 export interface ReactAdminShellState {{
@@ -682,6 +804,8 @@ export interface ReactAdminShellState {{
   summary: string;
   action: ReactAdminPageAction | null;
   trace_id: string | null;
+  provenance?: ReactAdminPageProvenance | null;
+  empty_state?: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface ReactAdminSavedFilterChip {{
@@ -763,6 +887,7 @@ export interface AdminAction {{
   confirmation: ConfirmationRequirement | null;
   requires_idempotency_key: boolean;
   action_token: string | null;
+  action_metadata?: ReactAdminActionMetadata | null;
   enabled: boolean;
   disabled_reason: string | null;
 }}
@@ -1223,6 +1348,39 @@ export interface WorkflowDraftSaveRequest {{
   force_stale: boolean;
 }}
 
+export type WorkflowScopeType = "tenant" | "platform";
+export type WorkflowKind = "main_workflow" | "subworkflow";
+
+export interface WorkflowDraftCreateActionRequest {{
+  idempotency_key: string;
+  scope_type: WorkflowScopeType;
+  tenant_id: string | null;
+  workflow_kind: WorkflowKind;
+  slug: string;
+  display_name: string;
+  description: string | null;
+  created_from_version_id: string | null;
+  document: Record<string, unknown>;
+}}
+
+export interface WorkflowRevisionRestoreActionRequest {{
+  idempotency_key: string | null;
+  revision_number: number;
+  base_revision_number: number;
+  change_summary: string | null;
+}}
+
+export interface WorkflowDraftCopyActionRequest {{
+  idempotency_key: string | null;
+  source_revision_number: number | null;
+  new_slug: string;
+  display_name: string;
+  description: string | null;
+  scope_type: WorkflowScopeType | null;
+  tenant_id: string | null;
+  change_summary: string | null;
+}}
+
 export interface WorkflowPublishRequest {{
   revision: string;
   confirmed: boolean;
@@ -1258,8 +1416,12 @@ export interface WorkflowRegistryEnvelope {{
   summary: string;
   scope: ReactAdminScope;
   filters: Record<string, string>;
+  pagination: PaginationState | null;
+  sorting: SortingState | null;
   items: WorkflowRegistryItem[];
   create_action: AdminAction | null;
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface WorkflowCreateTemplate {{
@@ -1276,6 +1438,8 @@ export interface WorkflowCreateEnvelope {{
   summary: string;
   templates: WorkflowCreateTemplate[];
   create_action: AdminAction;
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface WorkflowSharingSummary {{
@@ -1314,19 +1478,21 @@ export interface WorkflowBuilderEnvelope {{
   scope: ReactAdminScope;
   registry: WorkflowRegistryEnvelope;
   create_state: WorkflowCreateEnvelope;
-  draft: WorkflowDraftDocument;
+  draft: WorkflowDraftDocument | null;
   sections: BuilderSection[];
   reference_catalog: WorkflowReferenceCatalog;
-  validation: WorkflowValidationSummary;
-  publish_readiness: WorkflowPublishReadiness;
+  validation: WorkflowValidationSummary | null;
+  publish_readiness: WorkflowPublishReadiness | null;
   revisions: WorkflowRevisionSummary[];
-  version_detail: WorkflowVersionDetail;
-  sharing: WorkflowSharingSummary;
+  version_detail: WorkflowVersionDetail | null;
+  sharing: WorkflowSharingSummary | null;
   legacy_routes: WorkflowLegacyRouteMapping[];
-  json_inspector: WorkflowJsonInspector;
+  json_inspector: WorkflowJsonInspector | null;
   actions: AdminAction[];
   state: ReactAdminShellState | null;
   refresh: RefreshHint | null;
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface GovernanceSection {{
@@ -1516,31 +1682,41 @@ export interface GovernanceDashboard {{
   providers: ProviderGovernanceSummary[];
   prompts: PromptLibrarySummary[];
   profiles: RuntimeProfileGovernanceSummary[];
-  routing_preview: RoutingPreviewResult;
-  profile_resolution: ProfileResolutionPreview;
-  prompt_preview: SafePromptPreview;
+  routing_preview: RoutingPreviewResult | null;
+  profile_resolution: ProfileResolutionPreview | null;
+  prompt_preview: SafePromptPreview | null;
   policy_history: PolicyHistoryRecord[];
   run_provenance: RunProvenanceSummary[];
   legacy_routes: GovernanceLegacyRouteMapping[];
   actions: AdminAction[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
   state: ReactAdminShellState | null;
   refresh: RefreshHint | null;
 }}
 
 export interface ProviderGovernanceList {{
   providers: ProviderGovernanceSummary[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface PromptGovernanceList {{
   prompts: PromptLibrarySummary[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface ProfileGovernanceList {{
   profiles: RuntimeProfileGovernanceSummary[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface PolicyHistoryList {{
   history: PolicyHistoryRecord[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface ProviderCredentialReferenceRequest {{
@@ -1779,6 +1955,8 @@ export interface SkillLifecycleDashboard {{
   actions: AdminAction[];
   state: ReactAdminShellState | null;
   refresh: RefreshHint | null;
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface SkillPackageCandidateRequest {{
@@ -1840,18 +2018,26 @@ export interface SkillLifecycleMutationResult extends MutationResult {{
 
 export interface TenantSkillDiscoveryList {{
   discovery: TenantSkillDiscovery;
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface TenantSkillInstallationList {{
   installations: TenantSkillInstallationSummary[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface SkillExecutionDiagnosticList {{
   diagnostics: SkillExecutionDiagnosticSummary[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface SkillLifecycleAuditList {{
   audit_timeline: SkillLifecycleAuditRecord[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface TestBenchSection {{
@@ -2113,27 +2299,37 @@ export interface TestBenchDashboard {{
   audit_timeline: TestBenchAuditRecord[];
   refresh: RefreshHint | null;
   actions: AdminAction[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface TestSuiteList {{
   scope: ReactAdminScope;
   suites: TestSuiteSummary[];
   form_metadata: TestBenchFormMetadata;
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface TestRunList {{
   scope: ReactAdminScope;
   runs: TestRunSummary[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface PublishGateEvidenceList {{
   scope: ReactAdminScope;
   gates: PublishGateEvidence[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface TestBenchAuditList {{
   scope: ReactAdminScope;
   audit_timeline: TestBenchAuditRecord[];
+  provenance: ReactAdminPageProvenance | null;
+  empty_state: ReactAdminEmptyStateMetadata | null;
 }}
 
 export interface TestBenchMutationResult extends MutationResult {{
@@ -2336,6 +2532,18 @@ export interface MembershipAuditRecord {{
   redaction_class: string;
 }}
 
+export interface SupportOverrideSummary {{
+  support_override_id: string;
+  tenant_id: string | null;
+  tenant_label: string;
+  requester_label: string;
+  approver_label: string | null;
+  status: MembershipLifecycleStatus;
+  expires_label: string;
+  audit_reference_id: string;
+  safe_summary: string;
+}}
+
 export interface InvitationFormMetadata {{
   default_tenant_id: string | null;
   tenant_options: MembershipFilterOption[];
@@ -2367,6 +2575,9 @@ export interface MembershipDashboard {{
   status_actions: MembershipStatusSummary[];
   access_history: AccessHistoryRecord[];
   audit_timeline: MembershipAuditRecord[];
+  support_overrides: SupportOverrideSummary[];
+  provenance: ReactAdminPageProvenance;
+  empty_state: ReactAdminEmptyStateMetadata | null;
   common_states: ReactAdminShellState[];
 }}
 
@@ -3136,6 +3347,110 @@ export interface JinjaInventoryDashboard {{
   evidence: JinjaInventoryEvidence[];
 }}
 
+export interface LiveDataInventoryFinding {{
+  finding_id: string;
+  severity: LiveDataInventorySeverity;
+  status: LiveDataInventoryStatus;
+  marker_kind: LiveDataMarkerKind;
+  source_path: string;
+  route_path: string | null;
+  owner_spec: string | null;
+  replacement_spec: string | null;
+  durable_source: string;
+  reachability: LiveDataReachability;
+  safe_excerpt: string;
+}}
+
+export interface LiveDataAllowlistEntry {{
+  allowlist_id: string;
+  scope: string;
+  marker_kind: LiveDataMarkerKind;
+  reason: string;
+  derivation_source: string;
+  owner: string;
+  expires_with_spec: string | null;
+}}
+
+export interface LiveDataRouteTarget {{
+  target_id: string;
+  method: string;
+  path: string;
+  principal: string;
+  tenant_scope: string;
+  empty_state_required: boolean;
+  seeded_state_required: boolean;
+  computed_metadata_only: boolean;
+  replacement_spec: string | null;
+}}
+
+export interface LiveDataScanSummary {{
+  total_findings: number;
+  blocking_findings: number;
+  mapped_legacy_findings: number;
+  allowed_computed_metadata: number;
+  test_only_markers: number;
+  route_targets: number;
+  empty_state_scans: number;
+  seeded_state_scans: number;
+  ci_status: LiveDataCiStatus;
+  next_step: string;
+}}
+
+export interface LiveDataInventoryEvidence {{
+  evidence_id: string;
+  evidence_type: LiveDataInventoryEvidenceType;
+  reference: string;
+  status: MigrationEvidenceStatus;
+}}
+
+export interface LiveDataInventoryDashboard {{
+  page_id: string;
+  generated_at: string;
+  summary: LiveDataScanSummary;
+  findings: LiveDataInventoryFinding[];
+  allowlist: LiveDataAllowlistEntry[];
+  route_targets: LiveDataRouteTarget[];
+  evidence: LiveDataInventoryEvidence[];
+  states: MigrationProblem[];
+}}
+
+export interface TransitionalLabelFinding {{
+  finding_id: string;
+  surface_id: string;
+  matched_text: string;
+  classification: TransitionalLabelClassification;
+  severity: TransitionalLabelSeverity;
+  rationale: string;
+  owner: string;
+  remediation: string | null;
+}}
+
+export interface TransitionalLabelGateSummary {{
+  blocked_count: number;
+  allowed_reference_count: number;
+  surfaces_scanned: number;
+  routes_scanned: number;
+  screenshots_checked: number;
+  ci_status: LiveDataCiStatus;
+  next_step: string;
+}}
+
+export interface TransitionalLabelEvidence {{
+  evidence_id: string;
+  evidence_type: TransitionalLabelEvidenceType;
+  reference: string;
+  status: MigrationEvidenceStatus;
+}}
+
+export interface TransitionalLabelGate {{
+  page_id: string;
+  generated_at: string;
+  summary: TransitionalLabelGateSummary;
+  findings: TransitionalLabelFinding[];
+  evidence: TransitionalLabelEvidence[];
+  states: MigrationProblem[];
+}}
+
 export interface AdminMigrationHardeningDashboard {{
   page_id: string;
   title: string;
@@ -3150,6 +3465,8 @@ export interface AdminMigrationHardeningDashboard {{
   redaction_sweep: MigrationSweepSummary;
   tenant_isolation_sweep: MigrationSweepSummary;
   jinja_inventory: JinjaInventoryDashboard;
+  live_data_inventory: LiveDataInventoryDashboard | null;
+  transitional_label_gate: TransitionalLabelGate | null;
   states: MigrationProblem[];
 }}
 
@@ -3159,58 +3476,12 @@ export interface WorkbenchExportRequest {{
   include_run_debug: boolean;
 }}
 
-export interface SampleRecord {{
-  record_id: string;
-  name: string;
-  status: string;
-  owner_scope: string;
-  updated_label: string;
-  revision: string;
-}}
-
 export interface FormFieldDescriptor {{
   field: string;
   label: string;
   input_type: string;
   required: boolean;
   help_text: string | null;
-}}
-
-export interface SampleFormDescriptor {{
-  fields: FormFieldDescriptor[];
-  default_values: Record<string, string | boolean>;
-  revision: string;
-  idempotency_key: string;
-}}
-
-export interface PatternsSampleData {{
-  records: SampleRecord[];
-  form: SampleFormDescriptor;
-  export_snapshot: ExportSnapshot;
-  details: EvidenceSummary[];
-}}
-
-export interface AdminPageEnvelope {{
-  page_id: string;
-  title: string;
-  description: string;
-  scope: ReactAdminScope;
-  state: ReactAdminShellState | null;
-  data: PatternsSampleData;
-  filters: FilterProfile;
-  pagination: PaginationState;
-  sorting: SortingState;
-  actions: AdminAction[];
-  evidence: EvidenceSummary[];
-  refresh: RefreshHint | null;
-}}
-
-export interface SampleActionRequest {{
-  sample_name: string;
-  revision: string;
-  idempotency_key: string;
-  confirmed: boolean;
-  outcome: string;
 }}
 
 export interface ReactAdminFeatureFlags {{
@@ -3302,21 +3573,21 @@ export function assertReactAdminBootstrap(
   value: unknown,
 ): ReactAdminBootstrap {{
   if (!isObject(value)) {{
-    throw new Error("React admin bootstrap must be an object");
+    throw new Error("Admin bootstrap must be an object");
   }}
   const principal = value.principal;
   const activeScope = value.active_scope;
   if (!isObject(principal) || !hasString(principal, "principal_id")) {{
-    throw new Error("React admin bootstrap is missing a safe principal");
+    throw new Error("Admin bootstrap is missing a safe principal");
   }}
   if (!isObject(activeScope) || !hasString(activeScope, "scope_type")) {{
-    throw new Error("React admin bootstrap is missing an active scope");
+    throw new Error("Admin bootstrap is missing an active scope");
   }}
   if (!Array.isArray(value.navigation)) {{
-    throw new Error("React admin bootstrap navigation must be an array");
+    throw new Error("Admin bootstrap navigation must be an array");
   }}
   if (!isObject(value.shell) || !Array.isArray(value.shell.breadcrumbs)) {{
-    throw new Error("React admin bootstrap is missing shell metadata");
+    throw new Error("Admin bootstrap is missing shell metadata");
   }}
   return value as unknown as ReactAdminBootstrap;
 }}
@@ -3341,31 +3612,12 @@ export function assertReactAdminCommandSearch(
   value: unknown,
 ): ReactAdminCommandSearch {{
   if (!isObject(value)) {{
-    throw new Error("React admin command search must be an object");
+    throw new Error("Admin command search must be an object");
   }}
   if (!Array.isArray(value.results)) {{
-    throw new Error("React admin command search results must be an array");
+    throw new Error("Admin command search results must be an array");
   }}
   return value as unknown as ReactAdminCommandSearch;
-}}
-
-export function assertAdminPageEnvelope(value: unknown): AdminPageEnvelope {{
-  if (!isObject(value)) {{
-    throw new Error("Admin page envelope must be an object");
-  }}
-  if (!hasString(value, "page_id") || !hasString(value, "title")) {{
-    throw new Error("Admin page envelope is missing safe page metadata");
-  }}
-  if (!isObject(value.scope) || !hasString(value.scope, "scope_type")) {{
-    throw new Error("Admin page envelope is missing active scope");
-  }}
-  if (!isObject(value.data) || !Array.isArray(value.data.records)) {{
-    throw new Error("Admin page envelope is missing sample records");
-  }}
-  if (!isObject(value.filters) || !Array.isArray(value.filters.criteria)) {{
-    throw new Error("Admin page envelope is missing filter metadata");
-  }}
-  return value as unknown as AdminPageEnvelope;
 }}
 
 export function assertMutationResult(value: unknown): MutationResult {{
@@ -3437,13 +3689,20 @@ export function assertWorkflowBuilderEnvelope(
   if (!hasString(value, "page_id") || !hasString(value, "title")) {{
     throw new Error("Workflow builder envelope is missing page metadata");
   }}
-  if (!isObject(value.draft) || !hasString(value.draft, "workflow_draft_id")) {{
+  const hasDraft =
+    isObject(value.draft) && hasString(value.draft, "workflow_draft_id");
+  const hasEmptyDraftState =
+    value.draft === null && (isObject(value.state) || isObject(value.empty_state));
+  if (!hasDraft && !hasEmptyDraftState) {{
     throw new Error("Workflow builder envelope is missing draft metadata");
   }}
   if (!Array.isArray(value.sections) || !isObject(value.reference_catalog)) {{
     throw new Error("Workflow builder envelope is missing guided sections");
   }}
-  if (!isObject(value.validation) || !isObject(value.publish_readiness)) {{
+  if (
+    (value.validation !== null && !isObject(value.validation)) ||
+    (value.publish_readiness !== null && !isObject(value.publish_readiness))
+  ) {{
     throw new Error("Workflow builder envelope is missing gate metadata");
   }}
   return value as unknown as WorkflowBuilderEnvelope;
@@ -3486,7 +3745,14 @@ export function assertGovernanceDashboard(value: unknown): GovernanceDashboard {
   if (!Array.isArray(value.prompts) || !Array.isArray(value.profiles)) {{
     throw new Error("Governance dashboard is missing prompt/profile summaries");
   }}
-  if (!isObject(value.routing_preview) || !Array.isArray(value.policy_history)) {{
+  if (
+    value.routing_preview !== null &&
+    value.routing_preview !== undefined &&
+    !isObject(value.routing_preview)
+  ) {{
+    throw new Error("Governance dashboard routing preview must be nullable evidence");
+  }}
+  if (!Array.isArray(value.policy_history)) {{
     throw new Error("Governance dashboard is missing routing/history evidence");
   }}
   return value as unknown as GovernanceDashboard;
@@ -3641,6 +3907,9 @@ export function assertMembershipDashboard(value: unknown): MembershipDashboard {
   }}
   if (!Array.isArray(value.access_history) || !Array.isArray(value.audit_timeline)) {{
     throw new Error("Membership dashboard is missing access evidence");
+  }}
+  if (!Array.isArray(value.support_overrides)) {{
+    throw new Error("Membership dashboard is missing support override evidence");
   }}
   return value as unknown as MembershipDashboard;
 }}
@@ -3945,6 +4214,39 @@ export function assertJinjaInventoryDashboard(
     throw new Error("Jinja inventory dashboard is missing evidence references");
   }}
   return value as unknown as JinjaInventoryDashboard;
+}}
+
+export function assertLiveDataInventoryDashboard(
+  value: unknown,
+): LiveDataInventoryDashboard {{
+  if (!isObject(value)) {{
+    throw new Error("Live data inventory dashboard must be an object");
+  }}
+  if (!hasString(value, "page_id") || !isObject(value.summary)) {{
+    throw new Error("Live data inventory dashboard is missing summary metadata");
+  }}
+  if (!Array.isArray(value.findings) || !Array.isArray(value.route_targets)) {{
+    throw new Error("Live data inventory dashboard is missing findings or routes");
+  }}
+  if (!Array.isArray(value.allowlist) || !Array.isArray(value.evidence)) {{
+    throw new Error("Live data inventory dashboard is missing policy evidence");
+  }}
+  return value as unknown as LiveDataInventoryDashboard;
+}}
+
+export function assertTransitionalLabelGate(
+  value: unknown,
+): TransitionalLabelGate {{
+  if (!isObject(value)) {{
+    throw new Error("Transitional label gate must be an object");
+  }}
+  if (!hasString(value, "page_id") || !isObject(value.summary)) {{
+    throw new Error("Transitional label gate is missing summary metadata");
+  }}
+  if (!Array.isArray(value.findings) || !Array.isArray(value.evidence)) {{
+    throw new Error("Transitional label gate is missing findings or evidence");
+  }}
+  return value as unknown as TransitionalLabelGate;
 }}
 
 export function assertTestBenchDashboard(value: unknown): TestBenchDashboard {{

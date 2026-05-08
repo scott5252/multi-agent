@@ -22,7 +22,7 @@ describe("PublishGateEvidencePanel", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Refresh evidence/ }));
     expect(onRefreshGate).toHaveBeenCalledWith(
-      "/admin/app/test-bench/gates/qa033-required-suite/refresh",
+      "/admin/app/test-bench/suites/suite-qa033-daily-briefing/runs",
     );
   });
 });

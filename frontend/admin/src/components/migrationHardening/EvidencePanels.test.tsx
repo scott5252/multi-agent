@@ -11,7 +11,7 @@ describe("migration evidence panels", () => {
     render(<PerformanceBudgetPanel budget={migrationDashboard.performance_budget} />);
 
     expect(screen.getByRole("heading", { name: "Budget evidence" })).toBeInTheDocument();
-    expect(screen.getByText("React admin home bootstrap")).toBeInTheDocument();
+    expect(screen.getByText("Admin home bootstrap")).toBeInTheDocument();
     expect(screen.getByText("214 ms / 500 ms")).toBeInTheDocument();
     expect(screen.getByText("perf-qa037-home-bootstrap")).toBeInTheDocument();
   });

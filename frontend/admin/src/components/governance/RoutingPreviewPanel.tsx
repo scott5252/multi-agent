@@ -9,7 +9,7 @@ import { Badge, Button } from "../primitives";
 interface RoutingPreviewPanelProps {
   lastResult: GovernanceMutationResult | null;
   onPreview: () => void;
-  preview: RoutingPreviewResult;
+  preview: RoutingPreviewResult | null;
 }
 
 export function RoutingPreviewPanel({
@@ -18,6 +18,20 @@ export function RoutingPreviewPanel({
   preview,
 }: RoutingPreviewPanelProps) {
   const activePreview = lastResult?.routing_preview ?? preview;
+  if (!activePreview) {
+    return (
+      <section className="governance-panel" aria-labelledby="routing-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Routing</p>
+            <h2 id="routing-title">Read-only policy preview</h2>
+          </div>
+          <Badge tone="warning">unavailable</Badge>
+        </div>
+        <p>No live routing or policy records are available for this scope.</p>
+      </section>
+    );
+  }
   return (
     <section className="governance-panel" aria-labelledby="routing-title">
       <div className="section-heading">

@@ -15,8 +15,8 @@ describe("SkillLifecycleAuditPanel", () => {
     expect(screen.getByText("Lifecycle timeline")).toBeInTheDocument();
     expect(screen.getByText("configured_credentials")).toBeInTheDocument();
     expect(screen.getByText(/Credential reference fingerprint changed/)).toBeInTheDocument();
-    expect(screen.getByText(/audit-credential-configured-qa032/)).toBeInTheDocument();
-    expect(screen.queryByText(/qa032-secret-value/)).not.toBeInTheDocument();
+    expect(screen.getByText(/audit-credential-configured-live/)).toBeInTheDocument();
+    expect(screen.queryByText(/live-secret-value/)).not.toBeInTheDocument();
     expect(screen.queryByText(/raw manifest/i)).not.toBeInTheDocument();
   });
 });

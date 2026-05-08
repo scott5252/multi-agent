@@ -8,7 +8,7 @@ describe("JinjaInventoryPanel", () => {
   it("renders final decommission readiness without unsafe evidence", () => {
     render(<JinjaInventoryPanel inventory={jinjaInventoryDashboard} />);
 
-    expect(screen.getByRole("heading", { name: "React-only readiness" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Browser UI readiness" })).toBeInTheDocument();
     expect(screen.getByText("Final decommission summary")).toBeInTheDocument();
     expect(screen.getByText("runtime-import-scan-qa047")).toBeInTheDocument();
     expect(

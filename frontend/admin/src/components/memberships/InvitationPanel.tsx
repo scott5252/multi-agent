@@ -6,6 +6,7 @@ import type {
   InvitationSummary,
   MembershipMutationResult,
 } from "../../api/generated/reactAdminApi";
+import { buildIdempotencyKey } from "../../utils/adminActionMetadata";
 import { MembershipMutationResultPanel } from "./MembershipMutationResultPanel";
 
 interface InvitationPanelProps {
@@ -42,9 +43,9 @@ export function InvitationPanel({
           onClick={() =>
             onInvite("/admin/app/memberships/invitations", {
               email,
-              idempotency_key: email.includes("replay")
-                ? "invite-ui-qa034-replay"
-                : "invite-ui-qa034-create",
+              idempotency_key: buildIdempotencyKey(
+                email.includes("replay") ? "invite-replay" : "invite-create",
+              ),
               requested_roles: [roleCode],
               tenant_id: tenantId,
             })

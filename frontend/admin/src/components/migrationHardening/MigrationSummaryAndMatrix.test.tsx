@@ -14,9 +14,9 @@ describe("migration summary and parity matrix", () => {
       <MigrationSummaryHeader dashboard={migrationDashboard} onRefresh={vi.fn()} />,
     );
 
-    expect(screen.getByRole("heading", { name: "React-only browser UI" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Admin browser UI" })).toBeInTheDocument();
     expect(screen.getByText("Destinations")).toBeInTheDocument();
-    expect(screen.getByText("React primary")).toBeInTheDocument();
+    expect(screen.getByText("Admin primary")).toBeInTheDocument();
     expect(screen.getByText("Legacy fallbacks")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Refresh" })).toBeInTheDocument();
   });
@@ -25,7 +25,7 @@ describe("migration summary and parity matrix", () => {
     render(<MigrationParityMatrix groups={migrationRouteGroups} />);
 
     const foundation = screen.getByRole("heading", {
-      name: "React foundation and shell",
+      name: "Admin foundation and shell",
     }).closest("article");
     expect(foundation).not.toBeNull();
     expect(within(foundation as HTMLElement).getByText("qa037-react-home")).toBeInTheDocument();

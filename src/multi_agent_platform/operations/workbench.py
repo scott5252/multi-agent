@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from collections import Counter
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from multi_agent_platform.api.schemas.admin_patterns import (
     AdminAction,
     AdminActionMethod,
-    AdminExportStatus,
     EvidenceReferenceType,
     EvidenceSummary,
     FilterCriterion,
@@ -33,6 +35,7 @@ from multi_agent_platform.api.schemas.admin_workbench import (
     ToolCallSummary,
     WorkbenchExportRequest,
     WorkbenchExportSnapshot,
+    WorkbenchExportStatus,
     WorkbenchLink,
     WorkbenchLogSummary,
     WorkbenchMetric,
@@ -42,30 +45,70 @@ from multi_agent_platform.api.schemas.admin_workbench import (
     WorkbenchTimeRange,
 )
 from multi_agent_platform.auth.principal import PrincipalContext
+from multi_agent_platform.db.models.runtime_orchestration import (
+    RunStepRecord,
+    RuntimeTimelineEventRecord,
+)
+from multi_agent_platform.db.repositories.runtime_orchestration import (
+    RuntimeOrchestrationRepository,
+)
+from multi_agent_platform.operations.models import (
+    OperationalLogEvent,
+    OperationsAccessScope,
+    OperationsAuthorizationError,
+    OperationsCapacitySummary,
+    OperationsDashboardSnapshot,
+    OperationsExportResult,
+    OperationsLogFilters,
+    OperationsRole,
+)
+from multi_agent_platform.operations.service import OperationsConsoleService
+from multi_agent_platform.storage.base import StorageProvider
+
+SUPPORTED_RANGE_PRESETS = frozenset({"60m"})
+SUPPORTED_SEVERITIES = frozenset({"info", "warning", "critical"})
+SUPPORTED_SUBSYSTEMS = frozenset(
+    {"audit", "channel", "gateway", "reliability", "runtime", "telegram", "tool"}
+)
+TENANT_HIDDEN_CARDS = frozenset(
+    {"Worker Capacity", "DB Pool Pressure", "Object Storage", "Model Providers"}
+)
+SAFE_REDACTION_SUMMARY = (
+    "Secrets, prompts, completions, memory, provider details, channel messages, "
+    "connector details, local paths, and unauthorized tenant details are redacted."
+)
 
 
-def build_operations_workbench_envelope(
+class RunDebugNotFoundError(LookupError):
+    """Raised when a requested live run-debug projection is not visible."""
+
+
+async def build_operations_workbench_envelope(
     *,
     scope: ReactAdminScope,
     principal: PrincipalContext,
+    service: OperationsConsoleService,
     range_preset: str = "60m",
     severity: str | None = None,
     subsystem: str | None = None,
 ) -> OperationsWorkbenchEnvelope:
-    _ = principal
-    is_platform = scope.scope_type == ReactAdminScopeType.PLATFORM
-    cards = _platform_cards() if is_platform else _tenant_cards(scope)
-    panels = _platform_panels() if is_platform else _tenant_panels(scope)
-    fallback_links = _fallback_links(is_platform=is_platform)
-    run_debug = build_run_debug_envelope(
-        scope=scope,
-        workflow_run_id="00000000-0000-0000-0000-000000000029",
+    start, end = _range_window(range_preset)
+    dashboard = await service.dashboard(
+        access_scope=_access_scope(principal=principal),
+        filters=_operations_filters(scope=scope, start=start, end=end),
     )
-    logs = _logs(scope=scope, is_platform=is_platform)
-    if severity:
-        logs = tuple(log for log in logs if log.severity.value == severity)
-    if subsystem:
-        logs = tuple(log for log in logs if log.subsystem.lower() == subsystem.lower())
+    visible_logs = _filter_visible_logs(
+        dashboard.logs,
+        severity=severity,
+        subsystem=subsystem,
+    )
+    run_debug = await _first_visible_run_debug(
+        scope=scope,
+        principal=principal,
+        service=service,
+        logs=visible_logs,
+    )
+
     return OperationsWorkbenchEnvelope(
         page_id="react-operations-workbench",
         title="Operations workbench",
@@ -74,14 +117,27 @@ def build_operations_workbench_envelope(
             "tools, delivery, logs, and exports."
         ),
         scope=scope,
-        generated_at_label="Generated from deterministic QA029 summaries",
-        time_range=WorkbenchTimeRange(preset=range_preset, label="Last 60 minutes"),
-        summary_cards=cards,
-        likely_causes=_likely_causes(is_platform=is_platform),
-        health_panels=panels,
+        generated_at_label=f"Generated from live evidence at {_clock_label(end)}",
+        time_range=WorkbenchTimeRange(
+            preset=range_preset,
+            label="Last 60 minutes",
+            start=start,
+            end=end,
+        ),
+        summary_cards=_summary_cards(
+            dashboard=dashboard, scope=scope, logs=visible_logs
+        ),
+        likely_causes=_likely_causes(
+            dashboard=dashboard,
+            logs=visible_logs,
+            scope=scope,
+        ),
+        health_panels=_health_panels(
+            dashboard=dashboard, scope=scope, logs=visible_logs
+        ),
         run_debug=run_debug,
-        reliability=_reliability(is_platform=is_platform),
-        logs=logs,
+        reliability=_reliability(dashboard=dashboard, scope=scope),
+        logs=tuple(_log_summary(event, scope=scope) for event in visible_logs[:50]),
         filters=_filters(scope=scope),
         actions=(
             AdminAction(
@@ -92,13 +148,16 @@ def build_operations_workbench_envelope(
                 variant=ReactAdminPageActionVariant.SECONDARY,
             ),
         ),
-        exports=build_workbench_export_snapshot(scope=scope),
-        fallback_links=fallback_links,
+        exports=empty_workbench_export_snapshot(scope=scope),
+        fallback_links=_fallback_links(is_platform=_is_platform(scope)),
         evidence=(
             EvidenceSummary(
-                evidence_id="qa029-redaction",
-                label="Redaction evidence",
-                summary="Workbench contracts contain safe summaries only.",
+                evidence_id="operations-live-source",
+                label="Live operations source",
+                summary=(
+                    "Workbench data is derived from live operations, audit, "
+                    "runtime, reliability, provider, usage, and storage evidence."
+                ),
                 reference_type=EvidenceReferenceType.VALIDATION,
             ),
         ),
@@ -106,429 +165,1066 @@ def build_operations_workbench_envelope(
     )
 
 
-def build_run_debug_envelope(
+async def build_run_debug_envelope(
     *,
     scope: ReactAdminScope,
+    principal: PrincipalContext,
+    service: OperationsConsoleService,
     workflow_run_id: str | UUID,
 ) -> RunDebugEnvelope:
-    run_id = str(workflow_run_id)
+    run_id = _parse_run_id(workflow_run_id)
+    tenant_id = (
+        scope.tenant_id if scope.scope_type == ReactAdminScopeType.TENANT else None
+    )
+    repository = RuntimeOrchestrationRepository(service.session)
+    persisted_run = await repository.get_run_by_id(workflow_run_id=run_id)
+    if (
+        scope.scope_type == ReactAdminScopeType.TENANT
+        and persisted_run is not None
+        and persisted_run.tenant_id != tenant_id
+    ):
+        raise RunDebugNotFoundError("run debug not found")
+
+    logs = await service.query_logs(
+        access_scope=_access_scope(principal=principal),
+        filters=OperationsLogFilters(tenant_id=tenant_id, run_id=run_id, limit=100),
+    )
+    if persisted_run is None and not logs:
+        raise RunDebugNotFoundError("run debug not found")
+
+    runtime_events: Sequence[RuntimeTimelineEventRecord] = ()
+    run_steps: Sequence[RunStepRecord] = ()
+    bundle_summary = "No pinned execution bundle evidence was found for this run."
+    if persisted_run is not None:
+        runtime_events = await repository.list_timeline(
+            workflow_run_id=run_id,
+            tenant_id=persisted_run.tenant_id,
+            limit=100,
+        )
+        run_steps = await repository.list_run_steps(
+            workflow_run_id=run_id,
+            tenant_id=persisted_run.tenant_id,
+        )
+        bundle = await repository.get_execution_bundle(
+            run_bundle_id=persisted_run.run_bundle_id
+        )
+        if bundle is not None:
+            bundle_summary = (
+                "Pinned workflow, contract, prompt, model, and tool-policy "
+                f"versions are recorded with digest {bundle.bundle_digest[:12]}."
+            )
+
+    timeline = _run_timeline(
+        run_id=run_id,
+        persisted_run=persisted_run,
+        runtime_events=runtime_events,
+        logs=logs,
+        scope=scope,
+    )
     return RunDebugEnvelope(
-        workflow_run_id=run_id,
+        workflow_run_id=str(run_id),
         tenant_scope=scope if scope.scope_type == ReactAdminScopeType.TENANT else None,
-        run_status=WorkbenchStatus.DEGRADED,
-        safe_title="Daily briefing graph run",
-        timeline=(
-            TimelineEventSummary(
-                event_id="timeline-run-started",
-                occurred_at_label="5 minutes ago",
-                sequence=1,
-                category="run",
-                severity=WorkbenchSeverity.INFO,
-                status=WorkbenchStatus.READY,
-                summary="Run started with pinned execution bundle.",
-                details={
-                    "bundle": (
-                        "Workflow, prompt, profile, and provider versions pinned."
-                    )
-                },
-                trace_id="trace-qa029-run",
-                audit_reference_id="audit-run-qa029",
-                links=(
-                    WorkbenchLink(
-                        label="Open run inspection",
-                        href="/admin/app/operations?panel=runs",
-                    ),
-                ),
-            ),
-            TimelineEventSummary(
-                event_id="timeline-join-waiting",
-                occurred_at_label="2 minutes ago",
-                sequence=2,
-                category="graph_join",
-                severity=WorkbenchSeverity.WARNING,
-                status=WorkbenchStatus.WARNING,
-                summary="Join is waiting for one branch retry.",
-                details={"join": "Weather branch retry is scheduled."},
-                audit_reference_id="audit-join-qa029",
-            ),
+        run_status=_run_status(
+            logs=logs, persisted_status=getattr(persisted_run, "status", None)
         ),
-        branches=(
-            GraphBranchSummary(
-                branch_id="branch-calendar",
-                label="Calendar branch",
-                status=WorkbenchStatus.READY,
-                node_count=2,
-                completed_count=2,
-                summary="Calendar context completed with safe connector output.",
-            ),
-            GraphBranchSummary(
-                branch_id="branch-weather",
-                label="Weather branch",
-                status=WorkbenchStatus.WARNING,
-                node_count=2,
-                completed_count=1,
-                waiting_count=1,
-                join_policy="Wait for required branches",
-                join_decision="Retry scheduled before join",
-                manual_resolution_required=False,
-                summary="Weather connector retry is pending before the join completes.",
-            ),
+        safe_title=_run_title(run_id=run_id, persisted_run=persisted_run, logs=logs),
+        timeline=timeline,
+        branches=_branches_from_steps(run_steps=run_steps, logs=logs),
+        gateway_attempts=tuple(
+            _gateway_attempt(event)
+            if _is_platform(scope)
+            else _tenant_gateway_attempt(event)
+            for event in logs
+            if event.source == "gateway_attempt"
         ),
-        gateway_attempts=(
-            GatewayAttemptSummary(
-                attempt_id="gateway-attempt-qa029",
-                provider_label="OpenAI provider",
-                model_label="Pinned briefing model",
-                status=WorkbenchStatus.DEGRADED,
-                latency_ms=840,
-                retry_category="retryable_timeout",
-                breaker_category="closed",
-                credential_diagnostic_category="resolved_reference",
-                usage_reference_id="usage-qa029",
-                safe_summary="Gateway attempt retried after a timeout category.",
-                evidence_reference_id="gateway-evidence-qa029",
-            ),
+        tool_calls=tuple(
+            _tool_call(event) for event in logs if _event_subsystem(event) == "tool"
         ),
-        tool_calls=(
-            ToolCallSummary(
-                tool_call_id="tool-call-qa029",
-                tool_label="Daily briefing weather",
-                connector_label="Weather connector",
-                readiness_status=WorkbenchStatus.READY,
-                policy_outcome="allowed_read_only",
-                side_effect_classification="read_only",
-                result_category="safe_summary",
-                safe_summary="Connector returned a redacted weather summary.",
-                evidence_reference_id="tool-evidence-qa029",
-            ),
-        ),
-        deliveries=(
-            ChannelDeliverySummary(
-                delivery_id="delivery-qa029",
-                channel="telegram",
-                alias_label="Morning briefing alias",
-                identity_status=WorkbenchStatus.READY,
-                receipt_status=WorkbenchStatus.READY,
-                notification_status=WorkbenchStatus.WARNING,
-                delivery_status=WorkbenchStatus.WARNING,
-                failure_category="mock_delivery_retry",
-                safe_summary=(
-                    "Delivery is queued for a mocked retry without private message "
-                    "text."
-                ),
-                evidence_reference_id="delivery-evidence-qa029",
-            ),
+        deliveries=tuple(
+            _delivery(event)
+            for event in logs
+            if _event_subsystem(event) in {"telegram", "channel"}
         ),
         lineage=(
             WorkbenchLink(
-                label="Parent run lineage",
-                href=f"/admin/app/operations?run_id={run_id}&panel=lineage",
+                label="Run lineage",
+                href=_with_tenant_query(
+                    f"/admin/app/operations?run_id={run_id}&panel=lineage",
+                    scope,
+                ),
             ),
         ),
         replay_links=(
             WorkbenchLink(
-                label="Open safe replay",
-                href=f"/admin/app/operations?run_id={run_id}&panel=replay",
+                label="Open safe replay evidence",
+                href=_with_tenant_query(
+                    f"/admin/app/operations?run_id={run_id}&panel=replay",
+                    scope,
+                ),
             ),
         ),
-        bundle_summary=(
-            "Pinned workflow, prompt, profile, provider, and tool policy versions."
-        ),
+        bundle_summary=bundle_summary,
         fallback_links=(
-            WorkbenchLink(label="Run search", href="/admin/app/operations?panel=runs"),
-            WorkbenchLink(label="Operations console", href="/admin/app/operations"),
+            WorkbenchLink(label="Operations workbench", href="/admin/app/operations"),
+            WorkbenchLink(
+                label="Run debug JSON",
+                href=_with_tenant_query(
+                    f"/admin/app/operations/runs/{run_id}.json",
+                    scope,
+                ),
+            ),
         ),
     )
 
 
-def build_workbench_export_snapshot(
+async def create_workbench_export_snapshot(
     *,
     scope: ReactAdminScope,
+    principal: PrincipalContext,
+    service: OperationsConsoleService,
+    storage_provider: StorageProvider,
     request: WorkbenchExportRequest | None = None,
 ) -> WorkbenchExportSnapshot:
-    _ = request
-    scope_label = (
-        "platform" if scope.scope_type == ReactAdminScopeType.PLATFORM else "tenant"
-    )
+    payload = request or WorkbenchExportRequest()
+    if payload.range not in SUPPORTED_RANGE_PRESETS:
+        return WorkbenchExportSnapshot(
+            export_id="operations-export:validation",
+            status=WorkbenchExportStatus.VALIDATION,
+            summary=(
+                "Workbench export was not created because the requested range "
+                "is unsupported."
+            ),
+            artifact_reference_id=None,
+            progress_label="Validation required",
+            audit_reference_id=None,
+            scope_label=scope.label,
+            redaction_summary=SAFE_REDACTION_SUMMARY,
+            row_count=0,
+        )
+    start, end = _range_window(payload.range)
+    try:
+        result = await service.export_logs(
+            access_scope=_access_scope(principal=principal),
+            filters=_operations_filters(scope=scope, start=start, end=end),
+            storage_provider=storage_provider,
+        )
+    except OperationsAuthorizationError:
+        return WorkbenchExportSnapshot(
+            export_id="operations-export:denied",
+            status=WorkbenchExportStatus.DENIED,
+            summary="Workbench export was denied for the active principal and scope.",
+            artifact_reference_id=None,
+            progress_label="Denied",
+            audit_reference_id=None,
+            scope_label=scope.label,
+            redaction_summary=SAFE_REDACTION_SUMMARY,
+            row_count=0,
+        )
+    except Exception:
+        return WorkbenchExportSnapshot(
+            export_id="operations-export:unavailable",
+            status=WorkbenchExportStatus.UNAVAILABLE,
+            summary=(
+                "Workbench export storage is unavailable; no fake artifact "
+                "was returned."
+            ),
+            artifact_reference_id=None,
+            progress_label="Unavailable",
+            audit_reference_id=None,
+            scope_label=scope.label,
+            redaction_summary=SAFE_REDACTION_SUMMARY,
+            row_count=0,
+        )
+    return _export_result_snapshot(scope=scope, result=result)
+
+
+def empty_workbench_export_snapshot(
+    *, scope: ReactAdminScope
+) -> WorkbenchExportSnapshot:
     return WorkbenchExportSnapshot(
-        export_id=f"workbench-export-qa029-{scope_label}",
-        status=AdminExportStatus.COMPLETE,
-        summary="Workbench export is ready as a safe artifact reference.",
-        artifact_reference_id=f"artifact-ref-qa029-{scope_label}",
-        progress_label="Complete",
-        audit_reference_id=f"audit-workbench-export-qa029-{scope_label}",
+        export_id="operations-export:empty",
+        status=WorkbenchExportStatus.EMPTY,
+        summary="No workbench export has been requested for this live scope.",
+        artifact_reference_id=None,
+        progress_label="No export requested",
+        audit_reference_id=None,
         scope_label=scope.label,
-        redaction_summary=(
-            "Secrets, prompt output, memory references, provider responses, "
-            "channel message text, and connector outputs are redacted."
-        ),
-        row_count=12 if scope.scope_type == ReactAdminScopeType.PLATFORM else 5,
+        redaction_summary=SAFE_REDACTION_SUMMARY,
+        row_count=0,
     )
 
 
-def _platform_cards() -> tuple[WorkbenchSummaryCard, ...]:
+def _export_result_snapshot(
+    *,
+    scope: ReactAdminScope,
+    result: OperationsExportResult,
+) -> WorkbenchExportSnapshot:
+    return WorkbenchExportSnapshot(
+        export_id=f"operations-export:{result.export_id}",
+        status=WorkbenchExportStatus.COMPLETE,
+        summary="Workbench export persisted with safe artifact metadata.",
+        artifact_reference_id=f"operations-export:{result.export_id}",
+        progress_label="Complete",
+        audit_reference_id=str(result.audit_event_id)
+        if result.audit_event_id
+        else None,
+        scope_label=scope.label,
+        redaction_summary=SAFE_REDACTION_SUMMARY,
+        row_count=result.row_count,
+    )
+
+
+def _range_window(range_preset: str) -> tuple[datetime, datetime]:
+    if range_preset not in SUPPORTED_RANGE_PRESETS:
+        raise ValueError("unsupported workbench range")
+    end = datetime.now(UTC)
+    return end - timedelta(minutes=60), end
+
+
+def _operations_filters(
+    *,
+    scope: ReactAdminScope,
+    start: datetime,
+    end: datetime,
+) -> OperationsLogFilters:
+    return OperationsLogFilters(
+        tenant_id=scope.tenant_id
+        if scope.scope_type == ReactAdminScopeType.TENANT
+        else None,
+        start=start,
+        end=end,
+        limit=100,
+    )
+
+
+def _access_scope(*, principal: PrincipalContext) -> OperationsAccessScope:
+    roles = set(principal.role_codes)
+    role = (
+        OperationsRole.PLATFORM_ADMIN
+        if "platform_admin" in roles
+        else OperationsRole.AUDITOR
+    )
+    can_export = bool({"platform_admin", "tenant_admin"} & roles) or (
+        "operations:export" in set(principal.permission_codes)
+    )
+    return OperationsAccessScope(
+        principal_id=principal.principal_id,
+        role=role,
+        can_export=can_export,
+        trace_id=principal.trace_id,
+    )
+
+
+def _summary_cards(
+    *,
+    dashboard: OperationsDashboardSnapshot,
+    scope: ReactAdminScope,
+    logs: tuple[OperationalLogEvent, ...],
+) -> tuple[WorkbenchSummaryCard, ...]:
+    cards: list[WorkbenchSummaryCard] = []
+    if not _is_platform(scope):
+        run_count = len({event.run_id for event in logs if event.run_id is not None})
+        cards.append(
+            WorkbenchSummaryCard(
+                card_id="tenant-live-evidence",
+                label="Tenant live evidence",
+                value=str(len(logs)),
+                status=WorkbenchStatus.READY if logs else WorkbenchStatus.EMPTY,
+                severity=WorkbenchSeverity.INFO,
+                summary=(
+                    f"{scope.label} has {len(logs)} live operational rows and "
+                    f"{run_count} visible runs in the selected range."
+                ),
+                freshness_label="Last 60 minutes",
+                href=_with_tenant_query("/admin/app/operations?panel=logs", scope),
+                evidence_reference_id="live:tenant-operations",
+            )
+        )
+    for card in dashboard.status_cards:
+        if not _is_platform(scope) and card.label in TENANT_HIDDEN_CARDS:
+            continue
+        cards.append(
+            WorkbenchSummaryCard(
+                card_id=_slug(card.label),
+                label=card.label,
+                value=card.value,
+                status=_status(card.status),
+                severity=_severity_from_status(card.status),
+                summary=card.summary,
+                freshness_label="Live source",
+                href=_with_tenant_query(card.href, scope) if card.href else None,
+                evidence_reference_id=f"live:{_slug(card.label)}",
+            )
+        )
+    if cards:
+        return tuple(cards)
     return (
         WorkbenchSummaryCard(
-            card_id="health",
-            label="Health",
-            value="degraded",
-            status=WorkbenchStatus.DEGRADED,
-            severity=WorkbenchSeverity.WARNING,
-            summary="One dependency is degraded while core API readiness is available.",
-            freshness_label="Checked within 1 minute",
-            trend="stable",
-            href="/admin/app/operations",
-            evidence_reference_id="health-qa029",
-        ),
-        WorkbenchSummaryCard(
-            card_id="queue-pressure",
-            label="Queue pressure",
-            value="18 runnable",
-            status=WorkbenchStatus.WARNING,
-            severity=WorkbenchSeverity.WARNING,
-            summary="Runnable work is elevated and retries are accumulating.",
+            card_id="empty-live-evidence",
+            label="Live evidence",
+            value="0",
+            status=WorkbenchStatus.EMPTY,
+            severity=WorkbenchSeverity.INFO,
+            summary="No operational evidence matched the authorized scope and range.",
             freshness_label="Last 60 minutes",
-            href="/admin/app/operations?panel=reliability",
-            evidence_reference_id="queue-qa029",
-        ),
-        WorkbenchSummaryCard(
-            card_id="provider-health",
-            label="Provider health",
-            value="1 degraded",
-            status=WorkbenchStatus.DEGRADED,
-            severity=WorkbenchSeverity.WARNING,
-            summary="A model provider has retryable timeout evidence.",
-            freshness_label="Last probe 4 minutes ago",
-            href="/admin/app/governance/providers",
-            evidence_reference_id="provider-qa029",
+            evidence_reference_id=None,
         ),
     )
 
 
-def _tenant_cards(scope: ReactAdminScope) -> tuple[WorkbenchSummaryCard, ...]:
-    return (
-        WorkbenchSummaryCard(
-            card_id="tenant-runs",
-            label="Tenant run health",
-            value="attention needed",
-            status=WorkbenchStatus.WARNING,
-            severity=WorkbenchSeverity.WARNING,
-            summary=f"{scope.label} has one run waiting for a safe retry.",
-            freshness_label="Last 60 minutes",
-            href=_with_tenant_query("/admin/app/operations?panel=runs", scope),
-            evidence_reference_id="tenant-run-qa029",
-        ),
-        WorkbenchSummaryCard(
-            card_id="tenant-delivery",
-            label="Tenant delivery",
-            value="retry queued",
-            status=WorkbenchStatus.WARNING,
-            severity=WorkbenchSeverity.WARNING,
-            summary="A mocked Telegram delivery attempt is queued for retry.",
-            freshness_label="Updated 2 minutes ago",
-            href=_with_tenant_query("/admin/telegram", scope),
-            evidence_reference_id="tenant-delivery-qa029",
-        ),
+def _health_panels(
+    *,
+    dashboard: OperationsDashboardSnapshot,
+    scope: ReactAdminScope,
+    logs: tuple[OperationalLogEvent, ...],
+) -> tuple[HealthPressurePanel, ...]:
+    if not _is_platform(scope):
+        run_count = len({event.run_id for event in logs if event.run_id is not None})
+        return (
+            HealthPressurePanel(
+                panel_id="tenant-activity",
+                title="Tenant activity",
+                status=WorkbenchStatus.READY if logs else WorkbenchStatus.EMPTY,
+                metrics=(
+                    WorkbenchMetric(
+                        label="Visible operational rows", value=str(len(logs))
+                    ),
+                    WorkbenchMetric(label="Visible runs", value=str(run_count)),
+                    WorkbenchMetric(
+                        label="Usage events",
+                        value=str(dashboard.usage.total_events),
+                        status=_status(dashboard.usage.usage_status),
+                    ),
+                ),
+                dependencies=(),
+                freshness_label=f"{scope.label} scope only",
+                polling_allowed=True,
+                partial_reason=(
+                    "Platform-only database, provider, worker, queue, and storage "
+                    "pressure details are hidden for tenant scope."
+                ),
+                links=(
+                    WorkbenchLink(
+                        label="Tenant logs",
+                        href=_with_tenant_query(
+                            "/admin/app/operations?panel=logs", scope
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+    capacity = dashboard.capacity
+    dependency_metrics = tuple(
+        WorkbenchMetric(
+            label=item.name,
+            value=item.status,
+            status=_status(item.status),
+            summary=item.detail or None,
+        )
+        for item in dashboard.dependencies[:8]
     )
-
-
-def _platform_panels() -> tuple[HealthPressurePanel, ...]:
+    provider_metrics = tuple(
+        WorkbenchMetric(
+            label=item.display_name,
+            value=item.health_state,
+            status=_status(item.health_state),
+            summary=f"{item.model_count} models",
+        )
+        for item in dashboard.providers[:8]
+    )
     return (
         HealthPressurePanel(
             panel_id="capacity",
             title="Capacity and dependencies",
-            status=WorkbenchStatus.DEGRADED,
+            status=_capacity_status(capacity),
             metrics=(
                 WorkbenchMetric(
                     label="Runnable queue",
-                    value="18",
-                    status=WorkbenchStatus.WARNING,
+                    value=str(capacity.runnable_depth),
+                    status=WorkbenchStatus.WARNING
+                    if capacity.runnable_depth
+                    else WorkbenchStatus.READY,
                 ),
-                WorkbenchMetric(label="Database pool wait p95", value="42 ms"),
-                WorkbenchMetric(label="Artifact operations", value="3 inflight"),
-            ),
-            dependencies=(
-                WorkbenchMetric(label="PostgreSQL", value="ready"),
                 WorkbenchMetric(
-                    label="Telegram",
-                    value="degraded",
-                    status=WorkbenchStatus.DEGRADED,
+                    label="Delayed queue", value=str(capacity.delayed_depth)
+                ),
+                WorkbenchMetric(
+                    label="Active leases", value=str(capacity.active_leases)
+                ),
+                WorkbenchMetric(
+                    label="Database pool wait p95",
+                    value=f"{capacity.db_pool_wait_p95_ms} ms",
+                    status=WorkbenchStatus.WARNING
+                    if capacity.db_pool_wait_p95_ms
+                    else WorkbenchStatus.READY,
+                ),
+                WorkbenchMetric(
+                    label="Artifact operations",
+                    value=str(capacity.artifact_inflight),
                 ),
             ),
-            freshness_label="Checked within 1 minute",
+            dependencies=dependency_metrics,
+            freshness_label="Live dependency and reliability state",
             polling_allowed=True,
             links=(
                 WorkbenchLink(
-                    label="Existing operations console",
+                    label="Operations workbench",
                     href="/admin/app/operations",
                 ),
             ),
         ),
-    )
-
-
-def _tenant_panels(scope: ReactAdminScope) -> tuple[HealthPressurePanel, ...]:
-    return (
         HealthPressurePanel(
-            panel_id="tenant-activity",
-            title="Tenant activity",
-            status=WorkbenchStatus.WARNING,
+            panel_id="providers",
+            title="Provider, usage, and channel signals",
+            status=_provider_panel_status(dashboard),
             metrics=(
                 WorkbenchMetric(
-                    label="Runs needing attention",
-                    value="1",
-                    status=WorkbenchStatus.WARNING,
+                    label="Usage events",
+                    value=str(dashboard.usage.total_events),
+                    status=_status(dashboard.usage.usage_status),
                 ),
                 WorkbenchMetric(
-                    label="Deliveries queued",
-                    value="1",
-                    status=WorkbenchStatus.WARNING,
+                    label="Token throughput",
+                    value=str(dashboard.usage.token_throughput),
+                    status=_status(dashboard.usage.usage_status),
+                ),
+                WorkbenchMetric(
+                    label="Model latency p95",
+                    value=f"{dashboard.usage.model_latency_ms} ms",
                 ),
             ),
-            freshness_label=f"{scope.label} scope only",
+            dependencies=provider_metrics,
+            freshness_label="Last 60 minutes",
             polling_allowed=True,
-            partial_reason=(
-                "Platform-only provider, queue, and database pressure details are "
-                "hidden for tenant scope."
-            ),
             links=(
                 WorkbenchLink(
-                    label="Run search",
-                    href=_with_tenant_query("/admin/app/operations?panel=runs", scope),
+                    label="Model providers",
+                    href="/admin/app/governance/providers",
                 ),
+                WorkbenchLink(label="Usage analytics", href="/admin/app/usage"),
             ),
         ),
     )
 
 
-def _likely_causes(*, is_platform: bool) -> tuple[LikelyCauseSummary, ...]:
-    if not is_platform:
-        return (
+def _likely_causes(
+    *,
+    dashboard: OperationsDashboardSnapshot,
+    logs: tuple[OperationalLogEvent, ...],
+    scope: ReactAdminScope,
+) -> tuple[LikelyCauseSummary, ...]:
+    is_platform = _is_platform(scope)
+    causes: list[LikelyCauseSummary] = []
+    if is_platform and dashboard.capacity.open_breaker_count:
+        causes.append(
             LikelyCauseSummary(
-                cause_id="tenant-delivery-retry",
+                cause_id="live-open-breakers",
                 severity=WorkbenchSeverity.WARNING,
-                affected_subsystem="Tenant delivery",
-                symptom="One delivery attempt is queued for retry.",
-                likely_cause_category="mock_delivery_retry",
-                recommended_next_step="Open Telegram diagnostics for the tenant.",
-                href="/admin/telegram",
-                evidence_reference_id="delivery-evidence-qa029",
-            ),
+                affected_subsystem="Reliability",
+                symptom=(
+                    f"{dashboard.capacity.open_breaker_count} breaker records are open."
+                ),
+                likely_cause_category="live_reliability_pressure",
+                recommended_next_step="Open reliability recovery details.",
+                href="/admin/app/operations?panel=reliability",
+                evidence_reference_id="live:reliability",
+            )
         )
+    for event in logs:
+        severity = _event_severity(event)
+        if severity is WorkbenchSeverity.INFO and _status(event.status) in {
+            WorkbenchStatus.READY,
+            WorkbenchStatus.AVAILABLE,
+        }:
+            continue
+        causes.append(
+            LikelyCauseSummary(
+                cause_id=f"cause-{_slug(event.event_id)}",
+                severity=severity,
+                affected_subsystem=_event_subsystem(event).title(),
+                symptom=event.summary,
+                likely_cause_category=_safe_category(event),
+                recommended_next_step=_recommended_step(
+                    event,
+                    is_platform=is_platform,
+                ),
+                href=_first_link(event, scope=scope),
+                evidence_reference_id=event.event_id,
+            )
+        )
+        if len(causes) >= 3:
+            break
+    if causes:
+        return tuple(causes)
     return (
         LikelyCauseSummary(
-            cause_id="provider-timeout",
-            severity=WorkbenchSeverity.WARNING,
-            affected_subsystem="Model gateway",
-            symptom="Provider attempt latency and retry counts increased.",
-            likely_cause_category="retryable_timeout",
-            recommended_next_step="Open provider health and gateway diagnostics.",
-            href="/admin/app/governance/providers",
-            evidence_reference_id="gateway-evidence-qa029",
+            cause_id="no-live-warning-symptoms",
+            severity=WorkbenchSeverity.INFO,
+            affected_subsystem="Live operations",
+            symptom="No warning or critical symptoms matched the selected scope.",
+            likely_cause_category="empty_live_evidence",
+            recommended_next_step="Refresh or broaden the authorized filter.",
+            href="/admin/app/operations",
+            evidence_reference_id=None,
         ),
     )
 
 
-def _reliability(*, is_platform: bool) -> ReliabilityRecoverySummary:
+def _reliability(
+    *,
+    dashboard: OperationsDashboardSnapshot,
+    scope: ReactAdminScope,
+) -> ReliabilityRecoverySummary:
+    if not _is_platform(scope):
+        return ReliabilityRecoverySummary(
+            confirmations=(
+                ReliabilityRecoveryItem(
+                    item_id="tenant-recovery-empty",
+                    label="Tenant recovery records",
+                    status=WorkbenchStatus.EMPTY,
+                    severity=WorkbenchSeverity.INFO,
+                    summary=(
+                        "No tenant-visible reliability recovery records matched "
+                        "the selected range."
+                    ),
+                    href=_with_tenant_query(
+                        "/admin/app/operations?panel=reliability",
+                        scope,
+                    ),
+                ),
+            ),
+            partial_reason=(
+                "Platform-only queue, breaker, and storage pressure is hidden "
+                "for tenant scope."
+            ),
+        )
+    capacity = dashboard.capacity
     return ReliabilityRecoverySummary(
         breakers=(
             ReliabilityRecoveryItem(
-                item_id="breaker-model-gateway",
-                label="Model gateway breaker",
-                status=(
-                    WorkbenchStatus.READY
-                    if is_platform
-                    else WorkbenchStatus.UNAVAILABLE
-                ),
-                severity=WorkbenchSeverity.INFO,
-                summary="Breaker is closed with retryable timeout evidence summarized.",
-                href="/admin/app/operations?panel=breakers" if is_platform else None,
+                item_id="live-breakers",
+                label="Open breakers",
+                status=WorkbenchStatus.WARNING
+                if capacity.open_breaker_count
+                else WorkbenchStatus.READY,
+                severity=WorkbenchSeverity.WARNING
+                if capacity.open_breaker_count
+                else WorkbenchSeverity.INFO,
+                summary=f"{capacity.open_breaker_count} open breaker records.",
+                href="/admin/app/operations?panel=breakers",
             ),
         ),
         retries=(
             ReliabilityRecoveryItem(
-                item_id="retry-weather-branch",
-                label="Weather branch retry",
-                status=WorkbenchStatus.WARNING,
-                severity=WorkbenchSeverity.WARNING,
-                summary="Retry is scheduled before the graph join completes.",
+                item_id="live-retries",
+                label="Retry backlog",
+                status=WorkbenchStatus.WARNING
+                if capacity.retry_backlog
+                else WorkbenchStatus.EMPTY,
+                severity=WorkbenchSeverity.WARNING
+                if capacity.retry_backlog
+                else WorkbenchSeverity.INFO,
+                summary=f"{capacity.retry_backlog} retry records are pending.",
                 href="/admin/app/operations?panel=reliability",
             ),
         ),
         dead_letters=(
             ReliabilityRecoveryItem(
-                item_id="dead-letters",
+                item_id="live-dead-letters",
                 label="Dead letters",
-                status=WorkbenchStatus.READY,
-                severity=WorkbenchSeverity.INFO,
-                summary="No dead-letter records match the active workbench scope.",
-                href="/admin/app/operations?panel=dead-letters"
-                if is_platform
-                else None,
+                status=WorkbenchStatus.CRITICAL
+                if capacity.dead_letter_count
+                else WorkbenchStatus.EMPTY,
+                severity=WorkbenchSeverity.CRITICAL
+                if capacity.dead_letter_count
+                else WorkbenchSeverity.INFO,
+                summary=(
+                    f"{capacity.dead_letter_count} dead-letter records match "
+                    "the live state."
+                ),
+                href="/admin/app/operations?panel=dead-letters",
             ),
         ),
         confirmations=(
             ReliabilityRecoveryItem(
-                item_id="replay-confirmation",
-                label="Replay requires confirmation",
-                status=WorkbenchStatus.WARNING,
-                severity=WorkbenchSeverity.WARNING,
-                summary="Replay-style remediation must be confirmed and audited.",
-                confirmation="Confirm safe replay preview",
+                item_id="live-compensation",
+                label="Compensation backlog",
+                status=WorkbenchStatus.WARNING
+                if capacity.compensation_backlog
+                else WorkbenchStatus.EMPTY,
+                severity=WorkbenchSeverity.WARNING
+                if capacity.compensation_backlog
+                else WorkbenchSeverity.INFO,
+                summary=(
+                    f"{capacity.compensation_backlog} compensation records are pending."
+                ),
+                href="/admin/app/operations?panel=compensation",
             ),
         ),
     )
 
 
-def _logs(
+def _log_summary(
+    event: OperationalLogEvent,
     *,
     scope: ReactAdminScope,
-    is_platform: bool,
-) -> tuple[WorkbenchLogSummary, ...]:
-    tenant_scope = None if is_platform else scope.label
-    return (
-        WorkbenchLogSummary(
-            log_id="log-gateway-timeout",
-            occurred_at_label="4 minutes ago",
-            source="gateway_attempt",
-            severity=WorkbenchSeverity.WARNING,
-            status=WorkbenchStatus.DEGRADED,
-            subsystem="gateway",
-            tenant_scope=tenant_scope,
-            run_reference="run-qa029",
-            correlation_reference="trace-qa029-run",
-            summary="Gateway attempt recorded retryable timeout category.",
-            safe_details={
-                "provider": "OpenAI provider",
-                "diagnostic": "resolved_reference",
-            },
-            links=(
-                WorkbenchLink(
-                    label="Provider diagnostics",
-                    href="/admin/app/governance/providers",
-                ),
-            ),
-        ),
-        WorkbenchLogSummary(
-            log_id="log-delivery-retry",
-            occurred_at_label="2 minutes ago",
-            source="channel_delivery",
-            severity=WorkbenchSeverity.WARNING,
-            status=WorkbenchStatus.WARNING,
-            subsystem="telegram",
-            tenant_scope=tenant_scope,
-            run_reference="run-qa029",
-            correlation_reference="trace-qa029-delivery",
-            summary="Telegram delivery attempt is queued for mocked retry.",
-            safe_details={"alias": "Morning briefing alias"},
-            links=(
-                WorkbenchLink(
-                    label="Telegram diagnostics",
-                    href="/admin/telegram",
-                ),
-            ),
-        ),
+) -> WorkbenchLogSummary:
+    return WorkbenchLogSummary(
+        log_id=event.event_id,
+        occurred_at_label=_relative_label(event.occurred_at),
+        source=event.source,
+        severity=_event_severity(event),
+        status=_status(event.status),
+        subsystem=_event_subsystem(event),
+        tenant_scope="tenant" if event.tenant_id is not None else None,
+        run_reference=str(event.run_id) if event.run_id else None,
+        correlation_reference=event.trace_id,
+        summary=event.summary,
+        safe_details=_scoped_details(event.details, scope=scope),
+        links=_scoped_links(event.links, scope=scope),
     )
+
+
+async def _first_visible_run_debug(
+    *,
+    scope: ReactAdminScope,
+    principal: PrincipalContext,
+    service: OperationsConsoleService,
+    logs: tuple[OperationalLogEvent, ...],
+) -> RunDebugEnvelope | None:
+    for event in logs:
+        if event.run_id is None:
+            continue
+        try:
+            return await build_run_debug_envelope(
+                scope=scope,
+                principal=principal,
+                service=service,
+                workflow_run_id=event.run_id,
+            )
+        except RunDebugNotFoundError:
+            continue
+    return None
+
+
+def _run_timeline(
+    *,
+    run_id: UUID,
+    persisted_run: object | None,
+    runtime_events: Sequence[RuntimeTimelineEventRecord],
+    logs: tuple[OperationalLogEvent, ...],
+    scope: ReactAdminScope,
+) -> tuple[TimelineEventSummary, ...]:
+    timeline: list[TimelineEventSummary] = []
+    if persisted_run is not None:
+        status_value = getattr(
+            getattr(persisted_run, "status", None), "value", "recorded"
+        )
+        updated_at = getattr(persisted_run, "updated_at", None)
+        created_at = getattr(persisted_run, "created_at", None)
+        timeline.append(
+            TimelineEventSummary(
+                event_id=f"runtime-run-{run_id}",
+                occurred_at_label=_relative_label(
+                    updated_at or created_at or datetime.now(UTC)
+                ),
+                sequence=0,
+                category="runtime_run",
+                severity=_severity_from_status(status_value),
+                status=_status(status_value),
+                summary=f"Runtime run is {status_value}.",
+                details={"source": "runtime_workflow_runs"},
+                trace_id=getattr(persisted_run, "trace_id", None),
+                audit_reference_id=None,
+            )
+        )
+    for index, event in enumerate(
+        sorted(runtime_events, key=lambda item: item.created_at), 1
+    ):
+        timeline.append(
+            TimelineEventSummary(
+                event_id=f"runtime-timeline-{event.runtime_timeline_event_id}",
+                occurred_at_label=_relative_label(event.created_at),
+                sequence=index,
+                category=event.event_type,
+                severity=_severity_from_status(event.severity),
+                status=_status(event.severity),
+                summary=_payload_summary(event.payload, fallback=event.event_type),
+                details=_string_details(event.payload),
+                trace_id=event.trace_id,
+                audit_reference_id=None,
+            )
+        )
+    offset = len(timeline)
+    for index, log_event in enumerate(
+        sorted(logs, key=lambda item: item.occurred_at), 1
+    ):
+        timeline.append(
+            TimelineEventSummary(
+                event_id=f"run-log-{_slug(log_event.event_id)}",
+                occurred_at_label=_relative_label(log_event.occurred_at),
+                sequence=offset + index,
+                category=log_event.component,
+                severity=_event_severity(log_event),
+                status=_status(log_event.status),
+                summary=log_event.summary,
+                details=_scoped_details(log_event.details, scope=scope),
+                trace_id=log_event.trace_id,
+                audit_reference_id=log_event.event_id,
+                links=_scoped_links(log_event.links, scope=scope),
+            )
+        )
+    return tuple(timeline)
+
+
+def _branches_from_steps(
+    *,
+    run_steps: Sequence[RunStepRecord],
+    logs: tuple[OperationalLogEvent, ...],
+) -> tuple[GraphBranchSummary, ...]:
+    if run_steps:
+        return tuple(
+            GraphBranchSummary(
+                branch_id=f"step-{step.step_key}",
+                label=step.step_key.replace("_", " ").title(),
+                status=_status(getattr(step.status, "value", str(step.status))),
+                node_count=1,
+                completed_count=1
+                if getattr(step.status, "value", str(step.status)) == "succeeded"
+                else 0,
+                failed_count=1
+                if getattr(step.status, "value", str(step.status)) == "failed"
+                else 0,
+                waiting_count=1
+                if getattr(step.status, "value", str(step.status))
+                in {"pending", "runnable", "retry_scheduled", "waiting_child"}
+                else 0,
+                join_policy=None,
+                join_decision=None,
+                manual_resolution_required=getattr(
+                    step.status, "value", str(step.status)
+                )
+                == "paused",
+                summary=(
+                    "Live step status is "
+                    f"{getattr(step.status, 'value', str(step.status))}."
+                ),
+            )
+            for step in run_steps[:12]
+        )
+    counts = Counter(_event_subsystem(event) for event in logs)
+    return tuple(
+        GraphBranchSummary(
+            branch_id=f"evidence-{subsystem}",
+            label=f"{subsystem.title()} evidence",
+            status=WorkbenchStatus.READY,
+            node_count=count,
+            completed_count=count,
+            summary=f"{count} live evidence rows are associated with this subsystem.",
+        )
+        for subsystem, count in counts.items()
+    )
+
+
+def _gateway_attempt(event: OperationalLogEvent) -> GatewayAttemptSummary:
+    return GatewayAttemptSummary(
+        attempt_id=event.event_id,
+        provider_label=event.details.get(
+            "provider", event.dependency or "Model provider"
+        ),
+        model_label=event.details.get("model", "Recorded model"),
+        status=_status(event.status),
+        latency_ms=event.latency_ms,
+        retry_category=event.details.get("retry_category") or _safe_category(event),
+        breaker_category=event.details.get("breaker_category"),
+        credential_diagnostic_category=event.details.get(
+            "credential", "safe_reference"
+        ),
+        usage_reference_id=event.details.get("usage_reference_id"),
+        safe_summary=event.summary,
+        evidence_reference_id=event.event_id,
+    )
+
+
+def _tenant_gateway_attempt(event: OperationalLogEvent) -> GatewayAttemptSummary:
+    return GatewayAttemptSummary(
+        attempt_id=event.event_id,
+        provider_label="Model provider",
+        model_label="Recorded model",
+        status=_status(event.status),
+        latency_ms=event.latency_ms,
+        retry_category=event.details.get("retry_category") or _safe_category(event),
+        breaker_category=None,
+        credential_diagnostic_category="safe_reference",
+        usage_reference_id=event.details.get("usage_reference_id"),
+        safe_summary=event.summary,
+        evidence_reference_id=event.event_id,
+    )
+
+
+def _tool_call(event: OperationalLogEvent) -> ToolCallSummary:
+    return ToolCallSummary(
+        tool_call_id=event.event_id,
+        tool_label=event.dependency or event.details.get("tool", "Tool execution"),
+        connector_label=event.details.get("connector", "First-party connector"),
+        readiness_status=_status(event.status),
+        policy_outcome=event.details.get("policy_outcome", event.severity),
+        side_effect_classification=event.details.get("side_effect", "read_only"),
+        result_category=event.details.get("result_category", event.status),
+        safe_summary=event.summary,
+        evidence_reference_id=event.event_id,
+    )
+
+
+def _delivery(event: OperationalLogEvent) -> ChannelDeliverySummary:
+    return ChannelDeliverySummary(
+        delivery_id=event.event_id,
+        channel="telegram" if _event_subsystem(event) == "telegram" else "channel",
+        alias_label=event.details.get("alias", "Delivery attempt"),
+        identity_status=WorkbenchStatus.READY,
+        receipt_status=_status(event.status),
+        notification_status=_status(event.status),
+        delivery_status=_status(event.status),
+        failure_category=None
+        if _status(event.status) is WorkbenchStatus.READY
+        else _safe_category(event),
+        safe_summary=event.summary,
+        evidence_reference_id=event.event_id,
+    )
+
+
+def _scoped_links(
+    links: tuple[object, ...],
+    *,
+    scope: ReactAdminScope,
+) -> tuple[WorkbenchLink, ...]:
+    scoped: list[WorkbenchLink] = []
+    for link in links:
+        href = getattr(link, "href", "")
+        label = getattr(link, "label", "Details")
+        if scope.scope_type == ReactAdminScopeType.TENANT and (
+            "governance/providers" in href or "model" in label.lower()
+        ):
+            continue
+        scoped.append(WorkbenchLink(label=label, href=href))
+    return tuple(scoped)
+
+
+def _scoped_details(
+    details: dict[str, str],
+    *,
+    scope: ReactAdminScope,
+) -> dict[str, str]:
+    if _is_platform(scope):
+        return details
+    hidden_fragments = ("provider", "model", "credential", "breaker")
+    return {
+        key: value
+        for key, value in details.items()
+        if not any(fragment in key.lower() for fragment in hidden_fragments)
+    }
+
+
+def _filter_visible_logs(
+    logs: tuple[OperationalLogEvent, ...],
+    *,
+    severity: str | None,
+    subsystem: str | None,
+) -> tuple[OperationalLogEvent, ...]:
+    visible = logs
+    if severity:
+        visible = tuple(
+            event for event in visible if _event_severity(event).value == severity
+        )
+    if subsystem:
+        visible = tuple(
+            event for event in visible if _event_subsystem(event) == subsystem
+        )
+    return visible
+
+
+def _run_status(
+    *,
+    logs: tuple[OperationalLogEvent, ...],
+    persisted_status: object | None,
+) -> WorkbenchStatus:
+    if persisted_status is not None:
+        return _status(getattr(persisted_status, "value", str(persisted_status)))
+    if any(_event_severity(event) is WorkbenchSeverity.CRITICAL for event in logs):
+        return WorkbenchStatus.CRITICAL
+    if any(_event_severity(event) is WorkbenchSeverity.WARNING for event in logs):
+        return WorkbenchStatus.WARNING
+    return WorkbenchStatus.READY
+
+
+def _run_title(
+    *,
+    run_id: UUID,
+    persisted_run: object | None,
+    logs: tuple[OperationalLogEvent, ...],
+) -> str:
+    if persisted_run is not None:
+        status_value = getattr(
+            getattr(persisted_run, "status", None), "value", "recorded"
+        )
+        return f"Workflow run {str(run_id)[:8]} ({status_value})"
+    if logs:
+        return f"Workflow run {str(run_id)[:8]} from live audit evidence"
+    return f"Workflow run {str(run_id)[:8]}"
+
+
+def _status(value: str | None) -> WorkbenchStatus:
+    normalized = (value or "").lower()
+    if normalized in {"ready", "healthy", "succeeded", "success", "closed", "allowed"}:
+        return WorkbenchStatus.READY
+    if normalized in {"available", "complete", "completed", "recorded"}:
+        return WorkbenchStatus.AVAILABLE
+    if normalized in {"empty", "none"}:
+        return WorkbenchStatus.EMPTY
+    if normalized in {"queued", "pending", "runnable", "running", "leased"}:
+        return WorkbenchStatus.QUEUED
+    if normalized in {"denied", "forbidden", "unauthorized"}:
+        return WorkbenchStatus.DENIED
+    if normalized in {"validation", "validation_error", "invalid"}:
+        return WorkbenchStatus.VALIDATION
+    if normalized in {"conflict", "stale_conflict"}:
+        return WorkbenchStatus.CONFLICT
+    if normalized in {"not_found", "missing"}:
+        return WorkbenchStatus.NOT_FOUND
+    if normalized in {"unavailable", "not_ready"}:
+        return WorkbenchStatus.UNAVAILABLE
+    if normalized in {"critical", "failed", "failure"}:
+        return WorkbenchStatus.CRITICAL
+    if normalized in {"degraded", "warning", "retry_scheduled", "recoverable_failed"}:
+        return WorkbenchStatus.WARNING
+    return WorkbenchStatus.READY
+
+
+def _event_severity(event: OperationalLogEvent) -> WorkbenchSeverity:
+    combined = f"{event.severity} {event.status}".lower()
+    if any(
+        token in combined for token in ("critical", "failed", "failure", "unavailable")
+    ):
+        return WorkbenchSeverity.CRITICAL
+    if any(
+        token in combined
+        for token in ("warning", "retry", "timeout", "degraded", "runtime_required")
+    ):
+        return WorkbenchSeverity.WARNING
+    return WorkbenchSeverity.INFO
+
+
+def _severity_from_status(value: str | None) -> WorkbenchSeverity:
+    status = _status(value)
+    if status in {
+        WorkbenchStatus.CRITICAL,
+        WorkbenchStatus.DENIED,
+        WorkbenchStatus.UNAVAILABLE,
+    }:
+        return WorkbenchSeverity.CRITICAL
+    if status in {
+        WorkbenchStatus.WARNING,
+        WorkbenchStatus.DEGRADED,
+        WorkbenchStatus.QUEUED,
+    }:
+        return WorkbenchSeverity.WARNING
+    return WorkbenchSeverity.INFO
+
+
+def _capacity_status(capacity: OperationsCapacitySummary) -> WorkbenchStatus:
+    if capacity.dead_letter_count or capacity.open_breaker_count:
+        return WorkbenchStatus.WARNING
+    if capacity.retry_backlog or capacity.runnable_depth or capacity.delayed_depth:
+        return WorkbenchStatus.WARNING
+    return WorkbenchStatus.READY
+
+
+def _provider_panel_status(dashboard: OperationsDashboardSnapshot) -> WorkbenchStatus:
+    if any(
+        _status(item.health_state) is WorkbenchStatus.CRITICAL
+        for item in dashboard.providers
+    ):
+        return WorkbenchStatus.WARNING
+    if dashboard.usage.usage_status == "unavailable":
+        return WorkbenchStatus.UNAVAILABLE
+    return WorkbenchStatus.READY
+
+
+def _event_subsystem(event: OperationalLogEvent) -> str:
+    haystack = f"{event.source} {event.component} {event.dependency or ''}".lower()
+    if "gateway" in haystack or "model_provider" in haystack:
+        return "gateway"
+    if "telegram" in haystack:
+        return "telegram"
+    if "delivery" in haystack or "channel" in haystack:
+        return "channel"
+    if "tool" in haystack or "connector" in haystack:
+        return "tool"
+    if "reliability" in haystack or "retry" in haystack or "breaker" in haystack:
+        return "reliability"
+    if "runtime" in haystack or "run" in haystack:
+        return "runtime"
+    return "audit"
+
+
+def _safe_category(event: OperationalLogEvent) -> str:
+    if event.details.get("category"):
+        return event.details["category"]
+    return _slug(f"{_event_subsystem(event)} {event.status or event.severity}")
+
+
+def _recommended_step(event: OperationalLogEvent, *, is_platform: bool) -> str:
+    subsystem = _event_subsystem(event)
+    if subsystem == "gateway":
+        if not is_platform:
+            return "Open gateway diagnostics."
+        return "Open provider health and gateway diagnostics."
+    if subsystem in {"telegram", "channel"}:
+        return "Open channel delivery diagnostics."
+    if subsystem == "tool":
+        return "Open skill tool diagnostics."
+    if subsystem == "reliability":
+        return "Open reliability recovery details."
+    return "Open the run debug timeline."
+
+
+def _first_link(event: OperationalLogEvent, *, scope: ReactAdminScope) -> str | None:
+    links = _scoped_links(event.links, scope=scope)
+    return links[0].href if links else None
+
+
+def _payload_summary(payload: dict[str, object], *, fallback: str) -> str:
+    value = (
+        payload.get("summary") or payload.get("safe_summary") or payload.get("message")
+    )
+    return str(value)[:160] if value else f"Runtime event recorded: {fallback}."
+
+
+def _string_details(payload: dict[str, object]) -> dict[str, str]:
+    details: dict[str, str] = {}
+    for key, value in payload.items():
+        if isinstance(value, (str, int, float, bool)) and len(details) < 8:
+            details[str(key)] = str(value)
+    return details
+
+
+def _relative_label(value: datetime) -> str:
+    aware = value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+    seconds = int((datetime.now(UTC) - aware).total_seconds())
+    if seconds < 60:
+        return "moments ago"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes} minutes ago"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours} hours ago"
+    return aware.date().isoformat()
+
+
+def _clock_label(value: datetime) -> str:
+    return value.astimezone(UTC).strftime("%H:%M UTC")
 
 
 def _filters(*, scope: ReactAdminScope) -> FilterProfile:
@@ -544,18 +1240,17 @@ def _filters(*, scope: ReactAdminScope) -> FilterProfile:
             FilterCriterion(
                 key="severity",
                 label="Severity",
-                options=(
-                    FilterOption(value="warning", label="Warning"),
-                    FilterOption(value="critical", label="Critical"),
+                options=tuple(
+                    FilterOption(value=value, label=value.title())
+                    for value in sorted(SUPPORTED_SEVERITIES)
                 ),
             ),
             FilterCriterion(
                 key="subsystem",
                 label="Subsystem",
-                options=(
-                    FilterOption(value="gateway", label="Gateway"),
-                    FilterOption(value="telegram", label="Telegram"),
-                    FilterOption(value="reliability", label="Reliability"),
+                options=tuple(
+                    FilterOption(value=value, label=value.title())
+                    for value in sorted(SUPPORTED_SUBSYSTEMS)
                 ),
             ),
         ),
@@ -571,12 +1266,11 @@ def _filters(*, scope: ReactAdminScope) -> FilterProfile:
 
 def _fallback_links(*, is_platform: bool) -> tuple[WorkbenchLink, ...]:
     links = [
-        WorkbenchLink(
-            label="Existing operations console", href="/admin/app/operations"
-        ),
+        WorkbenchLink(label="Operations workbench", href="/admin/app/operations"),
         WorkbenchLink(label="Run inspection", href="/admin/app/operations?panel=runs"),
         WorkbenchLink(
-            label="Reliability controls", href="/admin/app/operations?panel=reliability"
+            label="Reliability controls",
+            href="/admin/app/operations?panel=reliability",
         ),
         WorkbenchLink(
             label="Skill tool diagnostics",
@@ -601,3 +1295,20 @@ def _with_tenant_query(path: str, scope: ReactAdminScope) -> str:
         return path
     separator = "&" if "?" in path else "?"
     return f"{path}{separator}tenant_id={scope.tenant_id}"
+
+
+def _is_platform(scope: ReactAdminScope) -> bool:
+    return scope.scope_type == ReactAdminScopeType.PLATFORM
+
+
+def _parse_run_id(value: str | UUID) -> UUID:
+    try:
+        return value if isinstance(value, UUID) else UUID(str(value))
+    except ValueError as exc:
+        raise RunDebugNotFoundError("run debug not found") from exc
+
+
+def _slug(value: str) -> str:
+    chars = [char.lower() if char.isalnum() else "-" for char in value]
+    collapsed = "-".join(part for part in "".join(chars).split("-") if part)
+    return collapsed[:96] or "live"

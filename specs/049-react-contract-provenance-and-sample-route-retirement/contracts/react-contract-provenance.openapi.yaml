@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+  title: React Contract Provenance And Sample Route Retirement
+  version: "0.1.0"
+paths:
+  /admin/app/bootstrap.json:
+    get:
+      summary: Return React admin bootstrap without sample pattern navigation
+      responses:
+        "200":
+          description: React admin bootstrap with backend-owned shell metadata
+  /admin/app/search.json:
+    get:
+      summary: Return authorized command results without sample patterns
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Authorized search results
+  /admin/app/patterns:
+    get:
+      summary: Retired production sample route
+      responses:
+        "404":
+          description: Sample patterns are unavailable in production-like configuration
+  /admin/app/patterns.json:
+    get:
+      summary: Retired production sample JSON route
+      responses:
+        "404":
+          description: Sample patterns JSON is unavailable in production-like configuration
+components:
+  schemas:
+    ReactAdminSourceKind:
+      type: string
+      enum:
+        - live_repository
+        - computed_metadata
+        - empty_live_state
+        - denied
+        - dependency_unavailable
+    ReactAdminPageProvenance:
+      type: object
+      required:
+        - source_kind
+        - source_label
+      properties:
+        source_kind:
+          $ref: "#/components/schemas/ReactAdminSourceKind"
+        source_label:
+          type: string
+        source_detail:
+          type:
+            - string
+            - "null"
+        last_verified_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+    ReactAdminEmptyStateReason:
+      type: string
+      enum:
+        - no_live_rows
+        - setup_required
+        - filtered_empty
+        - tenant_scope_empty
+        - dependency_unavailable
+    ReactAdminEmptyStateMetadata:
+      type: object
+      required:
+        - reason
+        - title
+        - summary
+        - provenance
+      properties:
+        reason:
+          $ref: "#/components/schemas/ReactAdminEmptyStateReason"
+        title:
+          type: string
+        summary:
+          type: string
+        setup_hint:
+          type:
+            - string
+            - "null"
+        provenance:
+          $ref: "#/components/schemas/ReactAdminPageProvenance"
+    ReactAdminActionMetadata:
+      type: object
+      properties:
+        revision:
+          type:
+            - string
+            - "null"
+        revision_source:
+          type: string
+          enum:
+            - backend
+            - generated_client_state
+            - not_required
+        idempotency_key:
+          type:
+            - string
+            - "null"
+        idempotency_source:
+          type: string
+          enum:
+            - backend
+            - generated_client_state
+            - not_required

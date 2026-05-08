@@ -11,8 +11,8 @@ interface StatusActionsPanelProps {
   directory: UserDirectoryEntry[];
   membershipStatuses: MembershipStatusSummary[];
   mutationResult: MembershipMutationResult | null;
-  onMembershipStatus: (url: string) => void;
-  onPrincipalStatus: (url: string) => void;
+  onMembershipStatus: (url: string, revision: string | null) => void;
+  onPrincipalStatus: (url: string, revision: string | null) => void;
 }
 
 export function StatusActionsPanel({
@@ -40,7 +40,12 @@ export function StatusActionsPanel({
                 <button
                   className={action.variant === "danger" ? "danger-button compact-button" : "ghost-button compact-button"}
                   key={action.action_id}
-                  onClick={() => onPrincipalStatus(action.href)}
+                  onClick={() =>
+                    onPrincipalStatus(
+                      action.href,
+                      action.action_metadata?.revision ?? null,
+                    )
+                  }
                   type="button"
                 >
                   {action.action_id.includes("reactivate") ? (
@@ -66,7 +71,12 @@ export function StatusActionsPanel({
                 <button
                   className="ghost-button compact-button"
                   key={action.action_id}
-                  onClick={() => onMembershipStatus(action.href)}
+                  onClick={() =>
+                    onMembershipStatus(
+                      action.href,
+                      action.action_metadata?.revision ?? status.revision,
+                    )
+                  }
                   type="button"
                 >
                   {action.label}

@@ -11,8 +11,8 @@ import { SafePromptPreviewPanel } from "./SafePromptPreviewPanel";
 interface PromptGovernancePanelProps {
   mutationResult: GovernanceMutationResult | null;
   onPreview: (previewUrl: string, unsafe: boolean) => void;
-  onSave: (saveUrl: string) => void;
-  preview: SafePromptPreview;
+  onSave: (saveUrl: string, prompt: PromptLibrarySummary) => void;
+  preview: SafePromptPreview | null;
   prompts: PromptLibrarySummary[];
 }
 
@@ -32,12 +32,18 @@ export function PromptGovernancePanel({
         </div>
       </div>
       <div className="governance-card-grid">
+        {prompts.length === 0 ? (
+          <article className="governance-card">
+            <strong>No prompts found</strong>
+            <p>No authorized live prompt records exist for this scope.</p>
+          </article>
+        ) : null}
         {prompts.map((prompt) => {
           const previewAction = prompt.authorized_actions.find(
-            (action) => action.action_id === "prompt-preview",
+            (action) => action.action_id.startsWith("prompt-preview"),
           );
           const saveAction = prompt.authorized_actions.find(
-            (action) => action.action_id === "prompt-save",
+            (action) => action.action_id.startsWith("prompt-save"),
           );
           return (
             <article className="governance-card" key={prompt.prompt_lineage_id}>
@@ -69,7 +75,10 @@ export function PromptGovernancePanel({
               </div>
               <div className="action-row">
                 {saveAction ? (
-                  <Button onClick={() => onSave(saveAction.href)} type="button">
+                  <Button
+                    onClick={() => onSave(saveAction.href, prompt)}
+                    type="button"
+                  >
                     <Save aria-hidden="true" size={16} />
                     Save summary
                   </Button>
@@ -89,7 +98,7 @@ export function PromptGovernancePanel({
                       variant="secondary"
                     >
                       <Eye aria-hidden="true" size={16} />
-                      Preview unsafe fixture
+                      Preview redaction check
                     </Button>
                   </>
                 ) : null}
@@ -98,7 +107,14 @@ export function PromptGovernancePanel({
           );
         })}
       </div>
-      <SafePromptPreviewPanel preview={preview} />
+      {preview ? (
+        <SafePromptPreviewPanel preview={preview} />
+      ) : (
+        <section className="safe-preview-panel" aria-label="Safe prompt preview">
+          <strong>Prompt preview unavailable</strong>
+          <p>No live prompt draft revision is available for this scope.</p>
+        </section>
+      )}
       {mutationResult ? (
         <section className="mutation-result accepted">
           <p className="eyebrow">Prompt result</p>

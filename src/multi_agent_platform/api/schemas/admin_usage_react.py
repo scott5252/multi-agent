@@ -65,6 +65,8 @@ class UsageReactConfidenceStatus(StrEnum):
     CONFIRMED = "confirmed"
     ESTIMATED = "estimated"
     PARTIAL = "partial"
+    MISSING = "missing"
+    RECONCILIATION_PENDING = "reconciliation_pending"
     UNAVAILABLE = "unavailable"
 
 
@@ -105,10 +107,14 @@ class UsageReactProblemReason(StrEnum):
 
 
 class UsageReactExportStatus(StrEnum):
+    QUEUED = "queued"
     PENDING = "pending"
     COMPLETED = "completed"
     FAILED = "failed"
     DENIED = "denied"
+    VALIDATION = "validation"
+    CONFLICT = "conflict"
+    UNAVAILABLE = "unavailable"
 
 
 class UsageReactRange(SafeUsageModel):

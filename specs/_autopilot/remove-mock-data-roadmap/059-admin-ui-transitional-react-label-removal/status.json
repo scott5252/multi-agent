@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "059",
+  "title": "Admin UI Transitional React Label Removal",
+  "status": "completed",
+  "active_phase": null,
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "completed_at": "2026-05-08T06:01:00Z",
+    "summary": "Spec 059 validation completed with no blockers: manifest QA, Playwright UI, post-UI transitional label verifier, and multi-agent curl regression all passed.",
+    "commands": [
+      "uv run ruff check src/multi_agent_platform/admin/migration_hardening/live_data_inventory.py src/multi_agent_platform/admin/migration_hardening/react_migration_hardening.py src/multi_agent_platform/api/routers/admin_react.py src/multi_agent_platform/auth/policy.py tests/unit/admin/test_transitional_label_scanner.py tests/integration/api/test_admin_transitional_label_routes.py tests/contract/test_admin_transitional_label_gate_contract.py scripts/qa/seed_transitional_labels_qa059.py scripts/qa/verify_transitional_labels_qa059.py",
+      "uv run mypy src/multi_agent_platform/admin/migration_hardening/live_data_inventory.py src/multi_agent_platform/admin/migration_hardening/react_migration_hardening.py src/multi_agent_platform/api/routers/admin_react.py scripts/qa/verify_transitional_labels_qa059.py",
+      "uv run pytest --no-cov tests/unit/admin/test_transitional_label_scanner.py tests/contract/test_admin_transitional_label_gate_contract.py tests/integration/api/test_admin_transitional_label_routes.py tests/unit/api/test_admin_migration_hardening_react_schema.py tests/integration/api/test_admin_live_data_inventory_routes.py tests/contract/test_admin_live_data_inventory_contract.py tests/docs/test_admin_ui_transitional_label_docs.py -q",
+      "npm run --prefix frontend/admin test -- --run migrationHardening",
+      "npm run --prefix frontend/admin test -- --run App bootstrapContract shell",
+      "npm run --prefix frontend/admin typecheck",
+      "npm run --prefix frontend/admin build",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/059-admin-ui-transitional-react-label-removal",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/059-admin-ui-transitional-react-label-removal/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/059-admin-ui-transitional-react-label-removal/validation.yml --start-processes",
+      "uv run python scripts/qa/verify_transitional_labels_qa059.py",
+      "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa059-after-spec"
+    ],
+    "evidence": {
+      "transitional_label_gate_report": ".data/qa059-artifacts/transitional-label-gate-report.json",
+      "playwright_screenshots": [
+        "output/playwright/qa059_ui/qa059-admin-entry.png",
+        "output/playwright/qa059_ui/qa059-domain-pages.png"
+      ],
+      "curl_test_run": ".data/curl_test_runs/qa059-after-spec",
+      "qa_docs": [
+        "specs/059-admin-ui-transitional-react-label-removal/qa059.md",
+        "specs/059-admin-ui-transitional-react-label-removal/qa059_ui.md",
+        "specs/059-admin-ui-transitional-react-label-removal/qa059_user_guide.md"
+      ]
+    },
+    "transitional_label_metrics": {
+      "ci_status": "pass",
+      "blocked_count": 0,
+      "allowed_reference_count": 3,
+      "surfaces_scanned": 142,
+      "routes_scanned": 6,
+      "screenshots_checked": 2
+    }
+  },
+  "artifacts": {
+    "spec": "specs/059-admin-ui-transitional-react-label-removal/spec.md",
+    "requirements_checklist": "specs/059-admin-ui-transitional-react-label-removal/checklists/requirements.md",
+    "plan": "specs/059-admin-ui-transitional-react-label-removal/plan.md",
+    "research": "specs/059-admin-ui-transitional-react-label-removal/research.md",
+    "data_model": "specs/059-admin-ui-transitional-react-label-removal/data-model.md",
+    "openapi_contract": "specs/059-admin-ui-transitional-react-label-removal/contracts/transitional-label-gate.openapi.yaml",
+    "ui_contract": "specs/059-admin-ui-transitional-react-label-removal/contracts/transitional-label-gate-ui.md",
+    "quickstart": "specs/059-admin-ui-transitional-react-label-removal/quickstart.md",
+    "tasks": "specs/059-admin-ui-transitional-react-label-removal/tasks.md",
+    "qa_guide": "specs/059-admin-ui-transitional-react-label-removal/qa059.md",
+    "ui_qa_guide": "specs/059-admin-ui-transitional-react-label-removal/qa059_ui.md",
+    "user_guide": "specs/059-admin-ui-transitional-react-label-removal/qa059_user_guide.md",
+    "pr_notes": "specs/059-admin-ui-transitional-react-label-removal/pr_notes.md",
+    "validation_manifest": "specs/_autopilot/remove-mock-data-roadmap/059-admin-ui-transitional-react-label-removal/validation.yml",
+    "verifier_report": ".data/qa059-artifacts/transitional-label-gate-report.json",
+    "playwright_output": "output/playwright/qa059_ui",
+    "curl_test_output": ".data/curl_test_runs/qa059-after-spec"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 059 from queue.json next_spec after completing and reconciling Spec 058. Continuing with validated prior-spec changes in the dirty worktree and without requiring an intermediate Git commit."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 059 feature specification and completed requirements checklist with no unresolved clarification markers. Optional git feature and commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification for transitional React label removal after reconciling queue.json and status.json for Spec 059."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five autonomous clarification answers in spec.md covering user-facing surface scope, developer-only migration evidence, compatibility redirect copy, docs/QA terminology, and internal/generated implementation references. Optional clarify git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started planning after reconciling queue.json and status.json for Spec 059."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created Spec 059 plan, research, data model, transitional label gate OpenAPI/UI contracts, and quickstart. Updated AGENTS.md SPECKIT latest plan pointer to specs/059-admin-ui-transitional-react-label-removal/plan.md. Optional plan git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation after plan artifacts were created and queue/status JSON was valid."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated Spec 059 tasks.md with 60 file-specific tasks covering product-facing Admin terminology cleanup, bounded implementation-reference allowlists, visible-text scanner/verifier, docs, Playwright screenshots, post-UI verification, and curl validation. Optional task git commit hook was skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started implementation after reconciling queue.json and status.json; continuing with validated prior-spec changes in the dirty worktree and stopping only for validation or security blockers."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Completed Spec 059 implementation: product-facing Admin terminology cleanup, transitional label gate schema/route/scanner, bounded implementation-reference allowlist, frontend gate panel, generated contracts, QA seed/verifier, docs, and validation manifest updates. No intermediate commit was required or made."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Completed required validation with full run_spec_qa, Playwright UI screenshots, post-UI verifier report blocked_count=0/screenshots_checked=2, and multi-agent curl regression with no failed commands."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Completed Spec 059 and the remove-mock-data roadmap. queue.json next_spec is now null; dirty validated prior-spec changes remain uncommitted for the user to commit at the end."
+    }
+  ],
+  "analysis": {
+    "status": "completed",
+    "findings": [
+      {
+        "id": "A1",
+        "severity": "high",
+        "category": "Task Specificity",
+        "summary": "Initial task generation included directory-level frontend paths for representative component and test-data cleanup.",
+        "remediation": "Updated T024, T025, and T042 to name exact frontend component and test data files before implementation."
+      },
+      {
+        "id": "A2",
+        "severity": "info",
+        "category": "Current Visible Text Baseline",
+        "summary": "Current source scan shows expected production-visible transitional labels such as React Admin shell copy, fallback HTML copy, migration evidence labels, and test assertions that Spec 059 must clean up.",
+        "remediation": "Proceed with implementation and validate with the QA059 visible-text scanner, route tests, Playwright screenshots, and curl regression."
+      }
+    ],
+    "rerun_result": "No remaining critical/high cross-artifact findings after task specificity remediation; implementation may proceed."
+  },
+  "auto_clarifications": [
+    "Production-visible text from backend contracts, frontend pages, fallback HTML, redirects, navigation, breadcrumbs, document titles, command/search labels, route labels, empty/error states, and QA screenshots is in scope; internal/generated/historical names are out of scope unless rendered.",
+    "Developer-only migration evidence may remain available to platform reviewers and may use React only as implementation context.",
+    "Compatibility redirects and fallbacks should say Admin or domain-specific admin destination text without changing old-link behavior.",
+    "Docs and QA guides should call the product Admin while using React only for implementation context, generated assets, historical migration evidence, or technical validation details.",
+    "Internal and generated React strings are allowed implementation references unless surfaced through production route responses, browser-visible text, screenshots, redirect copy, or fallback states."
+  ]
+}

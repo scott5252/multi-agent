@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.db.models.agent_tests import (
+    AgentTestArtifact,
     AgentTestAssertion,
     AgentTestCase,
     AgentTestPublicationRequirement,
@@ -51,12 +52,34 @@ class AgentTestRepository:
         *,
         tenant_id: UUID,
         include_archived: bool = False,
+        limit: int | None = None,
     ) -> list[AgentTestSuite]:
         stmt = select(AgentTestSuite).where(AgentTestSuite.tenant_id == tenant_id)
         if not include_archived:
             stmt = stmt.where(AgentTestSuite.status != AgentTestStatus.ARCHIVED)
         stmt = stmt.order_by(AgentTestSuite.updated_at.desc(), AgentTestSuite.name)
+        if limit is not None:
+            stmt = stmt.limit(limit)
         return list((await self.session.execute(stmt)).scalars().all())
+
+    async def find_suite_for_tenant(
+        self,
+        *,
+        tenant_id: UUID,
+        target_type: str,
+        target_id: str,
+        name: str | None = None,
+    ) -> AgentTestSuite | None:
+        stmt = select(AgentTestSuite).where(
+            AgentTestSuite.tenant_id == tenant_id,
+            AgentTestSuite.target_type == AgentTestTargetType(target_type),
+            AgentTestSuite.target_id == target_id,
+            AgentTestSuite.status != AgentTestStatus.ARCHIVED,
+        )
+        if name is not None:
+            stmt = stmt.where(AgentTestSuite.name == name)
+        stmt = stmt.order_by(AgentTestSuite.updated_at.desc())
+        return (await self.session.execute(stmt.limit(1))).scalar_one_or_none()
 
     async def require_suite_revision(
         self,
@@ -154,6 +177,7 @@ class AgentTestRepository:
         *,
         suite_id: UUID,
         tenant_id: UUID,
+        limit: int | None = None,
     ) -> list[AgentTestRun]:
         stmt = (
             select(AgentTestRun)
@@ -162,6 +186,22 @@ class AgentTestRepository:
                 AgentTestRun.tenant_id == tenant_id,
             )
             .order_by(AgentTestRun.created_at.desc())
+        )
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_runs_for_tenant(
+        self,
+        *,
+        tenant_id: UUID,
+        limit: int = 20,
+    ) -> list[AgentTestRun]:
+        stmt = (
+            select(AgentTestRun)
+            .where(AgentTestRun.tenant_id == tenant_id)
+            .order_by(AgentTestRun.created_at.desc())
+            .limit(limit)
         )
         return list((await self.session.execute(stmt)).scalars().all())
 
@@ -200,6 +240,24 @@ class AgentTestRepository:
             AgentTestPublicationRequirement.target_id == target_id,
             AgentTestPublicationRequirement.required.is_(True),
             AgentTestPublicationRequirement.archived_at.is_(None),
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_publication_requirements_for_tenant(
+        self,
+        *,
+        tenant_id: UUID,
+        limit: int = 20,
+    ) -> list[AgentTestPublicationRequirement]:
+        stmt = (
+            select(AgentTestPublicationRequirement)
+            .where(
+                AgentTestPublicationRequirement.tenant_id == tenant_id,
+                AgentTestPublicationRequirement.required.is_(True),
+                AgentTestPublicationRequirement.archived_at.is_(None),
+            )
+            .order_by(AgentTestPublicationRequirement.updated_at.desc())
+            .limit(limit)
         )
         return list((await self.session.execute(stmt)).scalars().all())
 
@@ -253,3 +311,41 @@ class AgentTestRepository:
             else:
                 stmt = stmt.where(AgentTestRun.target_version == target_version)
         return (await self.session.execute(stmt.limit(1))).scalar_one_or_none()
+
+    async def add_artifact(
+        self,
+        artifact: AgentTestArtifact,
+    ) -> AgentTestArtifact:
+        self.session.add(artifact)
+        await self.session.flush()
+        return artifact
+
+    async def get_artifact_for_tenant(
+        self,
+        *,
+        artifact_id: UUID,
+        tenant_id: UUID,
+    ) -> AgentTestArtifact | None:
+        stmt = select(AgentTestArtifact).where(
+            AgentTestArtifact.agent_test_artifact_id == artifact_id,
+            AgentTestArtifact.tenant_id == tenant_id,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def list_artifacts_for_run(
+        self,
+        *,
+        run_id: UUID,
+        tenant_id: UUID,
+        limit: int = 10,
+    ) -> list[AgentTestArtifact]:
+        stmt = (
+            select(AgentTestArtifact)
+            .where(
+                AgentTestArtifact.agent_test_run_id == run_id,
+                AgentTestArtifact.tenant_id == tenant_id,
+            )
+            .order_by(AgentTestArtifact.created_at.desc())
+            .limit(limit)
+        )
+        return list((await self.session.execute(stmt)).scalars().all())

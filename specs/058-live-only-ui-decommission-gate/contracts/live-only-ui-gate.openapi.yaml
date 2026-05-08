@@ -1,0 +1,286 @@
+openapi: 3.1.0
+info:
+  title: Live-Only UI Decommission Gate
+  version: 0.1.0
+  description: >
+    Contract for the migration live-data inventory endpoint and QA058 gate
+    evidence used to prove production admin UI routes are live-only, computed
+    system metadata, or truthful empty/denied/unavailable states.
+paths:
+  /admin/app/migration/live-data-inventory.json:
+    get:
+      summary: Return the live-data inventory and final gate classification
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: ci_mode
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: source_scan
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Live-data inventory dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveDataInventoryDashboard"
+        "403":
+          description: Principal is not authorized for migration hardening evidence
+components:
+  schemas:
+    LiveDataInventoryDashboard:
+      type: object
+      required:
+        - page_id
+        - generated_at
+        - summary
+        - findings
+        - allowlist
+        - route_targets
+        - evidence
+        - states
+      properties:
+        page_id:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        summary:
+          $ref: "#/components/schemas/LiveDataScanSummary"
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDataInventoryFinding"
+        allowlist:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDataAllowlistEntry"
+        route_targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDataRouteTarget"
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDataInventoryEvidence"
+        states:
+          type: array
+          items:
+            $ref: "#/components/schemas/MigrationProblem"
+    LiveDataScanSummary:
+      type: object
+      required:
+        - total_findings
+        - blocking_findings
+        - mapped_legacy_findings
+        - allowed_computed_metadata
+        - test_only_markers
+        - route_targets
+        - empty_state_scans
+        - seeded_state_scans
+        - ci_status
+        - next_step
+      properties:
+        total_findings:
+          type: integer
+          minimum: 0
+        blocking_findings:
+          type: integer
+          minimum: 0
+        mapped_legacy_findings:
+          type: integer
+          minimum: 0
+        allowed_computed_metadata:
+          type: integer
+          minimum: 0
+        test_only_markers:
+          type: integer
+          minimum: 0
+        route_targets:
+          type: integer
+          minimum: 0
+        empty_state_scans:
+          type: integer
+          minimum: 0
+        seeded_state_scans:
+          type: integer
+          minimum: 0
+        ci_status:
+          type: string
+          enum: [pass, warning, fail]
+        next_step:
+          type: string
+    LiveDataInventoryFinding:
+      type: object
+      required:
+        - finding_id
+        - severity
+        - status
+        - marker_kind
+        - source_path
+        - durable_source
+        - reachability
+        - safe_excerpt
+      properties:
+        finding_id:
+          type: string
+        severity:
+          type: string
+          enum: [blocking, warning, info]
+        status:
+          type: string
+          enum: [mapped_legacy, allowed_computed_metadata, new_regression, test_only]
+        marker_kind:
+          type: string
+          enum:
+            - qa_marker
+            - fake_audit_reference
+            - fake_artifact_reference
+            - fake_run_id
+            - fake_link_token
+            - fixture_collection
+            - fake_mutation_success
+            - hardcoded_domain_entity
+            - test_fixture_import
+        source_path:
+          type: string
+        route_path:
+          type: string
+          nullable: true
+        owner_spec:
+          type: string
+          nullable: true
+        replacement_spec:
+          type: string
+          nullable: true
+        durable_source:
+          type: string
+        reachability:
+          type: string
+          enum:
+            - production_response
+            - production_source
+            - generated_contract
+            - built_asset
+            - computed_metadata
+            - test_only
+        safe_excerpt:
+          type: string
+    LiveDataAllowlistEntry:
+      type: object
+      required:
+        - allowlist_id
+        - scope
+        - marker_kind
+        - reason
+        - derivation_source
+        - owner
+      properties:
+        allowlist_id:
+          type: string
+        scope:
+          type: string
+        marker_kind:
+          type: string
+        reason:
+          type: string
+        derivation_source:
+          type: string
+        owner:
+          type: string
+        expires_with_spec:
+          type: string
+          nullable: true
+    LiveDataRouteTarget:
+      type: object
+      required:
+        - target_id
+        - method
+        - path
+        - principal
+        - tenant_scope
+        - empty_state_required
+        - seeded_state_required
+        - computed_metadata_only
+      properties:
+        target_id:
+          type: string
+        method:
+          type: string
+          enum: [GET, POST]
+        path:
+          type: string
+        principal:
+          type: string
+        tenant_scope:
+          type: string
+        empty_state_required:
+          type: boolean
+        seeded_state_required:
+          type: boolean
+        computed_metadata_only:
+          type: boolean
+        replacement_spec:
+          type: string
+          nullable: true
+    LiveDataInventoryEvidence:
+      type: object
+      required:
+        - evidence_id
+        - evidence_type
+        - reference
+        - status
+      properties:
+        evidence_id:
+          type: string
+        evidence_type:
+          type: string
+          enum:
+            - scanner
+            - route_response_scan
+            - contract_test
+            - backend_route_test
+            - frontend_test
+            - playwright
+            - qa_doc
+            - reviewer_note
+            - curl_test
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [pass, warning, fail]
+    MigrationProblem:
+      type: object
+      required:
+        - reason
+        - title
+        - detail
+        - next_action
+        - severity
+      properties:
+        reason:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        next_action:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, blocking]
+        audit_reference:
+          type: string
+          nullable: true

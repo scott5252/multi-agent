@@ -27,9 +27,9 @@ describe("WorkbenchPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Operations workbench")).toBeInTheDocument();
     });
-    expect(screen.getByText("Daily briefing graph run")).toBeInTheDocument();
+    expect(screen.getByText("Workflow run 11111111 from live audit evidence")).toBeInTheDocument();
     expect(screen.getByText("Redacted signals")).toBeInTheDocument();
-    expect(screen.queryByText(/qa029-secret-value/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/qa029/i)).not.toBeInTheDocument();
   });
 
   it("requests export snapshots from backend-owned actions", async () => {
@@ -53,7 +53,7 @@ describe("WorkbenchPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Export evidence" }));
 
     await waitFor(() => {
-      expect(screen.getByText("artifact-ref-qa029-platform")).toBeInTheDocument();
+      expect(screen.getByText(/operations-export:/)).toBeInTheDocument();
     });
   });
 });

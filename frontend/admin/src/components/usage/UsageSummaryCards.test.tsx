@@ -11,6 +11,6 @@ describe("UsageSummaryCards", () => {
     expect(screen.getByText("Total tokens")).toBeInTheDocument();
     expect(screen.getByText("12,840")).toBeInTheDocument();
     expect(screen.getByText("confirmed")).toBeInTheDocument();
-    expect(screen.queryByText(/qa035-secret-value|raw prompt/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/qa056-secret-value|raw prompt/i)).not.toBeInTheDocument();
   });
 });

@@ -37,6 +37,42 @@
             "expect_text": "Workflow"
           },
           {
+            "expect_text": "No active workflow draft"
+          },
+          {
+            "click": "button:has-text(\"Create draft\")"
+          },
+          {
+            "expect_text": "Workflow draft created"
+          },
+          {
+            "click": "a:has-text(\"Open draft\")"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Save draft"
+          },
+          {
+            "fill": {
+              "selector": "label:has-text(\"Name\") input",
+              "value": "React live workflow saved"
+            }
+          },
+          {
+            "fill": {
+              "selector": "label:has-text(\"Description\") textarea",
+              "value": "Saved through the QA050 Playwright workflow action."
+            }
+          },
+          {
+            "click": "button:has-text(\"Save draft\")"
+          },
+          {
+            "expect_text": "Draft saved as a durable workflow revision."
+          },
+          {
             "screenshot": "qa050-live-data-ui-api-smoke.png",
             "full_page": true
           }
@@ -45,7 +81,7 @@
     ]
   },
   "post_spec_validation": {
-    "playwright_database_requirement": "Before this spec is marked complete, update this manifest or the spec status evidence with the UI action exercised by Playwright and the backend API or QA database check proving the UI reflected or persisted live backend state.",
+    "playwright_database_requirement": "Playwright logs in as tenant-admin-acme, opens /admin/app/workflows, verifies the empty workflow state, creates a durable workflow draft through the React create action, opens that draft, edits the workflow name and description, and saves a durable workflow revision. Post-UI evidence must query /admin/app/workflows/registry.json and the saved draft detail route to prove the browser-created workflow and saved revision are API-backed.",
     "curl_test": {
       "skill": "multi-agent-curl-test",
       "database": "multi_agent_curl_test",

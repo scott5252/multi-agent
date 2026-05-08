@@ -20,6 +20,15 @@ export function SkillLifecycleAuditPanel({
         <Badge tone="info">{auditTimeline.length} records</Badge>
       </div>
       <div className="timeline-list">
+        {auditTimeline.length === 0 ? (
+          <article className="timeline-row">
+            <History aria-hidden="true" size={18} />
+            <div>
+              <strong>No audit records</strong>
+              <p>No skill lifecycle audit evidence is visible for this scope.</p>
+            </div>
+          </article>
+        ) : null}
         {auditTimeline.map((record) => (
           <article className="timeline-row" key={record.record_id}>
             <History aria-hidden="true" size={18} />

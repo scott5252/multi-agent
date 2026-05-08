@@ -57,11 +57,152 @@ class ReactAdminNotificationTone(StrEnum):
     CRITICAL = "critical"
 
 
+class ReactAdminSourceKind(StrEnum):
+    LIVE_REPOSITORY = "live_repository"
+    COMPUTED_METADATA = "computed_metadata"
+    EMPTY_LIVE_STATE = "empty_live_state"
+    DENIED = "denied"
+    DEPENDENCY_UNAVAILABLE = "dependency_unavailable"
+
+
+class ReactAdminEmptyStateReason(StrEnum):
+    NO_LIVE_ROWS = "no_live_rows"
+    SETUP_REQUIRED = "setup_required"
+    FILTERED_EMPTY = "filtered_empty"
+    TENANT_SCOPE_EMPTY = "tenant_scope_empty"
+    DEPENDENCY_UNAVAILABLE = "dependency_unavailable"
+
+
+class ReactAdminActionMetadataSource(StrEnum):
+    BACKEND = "backend"
+    GENERATED_CLIENT_STATE = "generated_client_state"
+    NOT_REQUIRED = "not_required"
+
+
 def _safe_summary(value: str, *, max_length: int = 160) -> str:
     value = " ".join(value.strip().split())
     if not value:
         raise ValueError("safe text is required")
+    lowered = value.lower()
+    unsafe_markers = (
+        "authorization:",
+        "bearer ",
+        "begin private key",
+        "raw prompt",
+        "raw completion",
+        "memory contents",
+        "provider payload",
+        "tool payload",
+        "traceback",
+        "/users/",
+        "file:",
+    )
+    if (
+        value.startswith(("/", "../"))
+        or ".." in value
+        or any(marker in lowered for marker in unsafe_markers)
+    ):
+        raise ValueError("unsafe text cannot be rendered in admin contracts")
     return value[:max_length]
+
+
+def _safe_optional_summary(value: str | None, *, max_length: int = 160) -> str | None:
+    if value is None:
+        return None
+    return _safe_summary(value, max_length=max_length)
+
+
+def _safe_identifier(value: str | None, *, max_length: int = 160) -> str | None:
+    if value is None:
+        return None
+    value = " ".join(value.strip().split())
+    if not value:
+        raise ValueError("identifier must not be empty when provided")
+    lowered = value.lower()
+    if value.startswith(("/", "../", "file:")) or ".." in value:
+        raise ValueError("identifier must not expose a filesystem path")
+    if any(
+        marker in lowered
+        for marker in (
+            "authorization:",
+            "bearer ",
+            "raw prompt",
+            "raw completion",
+            "memory contents",
+            "provider payload",
+            "tool payload",
+            "traceback",
+            "sk-",
+        )
+    ):
+        raise ValueError("unsafe identifier cannot be rendered")
+    return value[:max_length]
+
+
+class ReactAdminPageProvenance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_kind: ReactAdminSourceKind
+    source_label: str
+    source_detail: str | None = None
+    last_verified_at: datetime | None = None
+
+    @field_validator("source_label")
+    @classmethod
+    def source_label_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=100)
+
+    @field_validator("source_detail")
+    @classmethod
+    def source_detail_is_safe(cls, value: str | None) -> str | None:
+        return _safe_optional_summary(value, max_length=220)
+
+
+class ReactAdminEmptyStateMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: ReactAdminEmptyStateReason
+    title: str
+    summary: str
+    setup_hint: str | None = None
+    provenance: ReactAdminPageProvenance
+
+    @field_validator("title")
+    @classmethod
+    def title_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=90)
+
+    @field_validator("summary")
+    @classmethod
+    def summary_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=220)
+
+    @field_validator("setup_hint")
+    @classmethod
+    def setup_hint_is_safe(cls, value: str | None) -> str | None:
+        return _safe_optional_summary(value, max_length=180)
+
+
+class ReactAdminActionMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    revision: str | None = None
+    revision_source: ReactAdminActionMetadataSource = (
+        ReactAdminActionMetadataSource.NOT_REQUIRED
+    )
+    idempotency_key: str | None = None
+    idempotency_source: ReactAdminActionMetadataSource = (
+        ReactAdminActionMetadataSource.NOT_REQUIRED
+    )
+    request_id: str | None = None
+    request_id_source: ReactAdminActionMetadataSource = (
+        ReactAdminActionMetadataSource.NOT_REQUIRED
+    )
+
+    @field_validator("revision", "idempotency_key", "request_id")
+    @classmethod
+    def identifiers_are_safe(cls, value: str | None) -> str | None:
+        return _safe_identifier(value, max_length=160)
 
 
 class ReactAdminPrincipal(BaseModel):
@@ -153,6 +294,7 @@ class ReactAdminPageAction(BaseModel):
     method: ReactAdminPageActionMethod = ReactAdminPageActionMethod.GET
     variant: ReactAdminPageActionVariant = ReactAdminPageActionVariant.SECONDARY
     disabled_reason: str | None = None
+    action_metadata: ReactAdminActionMetadata | None = None
 
     @field_validator("label")
     @classmethod
@@ -175,6 +317,8 @@ class ReactAdminShellState(BaseModel):
     summary: str
     action: ReactAdminPageAction | None = None
     trace_id: str | None = None
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
     @field_validator("title")
     @classmethod

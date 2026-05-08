@@ -3,7 +3,6 @@ export const disabledRouteFallbacks: Record<string, string> = {};
 export const reactPrimaryRoutes = new Set([
   "/admin/app",
   "/admin/app/migration",
-  "/admin/app/patterns",
   "/admin/app/operations",
   "/admin/app/workflows",
   "/admin/app/workflows/new",

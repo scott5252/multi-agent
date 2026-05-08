@@ -1,0 +1,184 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "056",
+  "title": "Usage React Live Data",
+  "status": "completed",
+  "active_phase": null,
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      {
+        "id": "ruff-check-focused",
+        "command": "uv run ruff check src/multi_agent_platform/admin/usage/react_usage.py src/multi_agent_platform/api/routers/admin_react.py src/multi_agent_platform/db/repositories/usage.py tests/unit/admin/usage/test_react_usage_service.py tests/integration/test_admin_react_routes.py tests/unit/admin/test_live_data_inventory_scanner.py scripts/qa/seed_usage_qa056.py scripts/qa/verify_usage_qa056.py",
+        "result": "passed"
+      },
+      {
+        "id": "mypy-focused",
+        "command": "uv run mypy src/multi_agent_platform/admin/usage/react_usage.py src/multi_agent_platform/api/routers/admin_react.py",
+        "result": "passed"
+      },
+      {
+        "id": "focused-pytest",
+        "command": "uv run pytest --no-cov tests/unit/admin/usage/test_react_usage_service.py tests/unit/api/test_admin_usage_react_schema.py tests/unit/db/test_usage_repository.py tests/performance/usage/test_react_usage_queries.py tests/integration/test_admin_react_routes.py tests/unit/admin/test_live_data_inventory_scanner.py tests/unit/usage/test_export.py -k 'usage or react_admin_usage or live_data_inventory or export' -q",
+        "result": "35 passed, 23 deselected"
+      },
+      {
+        "id": "frontend-usage-tests",
+        "command": "npm run --prefix frontend/admin test -- --run Usage",
+        "result": "6 files passed, 6 tests passed"
+      },
+      {
+        "id": "frontend-typecheck",
+        "command": "npm run --prefix frontend/admin typecheck",
+        "result": "passed"
+      },
+      {
+        "id": "qa-docs",
+        "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/056-usage-react-live-data",
+        "result": "passed"
+      },
+      {
+        "id": "spec-qa",
+        "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/056-usage-react-live-data/validation.yml",
+        "result": "passed, including full ruff, format, mypy, coverage, focused backend, frontend usage, frontend typecheck, and frontend build gates"
+      },
+      {
+        "id": "playwright-ui",
+        "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/056-usage-react-live-data/validation.yml --start-processes",
+        "result": "passed"
+      },
+      {
+        "id": "post-ui-database-check",
+        "command": "uv run python scripts/qa/verify_usage_qa056.py",
+        "result": "passed: acme_events=2, globex_events=0, completed_exports=2, browser_export_reference=usage-export:bba23267-958f-48e0-88b0-87ef4e036054, browser_export_rows=2, checksum_prefix=sha256:7bc649bb8344"
+      },
+      {
+        "id": "multi-agent-curl-test",
+        "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa056-after-spec",
+        "result": "passed: no failed curl sections"
+      }
+    ],
+    "playwright_screenshots": [
+      "output/playwright/qa056_ui/qa056-live-data-ui-api-smoke.png"
+    ],
+    "post_ui_database_evidence": {
+      "command": "uv run python scripts/qa/verify_usage_qa056.py",
+      "acme_events": 2,
+      "globex_events": 0,
+      "completed_exports": 2,
+      "browser_export_reference": "usage-export:bba23267-958f-48e0-88b0-87ef4e036054",
+      "browser_export_rows": 2,
+      "browser_export_checksum_prefix": "sha256:7bc649bb8344"
+    },
+    "curl_test_artifact_dir": ".data/curl_test_runs/qa056-after-spec"
+  },
+  "artifacts": {
+    "spec": "specs/056-usage-react-live-data/spec.md",
+    "requirements_checklist": "specs/056-usage-react-live-data/checklists/requirements.md",
+    "plan": "specs/056-usage-react-live-data/plan.md",
+    "research": "specs/056-usage-react-live-data/research.md",
+    "data_model": "specs/056-usage-react-live-data/data-model.md",
+    "openapi_contract": "specs/056-usage-react-live-data/contracts/usage-react-live-data.openapi.yaml",
+    "ui_contract": "specs/056-usage-react-live-data/contracts/usage-react-live-data-ui.md",
+    "quickstart": "specs/056-usage-react-live-data/quickstart.md",
+    "tasks": "specs/056-usage-react-live-data/tasks.md",
+    "qa_env": "specs/056-usage-react-live-data/.env.qa056",
+    "qa_guide": "specs/056-usage-react-live-data/qa056.md",
+    "qa_ui_guide": "specs/056-usage-react-live-data/qa056_ui.md",
+    "qa_user_guide": "specs/056-usage-react-live-data/qa056_user_guide.md",
+    "pr_notes": "specs/056-usage-react-live-data/pr_notes.md",
+    "validation_manifest": "specs/_autopilot/remove-mock-data-roadmap/056-usage-react-live-data/validation.yml",
+    "qa_seed_script": "scripts/qa/seed_usage_qa056.py",
+    "qa_verifier_script": "scripts/qa/verify_usage_qa056.py",
+    "playwright_screenshot": "output/playwright/qa056_ui/qa056-live-data-ui-api-smoke.png",
+    "curl_test_artifacts": ".data/curl_test_runs/qa056-after-spec"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 056 from queue.json next_spec after completing and reconciling Spec 055. Continuing with validated prior-spec changes in the dirty worktree and without requiring an intermediate Git commit."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 056 feature specification and completed requirements checklist with no unresolved clarification markers in spec.md. Optional git feature hooks were skipped because the user requested continuing all specs in the current dirty worktree without intermediate commit gates."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification for usage source-of-truth, rollup computation, missing pricing confidence, export persistence, safe attribution, and qa056 validation evidence."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five autonomous clarification answers in spec.md covering rollup computation, missing pricing, safe attribution resolution, export states, and qa056 date-window seed behavior. Optional clarify git commit hooks were skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started planning after reconciling queue.json and status.json for Spec 056."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created Spec 056 plan, research, data model, OpenAPI/UI contracts, and quickstart. Updated AGENTS.md SPECKIT latest plan pointer to specs/056-usage-react-live-data/plan.md."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation after plan artifacts passed placeholder and JSON sanity checks."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated Spec 056 tasks.md with 51 file-specific tasks covering live usage dashboard, drilldowns, exports, QA seeding, scanner updates, schema updates, docs, Playwright, post-UI verifier, and curl validation. Optional task git commit hook was skipped per the no-intermediate-commit instruction."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started cross-artifact analysis after validating task checklist format and queue/status JSON."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Analysis found one high-priority task coverage gap for explicit React usage schema updates covering missing/reconciliation-pending confidence and queued/validation/conflict/unavailable export outcomes. Remediated tasks.md with T011, reran format/placeholder checks, and found no remaining critical or high issues."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started implementation with validated prior-spec changes kept in the dirty worktree and no intermediate commit required."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Implemented live repository-backed usage dashboard, safe drilldowns, durable export creation/detail, repository helpers, schema enum updates, QA seed/verifier scripts, QA docs, validation manifest, frontend fixture/test updates, scanner updates, generated contracts, and completed all 51 tasks."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Passed focused ruff, focused mypy, focused backend pytest (35 passed, 23 deselected), frontend Usage tests, frontend typecheck, QA docs validation, run_spec_qa with full quality gates, Playwright UI validation with screenshot output/playwright/qa056_ui/qa056-live-data-ui-api-smoke.png, post-UI verifier (Acme 2 events, Globex 0, browser export usage-export:bba23267-958f-48e0-88b0-87ef4e036054), and multi-agent curl test with no failed sections."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 056 completed and validated. Queue/status will advance to Spec 057 without requiring an intermediate commit, preserving the dirty worktree per user instruction."
+    }
+  ],
+  "auto_clarifications": [
+    "Compute usage rollups from live usage events on read, using persisted rollups only as optional acceleration when present.",
+    "Render missing, estimated, or reconciliation-pending pricing confidence states and never fabricate costs.",
+    "Resolve attribution from safe usage event fields first, then authorized live metadata; missing references render unavailable safe labels.",
+    "Persist usage export request rows with queued, completed, failed, denied, validation, or unavailable states; artifact references require storage metadata.",
+    "Use a default last-30-days dashboard window; qa056 seeds Acme usage inside that window and leaves Globex empty for isolation checks."
+  ]
+}

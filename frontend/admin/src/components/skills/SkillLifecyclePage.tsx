@@ -19,6 +19,11 @@ import type {
   TenantSkillGrantSummary,
   TenantSkillInstallationSummary,
 } from "../../api/generated/reactAdminApi";
+import {
+  buildIdempotencyKey,
+  generatedActionMetadata,
+  generatedRevisionMarker,
+} from "../../utils/adminActionMetadata";
 import { CommonState } from "../states/CommonState";
 import { BindingAndDiagnosticsPanel } from "./BindingAndDiagnosticsPanel";
 import { ConnectorReadinessPanel } from "./ConnectorReadinessPanel";
@@ -79,9 +84,9 @@ export function SkillLifecyclePage({ skillsUrl }: { skillsUrl: string }) {
     setCandidateResult(
       await saveSkillCandidate(url, {
         candidate_revision: null,
-        idempotency_key: "candidate-save-ui-qa032",
+        idempotency_key: buildIdempotencyKey("candidate-save"),
         manifest_text: "Safe pasted fixture summary.",
-        uploaded_fixture_id: "qa032-uploaded-manifest",
+        uploaded_fixture_id: generatedActionMetadata("candidate-upload").requestId,
       }),
     );
   }
@@ -93,21 +98,26 @@ export function SkillLifecyclePage({ skillsUrl }: { skillsUrl: string }) {
   async function publishCandidate(url: string) {
     setPublishResult(
       await publishSkillCandidate(url, {
-        candidate_revision: "candidate-rev-qa032-current",
+        candidate_revision:
+          dashboard?.platform_publication?.candidate.candidate_revision ??
+          generatedRevisionMarker("candidate-publish"),
         confirmed: true,
-        idempotency_key: "candidate-publish-ui-qa032",
+        idempotency_key: buildIdempotencyKey("candidate-publish"),
       }),
     );
   }
 
   async function updateGrant(url: string, grant: TenantSkillGrantSummary) {
+    const backendRevision =
+      grant.authorized_actions[0]?.action_metadata?.revision ??
+      generatedRevisionMarker("skill-tenant-grant");
     setGrantResult(
       await updateSkillTenantGrant(url, {
         grant_enabled: true,
-        idempotency_key: "grant-ui-qa032",
-        revision: "grant-rev-qa032-current",
+        idempotency_key: buildIdempotencyKey("skill-tenant-grant"),
+        revision: backendRevision,
         tenant_id: grant.tenant_id,
-        version_id: "package-version-daily-briefing-1-4-0",
+        version_id: backendRevision,
       }),
     );
   }
@@ -119,11 +129,11 @@ export function SkillLifecyclePage({ skillsUrl }: { skillsUrl: string }) {
   async function installSkill(url: string, installation: TenantSkillInstallationSummary) {
     setInstallResult(
       await installTenantSkill(url, {
-        idempotency_key: "install-ui-qa032",
-        package_id: "package-daily-briefing-connectors",
+        idempotency_key: buildIdempotencyKey("skill-install"),
+        package_id: installation.package_slug,
         revision: installation.installation_revision,
         upgrade: false,
-        version_id: "package-version-daily-briefing-1-4-0",
+        version_id: installation.installed_version,
       }),
     );
   }
@@ -135,7 +145,7 @@ export function SkillLifecyclePage({ skillsUrl }: { skillsUrl: string }) {
   ) {
     setCredentialResult(
       await configureSkillCredential(url, {
-        idempotency_key: "credential-ui-qa032",
+        idempotency_key: buildIdempotencyKey("skill-credential"),
         revision: installation.installation_revision,
         selected_reference_id: referenceId,
       }),
@@ -148,7 +158,7 @@ export function SkillLifecyclePage({ skillsUrl }: { skillsUrl: string }) {
   ) {
     setReadinessResult(
       await refreshSkillReadiness(url, {
-        idempotency_key: "readiness-ui-qa032",
+        idempotency_key: buildIdempotencyKey("skill-readiness"),
         revision: installation.installation_revision,
       }),
     );
@@ -170,9 +180,12 @@ export function SkillLifecyclePage({ skillsUrl }: { skillsUrl: string }) {
     }
     setBindingResult(
       await previewSkillBinding(action.href, {
-        package_id: "package-daily-briefing-connectors",
-        profile_id: "profile-briefing-runtime",
-        workflow_context: "Daily briefing workflow",
+        package_id:
+          dashboard?.installations[0]?.installation_id ??
+          dashboard?.tenant_discovery?.available_versions[0]?.version_id ??
+          "no-installation",
+        profile_id: "active-runtime-profile",
+        workflow_context: "Tenant skill binding readiness",
       }),
     );
   }
@@ -218,6 +231,31 @@ export function SkillLifecyclePage({ skillsUrl }: { skillsUrl: string }) {
         onChange={setActiveSection}
         sections={dashboard.sections}
       />
+      {dashboard.provenance ? (
+        <section className="state-provenance" aria-label="Skill lifecycle provenance">
+          <dl className="compact-dl">
+            <div>
+              <dt>Source</dt>
+              <dd>{dashboard.provenance.source_label}</dd>
+            </div>
+            {dashboard.provenance.source_detail ? (
+              <div>
+                <dt>Detail</dt>
+                <dd>{dashboard.provenance.source_detail}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
+      ) : null}
+      {dashboard.empty_state ? (
+        <section className="empty-state-panel" aria-label="Skill lifecycle empty state">
+          <h2>{dashboard.empty_state.title}</h2>
+          <p>{dashboard.empty_state.summary}</p>
+          {dashboard.empty_state.setup_hint ? (
+            <small>{dashboard.empty_state.setup_hint}</small>
+          ) : null}
+        </section>
+      ) : null}
       <section className="governance-panel setup-panel" aria-label="Skill setup summary">
         <div className="section-heading">
           <div>

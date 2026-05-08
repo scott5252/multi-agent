@@ -17,19 +17,19 @@ describe("RunLauncherPanel", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Safe execution mode")).toHaveValue("mock_model_tools");
+    expect(screen.getByLabelText("Safe execution mode")).toHaveValue("mock_model");
     expect(screen.getByText("No external side effects")).toBeInTheDocument();
 
     await userEvent.selectOptions(
       screen.getByLabelText("Safe execution mode"),
-      "real_dependency_probe",
+      "approved_real_probe",
     );
     expect(screen.getByText("Policy approval is required before execution.")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Launch run/ }));
     expect(onLaunch).toHaveBeenCalledWith(
       "/admin/app/test-bench/suites/suite-qa033-daily-briefing/runs",
-      "real_dependency_probe",
+      "approved_real_probe",
     );
   });
 });

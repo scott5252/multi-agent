@@ -1,0 +1,156 @@
+openapi: 3.1.0
+info:
+  title: Usage React Live Data
+  version: 0.1.0
+  description: Backend-owned contracts for live usage analytics React workspace data.
+paths:
+  /admin/app/usage/bootstrap.json:
+    get:
+      summary: Return the live usage dashboard for the authorized active scope.
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: group_by
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: provider_key
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: model_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: usage_status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Live, empty, denied, partial, or unavailable usage dashboard.
+        "401":
+          description: Safe authentication problem detail.
+        "403":
+          description: Safe authorization problem detail.
+  /admin/app/usage/events.json:
+    get:
+      summary: Return a bounded redaction-safe usage event drilldown.
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: group_by
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: rollup_key
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: provider_key
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: model_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: usage_status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Bounded live drilldown rows for the authorized filters.
+        "401":
+          description: Safe authentication problem detail.
+        "403":
+          description: Safe authorization problem detail.
+  /admin/app/usage/exports:
+    post:
+      summary: Create a durable usage export for the authorized scope and filters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filters:
+                  type: object
+                  additionalProperties:
+                    type: string
+                requested_group_by:
+                  type: string
+                idempotency_key:
+                  type: string
+      responses:
+        "200":
+          description: Persisted export summary or safe denied/failed/unavailable result.
+        "401":
+          description: Safe authentication problem detail.
+        "403":
+          description: Safe authorization problem detail.
+  /admin/app/usage/exports/{usage_export_request_id}.json:
+    get:
+      summary: Return persisted usage export detail for an authorized request.
+      parameters:
+        - name: usage_export_request_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Persisted export summary.
+        "401":
+          description: Safe authentication problem detail.
+        "403":
+          description: Safe authorization problem detail.
+        "404":
+          description: Safe not-found problem detail.

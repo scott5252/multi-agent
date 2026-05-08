@@ -83,7 +83,7 @@ def test_decommission_dashboard_reports_react_only_state() -> None:
     )
     inventory = build_decommission_inventory_dashboard()
 
-    assert dashboard.title == "React-only browser UI"
+    assert dashboard.title == "Admin browser UI"
     assert dashboard.summary.retained_fallback_count == 0
     assert dashboard.summary.blocked_count == 0
     assert inventory.summary.total_items == 0

@@ -14,6 +14,9 @@ export function PolicyHistoryPanel({
           <h2 id="history-title">Safe changes</h2>
         </div>
       </div>
+      {history.length === 0 ? (
+        <p>No live policy history exists for this scope.</p>
+      ) : null}
       <table className="admin-table">
         <thead>
           <tr>

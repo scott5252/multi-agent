@@ -2,10 +2,14 @@ import type { WorkflowSharingSummary } from "../../api/generated/reactAdminApi";
 import { Badge } from "../primitives";
 
 interface WorkflowSharingPanelProps {
-  sharing: WorkflowSharingSummary;
+  sharing: WorkflowSharingSummary | null;
 }
 
 export function WorkflowSharingPanel({ sharing }: WorkflowSharingPanelProps) {
+  if (!sharing) {
+    return null;
+  }
+
   return (
     <section className="workflow-sharing-panel" aria-labelledby="workflow-sharing-title">
       <div className="section-heading">

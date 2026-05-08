@@ -9,13 +9,22 @@ from multi_agent_platform.api.schemas.admin_patterns import (
     AdminMutationStatus,
     ConfirmationRequirement,
     MutationResult,
+    PaginationState,
     RefreshHint,
     RevisionConflict,
+    SortingState,
     safe_text,
 )
 from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminEmptyStateMetadata,
+    ReactAdminPageProvenance,
     ReactAdminScope,
     ReactAdminShellState,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    CopyDraftRequest,
+    RestoreRevisionRequest,
+    WorkflowDraftCreateRequest,
 )
 
 WORKFLOW_BUILDER_UNSAFE_MARKERS = (
@@ -320,8 +329,12 @@ class WorkflowRegistryEnvelope(BaseModel):
     summary: str
     scope: ReactAdminScope
     filters: dict[str, str] = Field(default_factory=dict)
+    pagination: PaginationState | None = None
+    sorting: SortingState | None = None
     items: tuple[WorkflowRegistryItem, ...] = Field(default_factory=tuple)
     create_action: AdminAction | None = None
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
     @field_validator("title", "summary")
     @classmethod
@@ -362,6 +375,8 @@ class WorkflowCreateEnvelope(BaseModel):
     summary: str
     templates: tuple[WorkflowCreateTemplate, ...] = Field(default_factory=tuple)
     create_action: AdminAction
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
     @field_validator("title", "summary")
     @classmethod
@@ -514,6 +529,43 @@ class WorkflowDraftSaveRequest(BaseModel):
         return safe_builder_text(value, max_length=180)
 
 
+class WorkflowDraftCreateActionRequest(WorkflowDraftCreateRequest):
+    model_config = ConfigDict(extra="forbid")
+
+    idempotency_key: str
+
+    @field_validator("idempotency_key")
+    @classmethod
+    def idempotency_key_is_safe(cls, value: str) -> str:
+        return safe_builder_text(value, max_length=160)
+
+
+class WorkflowRevisionRestoreActionRequest(RestoreRevisionRequest):
+    model_config = ConfigDict(extra="forbid")
+
+    idempotency_key: str | None = None
+
+    @field_validator("idempotency_key")
+    @classmethod
+    def idempotency_key_is_safe(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return safe_builder_text(value, max_length=160)
+
+
+class WorkflowDraftCopyActionRequest(CopyDraftRequest):
+    model_config = ConfigDict(extra="forbid")
+
+    idempotency_key: str | None = None
+
+    @field_validator("idempotency_key")
+    @classmethod
+    def idempotency_key_is_safe(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return safe_builder_text(value, max_length=160)
+
+
 class WorkflowPublishRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -545,19 +597,21 @@ class WorkflowBuilderEnvelope(BaseModel):
     scope: ReactAdminScope
     registry: WorkflowRegistryEnvelope
     create_state: WorkflowCreateEnvelope
-    draft: WorkflowDraftDocument
+    draft: WorkflowDraftDocument | None = None
     sections: tuple[BuilderSection, ...] = Field(default_factory=tuple)
     reference_catalog: WorkflowReferenceCatalog
-    validation: WorkflowValidationSummary
-    publish_readiness: WorkflowPublishReadiness
+    validation: WorkflowValidationSummary | None = None
+    publish_readiness: WorkflowPublishReadiness | None = None
     revisions: tuple[WorkflowRevisionSummary, ...] = Field(default_factory=tuple)
-    version_detail: WorkflowVersionDetail
-    sharing: WorkflowSharingSummary
+    version_detail: WorkflowVersionDetail | None = None
+    sharing: WorkflowSharingSummary | None = None
     legacy_routes: tuple[WorkflowLegacyRouteMapping, ...] = Field(default_factory=tuple)
-    json_inspector: WorkflowJsonInspector
+    json_inspector: WorkflowJsonInspector | None = None
     actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
     state: ReactAdminShellState | None = None
     refresh: RefreshHint | None = None
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
     @field_validator("title", "description")
     @classmethod

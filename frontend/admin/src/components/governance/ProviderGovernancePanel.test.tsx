@@ -18,15 +18,15 @@ describe("ProviderGovernancePanel", () => {
       />,
     );
 
-    expect(screen.getByText("OpenAI production reference")).toBeInTheDocument();
-    expect(screen.getByText("fp_qa031_openai")).toBeInTheDocument();
+    expect(screen.getByText("Configured secret reference")).toBeInTheDocument();
+    expect(screen.getByText("ref-123456789abc")).toBeInTheDocument();
     expect(screen.getByText("ModelGateway-only execution is enforced.")).toBeInTheDocument();
     expect(screen.queryByText(/resolved credential/i)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Run probe/ }));
 
     expect(onProbe).toHaveBeenCalledWith(
-      "/admin/app/governance/providers/openai-primary/probe",
+      governanceDashboardFixture.providers[0].authorized_actions[0].href,
     );
   });
 });

@@ -13,7 +13,7 @@ interface ProfileGovernancePanelProps {
   onResolve: (resolveUrl: string) => void;
   onSave: (saveUrl: string, profile: RuntimeProfileGovernanceSummary) => void;
   profiles: RuntimeProfileGovernanceSummary[];
-  resolution: ProfileResolutionPreview;
+  resolution: ProfileResolutionPreview | null;
 }
 
 export function ProfileGovernancePanel({
@@ -32,12 +32,18 @@ export function ProfileGovernancePanel({
         </div>
       </div>
       <div className="governance-card-grid">
+        {profiles.length === 0 ? (
+          <article className="governance-card">
+            <strong>No runtime profiles found</strong>
+            <p>No authorized live runtime profile records exist for this scope.</p>
+          </article>
+        ) : null}
         {profiles.map((profile) => {
           const saveAction = profile.authorized_actions.find(
-            (action) => action.action_id === "profile-save",
+            (action) => action.action_id.startsWith("profile-save"),
           );
           const resolveAction = profile.authorized_actions.find(
-            (action) => action.action_id === "profile-resolve",
+            (action) => action.action_id.startsWith("profile-resolve"),
           );
           return (
             <article className="governance-card" key={profile.profile_id}>
@@ -91,7 +97,14 @@ export function ProfileGovernancePanel({
           );
         })}
       </div>
-      <ProfileResolutionPanel resolution={resolution} />
+      {resolution ? (
+        <ProfileResolutionPanel resolution={resolution} />
+      ) : (
+        <section className="resolution-panel" aria-label="Profile resolution preview">
+          <strong>Profile resolution unavailable</strong>
+          <p>No active runtime profile version is available for this scope.</p>
+        </section>
+      )}
       {mutationResult ? (
         <section className="mutation-result accepted">
           <p className="eyebrow">Profile result</p>

@@ -1,0 +1,266 @@
+openapi: 3.1.0
+info:
+  title: Workflow React Live Data Contract
+  version: 0.1.0
+  description: Contract expectations for Spec 050 workflow React live-data routes.
+paths:
+  /admin/app/workflows/registry.json:
+    get:
+      summary: Return live workflow registry state
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: scope_filter
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, tenant, platform]
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Live registry envelope or truthful empty state.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+  /admin/app/workflows/create.json:
+    get:
+      summary: Return workflow create-state metadata
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Backend-owned create metadata and actions.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+  /admin/app/workflows/builder.json:
+    get:
+      summary: Return latest authorized workflow builder state
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: workflow_lineage_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: workflow_draft_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Live builder envelope, empty state, or unavailable state.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '404':
+          description: Requested durable lineage or draft is not found.
+  /admin/app/workflows/drafts/{workflow_draft_id}/detail.json:
+    get:
+      summary: Return live workflow draft detail
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/WorkflowDraftId'
+      responses:
+        '200':
+          description: Live builder envelope for the durable draft.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '404':
+          description: Draft is not found.
+  /admin/app/workflows/drafts/{workflow_draft_id}/publish-gate.json:
+    get:
+      summary: Return live publish readiness for a draft
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/WorkflowDraftId'
+      responses:
+        '200':
+          description: Publish-gate readiness from validation and test-bench evidence.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '404':
+          description: Draft is not found.
+  /admin/app/workflows/versions/{workflow_version_bundle_id}/detail.json:
+    get:
+      summary: Return immutable workflow version detail
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: workflow_version_bundle_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Live published bundle detail projection.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '404':
+          description: Version bundle is not found.
+  /admin/app/workflows/lookups.json:
+    get:
+      summary: Return live builder reference catalog
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Authorized reference options and unavailable states.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+  /admin/app/workflows:
+    post:
+      summary: Create a durable workflow draft
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '201':
+          description: Durable workflow draft created.
+        '400':
+          description: Validation failed.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '409':
+          description: Idempotency conflict.
+  /admin/app/workflows/drafts/{workflow_draft_id}/save:
+    post:
+      summary: Save a durable workflow draft revision
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/WorkflowDraftId'
+      responses:
+        '200':
+          description: Draft revision saved or idempotent replay returned.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '404':
+          description: Draft is not found.
+        '409':
+          description: Stale revision or idempotency conflict.
+  /admin/app/workflows/drafts/{workflow_draft_id}/validate:
+    post:
+      summary: Run durable workflow validation
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/WorkflowDraftId'
+      responses:
+        '200':
+          description: Validation result persisted and returned.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '404':
+          description: Draft is not found.
+  /admin/app/workflows/drafts/{workflow_draft_id}/restore:
+    post:
+      summary: Restore a prior durable revision into a new current revision
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/WorkflowDraftId'
+      responses:
+        '200':
+          description: Revision restored through durable service.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '404':
+          description: Draft or revision is not found.
+        '409':
+          description: Stale revision conflict.
+  /admin/app/workflows/drafts/{workflow_draft_id}/copy:
+    post:
+      summary: Copy a durable draft into a new lineage
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/WorkflowDraftId'
+      responses:
+        '201':
+          description: Durable workflow copy created.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '404':
+          description: Draft is not found.
+  /admin/app/workflows/drafts/{workflow_draft_id}/publish:
+    post:
+      summary: Publish a durable workflow bundle
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/WorkflowDraftId'
+      responses:
+        '201':
+          description: Published workflow bundle created.
+        '200':
+          description: Publish gate denied or idempotent replay returned.
+        '401':
+          description: Missing or invalid principal.
+        '403':
+          description: Principal is not authorized for the requested scope.
+        '404':
+          description: Draft is not found.
+        '409':
+          description: Stale revision or publish conflict.
+components:
+  parameters:
+    TenantId:
+      name: tenant_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    WorkflowDraftId:
+      name: workflow_draft_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid

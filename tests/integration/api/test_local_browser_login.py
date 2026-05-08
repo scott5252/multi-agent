@@ -144,7 +144,7 @@ def test_local_browser_login_sets_cookie_and_unlocks_ui(tmp_path, monkeypatch) -
     assert created.status_code == 201
     assert ui.status_code == 200
     assert ui.headers["X-React-Admin-Host"] == "non-jinja"
-    assert "React Admin" in ui.text
+    assert "Admin" in ui.text
     assert logout.status_code == 303
     assert logout.headers["location"] == "/auth/local-login"
     assert "map_local_principal" in logout.headers["set-cookie"]

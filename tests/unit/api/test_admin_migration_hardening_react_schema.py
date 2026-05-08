@@ -15,6 +15,10 @@ from multi_agent_platform.api.schemas.admin_migration_hardening_react import (
     JinjaInventoryItem,
     JinjaInventoryItemType,
     JinjaInventorySummary,
+    LiveDataCiStatus,
+    LiveDataInventoryEvidence,
+    LiveDataInventoryEvidenceType,
+    LiveDataScanSummary,
     MigrationAccessibilityAudit,
     MigrationEvidenceStatus,
     MigrationHardeningSummary,
@@ -29,6 +33,11 @@ from multi_agent_platform.api.schemas.admin_migration_hardening_react import (
     MigrationRouteGroup,
     MigrationScopeRequirement,
     MigrationSweepSummary,
+    TransitionalLabelClassification,
+    TransitionalLabelFinding,
+    TransitionalLabelGate,
+    TransitionalLabelGateSummary,
+    TransitionalLabelSeverity,
 )
 from multi_agent_platform.api.schemas.admin_react import (
     ReactAdminScope,
@@ -125,10 +134,80 @@ def test_rollback_plan_rejects_local_filesystem_paths() -> None:
         _rollback_plan(asset_version_label="/Users/local/path")
 
 
+def test_live_data_gate_evidence_rejects_absolute_paths() -> None:
+    with pytest.raises(ValidationError, match="unsafe text|relative"):
+        LiveDataInventoryEvidence(
+            evidence_id="qa058-unsafe",
+            evidence_type=LiveDataInventoryEvidenceType.SCANNER,
+            reference="/Users/local/report.json",
+            status=MigrationEvidenceStatus.PASS,
+        )
+
+
+def test_live_data_gate_summary_requires_failed_blockers() -> None:
+    with pytest.raises(ValidationError, match="failed live-data scan"):
+        LiveDataScanSummary(
+            total_findings=0,
+            blocking_findings=0,
+            mapped_legacy_findings=0,
+            allowed_computed_metadata=0,
+            test_only_markers=0,
+            route_targets=1,
+            empty_state_scans=1,
+            seeded_state_scans=1,
+            ci_status=LiveDataCiStatus.FAIL,
+            next_step="Fix blockers.",
+        )
+
+
+def test_transitional_label_gate_summary_matches_findings() -> None:
+    finding = TransitionalLabelFinding(
+        finding_id="blocking",
+        surface_id="frontend/admin/src/App.tsx",
+        matched_text="React Admin",
+        classification=TransitionalLabelClassification.BLOCKING_TRANSITIONAL_LABEL,
+        severity=TransitionalLabelSeverity.BLOCKING,
+        rationale="Product labels must use Admin terminology.",
+        owner="admin platform",
+        remediation="Replace with Admin.",
+    )
+
+    with pytest.raises(ValidationError, match="blocked count"):
+        TransitionalLabelGate(
+            page_id="qa059-transitional-label-gate",
+            generated_at=datetime(2026, 5, 8, 13, tzinfo=UTC),
+            summary=TransitionalLabelGateSummary(
+                blocked_count=0,
+                allowed_reference_count=0,
+                surfaces_scanned=1,
+                routes_scanned=1,
+                screenshots_checked=0,
+                ci_status=LiveDataCiStatus.PASS,
+                next_step="Fix blockers.",
+            ),
+            findings=(finding,),
+            evidence=(),
+        )
+
+
+def test_transitional_blocking_label_requires_remediation() -> None:
+    with pytest.raises(ValidationError, match="require remediation"):
+        TransitionalLabelFinding(
+            finding_id="blocking",
+            surface_id="frontend/admin/src/App.tsx",
+            matched_text="React Admin",
+            classification=TransitionalLabelClassification.BLOCKING_TRANSITIONAL_LABEL,
+            severity=TransitionalLabelSeverity.BLOCKING,
+            rationale="Product labels must use Admin terminology.",
+            owner="admin platform",
+            remediation=None,
+        )
+
+
 def _dashboard() -> AdminMigrationHardeningDashboard:
     return AdminMigrationHardeningDashboard(
         page_id="qa037-react-admin-migration-hardening",
-        title="React Admin Migration Hardening",
+        title="Admin Migration Hardening",
         description="Safe migration dashboard",
         scope=ReactAdminScope(
             scope_type=ReactAdminScopeType.TENANT,
@@ -286,12 +365,12 @@ def _inventory_item(
 
 
 def _rollback_plan(
-    asset_version_label: str = "React asset manifest qa037-safe",
+    asset_version_label: str = "Admin asset manifest qa037-safe",
 ) -> MigrationRollbackPlan:
     return MigrationRollbackPlan(
         plan_id="rollback-plan-qa037",
         status=MigrationOverallStatus.READY,
-        feature_flag_label="React admin primary routing flag",
+        feature_flag_label="Admin primary routing flag",
         asset_version_label=asset_version_label,
         steps=("Set fallback mode.",),
         verification_steps=("Open retained fallback.",),
@@ -303,7 +382,7 @@ def _rollback_plan(
 
 def _route_entry(
     *,
-    admin_area: str = "React admin home",
+    admin_area: str = "Admin home",
     decision: MigrationRouteDecision = MigrationRouteDecision.REACT_PRIMARY,
     entry_id: str = "react-home",
     evidence: tuple[str, ...] = ("qa037-react-home",),

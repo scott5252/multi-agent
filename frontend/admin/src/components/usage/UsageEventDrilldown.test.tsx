@@ -10,7 +10,7 @@ describe("UsageEventDrilldown", () => {
 
     expect(screen.getByText("Safe events")).toBeInTheDocument();
     expect(screen.getByText("Daily briefing workflow")).toBeInTheDocument();
-    expect(screen.getByText("audit-usage-qa035-0001")).toBeInTheDocument();
+    expect(screen.getByText("audit-usage-qa056-0001")).toBeInTheDocument();
     expect(screen.queryByText(/raw completion|authorization header/i)).not.toBeInTheDocument();
   });
 });

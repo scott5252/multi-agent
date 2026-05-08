@@ -14,6 +14,8 @@ from multi_agent_platform.api.schemas.admin_patterns import (
     safe_text,
 )
 from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminEmptyStateMetadata,
+    ReactAdminPageProvenance,
     ReactAdminScope,
     ReactAdminScopeOption,
     ReactAdminShellState,
@@ -425,6 +427,36 @@ class MembershipAuditRecord(BaseModel):
         return safe_membership_text(value, max_length=240)
 
 
+class SupportOverrideSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    support_override_id: str
+    tenant_id: str | None = None
+    tenant_label: str
+    requester_label: str
+    approver_label: str | None = None
+    status: MembershipLifecycleStatus
+    expires_label: str
+    audit_reference_id: str
+    safe_summary: str
+
+    @field_validator(
+        "support_override_id",
+        "tenant_id",
+        "tenant_label",
+        "requester_label",
+        "approver_label",
+        "expires_label",
+        "audit_reference_id",
+        "safe_summary",
+    )
+    @classmethod
+    def optional_text_is_safe(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return safe_membership_text(value, max_length=220)
+
+
 class InvitationFormMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -476,6 +508,9 @@ class MembershipDashboard(BaseModel):
     status_actions: tuple[MembershipStatusSummary, ...] = Field(default_factory=tuple)
     access_history: tuple[AccessHistoryRecord, ...] = Field(default_factory=tuple)
     audit_timeline: tuple[MembershipAuditRecord, ...] = Field(default_factory=tuple)
+    support_overrides: tuple[SupportOverrideSummary, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance
+    empty_state: ReactAdminEmptyStateMetadata | None = None
     common_states: tuple[ReactAdminShellState, ...] = Field(default_factory=tuple)
 
     @field_validator("page_id", "title", "description")

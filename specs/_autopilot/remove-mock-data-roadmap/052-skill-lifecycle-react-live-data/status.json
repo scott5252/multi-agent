@@ -1,0 +1,159 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "052",
+  "title": "Skill Lifecycle React Live Data",
+  "status": "completed",
+  "active_phase": "completed",
+  "phases": {
+    "specify": "completed",
+    "clarify": "completed",
+    "plan": "completed",
+    "tasks": "completed",
+    "analyze": "completed",
+    "implement": "completed"
+  },
+  "validation": {
+    "status": "completed",
+    "completed_at": "2026-05-07T20:20:49Z",
+    "commands": [
+      {
+        "id": "qa-documents",
+        "command": "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/052-skill-lifecycle-react-live-data",
+        "status": "passed"
+      },
+      {
+        "id": "spec-qa",
+        "command": "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/remove-mock-data-roadmap/052-skill-lifecycle-react-live-data/validation.yml",
+        "status": "passed",
+        "summary": "setup, skill lifecycle API checks, ruff, format, mypy, full coverage, generated TypeScript check, focused backend tests, frontend tests, typecheck, and production React build completed"
+      },
+      {
+        "id": "playwright-ui",
+        "command": "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/remove-mock-data-roadmap/052-skill-lifecycle-react-live-data/validation.yml --start-processes",
+        "status": "passed",
+        "screenshot": "output/playwright/qa052_ui/qa052-live-data-ui-api-smoke.png"
+      },
+      {
+        "id": "post-ui-database-verification",
+        "command": "uv run python scripts/qa/verify_skill_lifecycle_qa052.py",
+        "status": "passed",
+        "summary": "QA052 credential reference persistence verified with credential_status=ready, audit_records=2, and installation_revision=credential-b77fe504-409d-4428-8d47-2200d7a45e21"
+      },
+      {
+        "id": "multi-agent-curl-test",
+        "command": "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa052-after-spec",
+        "status": "passed",
+        "output_dir": ".data/curl_test_runs/qa052-after-spec",
+        "summary": "176 curl_testing.md command sections passed; failed commands none"
+      }
+    ]
+  },
+  "artifacts": {
+    "spec": "specs/052-skill-lifecycle-react-live-data/spec.md",
+    "requirements_checklist": "specs/052-skill-lifecycle-react-live-data/checklists/requirements.md",
+    "plan": "specs/052-skill-lifecycle-react-live-data/plan.md",
+    "research": "specs/052-skill-lifecycle-react-live-data/research.md",
+    "data_model": "specs/052-skill-lifecycle-react-live-data/data-model.md",
+    "contracts": [
+      "specs/052-skill-lifecycle-react-live-data/contracts/skill-lifecycle-live-data-ui.md",
+      "specs/052-skill-lifecycle-react-live-data/contracts/skill-lifecycle-live-data.openapi.yaml"
+    ],
+    "quickstart": "specs/052-skill-lifecycle-react-live-data/quickstart.md",
+    "tasks": "specs/052-skill-lifecycle-react-live-data/tasks.md",
+    "qa_env": "specs/052-skill-lifecycle-react-live-data/.env.qa052",
+    "qa_guide": "specs/052-skill-lifecycle-react-live-data/qa052.md",
+    "qa_ui_guide": "specs/052-skill-lifecycle-react-live-data/qa052_ui.md",
+    "qa_user_guide": "specs/052-skill-lifecycle-react-live-data/qa052_user_guide.md",
+    "pr_notes": "specs/052-skill-lifecycle-react-live-data/pr_notes.md",
+    "validation_manifest": "specs/_autopilot/remove-mock-data-roadmap/052-skill-lifecycle-react-live-data/validation.yml",
+    "playwright_screenshot": "output/playwright/qa052_ui/qa052-live-data-ui-api-smoke.png",
+    "curl_output_dir": ".data/curl_test_runs/qa052-after-spec"
+  },
+  "blockers": [],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 052 specification from generated autopilot prompt after completing Spec 051 validation, retaining prior validated dirty-worktree changes without requiring a commit."
+    },
+    {
+      "phase": "specify",
+      "status": "completed",
+      "note": "Created Spec 052 feature specification and completed requirements checklist with no clarification markers."
+    },
+    {
+      "phase": "clarify",
+      "status": "in_progress",
+      "note": "Started autonomous clarification using roadmap defaults for live skill lifecycle state, safe manifests, credential readiness, smoke-test modes, connector diagnostics, eligibility, lifecycle actions, empty states, and QA seeded/empty validation."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five autopilot clarifications covering safe manifest summaries, local-safe diagnostics, persisted availability/installability, stale/denied/unavailable lifecycle actions, and safe binding eligibility/diagnostic evidence."
+    },
+    {
+      "phase": "plan",
+      "status": "in_progress",
+      "note": "Started implementation planning for live skill lifecycle projections, safe mutations, QA seeding, contracts, tests, scanner updates, and validation."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "note": "Created plan, research, data model, quickstart, skill lifecycle live-data contracts, and updated AGENTS plan pointer."
+    },
+    {
+      "phase": "tasks",
+      "status": "in_progress",
+      "note": "Started task generation for live skill lifecycle projections, durable safe actions, empty/seeded tests, scanner checks, QA docs, Playwright, post-UI verification, and curl validation."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "note": "Generated 61 dependency-ordered tasks covering live skill lifecycle projections, safe details, durable lifecycle actions, QA docs, generated contracts, Playwright, post-UI API/database verification, and curl validation."
+    },
+    {
+      "phase": "analyze",
+      "status": "in_progress",
+      "note": "Started cross-artifact consistency analysis across spec.md, plan.md, and tasks.md."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Completed cross-artifact consistency analysis; no CRITICAL or HIGH findings remain."
+    },
+    {
+      "phase": "implement",
+      "status": "in_progress",
+      "note": "Started implementation phase for Spec 052."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "note": "Implemented live repository-backed skill lifecycle projections, provenance and empty-state contracts, safe skill lifecycle mutations, React empty/unavailable rendering, QA seed and post-UI verification scripts, QA docs, generated TypeScript updates, scanner boundary updates, and production React assets."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "note": "Passed QA document validation, full Spec QA with API checks, ruff/format/mypy/coverage, generated TypeScript check, focused backend tests, frontend skill lifecycle tests, typecheck, production React build, Playwright credential-save flow, post-UI database verification, and multi-agent-curl-test."
+    },
+    {
+      "phase": "spec",
+      "status": "completed",
+      "note": "Spec 052 completed with queue/status reconciled and no commit required between specs per user override."
+    }
+  ],
+  "auto_clarifications": [
+    "Safe summaries only; raw manifests, validation transcripts, connector payloads, tool payloads, and local paths never render in React or QA evidence.",
+    "Use mocked-safe or local allowlisted diagnostic execution only; no real external connector, provider, credential, or outbound calls without explicit approved live-probe artifacts.",
+    "Resolve availability through persisted package version, tenant grant, installation, quarantine/withdrawal, credential readiness, and policy records for the active scope.",
+    "Return accepted durable evidence, stale conflict, denied, unavailable, or blocked states according to persisted lifecycle outcomes; never synthesize success.",
+    "Use governed skill services, connector diagnostics, SkillExecutionGateway summaries, and audit records while summarizing sensitive evidence before React."
+  ],
+  "task_count": 61,
+  "analysis": {
+    "findings": [],
+    "coverage_summary": "All FR/SC items have direct task coverage across setup, foundational contracts, US1 live state, US2 redaction-safe details, US3 durable mutations, and validation gates.",
+    "critical_remaining": 0,
+    "high_remaining": 0
+  }
+}

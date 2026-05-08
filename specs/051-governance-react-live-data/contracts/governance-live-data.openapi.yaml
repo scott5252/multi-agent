@@ -1,0 +1,145 @@
+openapi: 3.1.0
+info:
+  title: Governance React Live Data Contract
+  version: 0.1.0
+paths:
+  /admin/app/governance/bootstrap.json:
+    get:
+      summary: Return the live governance dashboard envelope for the active scope.
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Live, empty, denied, or unavailable governance dashboard envelope.
+        "401":
+          description: Missing or invalid principal.
+        "403":
+          description: Principal cannot access the requested scope.
+  /admin/app/governance/providers.json:
+    get:
+      summary: Return authorized live provider governance summaries.
+      responses:
+        "200":
+          description: Provider summaries plus provenance or empty-state metadata.
+  /admin/app/governance/providers/{provider_id}/probe:
+    post:
+      summary: Run an explicit platform-admin provider probe using safe diagnostics.
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Redaction-safe probe result.
+        "403":
+          description: Platform-admin permission required.
+  /admin/app/governance/providers/{provider_id}/credential-reference:
+    post:
+      summary: Update a provider credential reference without exposing credential values.
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe credential-reference mutation result.
+        "403":
+          description: Platform-admin permission required.
+  /admin/app/governance/prompts.json:
+    get:
+      summary: Return authorized live prompt governance summaries.
+      responses:
+        "200":
+          description: Prompt lineage, draft, version, grant, and validation summaries.
+  /admin/app/governance/prompts/{prompt_lineage_id}/save:
+    post:
+      summary: Persist a safe prompt draft change through backend prompt services.
+      parameters:
+        - name: prompt_lineage_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe prompt mutation result with persisted revision evidence.
+        "409":
+          description: Stale revision conflict.
+  /admin/app/governance/prompts/{prompt_lineage_id}/preview:
+    post:
+      summary: Return a safe prompt preview summary without raw protected content.
+      parameters:
+        - name: prompt_lineage_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe preview or blocked/unavailable preview state.
+  /admin/app/governance/profiles.json:
+    get:
+      summary: Return authorized live runtime profile governance summaries.
+      responses:
+        "200":
+          description: Runtime profile draft, version, validation, and grant summaries.
+  /admin/app/governance/profiles/{profile_id}/save:
+    post:
+      summary: Persist a safe runtime profile draft change through backend services.
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe profile mutation result with persisted revision evidence.
+        "409":
+          description: Stale revision conflict.
+  /admin/app/governance/profiles/{profile_id}/resolve:
+    post:
+      summary: Resolve an authorized profile preview for the active scope.
+      responses:
+        "200":
+          description: Safe profile resolution preview or unavailable state.
+  /admin/app/governance/routing/preview:
+    post:
+      summary: Return read-only routing and policy preview evidence.
+      responses:
+        "200":
+          description: Safe routing preview result.
+  /admin/app/governance/history.json:
+    get:
+      summary: Return bounded policy/configuration history for the active scope.
+      responses:
+        "200":
+          description: Policy history records from live governance state.
+  /admin/app/governance/provenance/{run_id}.json:
+    get:
+      summary: Return redaction-safe run provenance for authorized run evidence.
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe provenance summary.
+        "404":
+          description: No authorized redaction-safe provenance exists.
+  /admin/app/governance/legacy-routes.json:
+    get:
+      summary: Return computed legacy route mappings for governance redirects.
+      responses:
+        "200":
+          description: Computed route mappings, not domain fixture data.

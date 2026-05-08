@@ -7,6 +7,7 @@ import type {
   RoleGrantSummary,
   UserDirectoryEntry,
 } from "../../api/generated/reactAdminApi";
+import { buildIdempotencyKey } from "../../utils/adminActionMetadata";
 import { MembershipMutationResultPanel } from "./MembershipMutationResultPanel";
 
 interface RoleGrantPanelProps {
@@ -22,7 +23,7 @@ interface RoleGrantPanelProps {
     scope_type: "platform" | "tenant";
     tenant_id: string | null;
   }) => void;
-  onRevoke: (url: string) => void;
+  onRevoke: (url: string, revision: string | null) => void;
 }
 
 export function RoleGrantPanel({
@@ -51,7 +52,7 @@ export function RoleGrantPanel({
           onClick={() =>
             onGrant("/admin/app/memberships/role-grants", {
               confirmed: true,
-              idempotency_key: "role-grant-ui-qa034",
+              idempotency_key: buildIdempotencyKey("role-grant"),
               principal_identity_id: principalId,
               role_code: role?.role_code ?? "tenant_user",
               scope_type: role?.scope_type ?? "tenant",
@@ -97,7 +98,13 @@ export function RoleGrantPanel({
             <small>{grant.next_request_effect}</small>
             <button
               className="ghost-button compact-button"
-              onClick={() => onRevoke(grant.authorized_actions[0]?.href ?? `/admin/app/memberships/role-grants/${grant.role_grant_id}/revoke`)}
+              onClick={() =>
+                onRevoke(
+                  grant.authorized_actions[0]?.href ??
+                    `/admin/app/memberships/role-grants/${grant.role_grant_id}/revoke`,
+                  grant.authorized_actions[0]?.action_metadata?.revision ?? null,
+                )
+              }
               type="button"
             >
               <Trash2 aria-hidden="true" size={14} />

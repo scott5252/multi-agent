@@ -13,7 +13,13 @@ from multi_agent_platform.api.schemas.admin_patterns import (
     ValidationFieldError,
     safe_text,
 )
-from multi_agent_platform.api.schemas.admin_react import ReactAdminScope
+from multi_agent_platform.api.schemas.admin_react import (
+    ReactAdminEmptyStateMetadata,
+    ReactAdminEmptyStateReason,
+    ReactAdminPageProvenance,
+    ReactAdminScope,
+    ReactAdminSourceKind,
+)
 
 TEST_BENCH_UNSAFE_MARKERS = (
     "qa033-secret-value",
@@ -71,6 +77,36 @@ class TestBenchStatus(StrEnum):
     ARTIFACT_UNAVAILABLE = "artifact_unavailable"
     AUDIT_UNAVAILABLE = "audit_unavailable"
     REDACTION_UNAVAILABLE = "redaction_unavailable"
+
+
+def live_test_bench_provenance(
+    *, source_label: str, source_detail: str | None = None
+) -> ReactAdminPageProvenance:
+    return ReactAdminPageProvenance(
+        source_kind=ReactAdminSourceKind.LIVE_REPOSITORY,
+        source_label=source_label,
+        source_detail=source_detail,
+    )
+
+
+def empty_test_bench_state(
+    *,
+    title: str,
+    summary: str,
+    setup_hint: str | None = None,
+    source_label: str = "Agent test bench records",
+) -> ReactAdminEmptyStateMetadata:
+    return ReactAdminEmptyStateMetadata(
+        reason=ReactAdminEmptyStateReason.NO_LIVE_ROWS,
+        title=title,
+        summary=summary,
+        setup_hint=setup_hint,
+        provenance=ReactAdminPageProvenance(
+            source_kind=ReactAdminSourceKind.EMPTY_LIVE_STATE,
+            source_label=source_label,
+            source_detail="No authorized live test bench records exist for this scope.",
+        ),
+    )
 
 
 class TestBenchSection(BaseModel):
@@ -606,6 +642,8 @@ class TestBenchDashboard(BaseModel):
     audit_timeline: tuple[TestBenchAuditRecord, ...] = Field(default_factory=tuple)
     refresh: RefreshHint | None = None
     actions: tuple[AdminAction, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
     @field_validator("page_id", "title", "description")
     @classmethod
@@ -619,6 +657,8 @@ class TestSuiteList(BaseModel):
     scope: ReactAdminScope
     suites: tuple[TestSuiteSummary, ...] = Field(default_factory=tuple)
     form_metadata: TestBenchFormMetadata
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class TestRunList(BaseModel):
@@ -626,6 +666,8 @@ class TestRunList(BaseModel):
 
     scope: ReactAdminScope
     runs: tuple[TestRunSummary, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class PublishGateEvidenceList(BaseModel):
@@ -633,6 +675,8 @@ class PublishGateEvidenceList(BaseModel):
 
     scope: ReactAdminScope
     gates: tuple[PublishGateEvidence, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class TestBenchAuditList(BaseModel):
@@ -640,6 +684,8 @@ class TestBenchAuditList(BaseModel):
 
     scope: ReactAdminScope
     audit_timeline: tuple[TestBenchAuditRecord, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance | None = None
+    empty_state: ReactAdminEmptyStateMetadata | None = None
 
 
 class TestBenchMutationResult(BaseModel):

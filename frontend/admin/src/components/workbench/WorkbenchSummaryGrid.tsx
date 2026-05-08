@@ -6,11 +6,14 @@ import type {
 import { Badge } from "../primitives";
 
 function toneFor(status: string) {
-  if (status === "ready") {
+  if (status === "ready" || status === "available") {
     return "success";
   }
-  if (status === "critical" || status === "unavailable") {
+  if (status === "critical" || status === "unavailable" || status === "denied") {
     return "critical";
+  }
+  if (status === "empty" || status === "not_found") {
+    return "neutral";
   }
   return "warning";
 }
@@ -42,14 +45,18 @@ export function WorkbenchSummaryGrid({
       </div>
       <div className="likely-causes">
         <h2>Likely causes</h2>
-        {causes.map((cause) => (
-          <article key={cause.cause_id}>
-            <strong>{cause.affected_subsystem}</strong>
-            <p>{cause.symptom}</p>
-            <small>{cause.likely_cause_category}</small>
-            {cause.href ? <a href={cause.href}>{cause.recommended_next_step}</a> : null}
-          </article>
-        ))}
+        {causes.length === 0 ? (
+          <p>No live warning symptoms match this scope.</p>
+        ) : (
+          causes.map((cause) => (
+            <article key={cause.cause_id}>
+              <strong>{cause.affected_subsystem}</strong>
+              <p>{cause.symptom}</p>
+              <small>{cause.likely_cause_category}</small>
+              {cause.href ? <a href={cause.href}>{cause.recommended_next_step}</a> : null}
+            </article>
+          ))
+        )}
       </div>
       <div className="health-panels">
         {panels.map((panel) => (

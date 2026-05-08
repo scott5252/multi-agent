@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  assertAdminPageEnvelope,
   assertMutationResult,
   assertReactAdminBootstrap,
   assertReactAdminCommandSearch,
   REACT_ADMIN_SCHEMA_HASH,
 } from "./api/generated/reactAdminApi";
-import {
-  patternsEnvelopeFixture,
-  validationResultFixture,
-} from "./test/patternsTestData";
+import { validationResultFixture } from "./test/patternsTestData";
 import { bootstrapFixture } from "./test/shellTestData";
 
 describe("generated React admin contract", () => {
@@ -38,10 +34,7 @@ describe("generated React admin contract", () => {
     );
   });
 
-  it("accepts safe page envelopes and mutation results", () => {
-    expect(assertAdminPageEnvelope(patternsEnvelopeFixture).page_id).toBe(
-      "react-admin-patterns",
-    );
+  it("accepts safe mutation results", () => {
     expect(assertMutationResult(validationResultFixture).status).toBe(
       "validation_error",
     );
