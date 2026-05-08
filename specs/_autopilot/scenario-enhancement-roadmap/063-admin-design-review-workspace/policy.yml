@@ -1,0 +1,35 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 063 - Admin Design Review Workspace",
+    "spec_number": "063",
+    "spec_slug": "admin-design-review-workspace",
+    "feature_dir": "specs/063-admin-design-review-workspace",
+    "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/063-admin-design-review-workspace",
+    "branch": "codex/063-admin-design-review-workspace",
+    "qa_id": "qa063",
+    "qa_label": "QA063",
+    "qa_database": "multi_agent_platform_qa063",
+    "qa_env_file": "specs/063-admin-design-review-workspace/.env.qa063",
+    "artifact_root": ".data/qa063-artifacts",
+    "playwright_output_dir": "output/playwright/qa063_ui",
+    "manual_qa_user_guide": "specs/063-admin-design-review-workspace/qa063_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa063-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa063-scenario-enhancement-smoke"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review",
+      "multi-agent-curl-test"
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 064 - Design Reviewer Template, Test Bench, And Publish Gates",
+    "spec_number": "064",
+    "spec_slug": "design-reviewer-template-test-bench-and-publish-gates",
+    "feature_dir": "specs/064-design-reviewer-template-test-bench-and-publish-gates",
+    "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/064-design-reviewer-template-test-bench-and-publish-gates",
+    "branch": "codex/064-design-reviewer-template-test-bench-and-publish-gates",
+    "qa_id": "qa064",
+    "qa_label": "QA064",
+    "qa_database": "multi_agent_platform_qa064",
+    "qa_env_file": "specs/064-design-reviewer-template-test-bench-and-publish-gates/.env.qa064",
+    "artifact_root": ".data/qa064-artifacts",
+    "playwright_output_dir": "output/playwright/qa064_ui",
+    "manual_qa_user_guide": "specs/064-design-reviewer-template-test-bench-and-publish-gates/qa064_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa064-after-spec"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa064-scenario-enhancement-smoke",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/design-reviews"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"tenant-admin-acme\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Design"
+          },
+          {
+            "screenshot": "qa064-scenario-enhancement-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  },
+  "post_spec_validation": {
+    "curl_testing": {
+      "file": "curl_testing.md",
+      "require_update_when_public_api_changes": true,
+      "require_commands_for_new_route_families": true,
+      "evidence_note": "Record the curl_testing.md sections covering new or changed APIs in this spec's status.json."
+    },
+    "curl_test": {
+      "skill": "multi-agent-curl-test",
+      "database": "multi_agent_curl_test",
+      "command": "if ! docker info >/dev/null 2>&1; then command -v open >/dev/null 2>&1 && open -a Docker || true; for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done; fi; docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+    }
+  }
+}

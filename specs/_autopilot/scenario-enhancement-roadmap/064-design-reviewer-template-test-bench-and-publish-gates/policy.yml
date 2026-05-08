@@ -1,0 +1,35 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 064 - Design Reviewer Template, Test Bench, And Publish Gates",
+    "spec_number": "064",
+    "spec_slug": "design-reviewer-template-test-bench-and-publish-gates",
+    "feature_dir": "specs/064-design-reviewer-template-test-bench-and-publish-gates",
+    "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/064-design-reviewer-template-test-bench-and-publish-gates",
+    "branch": "codex/064-design-reviewer-template-test-bench-and-publish-gates",
+    "qa_id": "qa064",
+    "qa_label": "QA064",
+    "qa_database": "multi_agent_platform_qa064",
+    "qa_env_file": "specs/064-design-reviewer-template-test-bench-and-publish-gates/.env.qa064",
+    "artifact_root": ".data/qa064-artifacts",
+    "playwright_output_dir": "output/playwright/qa064_ui",
+    "manual_qa_user_guide": "specs/064-design-reviewer-template-test-bench-and-publish-gates/qa064_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa064-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa064-scenario-enhancement-smoke"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review",
+      "multi-agent-curl-test"
+    ]
+  }
+}

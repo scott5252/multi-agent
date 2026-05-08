@@ -1,0 +1,35 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 061 - Model-Backed Graph Role Executor",
+    "spec_number": "061",
+    "spec_slug": "model-backed-graph-role-executor",
+    "feature_dir": "specs/061-model-backed-graph-role-executor",
+    "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/061-model-backed-graph-role-executor",
+    "branch": "codex/061-model-backed-graph-role-executor",
+    "qa_id": "qa061",
+    "qa_label": "QA061",
+    "qa_database": "multi_agent_platform_qa061",
+    "qa_env_file": "specs/061-model-backed-graph-role-executor/.env.qa061",
+    "artifact_root": ".data/qa061-artifacts",
+    "playwright_output_dir": "output/playwright/qa061_ui",
+    "manual_qa_user_guide": "specs/061-model-backed-graph-role-executor/qa061_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa061-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa061-scenario-enhancement-smoke"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review",
+      "multi-agent-curl-test"
+    ]
+  }
+}

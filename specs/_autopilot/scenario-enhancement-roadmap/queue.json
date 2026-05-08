@@ -1,0 +1,114 @@
+{
+  "schema_version": "1.0",
+  "roadmap_file": "scenario_enhancement.md",
+  "spec_range": "060..064",
+  "next_spec": "060",
+  "specs": [
+    {
+      "number": "060",
+      "title": "Design Review Domain Foundation",
+      "slug": "design-review-domain-foundation",
+      "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/060-design-review-domain-foundation",
+      "autopilot_file": "specs/_autopilot/scenario-enhancement-roadmap/060-design-review-domain-foundation/autopilot.yml",
+      "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/060-design-review-domain-foundation/validation.yml",
+      "feature_dir": "specs/060-design-review-domain-foundation",
+      "branch": "codex/060-design-review-domain-foundation",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "061",
+      "title": "Model-Backed Graph Role Executor",
+      "slug": "model-backed-graph-role-executor",
+      "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/061-model-backed-graph-role-executor",
+      "autopilot_file": "specs/_autopilot/scenario-enhancement-roadmap/061-model-backed-graph-role-executor/autopilot.yml",
+      "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/061-model-backed-graph-role-executor/validation.yml",
+      "feature_dir": "specs/061-model-backed-graph-role-executor",
+      "branch": "codex/061-model-backed-graph-role-executor",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "062",
+      "title": "Design Review Coordinator And Iteration Loop",
+      "slug": "design-review-coordinator-and-iteration-loop",
+      "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/062-design-review-coordinator-and-iteration-loop",
+      "autopilot_file": "specs/_autopilot/scenario-enhancement-roadmap/062-design-review-coordinator-and-iteration-loop/autopilot.yml",
+      "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/062-design-review-coordinator-and-iteration-loop/validation.yml",
+      "feature_dir": "specs/062-design-review-coordinator-and-iteration-loop",
+      "branch": "codex/062-design-review-coordinator-and-iteration-loop",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "063",
+      "title": "Admin Design Review Workspace",
+      "slug": "admin-design-review-workspace",
+      "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/063-admin-design-review-workspace",
+      "autopilot_file": "specs/_autopilot/scenario-enhancement-roadmap/063-admin-design-review-workspace/autopilot.yml",
+      "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/063-admin-design-review-workspace/validation.yml",
+      "feature_dir": "specs/063-admin-design-review-workspace",
+      "branch": "codex/063-admin-design-review-workspace",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "064",
+      "title": "Design Reviewer Template, Test Bench, And Publish Gates",
+      "slug": "design-reviewer-template-test-bench-and-publish-gates",
+      "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/064-design-reviewer-template-test-bench-and-publish-gates",
+      "autopilot_file": "specs/_autopilot/scenario-enhancement-roadmap/064-design-reviewer-template-test-bench-and-publish-gates/autopilot.yml",
+      "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/064-design-reviewer-template-test-bench-and-publish-gates/validation.yml",
+      "feature_dir": "specs/064-design-reviewer-template-test-bench-and-publish-gates",
+      "branch": "codex/064-design-reviewer-template-test-bench-and-publish-gates",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    }
+  ],
+  "run_contract": {
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true,
+    "update_curl_testing_for_new_or_changed_apis": true,
+    "run_multi_agent_curl_test_after_every_spec": true
+  }
+}

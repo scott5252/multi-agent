@@ -1,0 +1,35 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 062 - Design Review Coordinator And Iteration Loop",
+    "spec_number": "062",
+    "spec_slug": "design-review-coordinator-and-iteration-loop",
+    "feature_dir": "specs/062-design-review-coordinator-and-iteration-loop",
+    "autopilot_dir": "specs/_autopilot/scenario-enhancement-roadmap/062-design-review-coordinator-and-iteration-loop",
+    "branch": "codex/062-design-review-coordinator-and-iteration-loop",
+    "qa_id": "qa062",
+    "qa_label": "QA062",
+    "qa_database": "multi_agent_platform_qa062",
+    "qa_env_file": "specs/062-design-review-coordinator-and-iteration-loop/.env.qa062",
+    "artifact_root": ".data/qa062-artifacts",
+    "playwright_output_dir": "output/playwright/qa062_ui",
+    "manual_qa_user_guide": "specs/062-design-review-coordinator-and-iteration-loop/qa062_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa062-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa062-scenario-enhancement-smoke"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review",
+      "multi-agent-curl-test"
+    ]
+  }
+}
