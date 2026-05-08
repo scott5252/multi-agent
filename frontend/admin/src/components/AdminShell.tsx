@@ -36,22 +36,29 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
         <header className="topbar">
           <div>
             <p className="eyebrow">Admin</p>
-            <h1>Admin</h1>
+            <h1>Console Home</h1>
           </div>
-          <a className="secondary-link" href="/admin">
-            Existing console
+          <a
+            className="secondary-link"
+            href="/auth/local-logout?redirect_to=/auth/local-login"
+          >
+            Log off
           </a>
         </header>
         <ScopeSummary bootstrap={bootstrap} />
         <section className="foundation-panel">
           <div>
-            <h2>Admin workspaces ready</h2>
+            <h2>System status</h2>
             <p>
-              Use authorized destinations to manage workflows, operations,
-              governance, skills, access, usage, and channels.
+              Current session, health, and contract details for the active admin
+              scope.
             </p>
           </div>
           <dl>
+            <div>
+              <dt>System health</dt>
+              <dd>{bootstrap.system_health.label}</dd>
+            </div>
             <div>
               <dt>App version</dt>
               <dd>{bootstrap.version.app_version}</dd>

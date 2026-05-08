@@ -3514,6 +3514,20 @@ export interface ReactAdminActionTokens {{
   issued_at: string | null;
 }}
 
+export interface ReactAdminSystemHealthDependency {{
+  name: string;
+  required: boolean;
+  status: "ready" | "degraded" | "unavailable";
+}}
+
+export interface ReactAdminSystemHealth {{
+  status: "ready" | "degraded" | "not_ready";
+  label: string;
+  summary: string;
+  checked_at: string;
+  dependencies: ReactAdminSystemHealthDependency[];
+}}
+
 export interface ReactAdminBootstrap {{
   principal: ReactAdminPrincipal;
   active_scope: ReactAdminScope;
@@ -3523,6 +3537,7 @@ export interface ReactAdminBootstrap {{
   version: ReactAdminVersion;
   asset_manifest: ReactAdminAssetManifestSummary;
   action_tokens: ReactAdminActionTokens;
+  system_health: ReactAdminSystemHealth;
   shell: ReactAdminShellChrome;
 }}
 
@@ -3627,11 +3642,15 @@ export function assertReactAdminBootstrap(
   }}
   const principal = value.principal;
   const activeScope = value.active_scope;
+  const systemHealth = value.system_health;
   if (!isObject(principal) || !hasString(principal, "principal_id")) {{
     throw new Error("Admin bootstrap is missing a safe principal");
   }}
   if (!isObject(activeScope) || !hasString(activeScope, "scope_type")) {{
     throw new Error("Admin bootstrap is missing an active scope");
+  }}
+  if (!isObject(systemHealth) || !hasString(systemHealth, "status")) {{
+    throw new Error("Admin bootstrap is missing system health");
   }}
   if (!Array.isArray(value.navigation)) {{
     throw new Error("Admin bootstrap navigation must be an array");

@@ -58,12 +58,18 @@ describe("App", () => {
     expect(screen.getByText("Loading admin shell")).toBeInTheDocument();
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "Console Home" }),
+        screen.getByRole("heading", { name: "Start here" }),
       ).toBeInTheDocument();
     });
 
     expect(screen.getAllByText("Multi-Agent Admin").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Signed-in user")).toHaveTextContent("Tenant Admin");
+    expect(screen.getByLabelText("System health")).toHaveTextContent("Ready");
     expect(screen.getByLabelText("Admin scope")).toHaveTextContent("Acme");
+    expect(screen.getByRole("link", { name: "Log off" })).toHaveAttribute(
+      "href",
+      "/auth/local-logout?redirect_to=/auth/local-login",
+    );
     expect(
       screen.getByRole("link", { name: "Workflow Registry" }),
     ).toHaveAttribute(

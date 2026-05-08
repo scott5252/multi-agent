@@ -458,6 +458,41 @@ class ReactAdminActionTokens(BaseModel):
     issued_at: datetime | None = None
 
 
+class ReactAdminSystemHealthDependency(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    required: bool
+    status: Literal["ready", "degraded", "unavailable"]
+
+    @field_validator("name")
+    @classmethod
+    def name_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=80)
+
+
+class ReactAdminSystemHealth(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["ready", "degraded", "not_ready"]
+    label: str
+    summary: str
+    checked_at: str
+    dependencies: tuple[ReactAdminSystemHealthDependency, ...] = Field(
+        default_factory=tuple
+    )
+
+    @field_validator("label")
+    @classmethod
+    def label_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=80)
+
+    @field_validator("summary")
+    @classmethod
+    def summary_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=180)
+
+
 class ReactAdminBootstrap(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -469,6 +504,7 @@ class ReactAdminBootstrap(BaseModel):
     version: ReactAdminVersion
     asset_manifest: ReactAdminAssetManifestSummary
     action_tokens: ReactAdminActionTokens
+    system_health: ReactAdminSystemHealth
     shell: ReactAdminShellChrome
 
 

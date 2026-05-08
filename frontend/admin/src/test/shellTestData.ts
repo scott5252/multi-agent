@@ -68,6 +68,24 @@ export const bootstrapFixture: ReactAdminBootstrap = {
     csrf_token: null,
     issued_at: null,
   },
+  system_health: {
+    status: "ready",
+    label: "Ready",
+    summary: "All required platform dependencies are reporting ready.",
+    checked_at: "2026-05-08T12:00:00Z",
+    dependencies: [
+      {
+        name: "config",
+        required: true,
+        status: "ready",
+      },
+      {
+        name: "postgres",
+        required: true,
+        status: "ready",
+      },
+    ],
+  },
   shell: {
     product_name: "Multi-Agent Admin",
     active_area: "home",
@@ -77,33 +95,16 @@ export const bootstrapFixture: ReactAdminBootstrap = {
     ],
     page_actions: [
       {
-        action_id: "open-existing-console",
-        label: "Existing console",
-        href: "/admin",
+        action_id: "log-off",
+        label: "Log off",
+        href: "/auth/local-logout?redirect_to=/auth/local-login",
         method: "get",
         variant: "secondary",
         disabled_reason: null,
       },
-      {
-        action_id: "open-workflows",
-        label: "Workflows",
-        href: "/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111",
-        method: "get",
-        variant: "primary",
-        disabled_reason: null,
-      },
     ],
     saved_filters: [],
-    notifications: [
-      {
-        notification_id: "admin-workspace-ready",
-        tone: "info",
-        title: "Admin workspace ready",
-        summary:
-          "Use authorized workspaces to manage workflows, operations, governance, skills, access, usage, and channels.",
-        href: "/admin/app",
-      },
-    ],
+    notifications: [],
     states: [
       {
         state: "loading",

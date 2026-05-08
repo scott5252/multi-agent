@@ -216,6 +216,8 @@ from multi_agent_platform.api.schemas.admin_react import (
     ReactAdminShellState,
     ReactAdminShellStateKind,
     ReactAdminSourceKind,
+    ReactAdminSystemHealth,
+    ReactAdminSystemHealthDependency,
     ReactAdminVersion,
 )
 from multi_agent_platform.api.schemas.admin_skill_lifecycle import (
@@ -350,6 +352,7 @@ from multi_agent_platform.operations.workbench import (
     build_run_debug_envelope,
     create_workbench_export_snapshot,
 )
+from multi_agent_platform.runtime.health.service import HealthService
 from multi_agent_platform.testing.agent_bench.react_test_bench import (
     build_artifact_reference,
     build_case_save_result,
@@ -471,7 +474,7 @@ async def react_admin_bootstrap(
             status_code=exc.status_code,
             detail=exc.reason_category,
         ) from exc
-    return react_admin_bootstrap_from_shell(
+    return await react_admin_bootstrap_from_shell(
         shell=shell,
         principal=principal,
         container=container,
@@ -560,7 +563,7 @@ async def react_admin_migration_shell_bootstrap(
         session=session,
         tenant_id=tenant_id,
     )
-    return react_admin_bootstrap_from_shell(
+    return await react_admin_bootstrap_from_shell(
         shell=shell,
         principal=principal,
         container=container,
@@ -3460,7 +3463,7 @@ async def react_admin_channels_shell_bootstrap(
         session=session,
         tenant_id=tenant_id,
     )
-    return react_admin_bootstrap_from_shell(
+    return await react_admin_bootstrap_from_shell(
         shell=shell,
         principal=principal,
         container=container,
@@ -4633,12 +4636,13 @@ async def _scope_for_tenant_id(
         request.scope["query_string"] = original
 
 
-def react_admin_bootstrap_from_shell(
+async def react_admin_bootstrap_from_shell(
     *,
     shell: AdminShellContext,
     principal: PrincipalContext,
     container: ContainerDep,
 ) -> ReactAdminBootstrap:
+    system_health = await _system_health_summary(container)
     return ReactAdminBootstrap(
         principal=ReactAdminPrincipal.from_context(principal),
         active_scope=_scope_response(shell.active_scope),
@@ -4672,7 +4676,57 @@ def react_admin_bootstrap_from_shell(
             csrf_token=None,
             issued_at=datetime.now(UTC),
         ),
-        shell=_shell_chrome_response(shell),
+        system_health=system_health,
+        shell=_shell_chrome_response(shell, system_health=system_health),
+    )
+
+
+async def _system_health_summary(container: ContainerDep) -> ReactAdminSystemHealth:
+    report = await HealthService(container).dependency_status()
+    dependencies = tuple(
+        ReactAdminSystemHealthDependency(
+            name=dependency.name,
+            required=dependency.required,
+            status=dependency.status.value,
+        )
+        for dependency in report.dependencies
+    )
+    unavailable_required = sum(
+        1
+        for dependency in dependencies
+        if dependency.required and dependency.status == "unavailable"
+    )
+    degraded_dependencies = sum(
+        1 for dependency in dependencies if dependency.status == "degraded"
+    )
+    if report.status == "ready":
+        health_status: Literal["ready", "degraded", "not_ready"] = "ready"
+        label = "Ready"
+        summary = "All required platform dependencies are reporting ready."
+    elif report.status == "degraded":
+        health_status = "degraded"
+        label = "Degraded"
+        dependency_label = (
+            "dependency" if degraded_dependencies == 1 else "dependencies"
+        )
+        summary = (
+            f"{degraded_dependencies} platform {dependency_label} degraded."
+        )
+    else:
+        health_status = "not_ready"
+        label = "Not ready"
+        dependency_label = (
+            "dependency" if unavailable_required == 1 else "dependencies"
+        )
+        summary = (
+            f"{unavailable_required} required platform {dependency_label} unavailable."
+        )
+    return ReactAdminSystemHealth(
+        status=health_status,
+        label=label,
+        summary=summary,
+        checked_at=report.checked_at,
+        dependencies=dependencies,
     )
 
 
@@ -5254,7 +5308,11 @@ def _static_navigation_text(
     return text
 
 
-def _shell_chrome_response(shell: AdminShellContext) -> ReactAdminShellChrome:
+def _shell_chrome_response(
+    shell: AdminShellContext,
+    *,
+    system_health: ReactAdminSystemHealth | None = None,
+) -> ReactAdminShellChrome:
     return ReactAdminShellChrome(
         product_name="Multi-Agent Admin",
         active_area="home",
@@ -5270,34 +5328,37 @@ def _shell_chrome_response(shell: AdminShellContext) -> ReactAdminShellChrome:
         ),
         page_actions=(
             ReactAdminPageAction(
-                action_id="open-existing-console",
-                label="Existing console",
-                href="/admin",
+                action_id="log-off",
+                label="Log off",
+                href="/auth/local-logout?redirect_to=/auth/local-login",
                 variant=ReactAdminPageActionVariant.SECONDARY,
             ),
-            ReactAdminPageAction(
-                action_id="open-workflows",
-                label="Workflows",
-                href=_with_tenant_query(REACT_WORKFLOWS_PATH, shell.active_scope),
-                variant=ReactAdminPageActionVariant.PRIMARY,
-            ),
         ),
-        notifications=(
-            ReactAdminShellNotification(
-                notification_id="admin-workspace-ready",
-                tone=ReactAdminNotificationTone.INFO,
-                title="Admin workspace ready",
-                summary=(
-                    "Use authorized workspaces to manage workflows, operations, "
-                    "governance, skills, access, usage, and channels."
-                ),
-                href=REACT_MOUNT_PATH,
-            ),
-        ),
+        notifications=_system_health_notifications(system_health),
         states=_common_shell_states(),
         command_results=_command_results(shell),
         design_token_version=DESIGN_TOKEN_VERSION,
         search_url=_with_tenant_query(REACT_SEARCH_URL, shell.active_scope),
+    )
+
+
+def _system_health_notifications(
+    system_health: ReactAdminSystemHealth | None,
+) -> tuple[ReactAdminShellNotification, ...]:
+    if system_health is None or system_health.status == "ready":
+        return ()
+    return (
+        ReactAdminShellNotification(
+            notification_id="system-health-status",
+            tone=(
+                ReactAdminNotificationTone.CRITICAL
+                if system_health.status == "not_ready"
+                else ReactAdminNotificationTone.WARNING
+            ),
+            title=f"System health {system_health.label.lower()}",
+            summary=system_health.summary,
+            href="/dependencies",
+        ),
     )
 
 

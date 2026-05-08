@@ -106,7 +106,6 @@ textarea {
 
 .topbar,
 .foundation-panel,
-.scope-switcher,
 .common-state,
 .command-menu,
 .saved-filters,
@@ -126,6 +125,7 @@ textarea {
 
 .topbar-main,
 .topbar-side,
+.topbar-fact,
 .action-row,
 .search-box,
 .chip-row {
@@ -136,6 +136,12 @@ textarea {
 
 .topbar-main {
   min-width: 0;
+}
+
+.topbar-side {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .topbar h1,
@@ -169,12 +175,51 @@ textarea {
 .scope-switcher {
   display: flex;
   align-items: center;
-  gap: var(--admin-space-3);
-  padding: var(--admin-space-3);
+  gap: var(--admin-space-2);
+  padding: 0;
 }
 
 .scope-switcher strong {
   display: block;
+}
+
+.topbar-fact,
+.logout-link {
+  min-height: 2.35rem;
+}
+
+.topbar-fact {
+  color: var(--admin-ink);
+}
+
+.topbar-fact svg,
+.logout-link svg {
+  flex: 0 0 auto;
+}
+
+.system-health {
+  color: var(--admin-success);
+}
+
+.system-health.degraded {
+  color: var(--admin-warning);
+}
+
+.system-health.not_ready {
+  color: var(--admin-critical);
+}
+
+.logout-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-2);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-ink);
+  padding: 0 var(--admin-space-3);
+  text-decoration: none;
+  font-weight: 700;
 }
 
 .scope-switcher select,
@@ -2251,6 +2296,12 @@ textarea {
   .action-row {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .topbar-fact,
+  .logout-link {
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .scope-switcher {

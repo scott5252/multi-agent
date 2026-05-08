@@ -818,6 +818,23 @@ def test_local_principal_react_admin_entry_and_bootstrap(
     assert nav_by_area["prompt_library"]["label"] == "Prompt Library"
     assert any(group["label"] == "Prompt Runtime" for group in payload["navigation"])
     assert payload["shell"]["product_name"] == "Multi-Agent Admin"
+    assert payload["system_health"]["status"] == "ready"
+    assert payload["system_health"]["label"] == "Ready"
+    assert "authorization" not in json.dumps(payload["system_health"]).lower()
+    action_by_id = {
+        action["action_id"]: action for action in payload["shell"]["page_actions"]
+    }
+    assert action_by_id == {
+        "log-off": {
+            "action_id": "log-off",
+            "label": "Log off",
+            "href": "/auth/local-logout?redirect_to=/auth/local-login",
+            "method": "get",
+            "variant": "secondary",
+            "disabled_reason": None,
+            "action_metadata": None,
+        }
+    }
     assert payload["shell"]["breadcrumbs"][0]["label"] == "Admin"
     assert payload["shell"]["command_results"]
     assert "token_subject" not in json.dumps(payload)

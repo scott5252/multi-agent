@@ -40,14 +40,17 @@ export function AdminShell({ bootstrap, children }: AdminShellProps) {
             <section className="foundation-panel">
               <div>
                 <p className="eyebrow">Overview</p>
-                <h2>Admin workspaces ready</h2>
+                <h2>System status</h2>
                 <p>
-                  Use authorized destinations to manage workflows, operations,
-                  governance, skills, access, usage, and channels for the active
-                  scope.
+                  Current session, health, and contract details for the active
+                  admin scope.
                 </p>
               </div>
               <dl>
+                <div>
+                  <dt>System health</dt>
+                  <dd>{bootstrap.system_health.label}</dd>
+                </div>
                 <div>
                   <dt>Principal</dt>
                   <dd>
