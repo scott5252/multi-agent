@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
 import { channelDashboard } from "./test/channelTelegramBriefingTestData";
+import { consoleHomeFixture } from "./test/consoleHomeTestData";
 import { governanceDashboardFixture } from "./test/governanceTestData";
 import { membershipDashboardFixture } from "./test/membershipTestData";
 import {
@@ -37,7 +38,49 @@ describe("App", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders safe principal scope and admin migration evidence", async () => {
+  it("renders a product-facing Console Home without development traces", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => bootstrapFixture,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => consoleHomeFixture,
+        }),
+    );
+
+    render(<App />);
+
+    expect(screen.getByText("Loading admin shell")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Console Home" }),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByText("Multi-Agent Admin").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Admin scope")).toHaveTextContent("Acme");
+    expect(
+      screen.getByRole("link", { name: "Workflow Registry" }),
+    ).toHaveAttribute(
+      "href",
+      "/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111",
+    );
+    expect(screen.getByRole("link", { name: /Review workflows/ })).toHaveAttribute(
+      "href",
+      "/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111",
+    );
+    expect(screen.getByText("Current notices")).toBeInTheDocument();
+    expect(screen.queryByText(/Spec Kit/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/migration/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Jinja/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps migration evidence isolated on the migration route", async () => {
     vi.stubGlobal(
       "fetch",
       vi
@@ -71,26 +114,17 @@ describe("App", () => {
           json: async () => migrationDashboard.transitional_label_gate,
         }),
     );
+    window.history.pushState({}, "", "/admin/app/migration");
 
     render(<App />);
 
-    expect(screen.getByText("Loading admin shell")).toBeInTheDocument();
     await waitFor(() => {
       expect(
         screen.getByRole("heading", { name: "Admin browser UI" }),
       ).toBeInTheDocument();
     });
 
-    expect(screen.getAllByText("Multi-Agent Admin").length).toBeGreaterThan(0);
-    expect(screen.getByLabelText("Admin scope")).toHaveTextContent("Acme");
-    expect(
-      screen.getByRole("link", { name: "Workflow Registry" }),
-    ).toHaveAttribute(
-      "href",
-      "/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111",
-    );
     expect(screen.getByText("Route safety plan")).toBeInTheDocument();
-    expect(screen.getByText("Browser UI readiness")).toBeInTheDocument();
   });
 
   it("renders the channel workspace route inside the shell", async () => {

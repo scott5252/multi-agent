@@ -39,11 +39,12 @@ export function AdminShell({ bootstrap, children }: AdminShellProps) {
             <SavedFilterChips filters={bootstrap.shell.saved_filters} />
             <section className="foundation-panel">
               <div>
-                <p className="eyebrow">Foundation</p>
-                <h2>Shared shell ready</h2>
+                <p className="eyebrow">Overview</p>
+                <h2>Admin workspaces ready</h2>
                 <p>
-                  Backend contracts provide authorized scope, navigation,
-                  actions, safe states, and fallback links for admin pages.
+                  Use authorized destinations to manage workflows, operations,
+                  governance, skills, access, usage, and channels for the active
+                  scope.
                 </p>
               </div>
               <dl>

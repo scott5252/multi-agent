@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { fetchBootstrap } from "./api/client";
 import { ChannelTelegramBriefingPage } from "./components/channelTelegramBriefing/ChannelTelegramBriefingPage";
 import { GovernancePage } from "./components/governance/GovernancePage";
+import { ConsoleHomePage } from "./components/home/ConsoleHomePage";
 import { MembershipPage } from "./components/memberships/MembershipPage";
 import { MigrationHardeningPage } from "./components/migrationHardening/MigrationHardeningPage";
 import { SavedFilterManagementPage } from "./components/savedFilters/SavedFilterManagementPage";
@@ -89,10 +90,15 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
     );
   }
 
-  if (
-    window.location.pathname === "/admin/app" ||
-    window.location.pathname === "/admin/app/migration"
-  ) {
+  if (window.location.pathname === "/admin/app") {
+    return (
+      <AdminShell bootstrap={bootstrap}>
+        <ConsoleHomePage homeUrl={`/admin/app/home.json${window.location.search}`} />
+      </AdminShell>
+    );
+  }
+
+  if (window.location.pathname === "/admin/app/migration") {
     return (
       <AdminShell bootstrap={bootstrap}>
         <MigrationHardeningPage

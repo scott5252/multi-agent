@@ -96,11 +96,12 @@ export const bootstrapFixture: ReactAdminBootstrap = {
     saved_filters: [],
     notifications: [
       {
-        notification_id: "admin-links-active",
+        notification_id: "admin-workspace-ready",
         tone: "info",
-        title: "Admin browser UI active",
-        summary: "Older browser links use safe Admin redirects.",
-        href: "/admin",
+        title: "Admin workspace ready",
+        summary:
+          "Use authorized workspaces to manage workflows, operations, governance, skills, access, usage, and channels.",
+        href: "/admin/app",
       },
     ],
     states: [

@@ -472,6 +472,114 @@ class ReactAdminBootstrap(BaseModel):
     shell: ReactAdminShellChrome
 
 
+class ConsoleHomeMetric(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    metric_id: str
+    label: str
+    value: str
+    summary: str | None = None
+    href: str | None = None
+    tone: Literal["neutral", "info", "success", "warning", "critical"] = "neutral"
+
+    @field_validator("label", "value")
+    @classmethod
+    def text_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=90)
+
+    @field_validator("summary")
+    @classmethod
+    def summary_is_safe(cls, value: str | None) -> str | None:
+        return _safe_optional_summary(value, max_length=180)
+
+
+class ConsoleHomeAttentionItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    item_id: str
+    title: str
+    summary: str
+    href: str | None = None
+    tone: Literal["info", "success", "warning", "critical"] = "info"
+
+    @field_validator("title")
+    @classmethod
+    def title_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=90)
+
+    @field_validator("summary")
+    @classmethod
+    def summary_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=180)
+
+
+class ConsoleHomeQuickAction(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    action_id: str
+    label: str
+    summary: str
+    href: str
+    group: str
+
+    @field_validator("label", "group")
+    @classmethod
+    def label_fields_are_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=90)
+
+    @field_validator("summary")
+    @classmethod
+    def summary_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=180)
+
+
+class ConsoleHomeWorkspace(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    label: str
+    summary: str
+    href: str
+    group: str
+    status_label: str
+    status_tone: Literal["neutral", "info", "success", "warning", "critical"]
+
+    @field_validator("label", "group", "status_label")
+    @classmethod
+    def label_fields_are_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=90)
+
+    @field_validator("summary")
+    @classmethod
+    def summary_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=180)
+
+
+class ConsoleHomeEnvelope(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    page_id: str
+    title: str
+    description: str
+    scope: ReactAdminScope
+    updated_at: datetime
+    metrics: tuple[ConsoleHomeMetric, ...] = Field(default_factory=tuple)
+    attention_items: tuple[ConsoleHomeAttentionItem, ...] = Field(default_factory=tuple)
+    quick_actions: tuple[ConsoleHomeQuickAction, ...] = Field(default_factory=tuple)
+    workspaces: tuple[ConsoleHomeWorkspace, ...] = Field(default_factory=tuple)
+    provenance: ReactAdminPageProvenance
+
+    @field_validator("title")
+    @classmethod
+    def title_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=90)
+
+    @field_validator("description")
+    @classmethod
+    def description_is_safe(cls, value: str) -> str:
+        return _safe_summary(value, max_length=220)
+
+
 class ReactAdminConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

@@ -58,6 +58,7 @@ from multi_agent_platform.api.schemas.admin_patterns import (
     SafeProblemDetail,
 )
 from multi_agent_platform.api.schemas.admin_react import (
+    ConsoleHomeEnvelope,
     ReactAdminActionMetadata,
     ReactAdminAssetManifestSummary,
     ReactAdminBootstrap,
@@ -145,6 +146,7 @@ DEFAULT_OUTPUT = REPO_ROOT / "frontend/admin/src/api/generated/reactAdminApi.ts"
 def schema_payload() -> dict[str, Any]:
     return {
         "ReactAdminBootstrap": ReactAdminBootstrap.model_json_schema(),
+        "ConsoleHomeEnvelope": ConsoleHomeEnvelope.model_json_schema(),
         "ReactAdminConfig": ReactAdminConfig.model_json_schema(),
         "ReactAdminCommandSearch": ReactAdminCommandSearch.model_json_schema(),
         "ReactAdminPageProvenance": ReactAdminPageProvenance.model_json_schema(),
@@ -3524,6 +3526,54 @@ export interface ReactAdminBootstrap {{
   shell: ReactAdminShellChrome;
 }}
 
+export interface ConsoleHomeMetric {{
+  metric_id: string;
+  label: string;
+  value: string;
+  summary: string | null;
+  href: string | null;
+  tone: "neutral" | "info" | "success" | "warning" | "critical";
+}}
+
+export interface ConsoleHomeAttentionItem {{
+  item_id: string;
+  title: string;
+  summary: string;
+  href: string | null;
+  tone: "info" | "success" | "warning" | "critical";
+}}
+
+export interface ConsoleHomeQuickAction {{
+  action_id: string;
+  label: string;
+  summary: string;
+  href: string;
+  group: string;
+}}
+
+export interface ConsoleHomeWorkspace {{
+  workspace_id: string;
+  label: string;
+  summary: string;
+  href: string;
+  group: string;
+  status_label: string;
+  status_tone: "neutral" | "info" | "success" | "warning" | "critical";
+}}
+
+export interface ConsoleHomeEnvelope {{
+  page_id: string;
+  title: string;
+  description: string;
+  scope: ReactAdminScope;
+  updated_at: string;
+  metrics: ConsoleHomeMetric[];
+  attention_items: ConsoleHomeAttentionItem[];
+  quick_actions: ConsoleHomeQuickAction[];
+  workspaces: ConsoleHomeWorkspace[];
+  provenance: ReactAdminPageProvenance;
+}}
+
 export interface ReactAdminConfig {{
   mount_path: string;
   asset_base_path: string;
@@ -3590,6 +3640,22 @@ export function assertReactAdminBootstrap(
     throw new Error("Admin bootstrap is missing shell metadata");
   }}
   return value as unknown as ReactAdminBootstrap;
+}}
+
+export function assertConsoleHomeEnvelope(value: unknown): ConsoleHomeEnvelope {{
+  if (!isObject(value)) {{
+    throw new Error("Console Home payload must be an object");
+  }}
+  if (!hasString(value, "page_id") || !hasString(value, "title")) {{
+    throw new Error("Console Home payload is missing page metadata");
+  }}
+  if (!Array.isArray(value.metrics) || !Array.isArray(value.workspaces)) {{
+    throw new Error("Console Home payload is missing workspace summaries");
+  }}
+  if (!Array.isArray(value.quick_actions) || !Array.isArray(value.attention_items)) {{
+    throw new Error("Console Home payload is missing action summaries");
+  }}
+  return value as unknown as ConsoleHomeEnvelope;
 }}
 
 export function assertLocalLoginEnvelope(value: unknown): LocalLoginEnvelope {{

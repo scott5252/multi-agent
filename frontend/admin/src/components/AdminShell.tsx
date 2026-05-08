@@ -12,7 +12,7 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
       <aside className="sidebar" aria-label="Admin navigation">
         <a className="brand" href="/admin/app">
           <span>Admin</span>
-          <strong>Foundation</strong>
+          <strong>Workspace</strong>
         </a>
         <nav>
           {bootstrap.navigation.map((group) => (
@@ -45,10 +45,10 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
         <ScopeSummary bootstrap={bootstrap} />
         <section className="foundation-panel">
           <div>
-            <h2>Foundation ready</h2>
+            <h2>Admin workspaces ready</h2>
             <p>
-              This admin shell is authenticated through the existing FastAPI admin service.
-              Browser pages now use safe compatibility links for older URLs.
+              Use authorized destinations to manage workflows, operations,
+              governance, skills, access, usage, and channels.
             </p>
           </div>
           <dl>

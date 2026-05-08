@@ -28,7 +28,10 @@ export function ShellTopbar({
         <div>
           <Breadcrumbs items={bootstrap.shell.breadcrumbs} />
           <h1>Admin</h1>
-          <p>Shared shell and design system for governed admin work.</p>
+          <p>
+            Manage workflows, operations, governance, skills, access, usage, and
+            channels.
+          </p>
         </div>
       </div>
       <div className="topbar-side">

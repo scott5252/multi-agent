@@ -2635,6 +2635,36 @@ def test_react_admin_fails_closed_for_unauthorized_and_cross_tenant(
     assert "Globex" not in cross_tenant.text
 
 
+def test_react_admin_home_is_product_facing_and_scoped(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tenant_id = uuid4()
+    other_tenant_id = uuid4()
+    _configure_env(monkeypatch, tmp_path, tenant_id, other_tenant_id)
+    app = create_app()
+
+    with TestClient(app) as client:
+        response = client.get(
+            f"/admin/app/home.json?tenant_id={tenant_id}",
+            headers={"X-Local-Principal": "tenant-admin-acme"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    serialized = json.dumps(payload)
+    assert payload["title"] == "Console Home"
+    assert payload["scope"]["tenant_id"] == str(tenant_id)
+    assert payload["quick_actions"]
+    assert any(
+        item["workspace_id"] == "workflow_registry" for item in payload["workspaces"]
+    )
+    assert "Spec" not in serialized
+    assert "Jinja" not in serialized
+    assert "migration" not in serialized.lower()
+    assert "Globex" not in serialized
+
+
 def test_bootstrap_fails_closed_when_navigation_audit_is_unavailable(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

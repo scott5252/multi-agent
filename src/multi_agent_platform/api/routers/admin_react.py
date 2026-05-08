@@ -4,7 +4,7 @@ import hashlib
 import html
 import json
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from uuid import UUID
 
@@ -184,6 +184,11 @@ from multi_agent_platform.api.schemas.admin_patterns import (
     ValidationFieldError,
 )
 from multi_agent_platform.api.schemas.admin_react import (
+    ConsoleHomeAttentionItem,
+    ConsoleHomeEnvelope,
+    ConsoleHomeMetric,
+    ConsoleHomeQuickAction,
+    ConsoleHomeWorkspace,
     ReactAdminActionTokens,
     ReactAdminAssetManifestSummary,
     ReactAdminBootstrap,
@@ -368,6 +373,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 REACT_MOUNT_PATH = "/admin/app"
 REACT_BOOTSTRAP_URL = "/admin/app/bootstrap.json"
+REACT_HOME_URL = "/admin/app/home.json"
 REACT_CONFIG_URL = "/admin/app/config.json"
 REACT_MANIFEST_URL = "/admin/app/manifest.json"
 REACT_SEARCH_URL = "/admin/app/search.json"
@@ -470,6 +476,38 @@ async def react_admin_bootstrap(
         principal=principal,
         container=container,
     )
+
+
+@router.get(
+    "/admin/app/home.json",
+    response_model=ConsoleHomeEnvelope,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_home(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> ConsoleHomeEnvelope:
+    if not container.settings.react_admin_enabled:
+        raise HTTPException(status_code=404, detail="admin app is disabled")
+    try:
+        shell = await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    return _console_home_from_shell(shell=shell)
 
 
 @router.get("/admin/app/migration", response_class=HTMLResponse)
@@ -4659,6 +4697,259 @@ def react_admin_command_search_from_shell(
     return ReactAdminCommandSearch(query=query[:80], results=results[:12])
 
 
+_HOME_QUICK_ACTION_IDS = (
+    "workflow_registry",
+    "operations_console",
+    "run_search",
+    "model_skill_config",
+    "model_providers",
+    "skill_registry_packages",
+    "agent_tests",
+    "membership_administration",
+    "usage_analytics",
+    "telegram_configuration",
+)
+
+_HOME_WORKSPACE_IDS = (
+    "workflow_registry",
+    "operations_console",
+    "run_search",
+    "reliability_dashboard",
+    "model_skill_config",
+    "model_providers",
+    "prompt_library",
+    "agent_profiles",
+    "skill_registry_packages",
+    "skill_registry_installations",
+    "skill_tool_diagnostics",
+    "agent_tests",
+    "membership_administration",
+    "usage_analytics",
+    "telegram_configuration",
+    "briefing_preferences",
+)
+
+_HOME_ACTION_COPY: dict[str, tuple[str, str]] = {
+    "workflow_registry": (
+        "Review workflows",
+        "Open drafts, validation results, publishing readiness, and sharing.",
+    ),
+    "operations_console": (
+        "Open operations",
+        "Inspect queues, reliability signals, delivery status, and run health.",
+    ),
+    "run_search": (
+        "Search runs",
+        "Find recent workflow runs, timelines, failures, and artifacts.",
+    ),
+    "model_skill_config": (
+        "Check routing",
+        "Review model routing, policy controls, and active configuration.",
+    ),
+    "model_providers": (
+        "Review providers",
+        "Check provider setup, health, credentials, and safe diagnostics.",
+    ),
+    "skill_registry_packages": (
+        "Manage skills",
+        "Review available tools, tenant installation state, and readiness.",
+    ),
+    "agent_tests": (
+        "Open test bench",
+        "Launch safe workflow tests and review current evidence.",
+    ),
+    "membership_administration": (
+        "Manage access",
+        "Review tenant members, invitations, roles, and audit history.",
+    ),
+    "usage_analytics": (
+        "Review usage",
+        "Inspect usage, cost attribution, exports, and drilldowns.",
+    ),
+    "telegram_configuration": (
+        "Open channels",
+        "Manage Telegram configuration, aliases, delivery, and briefing settings.",
+    ),
+}
+
+_HOME_WORKSPACE_COPY: dict[str, str] = {
+    "workflow_registry": "Draft, validate, publish, and share workflow versions.",
+    "operations_console": "Track platform health, queues, delivery, and exports.",
+    "run_search": "Inspect run timelines, failures, artifacts, and recovery signals.",
+    "reliability_dashboard": (
+        "Review quotas, leases, breakers, retries, and dead letters."
+    ),
+    "model_skill_config": "Manage routing policy and model-skill configuration.",
+    "model_providers": "Review provider catalog entries, health, and credentials.",
+    "prompt_library": "Manage prompts, safe previews, and version history.",
+    "agent_profiles": "Review runtime profiles, grants, and resolution evidence.",
+    "skill_registry_packages": "Publish, grant, install, and validate skills.",
+    "skill_registry_installations": "Review tenant skill installation and readiness.",
+    "skill_tool_diagnostics": (
+        "Run governed connector diagnostics and binding previews."
+    ),
+    "agent_tests": "Author suites and inspect test runs for workflow quality.",
+    "membership_administration": (
+        "Manage memberships, invitations, roles, and audit history."
+    ),
+    "usage_analytics": "Review usage, cost attribution, exports, and trends.",
+    "telegram_configuration": (
+        "Configure Telegram readiness, webhooks, aliases, and delivery."
+    ),
+    "briefing_preferences": (
+        "Manage briefing preferences, imports, exports, and revisions."
+    ),
+}
+
+
+def _console_home_from_shell(*, shell: AdminShellContext) -> ConsoleHomeEnvelope:
+    nav_items = _console_home_navigation_items(shell)
+    quick_actions = _console_home_quick_actions(nav_items)
+    attention_items = _console_home_attention(shell)
+    return ConsoleHomeEnvelope(
+        page_id="console-home",
+        title="Console Home",
+        description=(
+            "A scope-aware starting point for workflows, operations, governance, "
+            "skills, access, usage, and channels."
+        ),
+        scope=_scope_response(shell.active_scope),
+        updated_at=datetime.now(UTC),
+        metrics=(
+            ConsoleHomeMetric(
+                metric_id="workspace-count",
+                label="Workspaces",
+                value=str(len(nav_items)),
+                summary="Authorized destinations available in this scope.",
+                tone="success" if nav_items else "warning",
+            ),
+            ConsoleHomeMetric(
+                metric_id="attention-count",
+                label="Needs attention",
+                value=str(len(attention_items)),
+                summary="Current admin notices for the active scope.",
+                tone="warning" if attention_items else "success",
+            ),
+            ConsoleHomeMetric(
+                metric_id="scope-mode",
+                label="Scope mode",
+                value=shell.active_scope.scope_type.title(),
+                summary="Actions and data are constrained by the selected scope.",
+                tone="info",
+            ),
+        ),
+        attention_items=attention_items
+        or (
+            ConsoleHomeAttentionItem(
+                item_id="no-active-notices",
+                title="No active notices",
+                summary="No admin notices are active for this scope.",
+                tone="success",
+            ),
+        ),
+        quick_actions=quick_actions,
+        workspaces=_console_home_workspaces(nav_items),
+        provenance=_provenance(
+            source_kind=ReactAdminSourceKind.COMPUTED_METADATA,
+            source_label="Authorized admin navigation",
+            source_detail=(
+                "Console Home is assembled from the current principal, scope, "
+                "and route visibility decisions."
+            ),
+        ),
+    )
+
+
+def _console_home_navigation_items(
+    shell: AdminShellContext,
+) -> tuple[ReactAdminNavigationItem, ...]:
+    by_id: dict[str, ReactAdminNavigationItem] = {}
+    for group in shell.navigation_groups:
+        response_group = _navigation_group_response(group, shell.active_scope)
+        for item in response_group.items:
+            if item.item_id == "home" or item.item_id not in _HOME_WORKSPACE_IDS:
+                continue
+            by_id.setdefault(item.item_id, item)
+    return tuple(by_id[item_id] for item_id in _HOME_WORKSPACE_IDS if item_id in by_id)
+
+
+def _console_home_quick_actions(
+    nav_items: tuple[ReactAdminNavigationItem, ...],
+) -> tuple[ConsoleHomeQuickAction, ...]:
+    by_id = {item.item_id: item for item in nav_items}
+    actions: list[ConsoleHomeQuickAction] = []
+    for item_id in _HOME_QUICK_ACTION_IDS:
+        item = by_id.get(item_id)
+        if item is None:
+            continue
+        label, summary = _HOME_ACTION_COPY.get(item.item_id, (item.label, item.group))
+        actions.append(
+            ConsoleHomeQuickAction(
+                action_id=item.item_id,
+                label=label,
+                summary=summary,
+                href=item.href,
+                group=item.group,
+            )
+        )
+    return tuple(actions[:8])
+
+
+def _console_home_workspaces(
+    nav_items: tuple[ReactAdminNavigationItem, ...],
+) -> tuple[ConsoleHomeWorkspace, ...]:
+    return tuple(
+        ConsoleHomeWorkspace(
+            workspace_id=item.item_id,
+            label=item.label,
+            summary=_HOME_WORKSPACE_COPY.get(
+                item.item_id,
+                f"Open {item.label} for the selected scope.",
+            ),
+            href=item.href,
+            group=item.group,
+            status_label=_home_status_label(item),
+            status_tone=_home_status_tone(item),
+        )
+        for item in nav_items
+    )
+
+
+def _console_home_attention(
+    shell: AdminShellContext,
+) -> tuple[ConsoleHomeAttentionItem, ...]:
+    chrome = _shell_chrome_response(shell)
+    return tuple(
+        ConsoleHomeAttentionItem(
+            item_id=notification.notification_id,
+            title=notification.title,
+            summary=notification.summary,
+            href=notification.href,
+            tone=notification.tone.value,
+        )
+        for notification in chrome.notifications
+        if notification.tone
+        in {
+            ReactAdminNotificationTone.WARNING,
+            ReactAdminNotificationTone.CRITICAL,
+        }
+    )
+
+
+def _home_status_label(item: ReactAdminNavigationItem) -> str:
+    if item.fallback_kind == ReactAdminFallbackKind.DISABLED:
+        return "Unavailable"
+    return "Available"
+
+
+def _home_status_tone(
+    item: ReactAdminNavigationItem,
+) -> Literal["neutral", "info", "success", "warning", "critical"]:
+    if item.fallback_kind == ReactAdminFallbackKind.DISABLED:
+        return "warning"
+    return "success"
+
+
 def _problem_detail(
     *,
     reason: AdminProblemReason,
@@ -4887,7 +5178,11 @@ def _navigation_item_response(
     href = safe_redirect_target(item.href, fallback="/admin")
     route_surface_key = item.route_surface_key
     fallback_kind = ReactAdminFallbackKind.REACT
-    if item.admin_area == "workflows":
+    if item.admin_area == "home":
+        href = _with_optional_tenant_query(REACT_MOUNT_PATH, active_scope)
+        route_surface_key = "GET:/admin/app"
+        fallback_kind = ReactAdminFallbackKind.REACT
+    elif item.admin_area == "workflows":
         href = _with_optional_tenant_query(REACT_WORKFLOWS_PATH, active_scope)
         route_surface_key = "GET:/admin/app/workflows"
         fallback_kind = ReactAdminFallbackKind.REACT
@@ -4911,7 +5206,7 @@ def _navigation_item_response(
         href = _with_optional_tenant_query(REACT_TEST_BENCH_PATH, active_scope)
         route_surface_key = "GET:/admin/app/test-bench"
         fallback_kind = ReactAdminFallbackKind.REACT
-    elif item.admin_area == "memberships":
+    elif item.admin_area in {"memberships", "membership_administration"}:
         href = _with_optional_tenant_query(REACT_MEMBERSHIPS_PATH, active_scope)
         route_surface_key = "GET:/admin/app/memberships"
         fallback_kind = ReactAdminFallbackKind.REACT
@@ -4989,14 +5284,14 @@ def _shell_chrome_response(shell: AdminShellContext) -> ReactAdminShellChrome:
         ),
         notifications=(
             ReactAdminShellNotification(
-                notification_id="jinja-fallbacks-active",
+                notification_id="admin-workspace-ready",
                 tone=ReactAdminNotificationTone.INFO,
-                title="Existing pages remain active",
+                title="Admin workspace ready",
                 summary=(
-                    "Domain pages still open through the authorized console "
-                    "until their admin migration checks pass."
+                    "Use authorized workspaces to manage workflows, operations, "
+                    "governance, skills, access, usage, and channels."
                 ),
-                href="/admin",
+                href=REACT_MOUNT_PATH,
             ),
         ),
         states=_common_shell_states(),

@@ -14,6 +14,7 @@ def test_openapi_contains_react_admin_contracts() -> None:
 
     assert "/admin/app" in schema["paths"]
     assert "/admin/app/bootstrap.json" in schema["paths"]
+    assert "/admin/app/home.json" in schema["paths"]
     assert "/admin/app/config.json" in schema["paths"]
     assert "/admin/app/manifest.json" in schema["paths"]
     assert "/admin/app/search.json" in schema["paths"]
@@ -160,6 +161,7 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "/admin/app/operations/runs/{workflow_run_id}.json" in schema["paths"]
     assert "/admin/app/operations/export" in schema["paths"]
     assert "ReactAdminBootstrap" in schema["components"]["schemas"]
+    assert "ConsoleHomeEnvelope" in schema["components"]["schemas"]
     assert "LocalLoginEnvelope" in schema["components"]["schemas"]
     assert "ReactAdminPrincipal" in schema["components"]["schemas"]
     assert "ReactAdminShellChrome" in schema["components"]["schemas"]

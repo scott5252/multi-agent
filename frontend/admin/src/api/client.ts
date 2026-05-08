@@ -30,6 +30,7 @@ import {
   assertMutationResult,
   assertOperationsWorkbenchEnvelope,
   assertLocalLoginEnvelope,
+  assertConsoleHomeEnvelope,
   assertReactAdminBootstrap,
   assertReactAdminCommandSearch,
   assertRunStatusSummary,
@@ -66,6 +67,7 @@ import {
   type BuilderMutationResult,
   type CallbackRegistrationRequest,
   type CallbackRegistrationResponse,
+  type ConsoleHomeEnvelope,
   type GovernanceDashboard,
   type GovernanceMutationResult,
   type MembershipAccessHistoryList,
@@ -191,6 +193,20 @@ export async function fetchLocalLoginEnvelope(
     throw new Error(detail);
   }
   return assertLocalLoginEnvelope(await response.json());
+}
+
+export async function fetchConsoleHome(
+  homeUrl: string,
+): Promise<ConsoleHomeEnvelope> {
+  const response = await fetch(homeUrl, {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertConsoleHomeEnvelope(await response.json());
 }
 
 export interface SavedFilterEnvelope {
