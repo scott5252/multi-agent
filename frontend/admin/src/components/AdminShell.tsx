@@ -1,5 +1,6 @@
 import type { ReactAdminBootstrap } from "../api/generated/reactAdminApi";
 import { ScopeSummary } from "./ScopeSummary";
+import { isNavigationItemActive } from "./shell/navigationState";
 
 interface AdminShellProps {
   bootstrap: ReactAdminBootstrap;
@@ -19,12 +20,12 @@ export function AdminShell({ bootstrap }: AdminShellProps) {
               <h2>{group.label}</h2>
               {group.items.map((item) => (
                 <a
-                  className={item.active ? "nav-item active" : "nav-item"}
+                  className={isNavigationItemActive(item) ? "nav-item active" : "nav-item"}
                   href={item.href}
                   key={item.item_id}
                 >
                   <span>{item.label}</span>
-                  <small>{item.fallback_kind === "jinja" ? "Retired link" : "Admin"}</small>
+                  {item.fallback_kind === "jinja" ? <small>Retired link</small> : null}
                 </a>
               ))}
             </section>

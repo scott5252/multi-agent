@@ -1,6 +1,6 @@
 # Design Reviewer Workflow Example
 
-Review date: 2026-05-07
+Review date: 2026-05-08
 
 This file documents how to set up and develop a "Design Reviewer Council"
 scenario against the current `multi-agent-platform` codebase. It follows the
@@ -37,6 +37,9 @@ Current support is strongest for:
 - prompt/profile/provider governance
 - safe audit, redaction, artifact references, and test-bench evidence
 - manual approval pauses when a design needs human resolution
+- live repository/service-backed Admin setup views, backend-owned provenance,
+  truthful empty states, live-only route guardrails, and product-facing Admin
+  terminology
 
 The main production gaps are:
 
@@ -77,6 +80,18 @@ The scenario setup below is grounded in these current code areas:
 - `specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/plan.md`
 - `specs/046-user-facing-run-ui-react-port-and-jinja-removal/plan.md`
 - `specs/047-jinja-infrastructure-decommission/plan.md`
+- `specs/048-live-data-inventory-and-mock-guardrails/plan.md`
+- `specs/049-react-contract-provenance-and-sample-route-retirement/plan.md`
+- `specs/050-workflow-react-live-data/plan.md`
+- `specs/051-governance-react-live-data/plan.md`
+- `specs/052-skill-lifecycle-react-live-data/plan.md`
+- `specs/053-test-bench-react-live-data/plan.md`
+- `specs/054-membership-and-access-react-live-data/plan.md`
+- `specs/055-channels-telegram-briefing-react-live-data/plan.md`
+- `specs/056-usage-react-live-data/plan.md`
+- `specs/057-operations-and-run-debug-react-live-data/plan.md`
+- `specs/058-live-only-ui-decommission-gate/plan.md`
+- `specs/059-admin-ui-transitional-react-label-removal/plan.md`
 - `src/multi_agent_platform/api/schemas/workflow_registry.py`
 - `src/multi_agent_platform/admin/workflow_registry/validation.py`
 - `src/multi_agent_platform/admin/workflow_registry/publish_gate.py`
@@ -90,15 +105,26 @@ The scenario setup below is grounded in these current code areas:
 - `src/multi_agent_platform/testing/agent_bench/*`
 - `src/multi_agent_platform/api/routers/admin_agent_tests.py`
 - `src/multi_agent_platform/api/routers/admin_react.py`
+- `src/multi_agent_platform/admin/migration_hardening/live_data_inventory.py`
 - `frontend/admin/src/components/workflows/*`
 - `frontend/admin/src/components/governance/*`
 - `frontend/admin/src/components/testBench/*`
 
-Specs `038` through `047` make the React interface the only browser
-administration surface. Older browser URLs are compatibility redirects or safe
-non-Jinja responses, and the runtime no longer includes server-rendered Jinja
-templates or a direct `jinja2` dependency. The design reviewer scenario should
-therefore be validated only through React workspaces and JSON/API contracts.
+Specs `038` through `047` make the Admin browser implementation the only
+browser administration surface. Older browser URLs are compatibility redirects
+or safe non-Jinja responses, and the runtime no longer includes server-rendered
+Jinja templates or a direct `jinja2` dependency. The design reviewer scenario
+should therefore be validated only through Admin workspaces and JSON/API
+contracts.
+
+Specs `048` through `059` make those browser workspaces live-data guarded and
+product-facing. Production Admin routes should not invent workflows, reviewers,
+test runs, usage rows, audit references, artifact references, or mutation
+success. They should return live durable data, allowed computed metadata, or
+truthful empty/denied/unavailable states with backend-owned provenance. Visible
+browser copy should say "Admin" or domain-specific terms; "React" should appear
+only where this document is discussing implementation details or developer-only
+migration evidence.
 
 ## Scenario To Build
 
@@ -193,20 +219,21 @@ Development handoff:
 
 | Scenario requirement | Current support | Codebase used | Implementable now |
 | --- | --- | --- | --- |
-| React admin setup for workflow authoring | The primary browser path is `/admin/app/workflows`; admins can author guided workflow drafts with roles, sub-agent roles, contracts, graph nodes, joins, validation, publish readiness, and revision history | `admin/workflow_builder.py`, `api/schemas/workflow_registry.py`, `frontend/admin/src/components/workflows/*` | Yes |
+| Admin setup for workflow authoring | The primary browser path is `/admin/app/workflows`; admins can author guided workflow drafts with roles, sub-agent roles, contracts, graph nodes, joins, validation, publish readiness, and revision history from live workflow records | `admin/workflow_builder.py`, `admin/workflow_registry/*`, `api/schemas/workflow_registry.py`, `frontend/admin/src/components/workflows/*` | Yes |
 | Lead and reviewer role modeling | Workflow roles support `agent` and `subagent` role kinds, prompt/profile references, output contracts, skill bindings, handoff notes, and graph node references | `api/schemas/workflow_registry.py` | Yes |
 | Parallel reviewer fan-out | Graph execution schedules ready role nodes in parallel waves with durable run steps and timeline events | `runtime/orchestration/graph_execution.py`, `workers/orchestration.py` | Yes for deterministic role-node QA |
 | Three-of-four or four-of-five quorum | Join policies support strategy `quorum` with `quorum_count`; validation checks positive quorum values | `admin/workflow_registry/validation.py`, `runtime/orchestration/graph_execution.py` | Yes |
 | Manual resolution when reviewers disagree | Join policies can use `manual_resolution`, and approval nodes can pause workflow execution | `api/schemas/workflow_registry.py`, `runtime/orchestration/graph_execution.py` | Yes |
 | Structured design and review contracts | Workflow draft documents support JSON-schema-backed contracts for workflow input, handoff, artifact, approval, failure, and data contracts | `api/schemas/workflow_registry.py` | Yes |
-| Prompt and runtime profile governance | Prompt, profile, provider, routing, policy, and provenance surfaces exist in the governance workspace | `prompts/*`, `agents/*`, `model_providers/*`, `frontend/admin/src/components/governance/*` | Yes |
+| Prompt and runtime profile governance | Prompt, profile, provider, routing, policy, gateway diagnostic, and provenance surfaces exist as live governance projections | `admin/governance.py`, `prompts/*`, `agents/*`, `model_providers/*`, `frontend/admin/src/components/governance/*` | Yes |
 | Live model-backed reviewer agents | Model provider gateway and live credential resolution exist, but graph role nodes default to deterministic execution | `model_providers/gateway.py`, `model_providers/secrets.py`, `runtime/orchestration/graph_roles.py` | Needs development |
 | Durable design review artifacts | Runtime step outputs and artifact references exist, but there is no purpose-built design review table or service yet | `runtime/orchestration/*`, `testing/agent_bench/*`, `storage/*` | Partially |
 | Iteration loop until quorum | One review round can run as an acyclic graph. Repeated rounds should be coordinated as separate workflow runs because graph execution asserts acyclic plans | `runtime/orchestration/graph_execution.py` | Needs coordinator development |
-| Review evidence and QA gates | Test bench suites, runs, artifacts, and publish gate evidence are available and can validate the review workflow itself | `testing/agent_bench/*`, `admin/workflow_registry/publish_gate.py`, `api/routers/admin_agent_tests.py` | Yes |
-| Browser review surface | Existing workflow builder, governance, test bench, operations, and migration workspaces can administer the pieces; a dedicated design-review workspace would be additive | `frontend/admin/src/*`, `api/routers/admin_react.py` | Partially |
+| Review evidence and QA gates | Test bench suites, cases, runs, artifacts, and publish gate evidence are live repository-backed and can validate the review workflow itself | `testing/agent_bench/*`, `testing/agent_bench/react_test_bench.py`, `admin/workflow_registry/publish_gate.py`, `api/routers/admin_agent_tests.py` | Yes |
+| Browser review surface | Existing workflow builder, governance, test bench, operations, and migration workspaces can administer the pieces with live-data provenance; a dedicated design-review workspace would be additive | `frontend/admin/src/*`, `api/routers/admin_react.py`, `admin/migration_hardening/live_data_inventory.py` | Partially |
 | Redaction and tenant isolation | Existing platform conventions require safe summaries, artifact references, tenant guards, and no raw prompts, completions, secrets, connector payloads, or unauthorized tenant data in UI or QA artifacts | `auth/*`, `audit/*`, `model_providers/redaction.py`, `runtime/orchestration/graph_redaction.py` | Yes |
-| React-only browser routing | React workspaces are the canonical browser interface; old admin and run links must redirect or alias to React without rendering server templates | `api/routers/admin_react.py`, `api/routers/auth.py`, `api/routers/web_run_ui.py`, `frontend/admin/src/App.tsx` | Yes |
+| Live-data and terminology guardrails | Production Admin routes must not expose deterministic reviewer/demo records, sample route data, or transitional "React" product labels; migration evidence scans source, built assets, route responses, visible copy, empty states, and seeded states | `admin/migration_hardening/live_data_inventory.py`, `admin/migration_hardening/react_migration_hardening.py`, `api/routers/admin_react.py` | Yes |
+| Browser routing | Admin workspaces are the canonical browser interface; old admin and run links must redirect or alias into Admin without rendering server templates | `api/routers/admin_react.py`, `api/routers/auth.py`, `api/routers/web_run_ui.py`, `frontend/admin/src/App.tsx` | Yes |
 
 ## Recommended Workflow Shape
 
@@ -499,7 +526,7 @@ Terminal 2, optional for DB-backed orchestration work:
 uv run python -m multi_agent_platform.workers.main
 ```
 
-Open the React admin console:
+Open the Admin console:
 
 ```text
 http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app
@@ -772,6 +799,8 @@ Browser validation should cover:
 
 - local-principal login
 - tenant-scoped design review session creation
+- live-data empty states before seeded design review records exist
+- seeded-state projections after repository-backed design review records exist
 - prompt/profile/provider readiness
 - five-reviewer round
 - four-reviewer round
@@ -784,6 +813,8 @@ Browser validation should cover:
 - cross-tenant denial
 - redaction sweep for raw prompts, completions, secrets, credential values,
   private payloads, memory contents, unauthorized run data, and raw tool payloads
+- visible-copy sweep for product-facing Admin terminology, with "React" limited
+  to implementation context or developer-only migration evidence
 
 ## Development Recommendation
 
@@ -799,8 +830,10 @@ The safest first milestone is:
    acyclic review-round runs.
 4. Add the model-backed role executor behind an explicit safe execution mode.
 5. Add a React design-review workspace only after the backend contracts and
-   deterministic QA path are stable.
+   deterministic QA path are stable, and make that workspace live-data backed
+   from the first production route.
 
 This matches the project's current architecture: contract-first, tenant-scoped,
-redaction-safe, auditable, deterministic in local QA, and capable of later
-switching to governed live model calls when provider policy allows it.
+redaction-safe, live-data guarded, auditable, deterministic in local QA, and
+capable of later switching to governed live model calls when provider policy
+allows it.

@@ -5,6 +5,7 @@ import html
 import json
 from datetime import UTC, datetime
 from typing import Annotated, Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -4868,7 +4869,11 @@ def _navigation_group_response(
     active_scope: AdminScope,
 ) -> ReactAdminNavigationGroup:
     return ReactAdminNavigationGroup(
-        label=sanitize_text(group.label, fallback="Navigation", max_length=80),
+        label=_static_navigation_text(
+            group.label,
+            fallback="Navigation",
+            max_length=80,
+        ),
         items=tuple(
             _navigation_item_response(item, active_scope) for item in group.items
         ),
@@ -4895,7 +4900,7 @@ def _navigation_item_response(
         "skill_registry_installations",
         "skill_execution",
     }:
-        href = _with_optional_tenant_query(REACT_SKILLS_PATH, active_scope)
+        href = _with_optional_tenant_query(href, active_scope)
         route_surface_key = "GET:/admin/app/skills"
         fallback_kind = ReactAdminFallbackKind.REACT
     elif item.admin_area == "operations":
@@ -4915,13 +4920,21 @@ def _navigation_item_response(
         route_surface_key = "GET:/admin/app/usage"
         fallback_kind = ReactAdminFallbackKind.REACT
     elif item.admin_area in {"telegram_configuration", "briefing_preferences"}:
-        href = _with_optional_tenant_query(REACT_CHANNELS_PATH, active_scope)
+        href = _with_optional_tenant_query(href, active_scope)
         route_surface_key = "GET:/admin/app/channels"
         fallback_kind = ReactAdminFallbackKind.REACT
     return ReactAdminNavigationItem(
         item_id=item.item_id,
-        label=sanitize_text(item.label, fallback="Destination", max_length=80),
-        group=sanitize_text(item.group, fallback="Navigation", max_length=80),
+        label=_static_navigation_text(
+            item.label,
+            fallback="Destination",
+            max_length=80,
+        ),
+        group=_static_navigation_text(
+            item.group,
+            fallback="Navigation",
+            max_length=80,
+        ),
         href=href,
         route_surface_key=route_surface_key,
         required_scope=ReactAdminRequiredScope(item.required_scope),
@@ -4930,6 +4943,20 @@ def _navigation_item_response(
         active=item.active,
         fallback_kind=fallback_kind,
     )
+
+
+def _static_navigation_text(
+    value: object,
+    *,
+    fallback: str,
+    max_length: int,
+) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return fallback
+    if len(text) > max_length:
+        return f"{text[: max_length - 1].rstrip()}..."
+    return text
 
 
 def _shell_chrome_response(shell: AdminShellContext) -> ReactAdminShellChrome:
@@ -5160,7 +5187,12 @@ def _command_results(
 def _with_tenant_query(path: str, scope: AdminScope) -> str:
     if scope.scope_type != "tenant" or scope.tenant_id is None:
         return path
-    return f"{path}?tenant_id={scope.tenant_id}"
+    parsed = urlsplit(path)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query["tenant_id"] = str(scope.tenant_id)
+    return urlunsplit(
+        (parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment)
+    )
 
 
 def _with_optional_tenant_query(path: str, scope: AdminScope | None) -> str:

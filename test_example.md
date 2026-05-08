@@ -1,6 +1,6 @@
 # Daily Intelligence Briefing Test Example
 
-Review date: 2026-05-07
+Review date: 2026-05-08
 
 This file documents how to set up the "Daily Intelligence Briefing" scenario
 from `/Users/scottcornell/Downloads/multi-agent-testbed.md` against the current
@@ -31,6 +31,18 @@ the original test example:
 - `specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity`
 - `specs/046-user-facing-run-ui-react-port-and-jinja-removal`
 - `specs/047-jinja-infrastructure-decommission`
+- `specs/048-live-data-inventory-and-mock-guardrails`
+- `specs/049-react-contract-provenance-and-sample-route-retirement`
+- `specs/050-workflow-react-live-data`
+- `specs/051-governance-react-live-data`
+- `specs/052-skill-lifecycle-react-live-data`
+- `specs/053-test-bench-react-live-data`
+- `specs/054-membership-and-access-react-live-data`
+- `specs/055-channels-telegram-briefing-react-live-data`
+- `specs/056-usage-react-live-data`
+- `specs/057-operations-and-run-debug-react-live-data`
+- `specs/058-live-only-ui-decommission-gate`
+- `specs/059-admin-ui-transitional-react-label-removal`
 
 ## Implementation Verdict
 
@@ -39,9 +51,14 @@ DB-backed, and deterministic QA version of the scenario:
 
 - tenant setup
 - local-principal admin login
-- React-only admin shell and migration decommission dashboard
-- React workspaces for governance, skills, workflows, test bench, usage,
+- Admin shell and migration decommission dashboard
+- Admin workspaces for governance, skills, workflows, test bench, usage,
   memberships, operations, channels, Telegram, and briefing preferences
+- backend-owned provenance, truthful empty states, live-only route guardrails,
+  sample route retirement, and product-facing Admin terminology
+- live repository/service-backed Admin projections for workflows, governance,
+  skill lifecycle, test bench, memberships, channels, usage, operations, and
+  run debug
 - model provider records
 - live model provider credential resolution through safe secret references
 - prompt library records
@@ -60,7 +77,8 @@ DB-backed, and deterministic QA version of the scenario:
   delivery-attempt records
 - Telegram natural-language alias handling for `Morning briefing`, with
   deterministic result formatting and mockable or real Bot API delivery
-- audit, operations, usage, and test evidence views
+- audit, operations, usage, live-data gate, transitional-label gate, and test
+  evidence views
 
 The current product cannot fully implement the live scenario end to end yet.
 Specifically, the Daily Briefing connector adapters currently provide governed
@@ -71,7 +89,8 @@ runtime evidence, but it does not yet synthesize the sample briefing from live
 external tool results through a fully wired prompt/model/tool agent loop.
 Telegram alias delivery is implemented, but the deterministic local path
 formats a safe completion summary instead of waiting for live external-agent
-synthesis.
+synthesis. The newer live-data Admin updates affect browser setup and
+operational evidence; they do not change that runtime limitation.
 
 Use the setup below for a current-code demonstration and QA harness. Use the
 spec-specific QA documents under `specs/020` through `specs/025` for deeper
@@ -160,6 +179,18 @@ The scenario setup below is grounded in these current code areas:
 - `specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/*`
 - `specs/046-user-facing-run-ui-react-port-and-jinja-removal/*`
 - `specs/047-jinja-infrastructure-decommission/*`
+- `specs/048-live-data-inventory-and-mock-guardrails/*`
+- `specs/049-react-contract-provenance-and-sample-route-retirement/*`
+- `specs/050-workflow-react-live-data/*`
+- `specs/051-governance-react-live-data/*`
+- `specs/052-skill-lifecycle-react-live-data/*`
+- `specs/053-test-bench-react-live-data/*`
+- `specs/054-membership-and-access-react-live-data/*`
+- `specs/055-channels-telegram-briefing-react-live-data/*`
+- `specs/056-usage-react-live-data/*`
+- `specs/057-operations-and-run-debug-react-live-data/*`
+- `specs/058-live-only-ui-decommission-gate/*`
+- `specs/059-admin-ui-transitional-react-label-removal/*`
 
 ## Scenario To Build
 
@@ -219,19 +250,20 @@ SUGGESTED FOCUS
 
 | Scenario requirement | Current support | Codebase used | Implementable now |
 | --- | --- | --- | --- |
-| React admin scenario setup | Primary admin setup uses `/admin/app` with domain workspaces for governance, skills, workflows, test bench, channels, usage, operations, migration evidence, and user run review; older browser URLs redirect or alias to React without Jinja rendering | `api/routers/admin_react.py`, `frontend/admin/src/*`, `admin/migration_hardening/*`, `api/routers/web_run_ui.py` | Yes |
+| Admin scenario setup | Primary browser setup uses `/admin/app` with domain workspaces for governance, skills, workflows, test bench, channels, usage, operations, migration evidence, and user run review; older browser URLs redirect or alias to Admin without Jinja rendering; product-facing labels no longer expose implementation-era "React" wording | `api/routers/admin_react.py`, `frontend/admin/src/*`, `admin/migration_hardening/*`, `api/routers/web_run_ui.py` | Yes |
 | Telegram account linking | Admin-issued link tokens and consumed identity links persist in PostgreSQL; the legacy channel link-token endpoint remains in-memory | `channels/telegram.py`, `admin/telegram_config/service.py`, `db/repositories/telegram_config.py`, `db/repositories/channels.py` | Yes |
 | Telegram trigger | Exact-match tenant aliases such as `Morning briefing` route to a published workflow version; slash commands such as `/run` still work | `channels/telegram.py`, `admin/telegram_config/service.py`, `api/routers/admin_telegram.py` | Yes |
 | Telegram bot reply | Alias-triggered results are formatted and sent through a mockable or real `sendMessage` client; delivery attempts persist with safe fingerprints | `channels/telegram_delivery.py`, `channels/telegram.py`, `api/routers/telegram_webhook.py` | Yes with configured Bot API secret or test-injected mock client |
-| Workflow authoring | Browser/API workflow draft model supports roles, subagent roles, nodes, edges, joins, contracts, skills, test requirements | `api/schemas/workflow_registry.py` | Yes |
+| Workflow authoring | Browser/API workflow draft model supports roles, subagent roles, nodes, edges, joins, contracts, skills, test requirements, and live registry/builder projections over durable workflow records | `api/schemas/workflow_registry.py`, `admin/workflow_builder.py`, `admin/workflow_registry/*` | Yes |
 | Parallel sub-agent execution | DB-backed graph executor loads published bundle documents, schedules ready nodes in waves, runs independent scout branches concurrently, evaluates joins, and records timeline/checkpoint/handoff evidence | `runtime/orchestration/graph_execution.py`, `workers/orchestration.py` | Yes for deterministic role-node QA |
 | Runtime model calls | `ModelGateway` supports OpenAI and local OpenAI-compatible chat completions with per-call secret resolution through configured secret providers | `model_providers/gateway.py`, `model_providers/probes.py`, `model_providers/secrets.py` | Yes for gateway/probe paths; graph role nodes still use deterministic execution by default |
 | Prompt/profile setup | Prompt and agent runtime profile services exist | `prompts/`, `agents/` | Yes |
-| Skill registry | Skill manifests, tenant grants, installs, credentials, smoke/readiness metadata exist; admin service is in-memory | `admin/skill_registry/` | Yes for metadata demos |
+| Skill lifecycle | Skill manifests, tenant grants, installs, credentials, smoke/readiness metadata, connector diagnostics, binding eligibility, quarantine, withdrawal, and audit evidence are projected from durable skill registry records in `/admin/app/skills`; some older direct registry API paths still use a process-local service facade | `admin/skill_lifecycle.py`, `admin/skill_registry/`, `db/repositories/skill_registry.py` | Yes |
 | Daily Briefing tool connectors | `SkillExecutionGateway` exposes read-only Calendar, Gmail, news, weather, and commute adapter contracts, mock fixtures, policy checks, credential summaries, redaction, and diagnostics | `skill_execution/*`, `runtime/skill_tools.py`, `api/routers/admin_skill_execution.py` | Yes for mock/local diagnostics; not yet real external provider reads |
-| Test bench | Durable suite/case/run tables and mock sandbox execution exist | `testing/agent_bench/`, `db/models/agent_tests.py` | Yes |
+| Test bench | Durable suite/case/assertion/run/run-step/artifact tables, mock sandbox execution, publish-gate evidence, launcher metadata, progress, diagnostics, and audit projections exist | `testing/agent_bench/`, `db/models/agent_tests.py`, `testing/agent_bench/react_test_bench.py` | Yes |
 | Publish gate test evidence | Workflow publish gate evaluation queries current same-tenant test-bench evidence for the active draft revision; legacy `latest_result_status` remains compatibility metadata | `admin/workflow_registry/service.py`, `admin/workflow_registry/publish_gate.py`, `testing/agent_bench/service.py` | Yes |
 | User preferences | Tenant users can save, export, import, summarize, and resolve Daily Briefing preference profiles with immutable revisions and safe summaries | `admin/briefing_preferences/*`, `runtime/briefing_preferences.py`, `api/routers/admin_briefing_preferences.py` | Yes |
+| Live-data guardrails | Production Admin route contracts include backend-owned provenance or truthful empty states, scanner evidence blocks fixture markers, sample patterns are not production data, and live-only plus transitional-label gates are available in migration evidence | `admin/migration_hardening/live_data_inventory.py`, `admin/migration_hardening/react_migration_hardening.py`, `api/routers/admin_react.py` | Yes |
 
 ## Spec 020-025 Updates Incorporated
 
@@ -266,6 +298,23 @@ SUGGESTED FOCUS
 | 045 | Channels, memberships, access, Telegram, and briefing preferences should be React-only. | Verify `/admin/app/channels` and `/admin/app/memberships` cover old browser flows, saved filters, aliases, identities, delivery diagnostics, and preference admin. |
 | 046 | User-facing run UI should be React-only. | Verify `/runs` and `/runs/{run_id}` safely redirect or alias into `/admin/app/channels/runs`, and run start/status/timeline/result/action flows render in React. |
 | 047 | Final Jinja infrastructure decommission should be verified in `/admin/app/migration`. | Verify zero server-rendered inventory rows, runtime import scanners, removed template directory, removed legacy static assets, removed direct `jinja2` dependency, release rollback guidance, and React-only readiness evidence. |
+
+## Spec 048-059 Live Data And Product Terminology Updates Incorporated
+
+| Spec | Change to this test example | Detail to verify |
+| --- | --- | --- |
+| 048 | Scenario setup must trust live-data inventory and guardrail evidence, not deterministic production fixture rows. | Verify production Admin route handlers, projection builders, frontend source, generated contracts, built assets, and route responses classify as live data, allowed computed metadata, or truthful empty/denied/unavailable state. |
+| 049 | Backend-owned provenance and empty-state metadata are now shared contract expectations, and `/admin/app/patterns` is no longer production sample data. | Verify Admin responses include source/empty metadata where relevant, production navigation excludes patterns, and frontend actions do not invent QA revision tokens or idempotency keys. |
+| 050 | Workflow setup views are live workflow registry projections. | Verify workflows, drafts, revisions, validation records, publish-gate evidence, graph documents, sharing state, and publish actions come from durable workflow services. |
+| 051 | Governance setup views are live provider, prompt, profile, routing, policy, gateway, and provenance projections. | Verify empty scopes are honest, seeded scopes match durable rows, provider probes and credential-reference changes remain platform-only, and prompt/credential details are redacted. |
+| 052 | Skill lifecycle setup views are live registry and gateway projections. | Verify package versions, tenant grants, installations, credential readiness, smoke tests, diagnostics, eligibility, quarantine/withdrawal, and audits match persisted evidence. |
+| 053 | Test-bench setup views are live suite, run, artifact, publish-gate, and audit projections. | Verify suite/case authoring, mock run launch, progress, diagnostics, artifacts, and current-revision publish evidence persist and refresh through backend services. |
+| 054 | Membership and access setup views are live identity, invitation, membership, grant, access decision, support override, and audit projections. | Verify masked identities, role-grant changes, invitation replay/conflict behavior, access history, and cross-tenant denials. |
+| 055 | Channel, Telegram, and briefing setup views are live config, alias, link-token, identity, delivery, webhook, run, notification, preference, and audit projections. | Verify link tokens are one-time visible, delivery diagnostics are bounded, and briefing preference summaries avoid raw personal values. |
+| 056 | Usage review is live usage-event and pricing evidence. | Verify dashboard totals, trends, drilldowns, cost confidence, attribution, reconciliation, and export requests derive from persisted usage and storage metadata. |
+| 057 | Operations and run debug are live operational evidence. | Verify health, pressure, run timeline, likely causes, reliability recovery, provider/channel/skill/usage evidence, queue state, and exports reflect live records or truthful empty states. |
+| 058 | The final live-only gate decommissions obsolete production mock/demo surfaces. | Verify empty and seeded route probes, built asset scans, seed requirements, fixture boundary documentation, and rollback guidance. |
+| 059 | Production-visible Admin copy no longer uses transitional "React" labels. | Verify shell titles, breadcrumbs, navigation, command/search labels, redirects, fallbacks, empty/error states, screenshots, and docs say "Admin" or domain terms unless the page is developer-only migration evidence. |
 
 ## Step-By-Step Setup With Current Code
 
@@ -382,7 +431,7 @@ Terminal 2, optional:
 uv run python -m multi_agent_platform.workers.main
 ```
 
-Open the React admin console:
+Open the Admin console:
 
 ```text
 http://127.0.0.1:8000/auth/local-login?redirect_to=/admin/app
@@ -1444,7 +1493,7 @@ Current status:
 - Policy checks evaluate installed skill version, allowed tool, outbound
   domains, read-only side-effect behavior, execution mode, credential
   availability, and credential tenant.
-- React admin diagnostics are available in `/admin/app/skills`; older skill
+- Admin diagnostics are available in `/admin/app/skills`; older skill
   execution browser URLs redirect to React or return safe non-Jinja responses.
 - Redaction removes raw email body fields, token-like strings, credential
   values, and sensitive URL query strings from summaries.
@@ -1589,33 +1638,38 @@ Primary QA references:
 - `specs/025-live-model-credential-resolution-for-gateway-calls/qa025_ui.md`
 - `specs/025-live-model-credential-resolution-for-gateway-calls/testing-instructions.md`
 
-### Specs 030-047 - React Admin Scenario Surface
+### Specs 030-059 - Admin Scenario Surface
 
 Current status:
 
 - `/admin/app/workflows` is the primary workflow builder for this scenario. It
-  renders backend-owned draft, graph, validation, publish, evidence, revision,
-  and JSON-preview contracts.
+  renders live backend-owned draft, graph, validation, publish, evidence,
+  revision, and JSON-preview contracts.
 - `/admin/app/governance` is the primary model provider, prompt, profile,
   routing, policy history, and provenance workspace. Provider probes and
-  credential-reference changes remain platform-admin-only.
+  credential-reference changes remain platform-admin-only and repository-backed.
 - `/admin/app/skills` is the primary skill lifecycle and connector diagnostics
-  workspace for Daily Briefing package/readiness evidence.
+  workspace for Daily Briefing package/readiness evidence from live skill
+  registry records.
 - `/admin/app/test-bench` is the primary suite, case, run, artifact, diagnostic,
-  and publish-gate evidence workspace.
+  and publish-gate evidence workspace over durable test bench records.
 - `/admin/app/channels` is the primary channel, Telegram, alias, link identity,
   delivery diagnostic, safe run status, and Daily Briefing preference workspace.
 - `/admin/app/usage` and `/admin/app/operations` provide usage/cost and
-  operational review for the scenario.
-- `/admin/app/migration` records React-only readiness, old-link compatibility
-  decisions, release rollback guidance, runtime scanner/dependency evidence,
-  and performance/accessibility/redaction/tenant-isolation evidence.
+  operational review for the scenario from live usage, runtime, provider,
+  channel, reliability, audit, and export evidence.
+- `/admin/app/migration` records decommission readiness, old-link compatibility
+  decisions, release rollback guidance, live-data inventory, live-only gate,
+  transitional-label gate, runtime scanner/dependency evidence, and
+  performance/accessibility/redaction/tenant-isolation evidence.
+- `/admin/app/patterns` is not a production sample-data route. Production Admin
+  setup should use domain workspaces and live seed data instead.
 
-Remaining limit: React migration hardening changes browser route ownership and
-removes the server-rendered Jinja stack; it does not make the Daily Briefing
-runtime consume live Calendar, Gmail, news, weather, or commute payloads. Old
-browser links should be tested as redirects or safe compatibility responses,
-not as template-backed pages.
+Remaining limit: Admin live-data hardening changes browser route ownership,
+source-of-truth projections, and migration evidence; it does not make the Daily
+Briefing runtime consume live Calendar, Gmail, news, weather, or commute
+payloads. Old browser links should be tested as redirects or safe compatibility
+responses, not as template-backed pages.
 
 Primary QA references:
 
@@ -1637,6 +1691,18 @@ Primary QA references:
 - `specs/045-channels-memberships-access-telegram-and-briefing-full-react-parity/qa045.md`
 - `specs/046-user-facing-run-ui-react-port-and-jinja-removal/qa046.md`
 - `specs/047-jinja-infrastructure-decommission/qa047.md`
+- `specs/048-live-data-inventory-and-mock-guardrails/qa048.md`
+- `specs/049-react-contract-provenance-and-sample-route-retirement/qa049.md`
+- `specs/050-workflow-react-live-data/qa050.md`
+- `specs/051-governance-react-live-data/qa051.md`
+- `specs/052-skill-lifecycle-react-live-data/qa052.md`
+- `specs/053-test-bench-react-live-data/qa053.md`
+- `specs/054-membership-and-access-react-live-data/qa054.md`
+- `specs/055-channels-telegram-briefing-react-live-data/qa055.md`
+- `specs/056-usage-react-live-data/qa056.md`
+- `specs/057-operations-and-run-debug-react-live-data/qa057.md`
+- `specs/058-live-only-ui-decommission-gate/qa058.md`
+- `specs/059-admin-ui-transitional-react-label-removal/qa059.md`
 
 ## Final Accuracy Review
 
@@ -1647,8 +1713,8 @@ credential references, prompts, profiles, skill package metadata, mock
 connector diagnostics, user briefing preferences, workflow drafts, current
 test-bench publish evidence, published bundles, DB graph execution evidence,
 Telegram aliases, persistent link state, update receipts, delivery attempts,
-channel results, React-only admin route coverage, old-link compatibility, and
-Jinja decommission evidence.
+channel results, Admin route coverage, old-link compatibility, live-data gate
+evidence, product-facing Admin terminology, and Jinja decommission evidence.
 
 The current repository still cannot produce the real sample Telegram briefing
 from live Google Calendar, Gmail, news, weather, and commute data. The remaining
@@ -1658,5 +1724,5 @@ delivery, and mock connector contracts, but the Daily Briefing path does not
 yet wire live external tool payloads through agent prompts/models into a final
 real-world synthesis. For reviewer QA, treat the sample briefing as the target
 product behavior and the current output as deterministic evidence that the
-governance, routing, safety, React administration, and orchestration scaffolding
-is in place.
+governance, routing, safety, Admin operation, live-data guardrails, and
+orchestration scaffolding are in place.

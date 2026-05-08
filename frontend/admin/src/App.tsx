@@ -122,7 +122,7 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
     );
   }
 
-  if (window.location.pathname === "/admin/app/governance") {
+  if (window.location.pathname.startsWith("/admin/app/governance")) {
     return (
       <AdminShell bootstrap={bootstrap}>
         <GovernancePage
@@ -132,7 +132,7 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
     );
   }
 
-  if (window.location.pathname === "/admin/app/skills") {
+  if (window.location.pathname.startsWith("/admin/app/skills")) {
     return (
       <AdminShell bootstrap={bootstrap}>
         <SkillLifecyclePage

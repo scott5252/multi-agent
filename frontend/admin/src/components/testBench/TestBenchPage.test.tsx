@@ -84,7 +84,7 @@ describe("TestBenchPage", () => {
     );
 
     await screen.findByText(
-      "Old run links now open React with backend-owned run evidence preserved.",
+      "Old run links now open Admin with backend-owned run evidence preserved.",
     );
 
     expect(fetch).toHaveBeenCalledWith(

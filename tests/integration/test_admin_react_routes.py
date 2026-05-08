@@ -792,14 +792,31 @@ def test_local_principal_react_admin_entry_and_bootstrap(
     assert payload["active_scope"]["label"] == "Acme"
     assert payload["feature_flags"]["react_admin_enabled"] is True
     assert payload["version"]["api_version"] == "admin-shell-2026-05"
-    workflow_nav = [
-        item
+    nav_by_area = {
+        item["admin_area"]: item
         for group in payload["navigation"]
         for item in group["items"]
-        if item["admin_area"] == "workflows"
-    ][0]
+    }
+    workflow_nav = nav_by_area["workflows"]
     assert workflow_nav["href"] == f"/admin/app/workflows?tenant_id={tenant_id}"
     assert workflow_nav["fallback_kind"] == "react"
+    assert nav_by_area["skill_registry"]["href"] == (
+        f"/admin/app/skills?tenant_id={tenant_id}"
+    )
+    assert nav_by_area["skill_registry_installations"]["href"] == (
+        f"/admin/app/skills/installations?tenant_id={tenant_id}"
+    )
+    assert nav_by_area["skill_execution"]["href"] == (
+        f"/admin/app/skills/diagnostics?tenant_id={tenant_id}"
+    )
+    assert nav_by_area["telegram_configuration"]["href"] == (
+        f"/admin/app/channels?panel=telegram&tenant_id={tenant_id}"
+    )
+    assert nav_by_area["briefing_preferences"]["href"] == (
+        f"/admin/app/channels?panel=briefing&tenant_id={tenant_id}"
+    )
+    assert nav_by_area["prompt_library"]["label"] == "Prompt Library"
+    assert any(group["label"] == "Prompt Runtime" for group in payload["navigation"])
     assert payload["shell"]["product_name"] == "Multi-Agent Admin"
     assert payload["shell"]["breadcrumbs"][0]["label"] == "Admin"
     assert payload["shell"]["command_results"]

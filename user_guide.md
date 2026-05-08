@@ -6,9 +6,9 @@ production-like installation. It is written for administrators and operators who
 do not write code every day, but it stays precise about the current system so
 that setup decisions are repeatable.
 
-This document reflects the repository state reviewed on May 7, 2026. It covers
-feature specifications 001 through 047, the Python code under
-`src/multi_agent_platform`, and the React admin workspace under
+This document reflects the repository state reviewed on May 8, 2026. It covers
+feature specifications 001 through 059, the Python code under
+`src/multi_agent_platform`, and the Admin browser implementation under
 `frontend/admin`.
 
 ## Before You Begin
@@ -31,7 +31,7 @@ The fastest path to a working system is:
 3. Use `AUTH_MODE=local_principal` for the first local setup.
 4. Start PostgreSQL with `docker compose up -d postgres`.
 5. Apply database migrations with `uv run alembic upgrade head`.
-6. Build the React admin assets from `frontend/admin`.
+6. Build the Admin browser assets from `frontend/admin`.
 7. Seed at least one tenant row.
 8. Start the API server.
 9. Open `/admin/app` through the local login screen.
@@ -41,9 +41,11 @@ The fastest path to a working system is:
 
 The platform is meant to be administered through the browser first. APIs are
 available for automation, but most setup steps can be completed through the
-React admin console at `/admin/app`. Older browser URLs are handled only as
-non-Jinja compatibility redirects or safe responses; the browser UI is
-React-only after Specs 038 through 047.
+Admin console at `/admin/app`. Older browser URLs are handled only as
+non-Jinja compatibility redirects or safe responses. After Specs 048 through
+059, production Admin routes are also live-data guarded: they must return
+authorized durable data, allowed computed system metadata, or truthful empty,
+denied, unavailable, or redirect states rather than sample records.
 
 ## Current Implementation Notes
 
@@ -56,14 +58,23 @@ audit/debug records, reliability records, and operations console projections.
 
 Some areas are intentionally lighter in the current code:
 
-- The React admin console is the primary browser entry for the migrated admin
+- The Admin console is the primary browser entry for the migrated management
   journeys. It is served by FastAPI at `/admin/app` from built Vite assets under
   `src/multi_agent_platform/web_admin/static/react`, and its browser contracts
   are generated from Pydantic schemas. Build or verify those assets before
   browser QA. Server-rendered Jinja pages, the template renderer, legacy
   one-off static files outside `static/react`, and the direct `jinja2`
   dependency have been removed. Old browser links should redirect or alias into
-  React without rendering templates.
+  Admin without rendering templates. User-facing labels now use product terms
+  such as "Admin"; "React" is reserved for implementation context and
+  developer-only migration evidence.
+- Production Admin JSON routes follow the live-only policy introduced in Specs
+  048 through 058. Workflow, governance, skill lifecycle, test bench,
+  memberships, channels, usage, operations, and run-debug workspaces should
+  project from durable repositories/services or show truthful empty, denied, or
+  unavailable states. The old sample patterns page is no longer a production
+  destination, and the migration dashboard exposes live-data inventory,
+  live-only route gate, and transitional-label gate evidence.
 - The `/runtime/runs` API is backed by a process-local runtime service in the
   public API facade. Durable runtime database models, repositories, graph
   execution, and worker code exist, but a run started only through that facade
@@ -75,17 +86,17 @@ Some areas are intentionally lighter in the current code:
   steps.
 - The `/runs` Web API channel service still has process-local pieces for some
   user-channel run state and rate windows. Browser access to `/runs` redirects
-  or aliases into the React run workspace under `/admin/app/channels/runs`.
+  or aliases into the Admin run workspace under `/admin/app/channels/runs`.
   Telegram command aliases, link token audits, linked identity records, webhook
   update receipts, and delivery attempts are PostgreSQL-backed, so Telegram
   linking, duplicate update replay, alias routing evidence, and final delivery
   diagnostics survive API restarts after migrations are applied.
-- The current skill registry admin router uses an in-memory service for package
-  and installation state even though skill registry database models and
-  repository patterns exist. Complete package publication, tenant grant,
-  installation, credential readiness, smoke-test, and eligibility-preview flows
-  in one API session unless your deployment replaces the in-memory service with
-  persistent storage.
+- The Admin skill lifecycle workspace projects packages, versions, tenant
+  grants, installations, readiness checks, smoke-test evidence, diagnostics,
+  binding eligibility, and audit records from persistent skill registry
+  repositories. Some legacy direct `/admin/skill-registry` API paths still use
+  a process-local `SkillRegistryService` facade, so use `/admin/app/skills` and
+  the repository-backed route family for production-like validation.
 - The SkillExecutionGateway provides governed read-only Daily Intelligence
   Briefing tool execution for calendar events, Gmail messages, news search,
   weather forecasts, and commute lookup. Local QA and diagnostics use
@@ -240,6 +251,50 @@ areas:
   server template directory, legacy static assets, and direct `jinja2`
   dependency removed, with React-only readiness evidence in
   `/admin/app/migration`.
+- Spec 048, live data inventory and mock guardrails: production Admin route,
+  backend projection, frontend source, generated contract, and built asset
+  scanner with live-only policy, computed metadata allowlists, route response
+  scans, and reviewer-safe migration evidence.
+- Spec 049, React contract provenance and sample route retirement:
+  backend-owned provenance and empty-state metadata, `/admin/app/patterns`
+  removed or development-gated outside production, and production frontend
+  actions cleared of hardcoded QA revision or idempotency defaults.
+- Spec 050, workflow React live data: workflow registry and builder projections
+  replaced with live workflow registry, validation, publish-gate, sharing,
+  artifact, and test-bench evidence services.
+- Spec 051, governance React live data: provider, credential-reference, prompt,
+  runtime profile, routing, policy history, gateway diagnostic, and run
+  provenance panels backed by durable governance services.
+- Spec 052, skill lifecycle React live data: package publication, tenant grant,
+  installation, credential readiness, smoke-test, connector diagnostic,
+  binding eligibility, quarantine, withdrawal, and audit panels backed by live
+  skill registry and gateway evidence.
+- Spec 053, test bench React live data: suites, cases, assertions, runs, run
+  steps, artifacts, publish-gate evidence, launcher metadata, diagnostics, and
+  audit panels backed by durable test bench services.
+- Spec 054, membership and access React live data: principal identities,
+  invitations, tenant memberships, role grants, access decisions, support
+  override state, status actions, history, and audit panels backed by live
+  membership/access repositories.
+- Spec 055, channels, Telegram, and briefing React live data: channel
+  readiness, Telegram config, aliases, link-token audit, linked identities,
+  webhook receipts, delivery attempts, channel runs, notifications, and Daily
+  Briefing preference summaries backed by durable records.
+- Spec 056, usage React live data: usage totals, trends, rollups, drilldowns,
+  pricing confidence, attribution, reconciliation, and export requests backed
+  by live usage events, pricing versions, and storage metadata.
+- Spec 057, operations and run debug React live data: operational health,
+  pressure, run-debug timelines, likely causes, reliability recovery, exports,
+  provider/channel/skill/usage evidence, and worker/queue state backed by live
+  operations and runtime sources.
+- Spec 058, live-only UI decommission gate: final production Admin route
+  inventory, empty and seeded route probes, built asset scans, obsolete
+  deterministic module retirement, seed requirements, fixture boundaries, and
+  rollback guidance.
+- Spec 059, Admin UI transitional React label removal: user-facing Admin
+  labels, breadcrumbs, titles, command/search text, redirects, fallback copy,
+  docs, screenshots, and visible-text scanner evidence that reserve "React" for
+  implementation or developer-only migration context.
 
 ## 1. Overview
 
@@ -252,7 +307,7 @@ subworkflows, input and output contracts, and publish-time validation rules.
 The system has several major capabilities:
 
 - Tenant-aware authentication and authorization with Auth0 or local principals.
-- A React admin console with workflow, access, reliability, operations, model,
+- An Admin console with workflow, access, reliability, operations, model,
   prompt, profile, skill, test bench, usage, channel/Telegram, migration, and
   briefing preference workspaces.
 - Workflow registry and workflow builder pages for creating draft workflows,
@@ -294,6 +349,10 @@ The system has several major capabilities:
   and CSV exports.
 - Token usage and cost analytics for LLM usage events captured through the
   model gateway.
+- Live-data guardrails for production Admin routes, including route inventory,
+  source and built-asset scans, backend-owned provenance, truthful empty states,
+  sample route retirement, live-only gate evidence, and transitional label
+  cleanup.
 
 ### What A Complete Local Setup Includes
 
@@ -301,7 +360,7 @@ A complete local setup has:
 
 - PostgreSQL running.
 - Migrations applied.
-- React admin dependencies installed and built.
+- Admin browser dependencies installed and built.
 - At least one active tenant.
 - One platform administrator principal.
 - One tenant administrator principal.
@@ -349,7 +408,7 @@ Apply migrations:
 uv run alembic upgrade head
 ```
 
-Build React admin assets:
+Build Admin browser assets:
 
 ```bash
 cd frontend/admin
@@ -419,12 +478,13 @@ Useful health pages:
 
 ### Main Admin Areas
 
-After login, start at `/admin/app`. The React admin console groups the system
+After login, start at `/admin/app`. The Admin console groups the system
 by operational area while preserving backend authorization, active scope,
 breadcrumbs, search, common states, and generated browser contracts. Older
 admin browser paths are compatibility redirects or safe non-Jinja responses.
 
-Build the React assets whenever frontend code or generated contracts change:
+Build the Admin browser assets whenever frontend code or generated contracts
+change:
 
 ```bash
 cd frontend/admin
@@ -435,9 +495,10 @@ cd ../..
 
 Important browser pages:
 
-- `/admin/app` - React admin home and authorized workspace shell.
-- `/admin/app/migration` - React-only readiness, old-link compatibility
-  decisions, release rollback guidance, runtime scanner/dependency evidence,
+- `/admin/app` - Admin home and authorized workspace shell.
+- `/admin/app/migration` - decommission readiness, old-link compatibility
+  decisions, release rollback guidance, live-data inventory, live-only route
+  gate, transitional-label gate, runtime scanner/dependency evidence,
   performance, accessibility, redaction, and tenant-isolation evidence.
 - `/admin/app/operations` - operations, reliability, and run debug workbench.
 - `/admin/app/workflows` - workflow registry and guided builder.
@@ -451,9 +512,12 @@ Important browser pages:
 - `/admin/app/channels` - channel readiness, Telegram configuration, aliases,
   identities, delivery evidence, safe run status, and Daily Briefing
   preferences.
+- `/admin/app/patterns` - not a production sample-data route. If a
+  development-only patterns route is retained, it must be explicitly enabled
+  and unavailable in production-like validation.
 - `/admin` and older `/admin/...` browser links - safe redirects or non-Jinja
-  compatibility responses into React.
-- `/runs` and `/runs/{run_id}` - user-facing run links that open the React run
+  compatibility responses into Admin.
+- `/runs` and `/runs/{run_id}` - user-facing run links that open the Admin run
   workspace under `/admin/app/channels/runs`.
 
 ### Quality Checks
@@ -476,6 +540,18 @@ npm run typecheck
 npm run test
 npm run build
 cd ../..
+```
+
+For production Admin route, live-data, or visible-copy changes, add focused
+guardrail validation:
+
+```bash
+uv run pytest tests/unit/admin/test_live_data_inventory_scanner.py \
+  tests/integration/api/test_admin_live_data_inventory_routes.py \
+  tests/unit/admin/test_transitional_label_scanner.py \
+  tests/integration/api/test_admin_transitional_label_routes.py
+uv run python scripts/qa/verify_live_only_gate_qa058.py
+uv run python scripts/qa/verify_transitional_labels_qa059.py
 ```
 
 The repository also provides:
@@ -1131,8 +1207,14 @@ policy allows the exact operation.
 The agent and workflow test bench lives at `/admin/app/test-bench`. It lets
 administrators create safe, tenant-scoped test suites for prompts, agent
 profiles, workflow drafts, published subworkflows, and published workflows.
-Older test-bench browser links should redirect into React or return safe
+Older test-bench browser links should redirect into Admin or return safe
 non-Jinja responses.
+
+The test bench workspace is live-data backed. Empty tenants should show
+truthful empty states, and seeded tenants should show only repository-backed
+suites, cases, assertions, runs, steps, artifacts, publish-gate evidence, and
+audit summaries. Test fixtures may remain in test-only paths, but production
+Admin routes must not import or render them as domain data.
 
 Supported target types:
 

@@ -84,7 +84,7 @@ describe("App", () => {
     expect(screen.getAllByText("Multi-Agent Admin").length).toBeGreaterThan(0);
     expect(screen.getByLabelText("Admin scope")).toHaveTextContent("Acme");
     expect(
-      screen.getByRole("link", { name: "Workflow Registry Admin" }),
+      screen.getByRole("link", { name: "Workflow Registry" }),
     ).toHaveAttribute(
       "href",
       "/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111",
@@ -274,6 +274,30 @@ describe("App", () => {
     expect(screen.getByText("Connector readiness")).toBeInTheDocument();
   });
 
+  it("renders skill lifecycle subroutes inside the shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => bootstrapFixture,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => skillLifecycleDashboardFixture,
+        }),
+    );
+    window.history.pushState({}, "", "/admin/app/skills/diagnostics");
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Skill lifecycle")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Connector readiness")).toBeInTheDocument();
+  });
+
   it("renders the governance route inside the shell", async () => {
     vi.stubGlobal(
       "fetch",
@@ -289,6 +313,30 @@ describe("App", () => {
         }),
     );
     window.history.pushState({}, "", "/admin/app/governance");
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Setup and health")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Read-only policy preview")).toBeInTheDocument();
+  });
+
+  it("renders governance subroutes inside the shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => bootstrapFixture,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => governanceDashboardFixture,
+        }),
+    );
+    window.history.pushState({}, "", "/admin/app/governance/providers");
 
     render(<App />);
 

@@ -1,6 +1,5 @@
-import { ChevronRight } from "lucide-react";
-
 import type { ReactAdminBootstrap } from "../../api/generated/reactAdminApi";
+import { isNavigationItemActive } from "./navigationState";
 
 export function ShellSidebar({
   bootstrap,
@@ -21,16 +20,13 @@ export function ShellSidebar({
             <h2>{group.label}</h2>
             {group.items.map((item) => (
               <a
-                className={item.active ? "nav-item active" : "nav-item"}
+                className={isNavigationItemActive(item) ? "nav-item active" : "nav-item"}
                 href={item.href}
                 key={item.item_id}
                 onClick={onNavigate}
               >
                 <span>{item.label}</span>
-                <small>
-                  {item.fallback_kind === "jinja" ? "Retired link" : "Admin"}
-                </small>
-                <ChevronRight aria-hidden="true" size={15} />
+                {item.fallback_kind === "jinja" ? <small>Retired link</small> : null}
               </a>
             ))}
           </section>
