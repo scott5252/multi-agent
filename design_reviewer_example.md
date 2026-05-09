@@ -1,6 +1,6 @@
 # Design Reviewer Workflow Example
 
-Review date: 2026-05-08
+Review date: 2026-05-09
 
 This file documents how to set up and develop a "Design Reviewer Council"
 scenario against the current `multi-agent-platform` codebase. It follows the
@@ -23,9 +23,11 @@ The scenario uses the platform as a governed design workflow:
 
 ## Implementation Verdict
 
-The current product can support a governed, deterministic QA version of this
-scenario today, and the project can develop the full production version with
-well-scoped additions.
+The current product now supports the Design Reviewer Council as a first-class,
+live-data-backed scenario. The safest local path remains deterministic or
+mocked model-backed QA, but the durable domain, coordinator loop, Admin
+workspace, template installer, publish-gate evidence, workflow graph viewer,
+runtime graph, and interaction replay evidence are implemented.
 
 Current support is strongest for:
 
@@ -40,17 +42,19 @@ Current support is strongest for:
 - live repository/service-backed Admin setup views, backend-owned provenance,
   truthful empty states, live-only route guardrails, and product-facing Admin
   terminology
-
-The main production gaps are:
-
-- a purpose-built design review domain model for design packets, review rounds,
-  reviewer votes, quorum decisions, and final handoff artifacts
-- a model-backed role-node executor that calls `ModelGateway` for lead and
-  reviewer agents instead of the default deterministic executor
+- purpose-built design review domain records for sessions, immutable
+  revisions, rounds, assignments, verdicts, quorum decisions, manual decisions,
+  and handoff references
+- governed model-backed role-node execution behind explicit execution mode,
+  prompt/profile/provider pins, credential readiness, policy checks, contract
+  validation, and redaction
 - a review-round coordinator that launches successive acyclic workflow runs
-  until quorum is reached
-- optional React admin UI for design review history, reviewer feedback,
-  iteration diffs, and development handoff status
+  until quorum passes, revision is required, or manual resolution is needed
+- a live Admin workspace for session creation, launch, verdict/quorum review,
+  manual-resolution actions, reusable template readiness, and handoff
+  inspection
+- design-time, published-version, runtime, and replay graph evidence for
+  inspecting agent communication without raw payloads
 
 The repeated "iterate until quorum" behavior should not be implemented as a
 cycle inside one workflow graph. The current graph executor validates workflow
@@ -81,6 +85,15 @@ The scenario setup below is grounded in these current code areas:
 - `specs/057-operations-and-run-debug-react-live-data/plan.md`
 - `specs/058-live-only-ui-decommission-gate/plan.md`
 - `specs/059-admin-ui-transitional-react-label-removal/plan.md`
+- `specs/060-design-review-domain-foundation/plan.md`
+- `specs/061-model-backed-graph-role-executor/plan.md`
+- `specs/062-design-review-coordinator-and-iteration-loop/plan.md`
+- `specs/063-admin-design-review-workspace/plan.md`
+- `specs/064-design-reviewer-template-test-bench-and-publish-gates/plan.md`
+- `specs/065-agent-communication-graph-contracts-and-projections/plan.md`
+- `specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/plan.md`
+- `specs/067-runtime-agent-communication-graph-for-runs/plan.md`
+- `specs/068-durable-agent-interaction-evidence-and-replay-graph/plan.md`
 - `src/multi_agent_platform/api/schemas/workflow_registry.py`
 - `src/multi_agent_platform/admin/workflow_registry/validation.py`
 - `src/multi_agent_platform/admin/workflow_registry/publish_gate.py`
@@ -93,18 +106,34 @@ The scenario setup below is grounded in these current code areas:
 - `src/multi_agent_platform/model_providers/*`
 - `src/multi_agent_platform/testing/agent_bench/*`
 - `src/multi_agent_platform/api/routers/admin_agent_tests.py`
+- `src/multi_agent_platform/api/routers/admin_design_review.py`
+- `src/multi_agent_platform/api/schemas/design_review.py`
+- `src/multi_agent_platform/api/schemas/admin_design_review_workspace.py`
+- `src/multi_agent_platform/api/schemas/admin_agent_graph.py`
+- `src/multi_agent_platform/admin/design_review/*`
+- `src/multi_agent_platform/admin/workflow_registry/agent_graph.py`
+- `src/multi_agent_platform/operations/runtime_agent_graph.py`
+- `src/multi_agent_platform/runtime/orchestration/interaction_evidence.py`
+- `src/multi_agent_platform/db/models/design_review.py`
+- `src/multi_agent_platform/db/repositories/design_review.py`
 - `src/multi_agent_platform/api/routers/admin_react.py`
 - `frontend/admin/src/components/workflows/*`
 - `frontend/admin/src/components/governance/*`
 - `frontend/admin/src/components/testBench/*`
+- `frontend/admin/src/components/designReviews/*`
+- `frontend/admin/src/components/workflows/AgentGraphPanel.tsx`
+- `frontend/admin/src/components/workbench/*`
 
-Specs `048` through `059` make those browser workspaces live-data guarded and
-product-facing. Production Admin routes should not invent workflows, reviewers,
-test runs, usage rows, audit references, artifact references, or mutation
-success. They should return live durable data, allowed computed metadata, or
-truthful empty/denied/unavailable states with backend-owned provenance. Visible
-browser copy should say "Admin" or domain-specific terms; implementation
-framework labels should stay out of product-facing setup copy.
+Specs `048` through `059` make the browser workspaces live-data guarded and
+product-facing. Specs `060` through `068` add the Design Review domain,
+coordinator, workspace, template, design-time graph contracts, graph viewer,
+runtime graph, and durable interaction replay evidence. Production Admin routes
+should not invent workflows, reviewers, sessions, verdicts, test runs, usage
+rows, audit references, artifact references, graph nodes, replay rows, or
+mutation success. They should return live durable data, allowed computed
+metadata, or truthful empty/denied/unavailable states with backend-owned
+provenance. Visible browser copy should say "Admin" or domain-specific terms;
+implementation framework labels should stay out of product-facing setup copy.
 
 ## Scenario To Build
 
@@ -206,11 +235,13 @@ Development handoff:
 | Manual resolution when reviewers disagree | Join policies can use `manual_resolution`, and approval nodes can pause workflow execution | `api/schemas/workflow_registry.py`, `runtime/orchestration/graph_execution.py` | Yes |
 | Structured design and review contracts | Workflow draft documents support JSON-schema-backed contracts for workflow input, handoff, artifact, approval, failure, and data contracts | `api/schemas/workflow_registry.py` | Yes |
 | Prompt and runtime profile governance | Prompt, profile, provider, routing, policy, gateway diagnostic, and provenance surfaces exist as live governance projections | `admin/governance.py`, `prompts/*`, `agents/*`, `model_providers/*`, `frontend/admin/src/components/governance/*` | Yes |
-| Live model-backed reviewer agents | Model provider gateway and live credential resolution exist, but graph role nodes default to deterministic execution | `model_providers/gateway.py`, `model_providers/secrets.py`, `runtime/orchestration/graph_roles.py` | Needs development |
-| Durable design review artifacts | Runtime step outputs and artifact references exist, but there is no purpose-built design review table or service yet | `runtime/orchestration/*`, `testing/agent_bench/*`, `storage/*` | Partially |
-| Iteration loop until quorum | One review round can run as an acyclic graph. Repeated rounds should be coordinated as separate workflow runs because graph execution asserts acyclic plans | `runtime/orchestration/graph_execution.py` | Needs coordinator development |
+| Live model-backed reviewer agents | Role nodes can opt into governed model-backed execution through ModelGateway when execution mode, tenant scope, prompt/profile/provider pins, credential readiness, policy, redaction, and output-contract validation pass; deterministic mode remains the local QA default | `model_providers/gateway.py`, `model_providers/secrets.py`, `runtime/orchestration/graph_roles.py`, `runtime/orchestration/graph_execution.py` | Yes, with governed or mocked-safe execution mode |
+| Durable design review artifacts | Purpose-built design review tables and services persist safe sessions, revisions, rounds, assignments, verdicts, quorum decisions, manual decisions, and handoff references | `admin/design_review/*`, `db/models/design_review.py`, `db/repositories/design_review.py`, `api/routers/admin_design_review.py` | Yes |
+| Iteration loop until quorum | The coordinator launches one acyclic runtime run per review round, evaluates zero-blocker quorum, creates the next immutable revision or handoff, and pauses for durable manual resolution when needed | `admin/design_review/coordinator.py`, `runtime/orchestration/graph_execution.py`, `db/repositories/runtime_orchestration.py` | Yes |
 | Review evidence and QA gates | Test bench suites, cases, runs, artifacts, and publish gate evidence are live repository-backed and can validate the review workflow itself | `testing/agent_bench/*`, `testing/agent_bench/react_test_bench.py`, `admin/workflow_registry/publish_gate.py`, `api/routers/admin_agent_tests.py` | Yes |
-| Browser review surface | Existing workflow builder, governance, test bench, operations, usage, memberships, and run workspaces can administer the pieces with live-data provenance; a dedicated design-review workspace would be additive | `frontend/admin/src/*`, `api/routers/admin_react.py` | Partially |
+| Browser review surface | `/admin/app/design-reviews` administers sessions, template readiness, launch, revisions, rounds, verdicts, quorum, manual decisions, and handoffs with live-data provenance | `admin/design_review/react_workspace.py`, `frontend/admin/src/components/designReviews/*`, `api/routers/admin_react.py` | Yes |
+| Workflow communication graph | Draft and published workflow pages render backend-owned Agent Communication Graph contracts with safe node/edge categories, references, validation badges, and keyboard-readable lists | `admin/workflow_registry/agent_graph.py`, `api/schemas/admin_agent_graph.py`, `frontend/admin/src/components/workflows/AgentGraphPanel.tsx` | Yes |
+| Runtime graph and replay | Operations run inspection overlays published topology with run steps, timeline, status, handoff/tool/gateway evidence, and durable interaction replay references | `operations/runtime_agent_graph.py`, `runtime/orchestration/interaction_evidence.py`, `frontend/admin/src/components/workbench/*` | Yes |
 | Redaction and tenant isolation | Existing platform conventions require safe summaries, artifact references, tenant guards, and no raw prompts, completions, secrets, connector payloads, or unauthorized tenant data in UI or QA artifacts | `auth/*`, `audit/*`, `model_providers/redaction.py`, `runtime/orchestration/graph_redaction.py` | Yes |
 | Live-data and terminology guardrails | Production Admin routes must not expose deterministic reviewer/demo records, sample route data, or implementation-framework labels as product copy; guardrail checks cover source, built assets, route responses, visible copy, empty states, and seeded states | `api/routers/admin_react.py`, `tests/unit/admin/test_transitional_label_scanner.py`, `tests/integration/api/test_admin_live_data_inventory_routes.py` | Yes |
 | Browser routing | Admin workspaces are the canonical browser interface; old admin and run links must redirect or alias into Admin without rendering server templates | `api/routers/admin_react.py`, `api/routers/auth.py`, `api/routers/web_run_ui.py`, `frontend/admin/src/App.tsx` | Yes |
@@ -400,12 +431,12 @@ and set the quorum policy to:
 }
 ```
 
-## Proposed Data Model Additions
+## Implemented Data Model
 
-If this becomes a first-class product feature, add a small design-review domain
-instead of storing everything only in runtime step output refs.
+The scenario now has a dedicated design-review domain instead of storing review
+state only in runtime step output references.
 
-Suggested models:
+Implemented models:
 
 | Model | Purpose |
 | --- | --- |
@@ -415,10 +446,12 @@ Suggested models:
 | `DesignReviewerAssignment` | Reviewer role assignment for a round, including lens, prompt/profile references, expected output contract, and enabled status. |
 | `DesignReviewerVerdict` | Structured reviewer result with verdict, score, blocking issue count, safe feedback summary, artifact reference, and output digest. |
 | `DesignQuorumDecision` | Durable aggregate decision with approval count, blocker count, pass/fail state, policy version, and next action. |
+| `DesignManualDecision` | Append-only tenant admin decision for revise, approve-exception, retry, or cancel while preserving safe rationale and idempotency. |
 | `DesignDevelopmentHandoff` | Approved design output with implementation outline, QA checklist, acceptance criteria, safe references, and audit metadata. |
 
-All models should be tenant-scoped, audit-safe, and immutable where they
-represent reviewer evidence or design revisions.
+All records are tenant-scoped and audit-safe. Revisions, reviewer verdicts,
+quorum decisions, and handoffs are immutable or append-only evidence, while
+session status is updated only through domain services and coordinator actions.
 
 ## Step-By-Step Setup With Current Code
 
@@ -529,10 +562,9 @@ supported.
 ### Browser Setup Page Walkthrough
 
 The screenshots in this section were captured from the running local server on
-May 8, 2026 at a 1920 pixel wide viewport. Open the image directly if your
-Markdown viewer scales it down. The design reviewer setup flow uses
-`tenant-admin-acme` for tenant-scoped pages unless a step explicitly says
-otherwise.
+May 8-9, 2026 at desktop viewports. Open the image directly if your Markdown
+viewer scales it down. The design reviewer setup flow uses `tenant-admin-acme`
+for tenant-scoped pages unless a step explicitly says otherwise.
 
 #### Local Login
 
@@ -643,6 +675,82 @@ Visible elements:
 - Graph, validation, publish, sharing, revisions, and JSON inspector panels
   explain whether the draft is ready to become an immutable published bundle.
 
+#### Workflow Agent Graph
+
+![Workflow Agent Graph for the Design Reviewer Council graph](docs/assets/design-reviewer-example/admin-ui/workflow-agent-graph-wide.png)
+
+Use this graph panel during Steps 5 and 7 to verify the council topology before
+publication.
+
+1. Open a workflow draft or published version from `/admin/app/workflows`.
+2. Confirm the Agent Graph panel is present when backend graph data is
+   available.
+3. Verify the visual graph includes coordinator, reviewer/sub-agent, tool,
+   join, approval, handoff, and terminal nodes as expected for the draft.
+4. Select a node such as Specialist and verify the detail panel shows category,
+   status, references, badges, and safe summary text.
+5. Select an edge and verify labels such as delegates, joins, transitions, uses
+   tool, or hands off.
+6. Use Node list and Edge list to confirm keyboard-readable graph coverage.
+
+Visible elements:
+
+- Projected graph canvas with stable backend-owned nodes and edges.
+- Selected node or edge detail panel.
+- Node list and Edge list alternatives.
+- Safe reference summaries for roles, contracts, prompts, profiles, providers,
+  skills, and validation badges when available.
+
+#### Design Reviews Workspace
+
+![Design Reviews workspace for the Design Reviewer Council](docs/assets/design-reviewer-example/admin-ui/design-reviews-wide.png)
+
+Use this page for session creation, launch, review status, manual resolution,
+and final handoff inspection.
+
+1. Open `/admin/app/design-reviews?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Confirm the left navigation highlights Design Reviews under Workflows.
+3. Review summary cards for Sessions, In review, Needs decision, and Approved.
+4. Use Create request to start a session with a safe request summary, quorum
+   policy, and optional authorized published workflow.
+5. Select a session from History to inspect revisions, rounds, verdict
+   summaries, quorum decisions, manual decisions, and handoff state.
+6. Use Launch review only when the selected session has an authorized published
+   workflow bundle.
+7. Use manual-resolution controls only when the backend reports the session is
+   paused for a human decision.
+
+Visible elements:
+
+- Live tenant-scoped session counters.
+- Create request form.
+- Session history with backend-owned status and revision state.
+- Selected-session detail with safe evidence only.
+
+#### Council Template Readiness
+
+![Design Reviewer template readiness](docs/assets/design-reviewer-example/admin-ui/design-review-template-wide.png)
+
+Use this state before publishing a reusable council workflow.
+
+1. From `/admin/app/design-reviews`, run Install council template if the
+   template is not installed.
+2. Confirm the Template card reports not installed, pending, stale, ready, or
+   published from live backend state.
+3. When ready, confirm the safe summary says the council template has current
+   required evidence.
+4. Open the related workflow draft in `/admin/app/workflows` and inspect the
+   publish gate before publishing.
+5. Treat empty session rows as truthful: template readiness does not invent
+   design review sessions, reviewer rows, quorum decisions, or handoffs.
+
+Visible elements:
+
+- Template readiness card.
+- Council template summary.
+- Required evidence and publish-gate state.
+- No sample session records when the tenant has no sessions.
+
 #### Agent Tests Setup
 
 ![Agent Tests setup page for Design Reviewer publish-gate evidence](docs/assets/design-reviewer-example/admin-ui/test-bench-wide.png)
@@ -751,6 +859,30 @@ Visible elements:
 - Export evidence produces a redaction-safe snapshot rather than raw runtime
   payloads.
 
+#### Runtime Replay Graph
+
+![Runtime replay graph for the Design Reviewer Council example](docs/assets/design-reviewer-example/admin-ui/interaction-replay-graph-wide.png)
+
+Use this page after a review round has launched or completed.
+
+1. Open `/admin/app/operations?tenant_id=11111111-1111-1111-1111-111111111111`.
+2. Select or link to the review round's workflow run.
+3. Confirm Runtime run communication appears when the run has authorized graph
+   evidence.
+4. Review node statuses such as succeeded, retry scheduled, paused, queued, or
+   unavailable.
+5. Select an edge to inspect replay references such as handoff to reviewer,
+   replay sequence, run steps, timeline events, or interaction evidence.
+6. Confirm partial replay evidence is called out when some interaction records
+   cannot be mapped to topology edges.
+
+Visible elements:
+
+- Runtime graph canvas.
+- Node and edge lists.
+- Selected edge detail with safe run-step and interaction references.
+- Partial runtime evidence and partial replay evidence status messages.
+
 #### Usage Review
 
 ![Usage review page for the Design Reviewer Council example](docs/assets/design-reviewer-example/admin-ui/usage-wide.png)
@@ -821,9 +953,10 @@ Codebase used by this step:
 - `api/routers/admin_prompts.py`
 - `api/routers/admin_agent_profiles.py`
 
-Current-code review: prompt/profile/provider governance is supported. Live
-model execution for graph role nodes requires the additional model-backed role
-executor described below.
+Current-code review: prompt/profile/provider governance is supported.
+Model-backed graph role execution is available behind explicit governed
+execution mode and safe pin/policy/credential/contract checks; deterministic
+execution remains the default for local QA.
 
 ### Step 5 - Create The Workflow Draft
 
@@ -854,7 +987,9 @@ Codebase used by this step:
 - `admin/workflow_builder.py`
 - `frontend/admin/src/components/workflows/*`
 
-Current-code review: the workflow draft can be modeled and validated now.
+Current-code review: the workflow draft can be modeled, validated, published,
+and inspected through both the stored graph preview and Agent Communication
+Graph viewer.
 
 ### Step 6 - Add Test Bench Evidence
 
@@ -910,54 +1045,72 @@ Codebase used by this step:
 Current-code review: publish readiness and immutable bundle summaries are
 supported.
 
-### Step 8 - Develop The Production Review Loop
+### Step 8 - Use The Production Review Loop
 
-Add a domain coordinator that owns repeated rounds:
+The implemented coordinator owns repeated rounds:
 
 ```text
-DesignReviewCoordinator.start_session(user_prompt)
-DesignReviewCoordinator.launch_round(session_id, design_revision_id)
-DesignReviewCoordinator.record_round_result(round_id, runtime_run_id)
-DesignReviewCoordinator.evaluate_quorum(round_id)
-DesignReviewCoordinator.request_revision(session_id, feedback_summary)
-DesignReviewCoordinator.approve_for_development(session_id)
+DesignReviewService.create_session(...)
+DesignReviewCoordinator.launch_round(...)
+DesignReviewCoordinator.complete_round(...)
+DesignReviewCoordinator.apply_manual_decision(...)
 ```
 
-Recommended source locations:
+Use `/admin/app/design-reviews` for the browser flow or the
+`/admin/design-reviews` API route family for automation. The coordinator
+launches exactly one acyclic DB-backed runtime workflow run for each review
+round. Completion records safe reviewer verdicts, evaluates
+`four_of_five_no_blockers` or `three_of_four_no_blockers`, creates a handoff
+when approved, creates the next immutable revision when revision is required,
+or pauses for manual resolution when evidence is incomplete, unsafe,
+contradictory, or exhausted.
+
+Source locations:
 
 - `src/multi_agent_platform/admin/design_review/`
 - `src/multi_agent_platform/api/schemas/design_review.py`
 - `src/multi_agent_platform/api/routers/admin_design_review.py`
 - `src/multi_agent_platform/db/models/design_review.py`
 - `src/multi_agent_platform/db/repositories/design_review.py`
-- `frontend/admin/src/components/designReview/`
-- `tests/unit/admin/test_design_review_service.py`
-- `tests/integration/test_admin_design_review_routes.py`
-- `tests/contract/test_admin_design_review_contract.py`
+- `frontend/admin/src/components/designReviews/`
+- `tests/unit/admin/design_review/test_design_review_service.py`
+- `tests/integration/api/test_admin_design_review_api.py`
+- `tests/integration/api/test_admin_design_review_coordinator_api.py`
+- `tests/contract/test_design_review_contracts.py`
 
-Current-code review: this is the primary new feature work.
+Current-code review: the domain, coordinator, workspace, and template
+readiness paths are implemented. Remaining production hardening should focus on
+tenant-specific prompt/profile/provider content and deployment policy rather
+than inventing new domain foundations.
 
-### Step 9 - Develop A Model-Backed Role Node Executor
+### Step 9 - Use Governed Model-Backed Role Execution
 
-The production path needs a role executor that:
+The production path can opt role nodes into governed model-backed execution.
+The executor:
 
 1. Loads the role's prompt/profile/provider references.
 2. Builds a safe model input from the design packet and upstream summaries.
 3. Calls `ModelGateway`.
 4. Validates the structured output against the role's output contract.
-5. Stores raw or large payloads only as governed artifacts when allowed.
+5. Stores large allowed outputs only as governed artifacts when allowed.
 6. Returns safe summaries, digests, redacted evidence, and usage metadata.
 
-Recommended source locations:
+Source locations:
 
-- `src/multi_agent_platform/runtime/orchestration/model_role_executor.py`
-- `src/multi_agent_platform/runtime/orchestration/contract_validation.py`
+- `src/multi_agent_platform/runtime/orchestration/graph_roles.py`
+- `src/multi_agent_platform/runtime/orchestration/graph_execution.py`
+- `src/multi_agent_platform/model_providers/gateway.py`
+- `src/multi_agent_platform/model_providers/secrets.py`
+- `src/multi_agent_platform/usage/`
+- `src/multi_agent_platform/storage/`
 - `tests/unit/runtime/test_model_role_executor.py`
 - `tests/integration/test_graph_model_role_execution.py`
 
-Current-code review: `ModelGateway` and credential resolution exist. The graph
-role executor defaults to deterministic output, so this production executor is
-new work.
+Current-code review: model-backed role execution is available only when
+explicit execution mode, prompt/profile/provider pins, credential readiness,
+provider policy, output-contract validation, tenant scope, and redaction checks
+permit it. Denied paths fail closed before graph success. Existing deterministic
+QA and test-bench paths remain the default.
 
 ## Quorum Policy
 
@@ -1001,10 +1154,20 @@ Backend validation:
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src
-uv run pytest tests/unit/admin/test_design_review_service.py
-uv run pytest tests/unit/runtime/test_model_role_executor.py
-uv run pytest tests/integration/test_admin_design_review_routes.py
-uv run pytest tests/contract/test_admin_design_review_contract.py
+uv run pytest tests/unit/admin/design_review/test_design_review_service.py
+uv run pytest tests/unit/admin/design_review/test_design_review_coordinator.py
+uv run pytest tests/unit/admin/design_review/test_design_review_template.py
+uv run pytest tests/unit/admin/test_agent_graph.py
+uv run pytest tests/unit/operations/test_runtime_agent_graph.py
+uv run pytest tests/unit/runtime/orchestration/test_interaction_evidence.py
+uv run pytest tests/integration/api/test_admin_design_review_api.py
+uv run pytest tests/integration/api/test_admin_design_review_workspace_api.py
+uv run pytest tests/integration/api/test_admin_design_review_template_api.py
+uv run pytest tests/integration/api/test_admin_agent_graph_api.py
+uv run pytest tests/integration/api/test_admin_runtime_agent_graph_api.py
+uv run pytest tests/integration/runtime/test_runtime_interaction_evidence_repository.py
+uv run pytest tests/contract/test_design_review_contracts.py
+uv run pytest tests/contract/test_design_review_coordinator_contracts.py
 ```
 
 Full validation:
@@ -1014,7 +1177,7 @@ uv run pytest
 uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90
 ```
 
-Frontend validation if a dedicated React workspace is added:
+Frontend validation:
 
 ```bash
 cd frontend/admin
@@ -1039,6 +1202,10 @@ Browser validation should cover:
 - manual resolution pause
 - revision round launch
 - approved development handoff
+- reusable council template readiness and current required evidence
+- workflow draft and published-version Agent Communication Graph
+- runtime Agent Communication Graph with safe node and edge statuses
+- durable interaction replay references and partial replay state
 - cross-tenant denial
 - redaction sweep for raw prompts, completions, secrets, credential values,
   private payloads, memory contents, unauthorized run data, and raw tool payloads
@@ -1047,20 +1214,23 @@ Browser validation should cover:
 
 ## Development Recommendation
 
-Build this as an additive feature on top of the existing workflow registry,
-graph execution, governance, and test bench capabilities.
+Continue treating this as an additive scenario on top of the workflow registry,
+graph execution, governance, test bench, and operations workbench.
 
-The safest first milestone is:
+The durable foundation is now present:
 
-1. Provide a reusable `Design Reviewer Council` workflow template.
-2. Add deterministic tests that prove reviewer fan-out, quorum joins, blocking
-   issue handling, manual resolution, and development handoff.
-3. Add the `DesignReviewCoordinator` to persist sessions and launch repeated
-   acyclic review-round runs.
-4. Add the model-backed role executor behind an explicit safe execution mode.
-5. Add a React design-review workspace only after the backend contracts and
-   deterministic QA path are stable, and make that workspace live-data backed
-   from the first production route.
+1. Reusable `Design Reviewer Council` template installation exists.
+2. Required deterministic and model-safe evidence can back publish gates.
+3. `DesignReviewCoordinator` persists sessions and launches repeated acyclic
+   review-round runs.
+4. Model-backed role execution is gated behind explicit safe execution mode.
+5. `/admin/app/design-reviews` is live-data backed from the production route.
+6. Agent graph and runtime replay surfaces expose safe inspection evidence.
+
+Next production work should be tenant-specific: author high-quality prompts and
+profiles, configure real provider policy and credential references, decide
+which reviewer roles are enabled for each tenant, tune evidence retention, and
+run the QA064/QA068 validation matrix before enabling governed live model calls.
 
 This matches the project's current architecture: contract-first, tenant-scoped,
 redaction-safe, live-data guarded, auditable, deterministic in local QA, and

@@ -3,12 +3,49 @@ from __future__ import annotations
 from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
+from types import MappingProxyType
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic.fields import FieldInfo
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from multi_agent_platform.auth.principal import AuthMode
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_ENV_FILE = PROJECT_ROOT / ".env"
+_AUTHORITATIVE_MAPPING_SETTINGS = frozenset({"local_principal_catalog_json"})
+
+
+class _AuthoritativeMappingSettingsSource(PydanticBaseSettingsSource):
+    def __init__(
+        self,
+        settings_cls: type[BaseSettings],
+        source: PydanticBaseSettingsSource,
+    ) -> None:
+        super().__init__(settings_cls)
+        self.source = source
+
+    def get_field_value(
+        self,
+        field: FieldInfo,
+        field_name: str,
+    ) -> tuple[Any, str, bool]:
+        return None, "", False
+
+    def __call__(self) -> dict[str, Any]:
+        data = self.source()
+        return {
+            key: MappingProxyType(value)
+            if key in _AUTHORITATIVE_MAPPING_SETTINGS and isinstance(value, dict)
+            else value
+            for key, value in data.items()
+        }
 
 
 class AppEnvironment(StrEnum):
@@ -54,7 +91,7 @@ class ProcessProfile(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=DEFAULT_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -153,6 +190,22 @@ class Settings(BaseSettings):
 
     commit_sha: str = "dev"
     build_time: str = "1970-01-01T00:00:00+00:00"
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (
+            _AuthoritativeMappingSettingsSource(settings_cls, init_settings),
+            _AuthoritativeMappingSettingsSource(settings_cls, env_settings),
+            dotenv_settings,
+            file_secret_settings,
+        )
 
     @model_validator(mode="after")
     def validate_auth_configuration(self) -> Settings:

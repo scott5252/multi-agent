@@ -295,6 +295,33 @@ areas:
   labels, breadcrumbs, titles, command/search text, redirects, fallback copy,
   docs, screenshots, and visible-text scanner evidence that reserve "React" for
   implementation or developer-only migration context.
+- Spec 060, design review domain foundation: tenant-scoped sessions,
+  immutable revisions, review rounds, reviewer assignments, verdicts, quorum
+  decisions, manual decisions, handoffs, idempotency, and safe JSON contracts.
+- Spec 061, model-backed graph role executor: governed role-node execution
+  through ModelGateway when explicit execution mode, pins, credentials, policy,
+  tenant scope, redaction, and output-contract validation permit it.
+- Spec 062, design review coordinator and iteration loop: one acyclic runtime
+  run per review round, four-of-five or three-of-four zero-blocker quorum,
+  revision creation, approved handoff, and durable manual decisions.
+- Spec 063, Admin design review workspace: `/admin/app/design-reviews` live
+  session creation, launch controls, revision/round/verdict/quorum/handoff
+  inspection, template state, and manual-resolution actions.
+- Spec 064, Design Reviewer Council template and publish gates: explicit
+  tenant template install, deterministic and model-safe evidence, current
+  draft-revision publish readiness, and QA outcome matrix.
+- Spec 065, Agent Communication Graph contracts: safe backend graph JSON for
+  workflow drafts and published bundles with node/edge categories, references,
+  badges, provenance, layout hints, and accessibility summaries.
+- Spec 066, Agent Graph Viewer: read-only workflow draft/version graph canvas,
+  equivalent keyboard node and edge lists, selected details, and truthful
+  empty/partial/denied states.
+- Spec 067, Runtime Agent Communication Graph: operations run inspection graph
+  overlaying published topology with run steps, timeline, handoffs, gateway,
+  tool, delivery, lineage, artifact, status, and partial evidence.
+- Spec 068, durable interaction replay evidence: tenant-scoped safe interaction
+  records for delegation, context transfer, result return, joins, approvals,
+  handoffs, tool calls, checkpoints, manual resolution, and replay details.
 
 ## 1. Overview
 
@@ -309,13 +336,20 @@ The system has several major capabilities:
 - Tenant-aware authentication and authorization with Auth0 or local principals.
 - An Admin console with workflow, access, reliability, operations, model,
   prompt, profile, skill, test bench, usage, channel/Telegram, and briefing
-  preference workspaces.
+  preference workspaces, plus Design Review Council workspace and graph
+  inspection panels.
 - Workflow registry and workflow builder pages for creating draft workflows,
   validating graphs and references, reviewing revisions, and publishing
   immutable workflow bundles.
 - Published workflow graph execution for role nodes, sub-agent nodes, joins,
   approvals, terminal nodes, parallel fanout, partial failures, and durable
   checkpoint/resume evidence.
+- Design Review Council sessions that persist safe design revisions, review
+  rounds, reviewer verdicts, quorum decisions, manual decisions, template
+  readiness, and development handoff references.
+- Agent Communication Graphs for workflow drafts, published versions, and
+  runtime runs, including durable replay evidence when interaction records are
+  available.
 - Durable orchestration models for workflow runs, steps, worker leases,
   checkpoints, handoffs, approvals, side-effect intents, audit events, and
   retention metadata.
@@ -498,6 +532,9 @@ Important browser pages:
 - `/admin/app` - Admin home and authorized workspace shell.
 - `/admin/app/operations` - operations, reliability, and run debug workbench.
 - `/admin/app/workflows` - workflow registry and guided builder.
+- `/admin/app/design-reviews` - Design Review Council sessions, reusable
+  template readiness, review rounds, manual decisions, quorum evidence, and
+  handoff references.
 - `/admin/app/governance` - model providers, prompt library, runtime profiles,
   routing previews, policy history, and run provenance.
 - `/admin/app/skills` - skill package lifecycle, tenant installations,
@@ -518,12 +555,11 @@ Important browser pages:
 
 ### Admin UI Visual Tour
 
-The screenshots below were captured from the running local server on
-May 8, 2026 with Playwright at a 1920 pixel wide viewport and full-page
-capture. The Admin pages use the `tenant-admin-acme` local principal so
-tenant-scoped controls and records are visible. If a Markdown viewer scales a
-screenshot down, open the image directly; every guide image is at least 1920
-pixels wide.
+The screenshots below were captured from the running local server on May 8-9,
+2026 with Playwright at desktop viewports. The Admin pages use the
+`tenant-admin-acme` local principal so tenant-scoped controls and records are
+visible. If a Markdown viewer scales a screenshot down, open the image
+directly.
 
 Common shell elements appear on nearly every Admin page:
 
@@ -600,6 +636,36 @@ Common shell elements appear on nearly every Admin page:
   prompts, completions, messages, connector payloads, or local filesystem
   paths.
 
+#### Runtime Agent Graph
+
+![Runtime agent graph](docs/assets/user-guide/admin-ui/runtime-agent-graph-wide.png)
+
+- The Run Debug section can show a runtime communication graph for the selected
+  run when authorized evidence exists.
+- Node and edge colors and pills show safe runtime status such as succeeded,
+  retry scheduled, paused, queued, or unavailable.
+- The selected detail panel shows safe references to run steps, timeline
+  events, gateway/tool summaries, handoffs, approvals, artifacts, or partial
+  evidence.
+- Node list and Edge list mirror the graph for keyboard review and narrow
+  layouts.
+- Partial or unmapped evidence appears as a graph-level status instead of
+  fabricated nodes.
+
+#### Interaction Replay Graph
+
+![Interaction replay graph](docs/assets/user-guide/admin-ui/interaction-replay-graph-wide.png)
+
+- When durable interaction evidence exists, graph edges include ordered replay
+  references for delegation, context transfer, result return, joins, approvals,
+  handoffs, tool calls, checkpoints, manual resolution, or run completion.
+- The detail panel lists safe replay summaries, statuses, classifications,
+  timestamps, and authorized reference links.
+- Replayed interactions are idempotent across worker retry/resume; the graph
+  should not show duplicated replay rows for the same stable interaction key.
+- Unmapped replay evidence stays in graph-level partial evidence so operators
+  know the replay is incomplete without guessing topology.
+
 #### Workflow Registry And Builder
 
 ![Workflow registry and builder](docs/assets/user-guide/admin-ui/workflows-wide.png)
@@ -616,6 +682,37 @@ Common shell elements appear on nearly every Admin page:
   required test-bench gates when configured.
 - The page keeps older workflow URLs compatible through redirects into this
   Admin workspace.
+
+#### Workflow Agent Graph
+
+![Workflow agent graph](docs/assets/user-guide/admin-ui/workflow-agent-graph-wide.png)
+
+- Draft and published workflow detail pages include a read-only Agent
+  Communication Graph when backend graph data is available.
+- The graph shows coordinator agents, sub-agents, tools, joins, approval gates,
+  handoffs, terminals, and directional communication edges.
+- The selected node or edge detail panel shows safe category, status, badges,
+  references, and related links without raw prompts, completions, credentials,
+  provider payloads, memory contents, or raw tool payloads.
+- Node list and Edge list provide the same information as the canvas for
+  keyboard and mobile review.
+- Empty, partial, denied, and stale graph states are rendered directly from
+  backend-owned graph contracts.
+
+#### Design Reviews
+
+![Design reviews workspace](docs/assets/user-guide/admin-ui/design-reviews-wide.png)
+
+- The Design Reviews workspace shows live tenant sessions, current review
+  status, manual-decision count, approved handoff count, and template readiness.
+- Create request starts a durable design review session from a safe request
+  summary, quorum policy, and optional authorized published workflow bundle.
+- Sessions lists only live tenant-scoped records. Empty states do not invent
+  reviewer rows, quorum decisions, or handoffs.
+- Selected session details expose safe revisions, rounds, reviewer verdict
+  summaries, quorum decisions, manual decisions, and handoff references.
+- Launch and manual-resolution actions write through coordinator APIs with
+  idempotency keys and safe rationale.
 
 #### Governance
 
@@ -1362,6 +1459,56 @@ then runs synthesis to produce the final briefing. Join policies include
 `all_success`, `quorum`, `first_success`, and `manual_resolution`; manual
 resolution pauses the run with durable approval and timeline evidence.
 
+### Design Review Council Setup
+
+Use `/admin/app/design-reviews` for the Design Reviewer Council scenario. The
+workspace is live-data backed and depends on the design-review domain APIs,
+workflow registry, runtime coordinator, test bench, and publish gates.
+
+Typical setup:
+
+1. Sign in as a tenant admin or platform admin acting in explicit tenant scope.
+2. Open `/admin/app/design-reviews?tenant_id=<tenant-id>`.
+3. If the council template is not installed, run the Install council template
+   action. The action creates or reuses the tenant's canonical workflow draft,
+   attaches required Test Bench evidence, and reports publish readiness.
+4. Open `/admin/app/workflows` to inspect the created draft, Agent
+   Communication Graph, validation findings, and publish gate.
+5. Publish only after the current draft revision has passing required evidence.
+6. Return to `/admin/app/design-reviews` and create a session from a safe
+   request summary, quorum policy, and optional published workflow bundle.
+7. Launch a coordinator round when a workflow bundle is available.
+8. Inspect round history, reviewer verdict summaries, quorum decisions,
+   revisions, and handoff state.
+9. If the session pauses for manual resolution, choose revise,
+   approve-by-exception, retry, or cancel with safe rationale.
+
+The coordinator keeps the runtime graph acyclic. One workflow run is one review
+round against one immutable design revision. Passing quorum requires
+`four_of_five_no_blockers` or `three_of_four_no_blockers` with zero blocking
+issues. Non-passing complete evidence can create a new immutable revision.
+Incomplete, contradictory, unsafe, exhausted, or policy-conflicted evidence
+pauses for manual resolution.
+
+Useful API patterns:
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://127.0.0.1:8000/admin/design-reviews/sessions?tenant_id=<tenant-id>"
+
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://127.0.0.1:8000/admin/design-reviews/sessions/<session-id>/coordinator?tenant_id=<tenant-id>"
+
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://127.0.0.1:8000/admin/workflows/drafts/<workflow-draft-id>/agent-graph?tenant_id=<tenant-id>"
+```
+
+Design Review records and graph contracts store safe summaries, digests,
+artifact references, usage/provenance summaries, and policy references. They
+must not store or render raw prompts, raw completions, provider responses,
+credentials, private channel payloads, memory contents, unauthorized payloads,
+stack traces, or raw tool outputs.
+
 ### Skills
 
 Skills represent approved tools or MCP references that agents may use. The
@@ -1602,6 +1749,9 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 curl -H "Authorization: Bearer $ADMIN_TOKEN" \
   "http://127.0.0.1:8000/admin/runs/<workflow-run-id>/replay?tenant_id=<tenant-id>"
+
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://127.0.0.1:8000/admin/runs/<workflow-run-id>/agent-graph?tenant_id=<tenant-id>"
 ```
 
 When reviewing a run, look for:
@@ -1621,6 +1771,9 @@ When reviewing a run, look for:
 - Retry and breaker summaries.
 - Model gateway attempts.
 - Skill tool execution summaries.
+- Runtime Agent Communication Graph node and edge statuses.
+- Durable interaction replay references on graph edges and graph-level partial
+  replay evidence.
 - Usage event ids.
 - Export events.
 - Redaction markers.
@@ -2523,10 +2676,14 @@ Component responsibilities:
 - Admin console shell provides scoped navigation, saved filters, common error
   states, and authorization-aware links.
 - Workflow registry stores drafts, revisions, validation results, published
-  bundles, and sharing grants.
+  bundles, sharing grants, and safe communication graph projections.
+- Design Review stores council sessions, immutable revisions, review rounds,
+  verdicts, quorum decisions, manual decisions, template evidence, and
+  development handoff references.
 - Runtime and workers coordinate workflow execution, leases, approvals,
   graph scheduling, parallel sub-agent waves, joins, handoffs, side effects,
-  checkpoints, and run timelines.
+  checkpoints, run timelines, runtime communication graphs, and durable
+  interaction replay evidence.
 - Model gateway centralizes provider invocation, normalized errors, latency,
   retry/breaker metadata, usage capture, and call-time credential resolution.
 - Prompt and profile management governs immutable prompt versions and agent or
@@ -2723,12 +2880,22 @@ erDiagram
     WORKFLOW_LINEAGES ||--o{ WORKFLOW_VERSION_BUNDLES : publishes
     WORKFLOW_VERSION_BUNDLES ||--o{ WORKFLOW_SHARING_GRANTS : grants
     WORKFLOW_VERSION_BUNDLES ||--o{ RUNTIME_WORKFLOW_RUNS : pins
+    WORKFLOW_VERSION_BUNDLES ||--o{ DESIGN_REVIEW_SESSIONS : selected_for
     RUNTIME_WORKFLOW_RUNS ||--o{ RUNTIME_RUN_STEPS : contains
     RUNTIME_WORKFLOW_RUNS ||--o{ RUNTIME_TIMELINE_EVENTS : records
+    RUNTIME_WORKFLOW_RUNS ||--o{ RUNTIME_INTERACTION_EVIDENCE : replays
     RUNTIME_RUN_STEPS ||--o{ WORKER_LEASES : claimed_by
     RUNTIME_RUN_STEPS ||--o{ SIDE_EFFECT_INTENTS : requests
     RUNTIME_WORKFLOW_RUNS ||--o{ APPROVALS : waits_for
     RUNTIME_WORKFLOW_RUNS ||--o{ HANDOFF_ENVELOPES : hands_off
+    TENANTS ||--o{ DESIGN_REVIEW_SESSIONS : owns
+    DESIGN_REVIEW_SESSIONS ||--o{ DESIGN_REVISIONS : versions
+    DESIGN_REVIEW_SESSIONS ||--o{ DESIGN_REVIEW_ROUNDS : reviews
+    DESIGN_REVIEW_ROUNDS ||--o{ DESIGN_REVIEWER_ASSIGNMENTS : assigns
+    DESIGN_REVIEW_ROUNDS ||--o{ DESIGN_REVIEWER_VERDICTS : records
+    DESIGN_REVIEW_ROUNDS ||--o{ DESIGN_QUORUM_DECISIONS : decides
+    DESIGN_REVIEW_SESSIONS ||--o{ DESIGN_MANUAL_DECISIONS : resolves
+    DESIGN_REVIEW_SESSIONS ||--o{ DESIGN_DEVELOPMENT_HANDOFFS : hands_off
     TENANTS ||--o{ MEMORY_SCOPES : owns
     MEMORY_SCOPES ||--o{ MEMORY_VERSIONS : versions
     MEMORY_SCOPES ||--|| MEMORY_HEADS : projects
@@ -2766,6 +2933,50 @@ erDiagram
         uuid workflow_run_id FK
         string step_key
         string status
+    }
+    RUNTIME_INTERACTION_EVIDENCE {
+        uuid interaction_evidence_id PK
+        uuid workflow_run_id FK
+        string source_node_key
+        string target_node_key
+        string interaction_kind
+        int sequence
+        string status
+        string payload_digest
+    }
+    DESIGN_REVIEW_SESSIONS {
+        uuid design_review_session_id PK
+        uuid tenant_id FK
+        uuid workflow_version_bundle_id FK
+        string status
+        string quorum_policy_key
+        int active_revision_number
+    }
+    DESIGN_REVISIONS {
+        uuid design_revision_id PK
+        uuid design_review_session_id FK
+        int revision_number
+        string payload_digest
+    }
+    DESIGN_REVIEW_ROUNDS {
+        uuid design_review_round_id PK
+        uuid design_review_session_id FK
+        uuid workflow_run_id FK
+        int round_number
+        string status
+    }
+    DESIGN_REVIEWER_VERDICTS {
+        uuid design_reviewer_verdict_id PK
+        uuid design_review_round_id FK
+        string reviewer_key
+        string verdict
+        int blocking_issue_count
+    }
+    DESIGN_QUORUM_DECISIONS {
+        uuid design_quorum_decision_id PK
+        uuid design_review_round_id FK
+        string status
+        string next_action
     }
     MEMORY_SCOPES {
         uuid memory_scope_id PK

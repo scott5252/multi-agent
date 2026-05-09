@@ -316,6 +316,26 @@ SUGGESTED FOCUS
 | 058 | The final live-only gate decommissions obsolete production mock/demo surfaces. | Verify empty and seeded route probes, built asset scans, seed requirements, fixture boundary documentation, and rollback guidance. |
 | 059 | Production-visible Admin copy no longer uses transitional "React" labels. | Verify shell titles, breadcrumbs, navigation, command/search labels, redirects, fallbacks, empty/error states, screenshots, and docs say "Admin" or domain terms unless the page is developer-only evidence. |
 
+## Spec 060-068 Design Review And Graph Evidence Updates Incorporated
+
+These specs primarily add the Design Reviewer Council scenario and graph
+inspection surfaces. The Daily Intelligence Briefing flow still uses the same
+channel, governance, skill, workflow, test-bench, usage, and operations setup,
+but reviewers should now verify these additional platform-level details when
+using the example for end-to-end confidence:
+
+| Spec | Change to this test example | Detail to verify |
+| --- | --- | --- |
+| 060 | Design review has first-class durable domain records independent of the Daily Briefing scenario. | Verify Design Review API responses store only safe summaries, digests, artifact references, provenance, and idempotency metadata. |
+| 061 | Workflow role nodes can opt into governed model-backed execution while deterministic execution remains the local QA default. | Verify Daily Briefing test runs remain deterministic unless the execution mode explicitly selects mocked or governed model-backed behavior. |
+| 062 | A review-round coordinator launches repeated acyclic runtime runs for design reviews. | Verify the Daily Briefing graph remains a single published workflow run; iteration loops belong to design-review coordinator records, not cyclic workflow topology. |
+| 063 | `/admin/app/design-reviews` is now a live Admin workspace. | Verify it appears as an authorized destination for suitable principals and shows truthful empty/session/template states without sample data. |
+| 064 | Design Reviewer Council template setup uses explicit install actions and current Test Bench evidence. | Verify workflow publish gates distinguish current same-revision evidence from stale or cross-tenant evidence in both Daily Briefing and Design Reviewer flows. |
+| 065 | Workflow drafts and published bundles expose safe Agent Communication Graph JSON. | Verify Daily Briefing workflow drafts and versions can be inspected through `/admin/workflows/drafts/{id}/agent-graph` and `/admin/workflows/versions/{id}/agent-graph` without raw prompts or credentials. |
+| 066 | Workflow pages render the Agent Graph Viewer from backend graph contracts. | Verify graph canvas, node list, edge list, selected details, empty, partial, denied, and mobile states are safe and keyboard-readable. |
+| 067 | Operations run inspection can show a runtime Agent Communication Graph. | Verify Daily Briefing run debugging can use `/admin/runs/{workflow_run_id}/agent-graph` for node/edge statuses when run evidence exists. |
+| 068 | Durable interaction evidence adds replay references to runtime graphs. | Verify replay evidence is idempotent across retries and contains safe summaries, classifications, digests, timestamps, and authorized links only. |
+
 ## Step-By-Step Setup With Current Code
 
 ### Step 1 - Prepare The Local Environment
@@ -785,8 +805,10 @@ Codebase used by this step:
 - `api/routers/admin_prompts.py`
 
 Current-code review: prompt creation, validation, publication, grants, preview,
-and history are supported. Current runtime graph execution does not yet load
-these prompt versions to perform the final daily briefing.
+and history are supported. Runtime graph execution can resolve governed
+prompt/profile/provider pins for explicit model-backed role execution, while
+the Daily Briefing QA path remains deterministic by default and still does not
+produce a real live-tool briefing without additional provider/tool enablement.
 
 ### Step 7 - Create Agent And Sub-Agent Runtime Profiles
 
@@ -1847,13 +1869,16 @@ Primary QA references:
 - `specs/025-live-model-credential-resolution-for-gateway-calls/qa025_ui.md`
 - `specs/025-live-model-credential-resolution-for-gateway-calls/testing-instructions.md`
 
-### Specs 030-059 - Admin Scenario Surface
+### Specs 030-068 - Admin Scenario Surface
 
 Current status:
 
 - `/admin/app/workflows` is the primary workflow builder for this scenario. It
-  renders live backend-owned draft, graph, validation, publish, evidence,
-  revision, and JSON-preview contracts.
+  renders live backend-owned draft, communication graph, validation, publish,
+  evidence, revision, and JSON-preview contracts.
+- Workflow drafts and published versions expose read-only Agent Communication
+  Graphs with backend-owned node/edge categories, safe references, validation
+  badges, layout hints, and keyboard-readable lists.
 - `/admin/app/governance` is the primary model provider, prompt, profile,
   routing, policy history, and provenance workspace. Provider probes and
   credential-reference changes remain platform-admin-only and repository-backed.
@@ -1866,7 +1891,14 @@ Current status:
   delivery diagnostic, safe run status, and Daily Briefing preference workspace.
 - `/admin/app/usage` and `/admin/app/operations` provide usage/cost and
   operational review for the scenario from live usage, runtime, provider,
-  channel, reliability, audit, and export evidence.
+  channel, reliability, audit, graph, replay, and export evidence.
+- `/admin/app/design-reviews` is a separate Design Reviewer Council workspace.
+  It is not needed to run the Daily Briefing, but it should be present for
+  authorized principals and should demonstrate live design-review sessions,
+  template readiness, quorum decisions, manual decisions, and handoff evidence.
+- `/admin/runs/{workflow_run_id}/agent-graph` provides safe runtime graph and
+  replay evidence for run debugging when the selected Daily Briefing run has
+  durable graph/run-step/timeline/interaction evidence.
 - `/admin/app/patterns` is not a production sample-data route. Production Admin
   setup should use domain workspaces and live seed data instead.
 
@@ -1908,6 +1940,15 @@ Primary QA references:
 - `specs/057-operations-and-run-debug-react-live-data/qa057.md`
 - `specs/058-live-only-ui-decommission-gate/qa058.md`
 - `specs/059-admin-ui-transitional-react-label-removal/qa059.md`
+- `specs/060-design-review-domain-foundation/qa060.md`
+- `specs/061-model-backed-graph-role-executor/qa061.md`
+- `specs/062-design-review-coordinator-and-iteration-loop/qa062.md`
+- `specs/063-admin-design-review-workspace/qa063.md`
+- `specs/064-design-reviewer-template-test-bench-and-publish-gates/qa064.md`
+- `specs/065-agent-communication-graph-contracts-and-projections/qa065.md`
+- `specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/qa066.md`
+- `specs/067-runtime-agent-communication-graph-for-runs/qa067.md`
+- `specs/068-durable-agent-interaction-evidence-and-replay-graph/qa068.md`
 
 ## Final Accuracy Review
 
@@ -1919,7 +1960,9 @@ connector diagnostics, user briefing preferences, workflow drafts, current
 test-bench publish evidence, published bundles, DB graph execution evidence,
 Telegram aliases, persistent link state, update receipts, delivery attempts,
 channel results, Admin route coverage, old-link compatibility, live-data gate
-evidence, product-facing Admin terminology, and Jinja decommission evidence.
+evidence, product-facing Admin terminology, Jinja decommission evidence,
+workflow Agent Graph Viewer coverage, runtime communication graphs, durable
+interaction replay evidence, and the separate Design Reviewer Council workspace.
 
 The current repository still cannot produce the real sample Telegram briefing
 from live Google Calendar, Gmail, news, weather, and commute data. The remaining
@@ -1930,4 +1973,7 @@ yet wire live external tool payloads through agent prompts/models into a final
 real-world synthesis. For reviewer QA, treat the sample briefing as the target
 product behavior and the current output as deterministic evidence that the
 governance, routing, safety, Admin operation, live-data guardrails, and
-orchestration scaffolding are in place.
+orchestration scaffolding are in place. Specs 060-068 improve platform
+inspection and the Design Reviewer scenario; they do not by themselves make
+Daily Briefing tools call live Google, Gmail, news, weather, or commute
+providers.

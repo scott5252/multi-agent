@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from multi_agent_platform.config.settings import Settings
+import json
+from pathlib import Path
+
+import pytest
+
+from multi_agent_platform.config.settings import DEFAULT_ENV_FILE, Settings
 
 
 def test_settings_parse_and_normalize_urls(settings: Settings) -> None:
@@ -8,6 +13,68 @@ def test_settings_parse_and_normalize_urls(settings: Settings) -> None:
     assert settings.auth_mode == "local_principal"
     assert settings.database_url.startswith("sqlite+aiosqlite:///")
     assert settings.database_migration_url.startswith("sqlite:///")
+
+
+def test_default_env_file_is_not_cwd_relative() -> None:
+    repo_root = Path(__file__).resolve().parents[3]
+
+    assert DEFAULT_ENV_FILE == repo_root / ".env"
+    assert DEFAULT_ENV_FILE.is_absolute()
+
+
+def test_explicit_empty_local_principal_catalog_overrides_dotenv(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "LOCAL_PRINCIPAL_CATALOG_JSON="
+        + json.dumps(
+            {
+                "dev-user": {
+                    "catalog_key": "dev-user",
+                    "display_name": "Dev User",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("LOCAL_PRINCIPAL_CATALOG_JSON", "{}")
+
+    settings = Settings(
+        _env_file=env_file,
+        app_env="test",
+        auth_mode="local_principal",
+    )
+
+    assert settings.local_principal_catalog_json == {}
+
+
+def test_explicit_init_local_principal_catalog_overrides_dotenv(
+    tmp_path: Path,
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "LOCAL_PRINCIPAL_CATALOG_JSON="
+        + json.dumps(
+            {
+                "dev-user": {
+                    "catalog_key": "dev-user",
+                    "display_name": "Dev User",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    settings = Settings(
+        _env_file=env_file,
+        app_env="test",
+        auth_mode="local_principal",
+        local_principal_catalog_json={},
+    )
+
+    assert settings.local_principal_catalog_json == {}
 
 
 def test_process_profiles_include_api_and_worker(settings: Settings) -> None:

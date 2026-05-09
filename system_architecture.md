@@ -228,6 +228,15 @@ operator visibility.
 | `057-operations-and-run-debug-react-live-data` | Operations and run-debug projections backed by live operations, reliability, runtime, provider, channel, skill, usage, worker/queue, audit-debug, and export evidence | `operations/workbench.py`, `operations/service.py`, `reliability/`, `db/repositories/runtime_orchestration.py`, `db/repositories/audit_debugging.py`, `api/schemas/admin_workbench.py`, `frontend/admin/src/components/workbench/` | Reuses operations, reliability, runtime, audit, provider, channel, usage, and storage records |
 | `058-live-only-ui-decommission-gate` | Final live-only route inventory, empty and seeded route probes, built asset scans, obsolete deterministic surface decommissioning, seed requirements, fixture boundaries, and rollback guidance | `admin/migration_hardening/live_data_inventory.py`, `admin/migration_hardening/react_migration_hardening.py`, `scripts/qa/seed_live_only_gate_qa058.py`, `scripts/qa/verify_live_only_gate_qa058.py`, `tests/integration/api/test_admin_live_data_inventory_routes.py` | No new tables; route-probe evidence and QA artifacts |
 | `059-admin-ui-transitional-react-label-removal` | Product-facing Admin terminology, visible-text scanner, transitional label route, screenshots, and docs that reserve React wording for implementation or developer-only evidence | `admin/migration_hardening/live_data_inventory.py`, `admin/migration_hardening/react_migration_hardening.py`, `api/routers/admin_react.py`, `scripts/qa/verify_transitional_labels_qa059.py`, `tests/unit/admin/test_transitional_label_scanner.py` | No new tables; visible-text scan evidence and QA artifacts |
+| `060-design-review-domain-foundation` | Tenant-scoped Design Review sessions, immutable revisions, rounds, reviewer assignments, verdicts, quorum decisions, manual decisions, handoffs, idempotency, and safe JSON contracts | `admin/design_review/`, `api/routers/admin_design_review.py`, `api/schemas/design_review.py`, `db/models/design_review.py`, `db/repositories/design_review.py` | `0021_design_review_domain.py` |
+| `061-model-backed-graph-role-executor` | Governed role-node execution through `ModelGateway` when execution mode and pins permit it, with deterministic mode still default for local QA and test bench | `runtime/orchestration/graph_roles.py`, `runtime/orchestration/graph_execution.py`, `model_providers/gateway.py`, `usage/`, `storage/` | No new tables; reuses runtime, provider, usage, and artifact records |
+| `062-design-review-coordinator-and-iteration-loop` | Design Review coordinator that launches one acyclic runtime run per review round, evaluates four-of-five or three-of-four zero-blocker quorum, creates revisions/handoffs, and applies manual decisions | `admin/design_review/coordinator.py`, `admin/design_review/service.py`, `api/routers/admin_design_review.py`, `runtime/orchestration/` | Reuses design-review and runtime tables |
+| `063-admin-design-review-workspace` | Live-data Admin workspace for creating sessions, launching rounds, inspecting revisions/verdicts/quorum/handoffs, and applying manual-resolution actions | `admin/design_review/react_workspace.py`, `api/schemas/admin_design_review_workspace.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/designReviews/` | Reuses design-review, workflow, runtime, and audit records |
+| `064-design-reviewer-template-test-bench-and-publish-gates` | Explicit Design Reviewer Council template install action, required deterministic and model-safe evidence, current-revision publish readiness, and template state in Admin | `admin/design_review/template.py`, `testing/agent_bench/`, `admin/workflow_registry/publish_gate.py`, `frontend/admin/src/components/designReviews/` | Reuses workflow registry and test-bench tables |
+| `065-agent-communication-graph-contracts-and-projections` | Backend-owned safe Agent Communication Graph JSON for workflow drafts and published bundles, including node/edge categories, references, badges, provenance, and accessibility summaries | `admin/workflow_registry/agent_graph.py`, `api/schemas/admin_agent_graph.py`, `api/routers/admin_workflows.py`, `frontend/admin/src/api/generated/reactAdminApi.ts` | No new tables; derives from workflow draft and bundle records |
+| `066-react-agent-graph-viewer-for-workflow-drafts-and-versions` | Read-only Admin graph viewer embedded in workflow draft/version pages with canvas, node/edge lists, selected details, partial/empty/denied states, and safe references | `frontend/admin/src/components/workflows/AgentGraphPanel.tsx`, `frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx`, `frontend/admin/src/api/client.ts`, `frontend/admin/src/styles/admin.css` | No new tables; consumes Spec 065 graph contracts |
+| `067-runtime-agent-communication-graph-for-runs` | Runtime Agent Communication Graph for run inspection, overlaying published topology with run steps, timeline, handoffs, gateway/tool/delivery summaries, statuses, and partial evidence | `operations/runtime_agent_graph.py`, `api/routers/admin_run_inspection.py`, `frontend/admin/src/components/workbench/WorkbenchPage.tsx`, `frontend/admin/src/components/workflows/AgentGraphPanel.tsx` | No new tables; derives from runtime and workflow evidence |
+| `068-durable-agent-interaction-evidence-and-replay-graph` | Durable safe interaction evidence for delegation, context transfer, result return, joins, approvals, handoffs, tool calls, checkpoints, manual resolution, and replay graph references | `runtime/orchestration/interaction_evidence.py`, `runtime/orchestration/graph_execution.py`, `operations/runtime_agent_graph.py`, `db/models/runtime_orchestration.py`, `db/repositories/runtime_orchestration.py` | `0022_runtime_interaction_evidence.py` |
 
 ## Repository Shape
 
@@ -485,6 +494,8 @@ Primary React routes:
 - `/admin/app` - Admin home and authorized workspace shell
 - `/admin/app/operations` - operations, reliability, and run debug workbench
 - `/admin/app/workflows` - workflow builder
+- `/admin/app/design-reviews` - Design Review Council sessions, template
+  readiness, review rounds, quorum decisions, manual decisions, and handoffs
 - `/admin/app/governance` - model, prompt, profile, provider, routing, and
   provenance governance
 - `/admin/app/skills` - skill registry lifecycle and tool execution readiness
@@ -686,6 +697,124 @@ Related tables queried for publish evidence:
 
 Spec `024` adds no new workflow tables.
 
+Spec `065` adds a backend-owned Agent Communication Graph projection for both
+mutable workflow drafts and immutable published workflow bundles. The graph is
+derived from workflow registry records and does not persist a second copy of
+topology. It classifies coordinator agents, sub-agents, tools, joins,
+approvals, handoffs, terminals, subworkflows, and unknown nodes; classifies
+directional edges such as delegation, context transfer, result return, joins,
+handoffs, failure routing, retries, approval resume, and generic transitions;
+and attaches safe prompt/profile/provider/skill/contract references, validation
+badges, provenance, layout hints, and keyboard-readable summaries. Spec `066`
+renders that contract in the Admin workflow builder and published-version
+detail surfaces with a read-only canvas, equivalent node and edge lists, and a
+safe selected-item detail panel.
+
+Graph API routes:
+
+- `GET /admin/workflows/drafts/{workflow_draft_id}/agent-graph`
+- `GET /admin/workflows/versions/{workflow_version_bundle_id}/agent-graph`
+
+Graph UI code:
+
+- `admin/workflow_registry/agent_graph.py`
+- `api/schemas/admin_agent_graph.py`
+- `frontend/admin/src/components/workflows/AgentGraphPanel.tsx`
+- `frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx`
+
+## Design Review Council
+
+Specs `060` through `064` add a first-class Design Reviewer Council scenario on
+top of the workflow registry, runtime, governance, and test bench. The domain is
+tenant-scoped, idempotent, redaction-safe, and auditable. It persists design
+review sessions, immutable design revisions, review rounds, reviewer
+assignments, reviewer verdicts, quorum decisions, append-only manual decisions,
+and final development handoff references. Records store safe summaries,
+digests, artifact references, provenance, usage summaries, and policy
+references only; raw prompts, completions, provider payloads, credentials,
+memory contents, private messages, unauthorized payloads, and raw tool payloads
+are excluded from records, API responses, screenshots, logs, exports, and QA
+artifacts.
+
+```mermaid
+flowchart TD
+    d1["Tenant Admin"] --> d2["/admin/app/design-reviews"]
+    d2 --> d3["Design Review Workspace Envelope"]
+    d3 --> d4["DesignReviewService"]
+    d3 --> d5["DesignReviewCoordinator"]
+    d3 --> d6["DesignReviewTemplateService"]
+    d4 --> d7["Design Review Repository"]
+    d5 --> d7
+    d6 --> d8["Workflow Registry Service"]
+    d6 --> d9["Agent Test Bench Service"]
+    d5 --> d10["Runtime Orchestration Repository"]
+    d7 --> d11["design_review_sessions and related tables"]
+    d10 --> d12["runtime_workflow_runs and run steps"]
+```
+
+The coordinator keeps graph execution acyclic. One runtime workflow run
+represents one review round against exactly one immutable design revision. If a
+round reaches `four_of_five_no_blockers` or `three_of_four_no_blockers`, the
+coordinator records a safe development handoff and approves the session. If the
+round is complete but not approved and another round is allowed, the coordinator
+creates the next immutable design revision. If evidence is missing,
+contradictory, unsafe, exhausted, or policy-conflicted, the session pauses for
+manual resolution. Durable manual decisions support revise,
+approve-by-exception, retry, and cancel.
+
+The reusable Design Reviewer Council template is installed by an explicit Admin
+action rather than a hidden fixture or migration side effect. Installation
+creates or reuses a tenant-scoped workflow draft with lead, reviewer, quorum,
+synthesis, and handoff roles; attaches required Test Bench suites; can run
+deterministic and governed model-safe evidence; and evaluates publish readiness
+against the current workflow draft revision.
+
+Primary routes:
+
+- `GET /admin/app/design-reviews`
+- `GET /admin/app/design-reviews/bootstrap.json`
+- `POST /admin/design-reviews/templates/council/install`
+- `POST /admin/design-reviews/sessions`
+- `GET /admin/design-reviews/sessions`
+- `GET /admin/design-reviews/sessions/{session_id}`
+- `GET /admin/design-reviews/sessions/{session_id}/coordinator`
+- `POST /admin/design-reviews/sessions/{session_id}/coordinator/launch-round`
+- `POST /admin/design-reviews/rounds/{round_id}/coordinator/complete`
+- `POST /admin/design-reviews/sessions/{session_id}/coordinator/manual-decisions`
+- `GET /admin/design-reviews/sessions/{session_id}/revisions`
+- `GET /admin/design-reviews/sessions/{session_id}/rounds`
+- `GET /admin/design-reviews/rounds/{round_id}`
+- `GET /admin/design-reviews/rounds/{round_id}/quorum-decision`
+- `GET /admin/design-reviews/sessions/{session_id}/manual-decisions`
+- `POST /admin/design-reviews/sessions/{session_id}/manual-decisions`
+- `GET /admin/design-reviews/sessions/{session_id}/handoff`
+
+Main code:
+
+- `admin/design_review/models.py`
+- `admin/design_review/redaction.py`
+- `admin/design_review/service.py`
+- `admin/design_review/coordinator.py`
+- `admin/design_review/template.py`
+- `admin/design_review/react_workspace.py`
+- `api/routers/admin_design_review.py`
+- `api/schemas/design_review.py`
+- `api/schemas/admin_design_review_workspace.py`
+- `db/models/design_review.py`
+- `db/repositories/design_review.py`
+- `frontend/admin/src/components/designReviews/`
+
+Important tables:
+
+- `design_review_sessions`
+- `design_revisions`
+- `design_review_rounds`
+- `design_reviewer_assignments`
+- `design_reviewer_verdicts`
+- `design_quorum_decisions`
+- `design_manual_decisions`
+- `design_development_handoffs`
+
 ## Runtime Orchestration And Workers
 
 The runtime owns workflow run records and the durable execution shape. It starts
@@ -702,6 +831,14 @@ finishes, pauses, or fails. Role and sub-agent role nodes share the same
 `RoleNodeExecutor` boundary. The default implementation is deterministic for
 local QA; the boundary is where live model, memory, and skill-tool execution can
 be wired without changing graph scheduling.
+
+Spec `061` extends that boundary with governed model-backed role execution.
+Model-backed execution is selected only when the run/workflow execution mode,
+tenant context, prompt/profile/provider pins, credential readiness, policy, and
+output contract allow it. Safe model inputs are built from summaries,
+references, digests, and contract metadata; gateway attempts capture usage,
+latency, routing provenance, and safe failure categories. Deterministic role
+execution remains the default for local QA and existing Test Bench flows.
 
 ```mermaid
 flowchart TD
@@ -746,7 +883,9 @@ Important code:
 - `runtime/orchestration/graph_execution.py`
 - `runtime/orchestration/graph_roles.py`
 - `runtime/orchestration/graph_redaction.py`
+- `runtime/orchestration/interaction_evidence.py`
 - `runtime/versioning.py`
+- `operations/runtime_agent_graph.py`
 - `workers/main.py`
 - `workers/loops.py`
 - `workers/orchestration.py`
@@ -765,6 +904,7 @@ Important tables:
 - `runtime_approval_decisions`
 - `runtime_run_lineage`
 - `runtime_timeline_events`
+- `runtime_interaction_evidence`
 - `runtime_retention_policies`
 
 Graph execution persists:
@@ -786,6 +926,22 @@ Join policies are deterministic for `all_success`, `quorum`, `first_success`,
 and `manual_resolution`. Resume reconstructs succeeded and failed node keys from
 persisted run steps so a worker restart does not duplicate already completed
 nodes.
+
+Specs `067` and `068` make run inspection graph-aware. The runtime Agent
+Communication Graph route combines the published workflow topology with durable
+run steps, timeline events, handoffs, approval state, gateway summaries, tool
+summaries, delivery summaries, lineage, artifacts, and partial evidence. Nodes
+and edges expose safe statuses such as queued, running, succeeded, failed,
+skipped, waiting, paused, retry scheduled, manual resolution required,
+completed, and unavailable. Durable interaction evidence adds ordered replay
+records for delegation, context transfer, result return, join contribution,
+approval pause/resume, handoff, tool call, checkpoint, manual resolution, and
+run completion. Interaction records are idempotent by tenant, run, and stable
+interaction key, so worker retry/resume does not duplicate replay rows.
+
+Runtime graph route:
+
+- `GET /admin/runs/{workflow_run_id}/agent-graph`
 
 ## User Interaction Channels
 
@@ -2233,7 +2389,9 @@ sequenceDiagram
 | Auth/access | principals, role grants, support overrides, delegated credentials, access decisions |
 | Membership administration | user invitations, tenant memberships, membership audit records, membership UI/API snapshots, masked email and subject display, principal suspension/reactivation workflows |
 | Workflow registry | lineages, drafts, revisions, validations, published bundles, sharing grants |
-| Runtime orchestration | execution bundles, workflow runs, graph execution plans, node steps, execution waves, joins, leases, checkpoints, handoffs, side effects, approvals, partial failures, final output refs, lineage, timeline |
+| Workflow graph projections | derived draft and published Agent Communication Graph contracts, safe node/edge labels, references, validation badges, layout hints, accessibility summaries, and read-only Admin graph viewer state |
+| Design review | sessions, immutable design revisions, rounds, reviewer assignments, verdicts, quorum decisions, manual decisions, template readiness, required evidence, and development handoff references |
+| Runtime orchestration | execution bundles, workflow runs, graph execution plans, node steps, execution waves, joins, leases, checkpoints, handoffs, side effects, approvals, partial failures, model-backed role evidence, final output refs, lineage, timeline, runtime communication graphs, and interaction replay evidence |
 | Memory | memory scopes, immutable versions, heads, memory audit, archive markers |
 | Channels | channel sessions, normalized requests, idempotency, notifications, callbacks, artifact grants, Telegram identity links, Telegram delivery attempts through notification records |
 | Model-skill config | routing, prompt references, skill bindings, tool/outbound/credential/secret policies, active pointers, runtime decisions |
@@ -2325,9 +2483,22 @@ current behavior:
   `access_decision_records`, and adds `user_invitations`,
   `tenant_memberships`, and `membership_audit_records`.
 - Spec `020` implements graph execution in the worker. The role execution
-  boundary defaults to deterministic QA behavior; live model, memory, and
-  tool-rich role execution should be wired through the `RoleNodeExecutor`
-  interface rather than by changing graph scheduling.
+  boundary defaults to deterministic QA behavior. Spec `061` adds governed
+  model-backed role execution through that boundary when explicit execution
+  mode, pins, credentials, policy, tenant scope, redaction, and output-contract
+  validation allow it. Tool-rich role execution should continue to enter
+  through governed runtime/tool gateways rather than by changing graph
+  scheduling.
+- Specs `060` through `064` implement the Design Reviewer Council domain,
+  coordinator, Admin workspace, reusable template setup, and current-evidence
+  publish gates. Local QA can remain deterministic or mocked-safe; production
+  use still depends on tenant-authored prompts/profiles, provider policy,
+  credential references, and deployment-specific evidence retention.
+- Specs `065` through `068` add safe Agent Communication Graph contracts,
+  read-only workflow graph rendering, runtime run graph overlays, and durable
+  interaction replay evidence. These surfaces are inspection and evidence
+  layers; they do not create editable graph topology or store raw message
+  transcripts.
 - Spec `021` implements a governed skill-tool execution package and diagnostics
   surface, but it does not add a dedicated persistent skill execution table.
   Diagnostics are generated through request-scoped gateway instances, while
@@ -2361,6 +2532,9 @@ current behavior:
 | --- | --- |
 | Agent | A role in a workflow that performs work using prompts, model routing, memory, and allowed skills/tools. |
 | Sub-agent | A nested or delegated agent role inside a workflow. Handoffs to sub-agents are explicit and contract-validated. |
+| Design Review Session | Tenant-scoped Design Reviewer Council container with safe request summary, active immutable revision, quorum policy, rounds, manual decisions, and handoff state. |
+| Agent Communication Graph | Backend-owned safe projection of draft, published, or runtime agent communication nodes, edges, references, badges, provenance, and accessible summaries. |
+| Runtime Interaction Evidence | Durable safe-summary replay record for source-to-target runtime communication such as delegation, context transfer, result return, joins, approvals, handoffs, tool calls, and manual resolution. |
 | Principal identity | Persisted user identity metadata for Auth0, local-principal, or system actors. Passwords are not stored. |
 | User invitation | Platform-scoped or tenant-scoped invitation with normalized operational email, masked display, requested roles, status, expiry, and idempotency metadata. |
 | Tenant membership | Relationship between a principal identity and a tenant, with active, suspended, or removed status. |

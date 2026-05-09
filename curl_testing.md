@@ -1,14 +1,14 @@
 # Sequential curl API Test Plan
 
-This document is a sequential JSON/API walkthrough for specs 001 through 065.
+This document is a sequential JSON/API walkthrough for specs 001 through 068.
 It is based on the implemented FastAPI route inventory in
 `multi_agent_platform.api.main` and the feature QA/integration tests.
 
 The commands assume a local QA database has been migrated and seeded with the
-Acme and Globex tenants used throughout the specs. Server-rendered admin UI
-pages are intentionally excluded because they return HTML, not JSON. One SSE
-endpoint is included as a special non-JSON stream because it is part of the API
-surface.
+Acme and Globex tenants used throughout the specs. The primary coverage is the
+JSON/SSE API surface; read-only React admin URLs and legacy redirect/page URLs
+are included as smoke scenarios so the walkthrough stays aligned with the full
+FastAPI URL inventory.
 
 ## 0. Local Setup
 
@@ -123,6 +123,26 @@ Expected `401`:
 
 ```json
 {"detail":"missing local principal header or cookie"}
+```
+
+### 1.8 Local principal login and logout URLs
+
+```bash
+curl -sS "$BASE_URL/auth/local-login.json?redirect_to=/admin/app" \
+  | jq -e '.auth_mode == "local_principal" and (.principals | length) >= 4'
+curl -sS "$BASE_URL/auth/local-login?redirect_to=/admin/app" >/dev/null
+curl -sS -i -X POST -H 'Content-Type: application/x-www-form-urlencoded' \
+  "$BASE_URL/auth/local-login" \
+  --data-urlencode 'principal=tenant-admin-acme' \
+  --data-urlencode 'redirect_to=/admin/app' \
+  --data-urlencode 'action_token=local-principal-login'
+curl -sS -i "$BASE_URL/auth/local-logout?redirect_to=/auth/local-login"
+```
+
+Expected `303`:
+
+```json
+true
 ```
 
 ## 2. Membership And Platform Access Bootstrap
@@ -326,6 +346,61 @@ curl -sS -H "$ACME_HEADER" "$BASE_URL/admin/filters/workflows/$FILTER_ID/restore
 ```
 
 Expected `303` redirect to `/admin/workflows/ui?tenant_id=...&status=draft`.
+
+### 2.15 GET and POST /admin/filters/{admin_area}
+
+The saved-filter envelope is JSON. The HTML form-compatible save endpoint
+redirects after persisting sanitized criteria.
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/filters/workflows.json?tenant_id=$ACME_TENANT_ID" \
+  >/dev/null
+curl -sS -i -X POST -H "$ACME_HEADER" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  "$BASE_URL/admin/filters/workflows?tenant_id=$ACME_TENANT_ID" \
+  --data-urlencode 'filter_key=curl-workflows-extra' \
+  --data-urlencode 'display_name=Curl extra workflow filter' \
+  --data-urlencode 'criteria={"status":"published"}' \
+  --data-urlencode 'return_to=/admin/app/workflows'
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/filters/workflows.json?tenant_id=$ACME_TENANT_ID" \
+  | tee /tmp/curl-filters-after-save.json
+export EXTRA_FILTER_ID="$(jq -r '.saved_filters[] | select(.filter_key == "curl-workflows-extra") | .filter_id' /tmp/curl-filters-after-save.json)"
+```
+
+Expected `200`:
+
+```json
+{"admin_area":"workflows","saved_filters":[{"filter_key":"curl-workflows-extra"}]}
+```
+
+### 2.16 GET, DELETE, and POST-delete /admin/filters/{admin_area}/{filter_id}
+
+```bash
+curl -sS -i -H "$ACME_HEADER" \
+  "$BASE_URL/admin/filters/workflows?tenant_id=$ACME_TENANT_ID"
+curl -sS -i -X DELETE -H "$ACME_HEADER" \
+  "$BASE_URL/admin/filters/workflows/$EXTRA_FILTER_ID?tenant_id=$ACME_TENANT_ID"
+curl -sS -i -X POST -H "$ACME_HEADER" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  "$BASE_URL/admin/filters/workflows?tenant_id=$ACME_TENANT_ID" \
+  --data-urlencode 'filter_key=curl-workflows-post-delete' \
+  --data-urlencode 'display_name=Curl post-delete workflow filter' \
+  --data-urlencode 'criteria={"status":"draft"}' \
+  --data-urlencode 'return_to=/admin/app/workflows'
+export POST_DELETE_FILTER_ID="$(curl -sS -H "$ACME_HEADER" "$BASE_URL/admin/filters/workflows.json?tenant_id=$ACME_TENANT_ID" | jq -r '.saved_filters[] | select(.filter_key == "curl-workflows-post-delete") | .filter_id')"
+curl -sS -i -X POST -H "$ACME_HEADER" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  "$BASE_URL/admin/filters/workflows/$POST_DELETE_FILTER_ID?tenant_id=$ACME_TENANT_ID" \
+  --data-urlencode 'return_to=/admin/app/workflows'
+```
+
+Expected `303`:
+
+```json
+{"detail":"redirect after saved-filter URL operation"}
+```
 
 ## 3. Workflow Registry And Builder APIs
 
@@ -2004,7 +2079,9 @@ Expected `200`:
 ```bash
 curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/usage/api/exports" \
-  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","filters":{"model_id":"gpt-test"}}'
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","filters":{"model_id":"gpt-test"}}' \
+  | tee /tmp/curl-usage-export.json
+export USAGE_EXPORT_ID="$(jq -r '.usage_export_request_id' /tmp/curl-usage-export.json)"
 ```
 
 Expected `201`:
@@ -3054,13 +3131,303 @@ Expected `403`:
 {"detail":"design review template access denied"}
 ```
 
-## 18. Coverage Checklist
+## 18. React Admin, Local UI, And URL Surface Smoke
 
-The walkthrough covers the JSON/API endpoints from specs 001 through 064:
+These smoke checks keep the URL walkthrough aligned with the current FastAPI
+route inventory, including read-only React admin routes, local auth helper
+routes, legacy redirect URLs, and SPA deep links. Canonical JSON APIs above
+remain the source of truth for mutation bodies and domain behavior.
+
+### 18.1 GET /admin and /admin/scope redirect URLs
+
+```bash
+curl -sS -i -H "$ACME_HEADER" "$BASE_URL/admin"
+curl -sS -i -H "$ACME_HEADER" \
+  "$BASE_URL/admin/scope?tenant_id=$ACME_TENANT_ID&next=/admin/app/workflows"
+```
+
+Expected `303`:
+
+```json
+{"detail":"redirect to React admin shell"}
+```
+
+### 18.2 React shell missing-auth scenario
+
+```bash
+curl -sS -i "$BASE_URL/admin/app/bootstrap.json"
+```
+
+Expected `401`:
+
+```json
+{"detail":"missing local principal header or cookie"}
+```
+
+### 18.3 React shell and migration URL scenarios
+
+```bash
+react_shell_urls=(
+  "/admin/app?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/bootstrap.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/home.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/config.json"
+  "/admin/app/manifest.json"
+  "/admin/app/search.json?tenant_id=$ACME_TENANT_ID&q=workflow"
+  "/admin/app/migration?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/migration/shell.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/migration/bootstrap.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/migration/routes.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/migration/decommission-inventory.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/migration/live-data-inventory.json?tenant_id=$ACME_TENANT_ID&ci_mode=true&source_scan=false"
+  "/admin/app/migration/transitional-labels.json?tenant_id=$ACME_TENANT_ID&ci_mode=true&source_scan=false"
+  "/admin/app/migration/jinja-inventory.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/migration/rollback.json?tenant_id=$ACME_TENANT_ID"
+)
+for url in "${react_shell_urls[@]}"; do
+  curl -sS -H "$ACME_HEADER" "$BASE_URL$url" >/dev/null
+done
+```
+
+Expected `200`:
+
+```json
+{"detail":"React shell and migration URLs returned successfully"}
+```
+
+### 18.4 React workflow URL scenarios
+
+```bash
+react_workflow_urls=(
+  "/admin/app/workflows?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/new?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/registry.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/create.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/legacy-routes.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/builder.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/lookups.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID"
+  "/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/detail.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/publish-gate.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/revisions"
+  "/admin/app/workflows/versions/$WORKFLOW_VERSION_BUNDLE_ID"
+  "/admin/app/workflows/versions/$WORKFLOW_VERSION_BUNDLE_ID/detail.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/saved-filters/workflows?tenant_id=$ACME_TENANT_ID"
+)
+for url in "${react_workflow_urls[@]}"; do
+  curl -sS -H "$ACME_HEADER" "$BASE_URL$url" >/dev/null
+done
+```
+
+Expected `200`:
+
+```json
+{"detail":"React workflow URLs returned successfully"}
+```
+
+### 18.5 React governance URL scenarios
+
+```bash
+react_governance_urls=(
+  "/admin/app/governance?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/governance/bootstrap.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/governance/providers.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/governance/providers/$PROVIDER_CONNECTION_ID"
+  "/admin/app/governance/providers/$PROVIDER_CONNECTION_ID/edit"
+  "/admin/app/governance/prompts.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/governance/prompts/$PROMPT_LINEAGE_ID/edit"
+  "/admin/app/governance/prompts/versions/$PROMPT_VERSION_ID"
+  "/admin/app/governance/prompts/$PROMPT_LINEAGE_ID/history"
+  "/admin/app/governance/prompts/$PROMPT_LINEAGE_ID/preview"
+  "/admin/app/governance/profiles.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/governance/profiles/$AGENT_PROFILE_ID/edit"
+  "/admin/app/governance/profiles/versions/$AGENT_PROFILE_VERSION_ID"
+  "/admin/app/governance/profiles/$AGENT_PROFILE_ID/history"
+  "/admin/app/governance/profiles/resolve"
+  "/admin/app/governance/routing"
+  "/admin/app/governance/history"
+  "/admin/app/governance/history.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/governance/provenance/$RUNTIME_RUN_ID"
+  "/admin/app/governance/provenance/$RUNTIME_RUN_ID.json?tenant_id=$ACME_TENANT_ID"
+)
+for url in "${react_governance_urls[@]}"; do
+  curl -sS -H "$PLATFORM_HEADER" "$BASE_URL$url" >/dev/null
+done
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/app/governance/legacy-routes.json?tenant_id=$ACME_TENANT_ID" \
+  >/dev/null
+```
+
+Expected `200`:
+
+```json
+{"detail":"React governance URLs returned successfully"}
+```
+
+### 18.6 React skills, test bench, memberships, channels, and usage URLs
+
+```bash
+react_tenant_workspace_urls=(
+  "/admin/app/skills?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/skills/bootstrap.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/skills/legacy-routes.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/skills/packages/calendar-assistant"
+  "/admin/app/skills/packages/calendar-assistant/candidate"
+  "/admin/app/skills/packages/calendar-assistant/versions/1.2.3"
+  "/admin/app/skills/available-versions?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/skills/discovery.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/skills/installations?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/skills/installations.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/skills/installations/$SKILL_INSTALLATION_ID"
+  "/admin/app/skills/installations/$SKILL_INSTALLATION_ID/credentials"
+  "/admin/app/skills/diagnostics"
+  "/admin/app/skills/diagnostics.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/skills/audit.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/test-bench?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/test-bench/bootstrap.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/test-bench/suites?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/test-bench/suites/$AGENT_SUITE_ID?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/test-bench/runs.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/test-bench/runs/$AGENT_RUN_ID.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/test-bench/gates.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/test-bench/audit.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/memberships?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/memberships/bootstrap.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/memberships/access-history.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/memberships/audit.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/channels?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/channels/runs?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/channels/runs/$CHANNEL_RUN_ID?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/channels/shell.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/channels/bootstrap.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/channels/telegram/deliveries.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/channels/runs/$CHANNEL_RUN_ID/status.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/channels/briefing/preferences.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/usage?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/usage/bootstrap.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/usage/events.json?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/usage/exports/$USAGE_EXPORT_ID"
+  "/admin/app/usage/exports/$USAGE_EXPORT_ID.json?tenant_id=$ACME_TENANT_ID"
+)
+for url in "${react_tenant_workspace_urls[@]}"; do
+  curl -sS -H "$ACME_HEADER" "$BASE_URL$url" >/dev/null
+done
+curl -sS -i -H "$ACME_HEADER" \
+  "$BASE_URL/admin/app/test-bench/artifacts/00000000-0000-0000-0000-000000000000.json?tenant_id=$ACME_TENANT_ID"
+```
+
+Expected `404`:
+
+```json
+{"detail":"not_found"}
+```
+
+### 18.7 React operations URL scenarios
+
+```bash
+react_operations_urls=(
+  "/admin/app/operations"
+  "/admin/app/operations.json"
+  "/admin/app/operations.json?run_id=$RUNTIME_RUN_ID"
+  "/admin/app/operations/runs/$RUNTIME_RUN_ID.json?tenant_id=$ACME_TENANT_ID"
+)
+for url in "${react_operations_urls[@]}"; do
+  curl -sS -H "$PLATFORM_HEADER" "$BASE_URL$url" >/dev/null
+done
+curl -sS -X POST -H "$PLATFORM_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/operations/export" \
+  -d '{"range":"60m","included_sections":["summary","logs","run_debug","reliability","exports"]}' >/dev/null
+```
+
+Expected `200`:
+
+```json
+{"detail":"React operations URLs returned successfully"}
+```
+
+### 18.8 Legacy HTML redirect URL scenarios
+
+```bash
+platform_legacy_redirect_urls=(
+  "/admin/workflows/ui?tenant_id=$ACME_TENANT_ID"
+  "/admin/workflows/new?tenant_id=$ACME_TENANT_ID"
+  "/admin/workflows/drafts/$WORKFLOW_DRAFT_ID/editor"
+  "/admin/workflows/drafts/$WORKFLOW_DRAFT_ID/revisions/ui"
+  "/admin/workflows/drafts/$WORKFLOW_DRAFT_ID/publish-gate/ui"
+  "/admin/workflows/versions/$WORKFLOW_VERSION_BUNDLE_ID/detail"
+  "/admin/model-providers"
+  "/admin/model-providers/new"
+  "/admin/model-providers/catalog"
+  "/admin/model-providers/$PROVIDER_CONNECTION_ID"
+  "/admin/model-providers/$PROVIDER_CONNECTION_ID/edit"
+  "/admin/prompt-runtime/prompts?tenant_id=$ACME_TENANT_ID"
+  "/admin/prompt-runtime/prompts/new?tenant_id=$ACME_TENANT_ID"
+  "/admin/prompt-runtime/prompts/$PROMPT_LINEAGE_ID/edit"
+  "/admin/prompt-runtime/prompts/versions/$PROMPT_VERSION_ID"
+  "/admin/prompt-runtime/prompts/$PROMPT_LINEAGE_ID/history"
+  "/admin/prompt-runtime/prompts/$PROMPT_LINEAGE_ID/preview"
+  "/admin/prompt-runtime/profiles?tenant_id=$ACME_TENANT_ID"
+  "/admin/prompt-runtime/profiles/new?tenant_id=$ACME_TENANT_ID"
+  "/admin/prompt-runtime/profiles/$AGENT_PROFILE_ID/edit"
+  "/admin/prompt-runtime/profiles/versions/$AGENT_PROFILE_VERSION_ID"
+  "/admin/prompt-runtime/profiles/$AGENT_PROFILE_ID/history"
+  "/admin/prompt-runtime/profiles/resolve"
+  "/admin/config/ui?tenant_id=$ACME_TENANT_ID"
+  "/admin/config/ui/history?tenant_id=$ACME_TENANT_ID"
+  "/admin/config/ui/runs/$RUNTIME_RUN_ID/provenance?tenant_id=$ACME_TENANT_ID"
+  "/admin/skill-registry/ui/packages"
+  "/admin/skill-registry/ui/packages/new"
+  "/admin/skill-registry/ui/packages/calendar-assistant"
+  "/admin/skill-registry/ui/packages/calendar-assistant/candidate"
+  "/admin/skill-registry/ui/packages/calendar-assistant/versions/1.2.3"
+  "/admin/skill-registry/ui/packages/calendar-assistant/versions/1.2.3/grants"
+  "/admin/skill-execution/ui/diagnostics?tenant_id=$ACME_TENANT_ID"
+  "/admin/agent-tests/ui?tenant_id=$ACME_TENANT_ID"
+  "/admin/agent-tests/ui/suites/new?tenant_id=$ACME_TENANT_ID"
+  "/admin/agent-tests/ui/suites/$AGENT_SUITE_ID?tenant_id=$ACME_TENANT_ID"
+  "/admin/agent-tests/ui/runs/$AGENT_RUN_ID?tenant_id=$ACME_TENANT_ID"
+  "/admin/briefing-preferences?tenant_id=$ACME_TENANT_ID"
+  "/admin/usage?tenant_id=$ACME_TENANT_ID"
+  "/admin/usage/exports/$USAGE_EXPORT_ID"
+  "/admin/memberships?tenant_id=$ACME_TENANT_ID"
+  "/admin/telegram?tenant_id=$ACME_TENANT_ID"
+  "/admin/operations"
+  "/admin/reliability/ui/"
+  "/admin/reliability/ui/breakers"
+  "/admin/reliability/ui/dead-letters"
+)
+for url in "${platform_legacy_redirect_urls[@]}"; do
+  curl -sS -i -H "$PLATFORM_HEADER" "$BASE_URL$url" >/dev/null
+done
+
+tenant_legacy_redirect_urls=(
+  "/admin/skill-registry/ui/available-versions?tenant_id=$ACME_TENANT_ID"
+  "/admin/skill-registry/ui/installations?tenant_id=$ACME_TENANT_ID"
+  "/admin/skill-registry/ui/installations/$SKILL_INSTALLATION_ID"
+  "/admin/skill-registry/ui/installations/$SKILL_INSTALLATION_ID/credentials"
+  "/runs"
+  "/runs/new?tenant_id=$ACME_TENANT_ID"
+  "/runs/$CHANNEL_RUN_ID"
+)
+for url in "${tenant_legacy_redirect_urls[@]}"; do
+  curl -sS -i -H "$ACME_HEADER" "$BASE_URL$url" >/dev/null
+done
+```
+
+Expected `303`:
+
+```json
+{"detail":"legacy URL redirects returned successfully"}
+```
+
+## 19. Coverage Checklist
+
+The walkthrough covers the JSON/API and URL-surface scenarios from specs 001
+through 068:
 
 - Operations foundation: `/health/live`, `/health/ready`, `/version`, `/dependencies`
-- Auth and access: `/auth/me`, `/auth/tenant-context/{tenant_id}`, `/admin/tenants/{tenant_id}/role-grants`, `/admin/role-grants`, `/admin/support-overrides`, `/admin/support-overrides/{support_override_request_id}/approve`
-- Admin saved-filter JSON restore: `/admin/filters/{admin_area}/{filter_id}/restore`
+- Auth and access: `/auth/me`, `/auth/tenant-context/{tenant_id}`, `/auth/local-login.json`, `/auth/local-login`, `/auth/local-logout`, `/admin/tenants/{tenant_id}/role-grants`, `/admin/role-grants`, `/admin/support-overrides`, `/admin/support-overrides/{support_override_request_id}/approve`
+- Admin shell and saved filters: `/admin`, `/admin/scope`, `/admin/filters/{admin_area}.json`, `/admin/filters/{admin_area}`, `/admin/filters/{admin_area}/{filter_id}/restore`, and delete aliases for `/admin/filters/{admin_area}/{filter_id}`
 - Workflow registry: all `/admin/workflows` JSON endpoints, including draft and published Agent Communication Graph JSON projections
 - Durable runtime: all `/runtime/runs` JSON endpoints
 - Immutable memory: all `/memory` JSON endpoints
@@ -3078,7 +3445,11 @@ The walkthrough covers the JSON/API endpoints from specs 001 through 064:
 - Reliability controls: all `/admin/reliability` JSON endpoints
 - Audit and debugging: all `/admin/runs` JSON endpoints
 - Design review domain foundation, coordinator, workspace bootstrap, and reusable template setup: all `/admin/design-reviews` JSON endpoints and `/admin/app/design-reviews/bootstrap.json`
+- React admin shell and migration: `/admin/app`, `/admin/app/bootstrap.json`, `/admin/app/home.json`, `/admin/app/config.json`, `/admin/app/manifest.json`, `/admin/app/search.json`, and all `/admin/app/migration` JSON inventories, including live-data and transitional-label scans
+- React admin workspaces: read URL scenarios for `/admin/app/workflows`, `/admin/app/governance`, `/admin/app/skills`, `/admin/app/test-bench`, `/admin/app/memberships`, `/admin/app/channels`, `/admin/app/usage`, `/admin/app/operations`, `/admin/app/design-reviews`, and SPA deep links under those workspaces
+- Legacy and HTML URL aliases: redirect smoke coverage for workflow, governance, model-provider, prompt/profile, skill registry, skill execution, test bench, briefing, usage, memberships, Telegram, operations, reliability, and channel-run UI routes
 
-Known non-JSON API-adjacent routes, such as admin shell pages, prompt/profile
-form pages, workflow UI pages, reliability UI pages, and model-provider form
-pages, return HTML and are primarily validated in the browser/UI QA guides.
+React admin mutation facades under `/admin/app/...` are represented by the
+canonical JSON mutations above plus the React URL smoke sections. Their request
+body behavior is covered by the focused API, contract, and browser QA suites so
+this walkthrough can stay deterministic and side-effect bounded.
