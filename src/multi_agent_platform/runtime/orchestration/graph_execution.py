@@ -10,6 +10,8 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from multi_agent_platform.db.models.runtime_orchestration import (
+    RuntimeInteractionKind,
+    RuntimeInteractionStatus,
     RuntimeRunStatus,
     RuntimeStepStatus,
 )
@@ -22,6 +24,10 @@ from multi_agent_platform.runtime.orchestration.graph_roles import (
     RoleExecutionContext,
     RoleExecutionResult,
     RoleNodeExecutor,
+)
+from multi_agent_platform.runtime.orchestration.interaction_evidence import (
+    interaction_idempotency_key,
+    record_runtime_interaction,
 )
 
 
@@ -668,6 +674,26 @@ class GraphExecutionService:
                 status=RuntimeStepStatus.SUCCEEDED,
                 output_ref=output_ref,
             )
+            await self._record_interaction(
+                run=run,
+                source_node_key=node.node_key,
+                target_node_key=None,
+                interaction_kind=RuntimeInteractionKind.RUN_COMPLETION,
+                status=RuntimeInteractionStatus.COMPLETED,
+                safe_summary=(
+                    f"{plan.workflow_key} completed at terminal node {node.node_key}."
+                ),
+                stable_ref={
+                    "run_step_id": str(step.run_step_id),
+                    "terminal": node.node_key,
+                },
+                source_run_step_id=step.run_step_id,
+                metadata={
+                    "workflow_key": plan.workflow_key,
+                    "terminal_node_key": node.node_key,
+                    "output_ref": output_ref,
+                },
+            )
             await self._timeline(
                 run,
                 "graph_final_output_persisted",
@@ -689,6 +715,23 @@ class GraphExecutionService:
                 run_step_id=step.run_step_id,
                 status=RuntimeStepStatus.PAUSED,
                 output_ref={"safe_summary": "Approval node paused execution."},
+            )
+            await self._record_interaction(
+                run=run,
+                source_node_key=node.node_key,
+                target_node_key=None,
+                interaction_kind=RuntimeInteractionKind.APPROVAL_PAUSE,
+                status=RuntimeInteractionStatus.PAUSED,
+                safe_summary=f"Approval required at {node.node_key}.",
+                stable_ref={
+                    "run_step_id": str(step.run_step_id),
+                    "approval": node.node_key,
+                },
+                source_run_step_id=step.run_step_id,
+                metadata={
+                    "approval_node_key": node.node_key,
+                    "pause_reason": f"approval required at {node.node_key}",
+                },
             )
             return GraphExecutionResult(
                 status=GraphExecutionStatus.PAUSED,
@@ -729,6 +772,38 @@ class GraphExecutionService:
             failed=failed,
         )
         decision = evaluate_join_policy(policy, branch_results)
+        for result in branch_results:
+            await self._record_interaction(
+                run=run,
+                source_node_key=result.node_key,
+                target_node_key=node.node_key,
+                interaction_kind=RuntimeInteractionKind.JOIN_CONTRIBUTION,
+                status=RuntimeInteractionStatus.COMPLETED
+                if result.status == "succeeded"
+                else RuntimeInteractionStatus.FAILED,
+                safe_summary=(
+                    result.safe_summary
+                    or (
+                        f"{result.node_key} contributed {result.status} evidence "
+                        f"to {node.node_key}."
+                    )
+                ),
+                stable_ref={
+                    "join_node_key": node.node_key,
+                    "source_node_key": result.node_key,
+                    "status": result.status,
+                    "run_step_id": str(run_step_id),
+                },
+                target_run_step_id=run_step_id,
+                metadata={
+                    "join_node_key": node.node_key,
+                    "source_node_key": result.node_key,
+                    "join_policy_key": policy.join_policy_key,
+                    "branch_status": result.status,
+                    "output_ref": result.output_ref,
+                    "error_code": result.error_code,
+                },
+            )
         payload = {
             "node_key": node.node_key,
             "join_policy_key": policy.join_policy_key,
@@ -808,6 +883,21 @@ class GraphExecutionService:
                 status=RuntimeRunStatus.PAUSED,
                 pause_reason=decision.safe_summary,
             )
+            await self._record_interaction(
+                run=run,
+                source_node_key=node.node_key,
+                target_node_key=None,
+                interaction_kind=RuntimeInteractionKind.MANUAL_RESOLUTION,
+                status=RuntimeInteractionStatus.PAUSED,
+                safe_summary=decision.safe_summary,
+                stable_ref={
+                    "join_node_key": node.node_key,
+                    "manual_resolution": True,
+                    "run_step_id": str(run_step_id),
+                },
+                source_run_step_id=run_step_id,
+                metadata=partial,
+            )
             await self._timeline(
                 run,
                 "graph_manual_resolution_required",
@@ -874,6 +964,24 @@ class GraphExecutionService:
             checkpoint_kind="terminal" if node.node_type == "terminal" else "superstep",
             bundle_digest=run.bundle_digest if hasattr(run, "bundle_digest") else "",
         )
+        await self._record_interaction(
+            run=run,
+            source_node_key=node.node_key,
+            target_node_key=None,
+            interaction_kind=RuntimeInteractionKind.RESULT_RETURN,
+            status=RuntimeInteractionStatus.COMPLETED,
+            safe_summary=f"{node.node_key} produced safe result evidence.",
+            stable_ref={
+                "run_step_id": str(run_step_id),
+                "result": node.node_key,
+            },
+            source_run_step_id=run_step_id,
+            metadata={
+                "node_key": node.node_key,
+                "node_type": node.node_type,
+                "output_ref": output_ref,
+            },
+        )
         for edge in plan.outbound_edges_by_source.get(node.node_key, ()):
             contract_key = edge.contract_key or "handoff"
             contract_schema = plan.contracts_by_key.get(contract_key, {})
@@ -886,6 +994,29 @@ class GraphExecutionService:
                 contract_version="1.0.0",
                 contract_digest=sha256_digest(contract_schema),
                 payload_ref=output_ref,
+            )
+            await self._record_interaction(
+                run=run,
+                source_node_key=edge.source_node_key,
+                target_node_key=edge.target_node_key,
+                interaction_kind=RuntimeInteractionKind.HANDOFF,
+                status=RuntimeInteractionStatus.SENT,
+                safe_summary=(
+                    f"{edge.source_node_key} sent safe context to "
+                    f"{edge.target_node_key}."
+                ),
+                stable_ref={
+                    "run_step_id": str(run_step_id),
+                    "edge_key": edge.edge_key,
+                    "kind": "handoff",
+                },
+                source_run_step_id=run_step_id,
+                metadata={
+                    "edge_key": edge.edge_key,
+                    "contract_key": contract_key,
+                    "contract_digest": sha256_digest(contract_schema),
+                    "payload_ref": output_ref,
+                },
             )
         node_role = plan.roles_by_key.get(node.role_key or "")
         if node_role is not None:
@@ -928,6 +1059,48 @@ class GraphExecutionService:
             event_type=event_type,
             payload=dict(payload),
             trace_id=run.trace_id,
+        )
+
+    async def _record_interaction(
+        self,
+        *,
+        run: Any,
+        source_node_key: str,
+        target_node_key: str | None,
+        interaction_kind: RuntimeInteractionKind,
+        status: RuntimeInteractionStatus,
+        safe_summary: str,
+        stable_ref: object,
+        metadata: Mapping[str, object],
+        source_run_step_id: UUID | None = None,
+        target_run_step_id: UUID | None = None,
+        timeline_event_id: UUID | None = None,
+    ) -> None:
+        await record_runtime_interaction(
+            self.repository,
+            tenant_id=run.tenant_id,
+            workflow_run_id=run.workflow_run_id,
+            source_node_key=source_node_key,
+            target_node_key=target_node_key,
+            source_run_step_id=source_run_step_id,
+            target_run_step_id=target_run_step_id,
+            timeline_event_id=timeline_event_id,
+            interaction_kind=interaction_kind,
+            status=status,
+            safe_summary=safe_summary,
+            idempotency_key=interaction_idempotency_key(
+                workflow_run_id=run.workflow_run_id,
+                source_node_key=source_node_key,
+                target_node_key=target_node_key,
+                interaction_kind=interaction_kind,
+                stable_ref=stable_ref,
+            ),
+            metadata={
+                "trace_id": run.trace_id,
+                "run_bundle_id": str(run.run_bundle_id),
+                "instrumentation": "graph_execution",
+                **dict(metadata),
+            },
         )
 
     async def _fail_run(self, run: Any, *, reason: str, worker_id: str) -> None:

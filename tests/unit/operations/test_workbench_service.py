@@ -242,6 +242,14 @@ async def test_persisted_run_debug_uses_runtime_bundle_steps_and_events(
             service=service,
             workflow_run_id=run_id,
         )
+        envelope = await build_operations_workbench_envelope(
+            scope=ReactAdminScope(
+                scope_type="platform", tenant_id=None, label="Platform"
+            ),
+            principal=_principal(),
+            service=service,
+            run_id=run_id,
+        )
         with pytest.raises(RunDebugNotFoundError):
             await build_run_debug_envelope(
                 scope=ReactAdminScope(
@@ -257,6 +265,8 @@ async def test_persisted_run_debug_uses_runtime_bundle_steps_and_events(
         await container.dispose()
 
     assert debug.safe_title == f"Workflow run {str(run_id)[:8]} (running)"
+    assert envelope.run_debug is not None
+    assert envelope.run_debug.workflow_run_id == str(run_id)
     assert "bbbbbbbbbbbb" in debug.bundle_summary
     assert debug.timeline[0].category == "runtime_run"
     assert any(event.category == "node_started" for event in debug.timeline)

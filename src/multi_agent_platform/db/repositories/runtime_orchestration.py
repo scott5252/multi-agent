@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.db.models.runtime_orchestration import (
@@ -13,6 +13,9 @@ from multi_agent_platform.db.models.runtime_orchestration import (
     RuntimeCheckpointRefRecord,
     RuntimeExecutionBundleRecord,
     RuntimeHandoffStatus,
+    RuntimeInteractionEvidenceRecord,
+    RuntimeInteractionKind,
+    RuntimeInteractionStatus,
     RuntimeRetentionPolicyRecord,
     RuntimeRunStatus,
     RuntimeSideEffectStatus,
@@ -133,6 +136,130 @@ class RuntimeOrchestrationRepository:
             .order_by(RunStepRecord.created_at.asc())
         )
         return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_handoff_envelopes(
+        self, *, workflow_run_id: UUID, tenant_id: UUID | None
+    ) -> list[HandoffEnvelopeRecord]:
+        stmt = (
+            select(HandoffEnvelopeRecord)
+            .where(
+                HandoffEnvelopeRecord.workflow_run_id == workflow_run_id,
+                HandoffEnvelopeRecord.tenant_id == tenant_id,
+            )
+            .order_by(HandoffEnvelopeRecord.created_at.asc())
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_side_effect_intents(
+        self, *, workflow_run_id: UUID, tenant_id: UUID | None
+    ) -> list[SideEffectIntentRecord]:
+        stmt = (
+            select(SideEffectIntentRecord)
+            .where(
+                SideEffectIntentRecord.workflow_run_id == workflow_run_id,
+                SideEffectIntentRecord.tenant_id == tenant_id,
+            )
+            .order_by(SideEffectIntentRecord.created_at.asc())
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_approval_gates(
+        self, *, workflow_run_id: UUID, tenant_id: UUID | None
+    ) -> list[ApprovalGateRecord]:
+        stmt = (
+            select(ApprovalGateRecord)
+            .where(
+                ApprovalGateRecord.workflow_run_id == workflow_run_id,
+                ApprovalGateRecord.tenant_id == tenant_id,
+            )
+            .order_by(ApprovalGateRecord.created_at.asc())
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def get_interaction_evidence_by_idempotency(
+        self,
+        *,
+        tenant_id: UUID | None,
+        workflow_run_id: UUID,
+        idempotency_key: str,
+    ) -> RuntimeInteractionEvidenceRecord | None:
+        stmt = select(RuntimeInteractionEvidenceRecord).where(
+            RuntimeInteractionEvidenceRecord.workflow_run_id == workflow_run_id,
+            RuntimeInteractionEvidenceRecord.tenant_id == tenant_id,
+            RuntimeInteractionEvidenceRecord.idempotency_key == idempotency_key,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def list_interaction_evidence(
+        self, *, workflow_run_id: UUID, tenant_id: UUID | None
+    ) -> list[RuntimeInteractionEvidenceRecord]:
+        stmt = (
+            select(RuntimeInteractionEvidenceRecord)
+            .where(
+                RuntimeInteractionEvidenceRecord.workflow_run_id == workflow_run_id,
+                RuntimeInteractionEvidenceRecord.tenant_id == tenant_id,
+            )
+            .order_by(RuntimeInteractionEvidenceRecord.sequence.asc())
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def record_interaction_evidence(
+        self,
+        *,
+        tenant_id: UUID | None,
+        workflow_run_id: UUID,
+        source_node_key: str,
+        target_node_key: str | None,
+        interaction_kind: RuntimeInteractionKind,
+        status: RuntimeInteractionStatus,
+        safe_summary: str,
+        classification: str,
+        payload_digest: str,
+        provenance: dict[str, object],
+        idempotency_key: str,
+        artifact_refs: list[object] | None = None,
+        source_run_step_id: UUID | None = None,
+        target_run_step_id: UUID | None = None,
+        timeline_event_id: UUID | None = None,
+        occurred_at: datetime | None = None,
+    ) -> RuntimeInteractionEvidenceRecord:
+        existing = await self.get_interaction_evidence_by_idempotency(
+            tenant_id=tenant_id,
+            workflow_run_id=workflow_run_id,
+            idempotency_key=idempotency_key,
+        )
+        if existing is not None:
+            return existing
+
+        sequence_stmt = select(
+            func.coalesce(func.max(RuntimeInteractionEvidenceRecord.sequence), 0)
+        ).where(
+            RuntimeInteractionEvidenceRecord.workflow_run_id == workflow_run_id,
+            RuntimeInteractionEvidenceRecord.tenant_id == tenant_id,
+        )
+        max_sequence = (await self.session.execute(sequence_stmt)).scalar_one()
+        record = RuntimeInteractionEvidenceRecord(
+            tenant_id=tenant_id,
+            workflow_run_id=workflow_run_id,
+            source_node_key=source_node_key,
+            target_node_key=target_node_key,
+            source_run_step_id=source_run_step_id,
+            target_run_step_id=target_run_step_id,
+            timeline_event_id=timeline_event_id,
+            interaction_kind=interaction_kind,
+            status=status,
+            sequence=int(max_sequence) + 1,
+            safe_summary=safe_summary,
+            classification=classification,
+            payload_digest=payload_digest,
+            artifact_refs=artifact_refs or [],
+            provenance=provenance,
+            idempotency_key=idempotency_key,
+            occurred_at=occurred_at or datetime.now(UTC),
+        )
+        self.session.add(record)
+        await self.session.flush()
+        return record
 
     async def get_latest_run_step(
         self, *, workflow_run_id: UUID, step_key: str

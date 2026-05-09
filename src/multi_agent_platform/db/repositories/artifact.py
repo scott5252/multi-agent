@@ -10,6 +10,9 @@ class ArtifactRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
+    async def get(self, artifact_id: object) -> ArtifactRecord | None:
+        return await self.session.get(ArtifactRecord, artifact_id)
+
     async def create(self, artifact: ArtifactRecord) -> ArtifactRecord:
         self.session.add(artifact)
         await self.session.flush()

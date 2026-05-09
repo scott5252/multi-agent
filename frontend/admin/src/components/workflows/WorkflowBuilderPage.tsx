@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import {
   createWorkflowDraft,
+  fetchDraftAgentGraph,
+  fetchVersionAgentGraph,
   fetchWorkflowBuilder,
   fetchWorkflowLookups,
   publishWorkflowDraft,
@@ -9,6 +11,7 @@ import {
   validateWorkflowDraft,
 } from "../../api/client";
 import type {
+  AgentCommunicationGraph,
   BuilderMutationResult,
   WorkflowBuilderEnvelope,
   WorkflowPublishReadiness,
@@ -17,6 +20,7 @@ import type {
 } from "../../api/generated/reactAdminApi";
 import { buildIdempotencyKey } from "../../utils/adminActionMetadata";
 import { CommonState } from "../states/CommonState";
+import { AgentGraphPanel } from "./AgentGraphPanel";
 import { WorkflowGraphPanel } from "./WorkflowGraphPanel";
 import { WorkflowJsonInspector } from "./WorkflowJsonInspector";
 import { WorkflowPublishPanel } from "./WorkflowPublishPanel";
@@ -47,6 +51,18 @@ export function WorkflowBuilderPage({
     null,
   );
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [draftAgentGraph, setDraftAgentGraph] =
+    useState<AgentCommunicationGraph | null>(null);
+  const [draftAgentGraphError, setDraftAgentGraphError] = useState<string | null>(
+    null,
+  );
+  const [draftAgentGraphLoading, setDraftAgentGraphLoading] = useState(false);
+  const [versionAgentGraph, setVersionAgentGraph] =
+    useState<AgentCommunicationGraph | null>(null);
+  const [versionAgentGraphError, setVersionAgentGraphError] = useState<
+    string | null
+  >(null);
+  const [versionAgentGraphLoading, setVersionAgentGraphLoading] = useState(false);
   const [publishReadiness, setPublishReadiness] =
     useState<WorkflowPublishReadiness | null>(null);
   const [validation, setValidation] = useState<WorkflowValidationSummary | null>(
@@ -104,6 +120,83 @@ export function WorkflowBuilderPage({
       alive = false;
     };
   }, [builderUrl, lookupsUrl]);
+
+  useEffect(() => {
+    const workflowDraftId = envelope?.draft?.workflow_draft_id;
+    if (!workflowDraftId) {
+      setDraftAgentGraph(null);
+      setDraftAgentGraphError(null);
+      setDraftAgentGraphLoading(false);
+      return;
+    }
+    let alive = true;
+    setDraftAgentGraphLoading(true);
+    fetchDraftAgentGraph(workflowDraftId)
+      .then((payload) => {
+        if (!alive) {
+          return;
+        }
+        setDraftAgentGraph(payload);
+        setDraftAgentGraphError(null);
+      })
+      .catch((caught: unknown) => {
+        if (alive) {
+          setDraftAgentGraph(null);
+          setDraftAgentGraphError(
+            caught instanceof Error ? caught.message : "Draft graph unavailable",
+          );
+        }
+      })
+      .finally(() => {
+        if (alive) {
+          setDraftAgentGraphLoading(false);
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [envelope?.draft?.workflow_draft_id]);
+
+  const versionGraphId =
+    envelope?.version_detail?.workflow_version_bundle_id ??
+    workflowVersionIdFromPath();
+
+  useEffect(() => {
+    if (!versionGraphId) {
+      setVersionAgentGraph(null);
+      setVersionAgentGraphError(null);
+      setVersionAgentGraphLoading(false);
+      return;
+    }
+    let alive = true;
+    setVersionAgentGraphLoading(true);
+    fetchVersionAgentGraph(versionGraphId)
+      .then((payload) => {
+        if (!alive) {
+          return;
+        }
+        setVersionAgentGraph(payload);
+        setVersionAgentGraphError(null);
+      })
+      .catch((caught: unknown) => {
+        if (alive) {
+          setVersionAgentGraph(null);
+          setVersionAgentGraphError(
+            caught instanceof Error
+              ? caught.message
+              : "Published version graph unavailable",
+          );
+        }
+      })
+      .finally(() => {
+        if (alive) {
+          setVersionAgentGraphLoading(false);
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [versionGraphId]);
 
   function updateValues(values: WorkflowDraftFormValues) {
     setFormValues(values);
@@ -372,6 +465,12 @@ export function WorkflowBuilderPage({
         selectedPromptRef={formValues.selected_prompt_ref}
       />
       <WorkflowGraphPanel graph={envelope.draft.graph} />
+      <AgentGraphPanel
+        error={draftAgentGraphError}
+        graph={draftAgentGraph}
+        loading={draftAgentGraphLoading}
+        sourceLabel="Draft"
+      />
       <WorkflowValidationPanel
         lastResult={validationResult}
         onValidate={(ready) => void runValidation(ready)}
@@ -408,8 +507,23 @@ export function WorkflowBuilderPage({
           </small>
         </section>
       ) : null}
+      {versionGraphId ? (
+        <AgentGraphPanel
+          error={versionAgentGraphError}
+          graph={versionAgentGraph}
+          loading={versionAgentGraphLoading}
+          sourceLabel="Published version"
+        />
+      ) : null}
     </div>
   );
+}
+
+function workflowVersionIdFromPath(): string | null {
+  const match = window.location.pathname.match(
+    /^\/admin\/app\/workflows\/versions\/([^/]+)/,
+  );
+  return match?.[1] ?? null;
 }
 
 function buildCreateDocument(slug: string, displayName: string) {

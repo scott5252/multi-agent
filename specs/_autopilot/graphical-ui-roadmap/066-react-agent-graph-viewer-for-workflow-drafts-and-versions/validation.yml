@@ -19,10 +19,16 @@
   "playwright": {
     "flows": [
       {
-        "id": "qa066-graphical-ui-smoke",
+        "id": "qa066-draft-agent-graph-desktop",
         "steps": [
           {
-            "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
+            "viewport": {
+              "width": 1440,
+              "height": 1000
+            }
+          },
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/workflows/drafts/66666666-1111-4666-8666-000000000066"
           },
           {
             "wait_for_load_state": "networkidle"
@@ -34,16 +40,54 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Workflow"
+            "expect_text": "Draft communication"
           },
           {
-            "screenshot": "qa066-graphical-ui-smoke.png",
+            "click": "section[aria-labelledby=\"agent-node-list-title\"] button:has-text(\"Specialist\")"
+          },
+          {
+            "expect_text": "Sub-agent"
+          },
+          {
+            "screenshot": "qa066-agent-graph-desktop.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa066-version-agent-graph-mobile",
+        "steps": [
+          {
+            "viewport": {
+              "width": 390,
+              "height": 900
+            }
+          },
+          {
+            "goto": "/admin/app/workflows/versions/66666666-4444-4666-8666-000000000066"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Published version communication"
+          },
+          {
+            "screenshot": "qa066-agent-graph-mobile.png",
             "full_page": true
           }
         ]
       }
     ]
   },
+  "playwright_pre_commands": [
+    {
+      "id": "seed-qa066-agent-graph-viewer",
+      "command": "uv run python scripts/qa/seed_agent_graph_viewer_qa066.py",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    }
+  ],
   "extra_quality_commands": [
     {
       "id": "generated-react-types-fresh",

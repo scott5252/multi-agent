@@ -19,10 +19,16 @@
   "playwright": {
     "flows": [
       {
-        "id": "qa067-graphical-ui-smoke",
+        "id": "qa067-runtime-agent-graph-desktop",
         "steps": [
           {
-            "goto": "/auth/local-login?redirect_to=/admin/app/operations"
+            "viewport": {
+              "width": 1440,
+              "height": 1000
+            }
+          },
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/operations%3Frun_id%3D67676767-6666-4767-8767-000000000067%26tenant_id%3D11111111-1111-1111-1111-111111111111"
           },
           {
             "wait_for_load_state": "networkidle"
@@ -34,16 +40,60 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Operations"
+            "expect_text": "Runtime run communication"
           },
           {
-            "screenshot": "qa067-graphical-ui-smoke.png",
+            "expect_text": "retry_scheduled"
+          },
+          {
+            "click": "section[aria-labelledby=\"agent-node-list-title\"] button:has-text(\"Specialist\")"
+          },
+          {
+            "expect_text": "Specialist is retry scheduled"
+          },
+          {
+            "screenshot": "qa067-runtime-agent-graph-desktop.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa067-runtime-agent-graph-mobile",
+        "steps": [
+          {
+            "viewport": {
+              "width": 390,
+              "height": 900
+            }
+          },
+          {
+            "goto": "/admin/app/operations?run_id=67676767-6666-4767-8767-000000000067&tenant_id=11111111-1111-1111-1111-111111111111"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Runtime run communication"
+          },
+          {
+            "expect_text": "paused"
+          },
+          {
+            "screenshot": "qa067-runtime-agent-graph-mobile.png",
             "full_page": true
           }
         ]
       }
     ]
   },
+  "playwright_pre_commands": [
+    {
+      "id": "seed-qa067-runtime-agent-graph",
+      "command": "uv run python scripts/qa/seed_runtime_agent_graph_qa067.py",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    }
+  ],
   "extra_quality_commands": [
     {
       "id": "generated-react-types-fresh",

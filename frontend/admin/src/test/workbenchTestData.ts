@@ -1,4 +1,5 @@
 import type {
+  AgentCommunicationGraph,
   OperationsWorkbenchEnvelope,
   WorkbenchExportSnapshot,
 } from "../api/generated/reactAdminApi";
@@ -17,6 +18,126 @@ export const workbenchExportFixture: WorkbenchExportSnapshot = {
   scope_label: "Platform",
   status: "complete",
   summary: "Workbench export persisted with safe artifact metadata.",
+};
+
+export const runtimeAgentGraphFixture: AgentCommunicationGraph = {
+  accessibility: {
+    edge_summaries: ["Coordinator to Specialist runtime path is succeeded."],
+    node_summaries: [
+      "Coordinator runtime node is succeeded.",
+      "Specialist runtime node is retry scheduled.",
+    ],
+    summary:
+      "Runtime agent graph is partial with 2 nodes and 1 edges; node statuses: 1 retry_scheduled, 1 succeeded.",
+  },
+  badges: [
+    {
+      blocking: false,
+      code: "runtime.run.running",
+      label: "Running",
+      severity: "info",
+      source: "runtime",
+      summary: "Runtime run is running.",
+    },
+  ],
+  edges: [
+    {
+      accessibility_label:
+        "Coordinator to Specialist runtime path is succeeded.",
+      badges: [],
+      category: "delegates_to",
+      contract_key: "handoff-contract",
+      edge_id: "edge:coordinator->specialist",
+      edge_key: "coordinator-to-specialist",
+      label: "Coordinator to Specialist",
+      references: [
+        {
+          href: `/admin/app/operations?run_id=${liveRunId}&panel=lineage`,
+          label: "Handoff to specialist",
+          reference_id: "handoff:qa067",
+          reference_type: "handoff",
+          status: "ready",
+          summary: "Handoff contract handoff-contract is valid.",
+        },
+        {
+          href: `/admin/app/operations?run_id=${liveRunId}&panel=timeline`,
+          label: "Replay 1: handoff",
+          reference_id: "interaction:qa068",
+          reference_type: "interaction_evidence",
+          status: "ready",
+          summary: "Coordinator sent safe context to Specialist.",
+        },
+      ],
+      source_node_id: "node:coordinator",
+      status: "succeeded",
+      summary: "Coordinator sends safe context to Specialist.",
+      target_node_id: "node:specialist",
+    },
+  ],
+  graph_id: `runtime_run:${liveRunId}`,
+  nodes: [
+    {
+      accessibility_label: "Coordinator runtime node is succeeded.",
+      badges: [],
+      category: "coordinator_agent",
+      label: "Coordinator",
+      layout: { x: 0, y: 0 },
+      node_id: "node:coordinator",
+      node_key: "coordinator",
+      references: [
+        {
+          href: `/admin/app/operations?run_id=${liveRunId}&panel=timeline`,
+          label: "Run step coordinator",
+          reference_id: "run-step:coordinator",
+          reference_type: "run_step",
+          status: "ready",
+          summary: "Attempt 1 is succeeded.",
+        },
+      ],
+      role_key: "coordinator",
+      status: "succeeded",
+      summary: "Coordinator completed with safe output evidence.",
+    },
+    {
+      accessibility_label: "Specialist runtime node is retry scheduled.",
+      badges: [],
+      category: "sub_agent",
+      label: "Specialist",
+      layout: { x: 240, y: 0 },
+      node_id: "node:specialist",
+      node_key: "specialist",
+      references: [],
+      role_key: "specialist",
+      status: "retry_scheduled",
+      summary: "Specialist recorded a safe failure summary.",
+    },
+  ],
+  partial: true,
+  provenance: {
+    evidence_counts: {
+      handoffs: 1,
+      interaction_evidence: 1,
+      run_steps: 2,
+      timeline_events: 2,
+      unmapped_interaction_evidence: 0,
+    },
+    generated_at: "2026-05-08T12:00:00Z",
+    revision: "v1",
+    run_bundle_id: "11111111-1111-4111-8111-111111111158",
+    run_status: "running",
+    scope_type: "tenant",
+    source_digest: "1111111111111111111111111111111111111111111111111111111111111111",
+    source_revision_id: null,
+    source_type: "runtime_run",
+    tenant_id: "11111111-1111-4111-8111-111111111111",
+    workflow_draft_id: null,
+    workflow_key: "qa067-runtime-graph",
+    workflow_lineage_id: "11111111-1111-4111-8111-111111111159",
+    workflow_run_id: liveRunId,
+    workflow_version_bundle_id: "11111111-1111-4111-8111-111111111160",
+  },
+  source: "runtime_run",
+  state: "partial",
 };
 
 export const workbenchEnvelopeFixture: OperationsWorkbenchEnvelope = {

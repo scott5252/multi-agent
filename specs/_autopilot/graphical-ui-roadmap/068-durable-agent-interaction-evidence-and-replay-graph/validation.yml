@@ -19,10 +19,16 @@
   "playwright": {
     "flows": [
       {
-        "id": "qa068-graphical-ui-smoke",
+        "id": "qa068-interaction-replay-graph-desktop",
         "steps": [
           {
-            "goto": "/auth/local-login?redirect_to=/admin/app/operations"
+            "viewport": {
+              "width": 1440,
+              "height": 1000
+            }
+          },
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/operations%3Frun_id%3D68686868-6666-4868-8868-000000000068%26tenant_id%3D11111111-1111-1111-1111-111111111111"
           },
           {
             "wait_for_load_state": "networkidle"
@@ -34,16 +40,75 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Operations"
+            "expect_text": "Runtime run communication"
           },
           {
-            "screenshot": "qa068-graphical-ui-smoke.png",
+            "expect_text": "retry_scheduled"
+          },
+          {
+            "click": "section[aria-labelledby=\"agent-node-list-title\"] button:has-text(\"Specialist\")"
+          },
+          {
+            "expect_text": "Specialist is retry scheduled"
+          },
+          {
+            "click": "section[aria-labelledby=\"agent-edge-list-title\"] button:has-text(\"delegates to\")"
+          },
+          {
+            "expect_text": "Replay 1: handoff"
+          },
+          {
+            "expect_text": "Coordinator sent safe context to Specialist."
+          },
+          {
+            "screenshot": "qa068-interaction-replay-graph-desktop.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa068-interaction-replay-graph-mobile",
+        "steps": [
+          {
+            "viewport": {
+              "width": 390,
+              "height": 900
+            }
+          },
+          {
+            "goto": "/admin/app/operations?run_id=68686868-6666-4868-8868-000000000068&tenant_id=11111111-1111-1111-1111-111111111111"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Runtime run communication"
+          },
+          {
+            "expect_text": "paused"
+          },
+          {
+            "click": "section[aria-labelledby=\"agent-edge-list-title\"] button:has-text(\"delegates to\")"
+          },
+          {
+            "expect_text": "Replay 1: handoff"
+          },
+          {
+            "screenshot": "qa068-interaction-replay-graph-mobile.png",
             "full_page": true
           }
         ]
       }
     ]
   },
+  "playwright_pre_commands": [
+    {
+      "id": "seed-qa068-interaction-replay-graph",
+      "command": "uv run python scripts/qa/seed_runtime_interaction_evidence_qa068.py",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    }
+  ],
   "extra_quality_commands": [
     {
       "id": "generated-react-types-fresh",

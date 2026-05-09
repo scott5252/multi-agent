@@ -9,6 +9,7 @@ from multi_agent_platform.db.models.runtime_orchestration import (
     ApprovalGateRecord,
     RunStepRecord,
     RuntimeExecutionBundleRecord,
+    RuntimeInteractionEvidenceRecord,
     RuntimeRunStatus,
     RuntimeStepStatus,
     RuntimeTimelineEventRecord,
@@ -108,6 +109,18 @@ async def test_graph_execution_completes_simple_published_bundle(session) -> Non
     assert all(step.status is RuntimeStepStatus.SUCCEEDED for step in steps)
     assert result.final_output_ref is not None
     assert "graph_run_succeeded" in {event.event_type for event in timeline}
+    interactions = await repository.list_interaction_evidence(
+        workflow_run_id=run.workflow_run_id,
+        tenant_id=tenant_id,
+    )
+    assert {interaction.interaction_kind.value for interaction in interactions} >= {
+        "handoff",
+        "result_return",
+        "run_completion",
+    }
+    assert [interaction.sequence for interaction in interactions] == list(
+        range(1, len(interactions) + 1)
+    )
 
 
 async def test_daily_briefing_graph_schedules_four_scouts_in_one_wave(session) -> None:
@@ -224,6 +237,16 @@ async def test_manual_resolution_join_pauses_and_persists_approval(session) -> N
     assert "graph_manual_resolution_required" in {
         event.event_type for event in timeline
     }
+    interactions = await repository.list_interaction_evidence(
+        workflow_run_id=run.workflow_run_id,
+        tenant_id=tenant_id,
+    )
+    assert "join_contribution" in {
+        interaction.interaction_kind.value for interaction in interactions
+    }
+    assert "manual_resolution" in {
+        interaction.interaction_kind.value for interaction in interactions
+    }
 
 
 async def test_cross_tenant_bundle_execution_fails_closed(session) -> None:
@@ -277,6 +300,9 @@ async def test_graph_execution_redacts_sensitive_step_and_timeline_values(
     )
 
     steps = list((await session.execute(select(RunStepRecord))).scalars())
+    interactions = list(
+        (await session.execute(select(RuntimeInteractionEvidenceRecord))).scalars()
+    )
     timeline = list(
         (await session.execute(select(RuntimeTimelineEventRecord))).scalars()
     )
@@ -289,6 +315,15 @@ async def test_graph_execution_redacts_sensitive_step_and_timeline_values(
                     "error_ref": step.error_ref,
                 }
                 for step in steps
+            ],
+            "interactions": [
+                {
+                    "safe_summary": interaction.safe_summary,
+                    "provenance": interaction.provenance,
+                    "classification": interaction.classification,
+                    "payload_digest": interaction.payload_digest,
+                }
+                for interaction in interactions
             ],
             "timeline": [event.payload for event in timeline],
         },

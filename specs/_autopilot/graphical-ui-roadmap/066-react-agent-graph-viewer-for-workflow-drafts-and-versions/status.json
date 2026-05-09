@@ -1,0 +1,146 @@
+{
+  "schema_version": "1.0",
+  "spec": "066",
+  "title": "React Agent Graph Viewer For Workflow Drafts And Versions",
+  "feature_dir": "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions",
+  "status": "completed",
+  "active_phase": "validation",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/spec.md",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/checklists/requirements.md"
+      ],
+      "notes": "Created from generated specify.md prompt with no NEEDS CLARIFICATION markers."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/spec.md"
+      ],
+      "notes": "Recorded six autopilot clarifications for placement, read-only scope, data source, state handling, accessibility, and screenshot coverage."
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/plan.md",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/research.md",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/data-model.md",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/contracts/agent-graph-viewer.md",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned generated graph contracts, client helpers, reusable React Flow panel, draft/version page integration, accessibility lists, tests, QA docs, Playwright, and curl regression."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/tasks.md"
+      ],
+      "notes": "Generated 43 dependency-ordered, file-specific tasks across generated contracts, client helpers, AgentGraphPanel, draft/version integration, selection details, accessibility lists, QA docs, and validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "coverage_summary": "Functional requirements FR-001 through FR-018 map to generated-contract, client-helper, component, workflow page, accessibility, redaction, QA documentation, Playwright, or curl-regression tasks. No constitution conflicts found.",
+      "remediation": "No remediation required before implementation."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "frontend/admin/src/components/workflows/AgentGraphPanel.tsx",
+        "frontend/admin/src/components/workflows/AgentGraphPanel.test.tsx",
+        "frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx",
+        "frontend/admin/src/components/workflows/WorkflowBuilderPage.test.tsx",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/test/workflowBuilderTestData.ts",
+        "frontend/admin/src/styles/admin.css",
+        "scripts/frontend/generate_admin_react_types.py",
+        "scripts/qa/seed_agent_graph_viewer_qa066.py",
+        "scripts/qa/run_playwright_ui.py",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/qa066.md",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/qa066_ui.md",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/.env.qa066",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/qa066_user_guide.md",
+        "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/pr_notes.md",
+        "specs/_autopilot/graphical-ui-roadmap/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/validation.yml"
+      ],
+      "notes": "Implemented generated AgentCommunicationGraph TypeScript contracts, client fetch helpers, reusable read-only React Flow AgentGraphPanel, draft/version page integration, accessibility list alternatives, selection details, deterministic QA seed, Playwright viewport support, QA docs, and reviewer notes."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "npm --prefix frontend/admin test -- AgentGraphPanel WorkflowBuilderPage",
+      "npm --prefix frontend/admin run typecheck",
+      "npm --prefix frontend/admin run build",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/graphical-ui-roadmap/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/graphical-ui-roadmap/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/validation.yml --start-processes"
+    ],
+    "screenshots": [
+      "output/playwright/qa066_ui/qa066-agent-graph-desktop.png",
+      "output/playwright/qa066_ui/qa066-agent-graph-mobile.png"
+    ],
+    "notes": "QA docs, focused quality gates, Spec QA manifest, and desktop/mobile Playwright validation passed. Playwright seed import and selector were repaired during validation."
+  },
+  "curl_testing": {
+    "status": "completed",
+    "coverage": [
+      "curl_testing.md section 3.7a GET /admin/workflows/drafts/{workflow_draft_id}/agent-graph",
+      "curl_testing.md section 3.14a GET /admin/workflows/versions/{workflow_version_bundle_id}/agent-graph"
+    ],
+    "command": "docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa066-after-spec",
+    "artifact_dir": ".data/curl_test_runs/qa066-after-spec",
+    "result": "passed"
+  },
+  "blocker": null,
+  "history": [
+    {
+      "phase": "specify",
+      "status": "completed",
+      "summary": "Specification and quality checklist created for the React Agent Graph Viewer."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "summary": "Autopilot clarifications recorded in spec.md; no user-blocking ambiguity found."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "summary": "Plan, research, data model, viewer contract, quickstart, and AGENTS plan pointer updated."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "summary": "Tasks file created with 43 executable tasks organized by user story."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "summary": "Cross-artifact analysis found no critical, high, medium, or low issues; implementation may proceed."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "summary": "Implemented the read-only React Agent Graph viewer for workflow drafts and published versions with generated types, client helpers, tests, QA seed, docs, and validation manifest updates."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "summary": "QA docs, Spec QA, Playwright desktop/mobile validation, curl_testing coverage review, and multi-agent curl regression passed for Spec 066."
+    }
+  ]
+}

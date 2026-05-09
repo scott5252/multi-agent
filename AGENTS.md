@@ -247,5 +247,5 @@ admin workflows.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the latest plan:
-`specs/064-design-reviewer-template-test-bench-and-publish-gates/plan.md`
+`specs/068-durable-agent-interaction-evidence-and-replay-graph/plan.md`
 <!-- SPECKIT END -->

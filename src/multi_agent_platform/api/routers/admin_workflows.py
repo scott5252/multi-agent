@@ -15,6 +15,7 @@ from multi_agent_platform.admin.workflow_registry.service import (
     WorkflowNotFoundError,
 )
 from multi_agent_platform.api.deps import ContainerDep, get_session
+from multi_agent_platform.api.schemas.admin_agent_graph import AgentCommunicationGraph
 from multi_agent_platform.api.schemas.workflow_editor import (
     EditorLookupResponse,
     GraphPreviewResponse,
@@ -216,6 +217,29 @@ async def get_workflow_graph_preview(
 
 
 @router.get(
+    "/drafts/{workflow_draft_id}/agent-graph",
+    response_model=AgentCommunicationGraph,
+)
+async def get_workflow_agent_graph(
+    workflow_draft_id: UUID,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> AgentCommunicationGraph:
+    service = _build_admin_service(session, container)
+    try:
+        registry_service = service.workflow_registry_service()
+        return await registry_service.get_agent_communication_graph_for_draft(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get(
     "/drafts/{workflow_draft_id}/revisions",
     response_model=DraftRevisionListResponse,
 )
@@ -381,6 +405,29 @@ async def get_workflow_version(
     service = _build_admin_service(session, container)
     try:
         return await service.get_workflow_version(
+            principal=principal,
+            workflow_version_bundle_id=workflow_version_bundle_id,
+        )
+    except WorkflowNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkflowAccessError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get(
+    "/versions/{workflow_version_bundle_id}/agent-graph",
+    response_model=AgentCommunicationGraph,
+)
+async def get_workflow_version_agent_graph(
+    workflow_version_bundle_id: UUID,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+) -> AgentCommunicationGraph:
+    service = _build_admin_service(session, container)
+    try:
+        registry_service = service.workflow_registry_service()
+        return await registry_service.get_agent_communication_graph_for_version(
             principal=principal,
             workflow_version_bundle_id=workflow_version_bundle_id,
         )

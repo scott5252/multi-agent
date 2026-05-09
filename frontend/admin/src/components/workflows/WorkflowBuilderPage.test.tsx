@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   acceptedWorkflowMutation,
+  agentGraphFixture,
+  publishedAgentGraphFixture,
   workflowBuilderEnvelope,
   workflowReferenceCatalog,
 } from "../../test/workflowBuilderTestData";
@@ -38,6 +40,14 @@ describe("WorkflowBuilderPage", () => {
         })
         .mockResolvedValueOnce({
           ok: true,
+          json: async () => agentGraphFixture,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => publishedAgentGraphFixture,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
           json: async () => acceptedWorkflowMutation,
         }),
     );
@@ -52,6 +62,8 @@ describe("WorkflowBuilderPage", () => {
     await screen.findByText("Workflow builder");
     expect(screen.getByText("Pinned runtime inputs")).toBeInTheDocument();
     expect(screen.getByText("Runtime structure")).toBeInTheDocument();
+    expect(await screen.findByText("Draft communication")).toBeInTheDocument();
+    expect(screen.getByText("Published version communication")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Save draft/ }));
 

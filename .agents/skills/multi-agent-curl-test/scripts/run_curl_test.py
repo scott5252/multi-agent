@@ -960,11 +960,529 @@ run_bundle_id = uuid_or_none(
     if runtime_payload.get("run_bundle_id")
     else None
 )
+run_bundle_id = run_bundle_id or str(uuid4())
 bundle_digest = str(runtime_payload.get("bundle_digest") or "sha256:curl-runtime")
 now = datetime.now(UTC)
+coordinator_step_id = "77777777-b001-4b01-8001-777777777777"
+specialist_step_id = "77777777-b002-4b01-8001-777777777777"
+approval_step_id = "77777777-b003-4b01-8001-777777777777"
+done_step_id = "77777777-b004-4b01-8001-777777777777"
+workflow_document = {
+    "workflow_key": "curl-triage-flow",
+    "display_name": "Curl Triage Flow",
+    "workflow_kind": "main_workflow",
+    "entry_node_key": "coordinator",
+    "roles": [
+        {
+            "role_key": "coordinator",
+            "display_name": "Coordinator",
+            "role_kind": "agent",
+            "purpose": "Coordinate curl runtime work.",
+            "input_contract_key": "request",
+            "output_contract_key": "brief",
+            "graph_node_keys": ["coordinator"],
+        },
+        {
+            "role_key": "specialist",
+            "display_name": "Specialist",
+            "role_kind": "subagent",
+            "purpose": "Review curl runtime context.",
+            "input_contract_key": "brief",
+            "output_contract_key": "result",
+            "graph_node_keys": ["specialist"],
+        },
+    ],
+    "contracts": [
+        {"contract_key": "request", "json_schema": {"type": "object"}},
+        {"contract_key": "brief", "json_schema": {"type": "object"}},
+        {"contract_key": "result", "json_schema": {"type": "object"}},
+    ],
+    "nodes": [
+        {
+            "node_key": "coordinator",
+            "node_type": "role",
+            "display_name": "Coordinator",
+            "role_key": "coordinator",
+        },
+        {
+            "node_key": "specialist",
+            "node_type": "role",
+            "display_name": "Specialist",
+            "role_key": "specialist",
+        },
+        {
+            "node_key": "approval",
+            "node_type": "approval",
+            "display_name": "Approval",
+            "approval_gate_key": "manager",
+        },
+        {"node_key": "done", "node_type": "terminal", "display_name": "Done"},
+    ],
+    "edges": [
+        {
+            "edge_key": "edge-coordinator-specialist",
+            "source_node_key": "coordinator",
+            "target_node_key": "specialist",
+            "contract_key": "brief",
+        },
+        {
+            "edge_key": "edge-specialist-approval",
+            "source_node_key": "specialist",
+            "target_node_key": "approval",
+            "contract_key": "result",
+        },
+        {
+            "edge_key": "edge-approval-done",
+            "source_node_key": "approval",
+            "target_node_key": "done",
+        },
+    ],
+    "approval_gates": [
+        {
+            "approval_gate_key": "manager",
+            "display_name": "Manager approval",
+            "approver_scope": "tenant_admin",
+            "resume_behavior": "resume_origin",
+        }
+    ],
+}
 
 with psycopg.connect(database_url) as conn:
     with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO runtime_execution_bundles (
+                run_bundle_id,
+                tenant_id,
+                workflow_run_id,
+                published_workflow_version_id,
+                bundle_digest,
+                workflow_version,
+                subworkflow_versions,
+                contract_versions,
+                prompt_versions,
+                model_config_versions,
+                tool_policy_versions,
+                retry_policy,
+                checkpoint_policy,
+                approval_timeout_policy,
+                child_cancellation_policy,
+                compiled_graph_ref,
+                created_at
+            )
+            VALUES (
+                %s, %s, %s, %s, %s, %s, '{}', '{}', '{}', '{}', '{}',
+                '{}', '{}', '{}', 'cascade_cancel', NULL, %s
+            )
+            ON CONFLICT (run_bundle_id)
+            DO UPDATE SET
+                workflow_version = EXCLUDED.workflow_version,
+                bundle_digest = EXCLUDED.bundle_digest
+            """,
+            (
+                run_bundle_id,
+                tenant_id,
+                workflow_run_id,
+                workflow_version_bundle_id,
+                bundle_digest,
+                Json(
+                    {
+                        "document": workflow_document,
+                        "workflow_key": "curl-triage-flow",
+                        "workflow_lineage_id": os.environ.get("WORKFLOW_LINEAGE_ID"),
+                    }
+                ),
+                now,
+            ),
+        )
+        cur.execute(
+            """
+            INSERT INTO runtime_workflow_runs (
+                workflow_run_id,
+                tenant_id,
+                scope_type,
+                initiating_principal_id,
+                run_bundle_id,
+                status,
+                current_step_id,
+                current_checkpoint_id,
+                pause_reason,
+                terminal_reason,
+                idempotency_key,
+                trace_id,
+                started_at,
+                finished_at,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                %s, %s, 'tenant', 'tenant-admin-acme', %s, 'RUNNING',
+                %s, NULL, NULL, NULL, 'runtime-curl-001',
+                'trace-runtime-curl', %s, NULL, %s, %s
+            )
+            ON CONFLICT (workflow_run_id)
+            DO UPDATE SET
+                run_bundle_id = EXCLUDED.run_bundle_id,
+                status = EXCLUDED.status,
+                current_step_id = EXCLUDED.current_step_id,
+                updated_at = EXCLUDED.updated_at
+            """,
+            (
+                workflow_run_id,
+                tenant_id,
+                run_bundle_id,
+                specialist_step_id,
+                now,
+                now,
+                now,
+            ),
+        )
+        for step_id, step_key, step_type, status, attempt, output_ref, error_ref in (
+            (
+                coordinator_step_id,
+                "coordinator",
+                "role",
+                "SUCCEEDED",
+                1,
+                {"safe_summary": "Coordinator produced safe runtime evidence."},
+                None,
+            ),
+            (
+                specialist_step_id,
+                "specialist",
+                "role",
+                "RETRY_SCHEDULED",
+                1,
+                None,
+                {"safe_summary": "Specialist retry was summarized safely."},
+            ),
+            (
+                approval_step_id,
+                "approval",
+                "approval",
+                "PAUSED",
+                1,
+                None,
+                None,
+            ),
+            (done_step_id, "done", "terminal", "PENDING", 1, None, None),
+        ):
+            cur.execute(
+                """
+                INSERT INTO runtime_run_steps (
+                    run_step_id,
+                    workflow_run_id,
+                    tenant_id,
+                    step_key,
+                    step_type,
+                    status,
+                    attempt,
+                    max_attempts,
+                    next_retry_at,
+                    input_ref,
+                    output_ref,
+                    error_ref,
+                    checkpoint_before_id,
+                    checkpoint_after_id,
+                    finished_at,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, 3, NULL, %s, %s, %s,
+                    NULL, NULL, %s, %s, %s
+                )
+                ON CONFLICT (workflow_run_id, step_key, attempt)
+                DO UPDATE SET
+                    status = EXCLUDED.status,
+                    input_ref = EXCLUDED.input_ref,
+                    output_ref = EXCLUDED.output_ref,
+                    error_ref = EXCLUDED.error_ref,
+                    updated_at = EXCLUDED.updated_at
+                """,
+                (
+                    step_id,
+                    workflow_run_id,
+                    tenant_id,
+                    step_key,
+                    step_type,
+                    status,
+                    attempt,
+                    Json({"safe_summary": f"{step_key} received safe evidence."}),
+                    Json(output_ref) if output_ref is not None else None,
+                    Json(error_ref) if error_ref is not None else None,
+                    now if status == "SUCCEEDED" else None,
+                    now,
+                    now,
+                ),
+            )
+        for event_id, step_id, event_type, severity, summary in (
+            (
+                "77777777-c001-4b01-8001-777777777777",
+                coordinator_step_id,
+                "coordinator_completed",
+                "info",
+                "Coordinator completed with safe evidence.",
+            ),
+            (
+                "77777777-c002-4b01-8001-777777777777",
+                specialist_step_id,
+                "specialist_retry_scheduled",
+                "warning",
+                "Specialist retry was scheduled safely.",
+            ),
+            (
+                "77777777-c003-4b01-8001-777777777777",
+                approval_step_id,
+                "approval_paused",
+                "warning",
+                "Approval is paused for manager review.",
+            ),
+        ):
+            cur.execute(
+                """
+                INSERT INTO runtime_timeline_events (
+                    runtime_timeline_event_id,
+                    tenant_id,
+                    workflow_run_id,
+                    run_step_id,
+                    event_type,
+                    severity,
+                    payload,
+                    trace_id,
+                    created_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'trace-runtime-curl', %s)
+                ON CONFLICT (runtime_timeline_event_id)
+                DO UPDATE SET
+                    severity = EXCLUDED.severity,
+                    payload = EXCLUDED.payload
+                """,
+                (
+                    event_id,
+                    tenant_id,
+                    workflow_run_id,
+                    step_id,
+                    event_type,
+                    severity,
+                    Json({"safe_summary": summary}),
+                    now,
+                ),
+            )
+        cur.execute(
+            """
+            INSERT INTO runtime_handoff_envelopes (
+                handoff_envelope_id,
+                tenant_id,
+                workflow_run_id,
+                sender_step_id,
+                receiver_step_key,
+                contract_id,
+                contract_version,
+                contract_digest,
+                status,
+                payload_hash,
+                payload_ref,
+                validation_errors,
+                created_at,
+                validated_at,
+                consumed_at
+            )
+            VALUES (
+                %s, %s, %s, %s, 'specialist', 'brief', '1.0.0',
+                %s, 'VALID', %s, %s, '[]', %s, %s, NULL
+            )
+            ON CONFLICT (handoff_envelope_id)
+            DO UPDATE SET status = EXCLUDED.status, payload_ref = EXCLUDED.payload_ref
+            """,
+            (
+                "77777777-d001-4b01-8001-777777777777",
+                tenant_id,
+                workflow_run_id,
+                coordinator_step_id,
+                "a" * 64,
+                "b" * 64,
+                Json({"safe_summary": "Coordinator sent safe context to Specialist."}),
+                now,
+                now,
+            ),
+        )
+        cur.execute(
+            """
+            INSERT INTO runtime_side_effect_intents (
+                side_effect_intent_id,
+                tenant_id,
+                workflow_run_id,
+                run_step_id,
+                intent_kind,
+                idempotency_key,
+                status,
+                tool_policy_ref,
+                delegated_credential_ref,
+                request_ref,
+                result_ref,
+                error_ref,
+                compensation_hook_ref,
+                executed_at,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                %s, %s, %s, %s, 'read_only_lookup', 'curl-runtime-tool',
+                'APPLIED', 'tool-policy:safe-lookup', NULL, NULL, %s, NULL,
+                NULL, %s, %s, %s
+            )
+            ON CONFLICT (tenant_id, workflow_run_id, run_step_id, idempotency_key)
+            DO UPDATE SET status = EXCLUDED.status, result_ref = EXCLUDED.result_ref
+            """,
+            (
+                "77777777-e001-4b01-8001-777777777777",
+                tenant_id,
+                workflow_run_id,
+                coordinator_step_id,
+                Json({"safe_summary": "Read only lookup produced safe evidence."}),
+                now,
+                now,
+                now,
+            ),
+        )
+        cur.execute(
+            """
+            INSERT INTO runtime_approval_gates (
+                approval_gate_id,
+                tenant_id,
+                workflow_run_id,
+                run_step_id,
+                status,
+                approval_key,
+                requested_action,
+                approver_policy,
+                timeout_behavior,
+                decision_id,
+                created_at,
+                decided_at,
+                expires_at
+            )
+            VALUES (
+                %s, %s, %s, %s, 'PENDING', 'manager', %s, '{}', '{}',
+                NULL, %s, NULL, NULL
+            )
+            ON CONFLICT (approval_gate_id)
+            DO UPDATE SET
+                status = EXCLUDED.status,
+                requested_action = EXCLUDED.requested_action
+            """,
+            (
+                "77777777-f001-4b01-8001-777777777777",
+                tenant_id,
+                workflow_run_id,
+                approval_step_id,
+                Json({"safe_summary": "Manager approval is pending."}),
+                now,
+            ),
+        )
+        for interaction in (
+            {
+                "interaction_evidence_id": "77777777-a101-4b01-8001-777777777777",
+                "source_node_key": "coordinator",
+                "target_node_key": "specialist",
+                "source_run_step_id": coordinator_step_id,
+                "target_run_step_id": specialist_step_id,
+                "interaction_kind": "HANDOFF",
+                "status": "SENT",
+                "sequence": 1,
+                "safe_summary": "Coordinator sent safe context to Specialist.",
+                "idempotency_key": "curl-runtime:handoff:coordinator-specialist:1",
+            },
+            {
+                "interaction_evidence_id": "77777777-a102-4b01-8001-777777777777",
+                "source_node_key": "specialist",
+                "target_node_key": "approval",
+                "source_run_step_id": specialist_step_id,
+                "target_run_step_id": approval_step_id,
+                "interaction_kind": "RESULT_RETURN",
+                "status": "COMPLETED",
+                "sequence": 2,
+                "safe_summary": "Specialist returned safe review evidence.",
+                "idempotency_key": "curl-runtime:result:specialist-approval:1",
+            },
+            {
+                "interaction_evidence_id": "77777777-a103-4b01-8001-777777777777",
+                "source_node_key": "approval",
+                "target_node_key": None,
+                "source_run_step_id": approval_step_id,
+                "target_run_step_id": None,
+                "interaction_kind": "APPROVAL_PAUSE",
+                "status": "PAUSED",
+                "sequence": 3,
+                "safe_summary": "Manager approval paused the run safely.",
+                "idempotency_key": "curl-runtime:approval-pause:manager:1",
+            },
+        ):
+            cur.execute(
+                """
+                INSERT INTO runtime_interaction_evidence (
+                    interaction_evidence_id,
+                    tenant_id,
+                    workflow_run_id,
+                    source_node_key,
+                    target_node_key,
+                    source_run_step_id,
+                    target_run_step_id,
+                    timeline_event_id,
+                    interaction_kind,
+                    status,
+                    sequence,
+                    safe_summary,
+                    classification,
+                    payload_digest,
+                    artifact_refs,
+                    provenance,
+                    idempotency_key,
+                    occurred_at,
+                    created_at
+                )
+                VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, NULL, %s, %s, %s, %s,
+                    'safe-summary', %s, %s, %s, %s, %s, %s
+                )
+                ON CONFLICT (
+                    tenant_id, workflow_run_id, idempotency_key
+                )
+                DO UPDATE SET
+                    source_node_key = EXCLUDED.source_node_key,
+                    target_node_key = EXCLUDED.target_node_key,
+                    source_run_step_id = EXCLUDED.source_run_step_id,
+                    target_run_step_id = EXCLUDED.target_run_step_id,
+                    interaction_kind = EXCLUDED.interaction_kind,
+                    status = EXCLUDED.status,
+                    sequence = EXCLUDED.sequence,
+                    safe_summary = EXCLUDED.safe_summary,
+                    payload_digest = EXCLUDED.payload_digest,
+                    artifact_refs = EXCLUDED.artifact_refs,
+                    provenance = EXCLUDED.provenance,
+                    occurred_at = EXCLUDED.occurred_at
+                """,
+                (
+                    interaction["interaction_evidence_id"],
+                    tenant_id,
+                    workflow_run_id,
+                    interaction["source_node_key"],
+                    interaction["target_node_key"],
+                    interaction["source_run_step_id"],
+                    interaction["target_run_step_id"],
+                    interaction["interaction_kind"],
+                    interaction["status"],
+                    interaction["sequence"],
+                    interaction["safe_summary"],
+                    "a" * 64,
+                    Json([{"artifact_ref": "curl-runtime-safe-summary"}]),
+                    Json({"source": "curl-runtime-audit-seed"}),
+                    interaction["idempotency_key"],
+                    now,
+                    now,
+                ),
+            )
         cur.execute(
             """
             INSERT INTO audit_timeline_events (

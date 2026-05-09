@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.0",
+  "spec": "065",
+  "title": "Agent Communication Graph Contracts And Projections",
+  "feature_dir": "specs/065-agent-communication-graph-contracts-and-projections",
+  "status": "completed",
+  "active_phase": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/065-agent-communication-graph-contracts-and-projections/spec.md",
+        "specs/065-agent-communication-graph-contracts-and-projections/checklists/requirements.md"
+      ],
+      "notes": "Created from generated specify.md prompt with no NEEDS CLARIFICATION markers."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/065-agent-communication-graph-contracts-and-projections/spec.md"
+      ],
+      "notes": "Recorded five autopilot clarifications for persistence scope, partial published graphs, authorization, safe text handling, and React canvas scope."
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/065-agent-communication-graph-contracts-and-projections/plan.md",
+        "specs/065-agent-communication-graph-contracts-and-projections/research.md",
+        "specs/065-agent-communication-graph-contracts-and-projections/data-model.md",
+        "specs/065-agent-communication-graph-contracts-and-projections/contracts/agent-graph-api.md",
+        "specs/065-agent-communication-graph-contracts-and-projections/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned additive backend schemas, projection service, workflow router endpoints, generated contracts, tests, docs, curl coverage, and no migration."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/065-agent-communication-graph-contracts-and-projections/tasks.md"
+      ],
+      "notes": "Generated 35 dependency-ordered, file-specific tasks across schemas, projection service, routes, tests, generated contracts, curl coverage, QA docs, and validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "coverage_summary": "All functional requirements FR-001 through FR-015 map to implementation, test, generated-contract, curl, documentation, or validation tasks. No constitution conflicts found.",
+      "remediation": "No remediation required before implementation."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_agent_graph.py",
+        "src/multi_agent_platform/admin/workflow_registry/agent_graph.py",
+        "src/multi_agent_platform/admin/workflow_registry/service.py",
+        "src/multi_agent_platform/api/routers/admin_workflows.py",
+        "src/multi_agent_platform/db/repositories/artifact.py",
+        "tests/unit/api/test_admin_agent_graph_schemas.py",
+        "tests/unit/admin/test_agent_graph.py",
+        "tests/integration/api/test_admin_agent_graph_api.py",
+        "tests/contract/test_workflow_registry_contract.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "curl_testing.md",
+        "specs/065-agent-communication-graph-contracts-and-projections/qa065.md",
+        "specs/065-agent-communication-graph-contracts-and-projections/qa065_ui.md",
+        "specs/065-agent-communication-graph-contracts-and-projections/qa065_user_guide.md",
+        "specs/065-agent-communication-graph-contracts-and-projections/.env.qa065",
+        "specs/065-agent-communication-graph-contracts-and-projections/pr_notes.md"
+      ],
+      "notes": "Implemented backend-owned draft and published Agent Communication Graph projections, routes, generated contracts, tests, curl coverage, and QA docs."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "evidence": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/065-agent-communication-graph-contracts-and-projections",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run pytest tests/unit/api/test_admin_agent_graph_schemas.py tests/unit/admin/test_agent_graph.py tests/integration/api/test_admin_agent_graph_api.py tests/contract/test_workflow_registry_contract.py --no-cov",
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/graphical-ui-roadmap/065-agent-communication-graph-contracts-and-projections/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/graphical-ui-roadmap/065-agent-communication-graph-contracts-and-projections/validation.yml --start-processes"
+    ],
+    "playwright_screenshot": "output/playwright/qa065_ui/qa065-graphical-ui-smoke.png"
+  },
+  "curl_testing": {
+    "status": "completed",
+    "sections": [
+      "3.7a GET /admin/workflows/drafts/{workflow_draft_id}/agent-graph",
+      "3.14a GET /admin/workflows/versions/{workflow_version_bundle_id}/agent-graph"
+    ],
+    "evidence": ".data/curl_test_runs/qa065-after-spec"
+  },
+  "blocker": null,
+  "history": [
+    {
+      "phase": "specify",
+      "status": "completed",
+      "summary": "Specification and quality checklist created from the graphical UI roadmap prompt."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "summary": "Autopilot clarifications recorded in spec.md; no user-blocking ambiguity found."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "summary": "Plan, research, data model, API contract, quickstart, and AGENTS plan pointer updated."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "summary": "Tasks file created with 35 executable tasks organized by user story."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "summary": "Cross-artifact analysis found no critical or high issues; implementation may proceed."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "summary": "Implemented safe Agent Communication Graph schemas, projections, routes, tests, generated contracts, curl coverage, QA docs, and reviewer notes."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "summary": "QA docs, focused tests, generated contracts, ruff, format, mypy, Spec QA, Playwright, and multi-agent curl regression passed for Spec 065."
+    }
+  ]
+}

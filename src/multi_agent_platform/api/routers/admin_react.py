@@ -4199,6 +4199,7 @@ async def react_admin_operations_workbench(
     range_preset: Annotated[str, Query(alias="range", max_length=20)] = "60m",
     severity: Annotated[str | None, Query(max_length=40)] = None,
     subsystem: Annotated[str | None, Query(max_length=40)] = None,
+    run_id: Annotated[str | None, Query()] = None,
     tenant_id: Annotated[str | None, Query()] = None,
 ) -> OperationsWorkbenchEnvelope:
     if range_preset != "60m":
@@ -4285,6 +4286,7 @@ async def react_admin_operations_workbench(
         range_preset=range_preset,
         severity=severity,
         subsystem=subsystem,
+        run_id=run_id,
     )
 
 

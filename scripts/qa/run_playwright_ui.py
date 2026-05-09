@@ -60,6 +60,17 @@ def step_selector(step: JsonObject) -> str:
 def run_step(page: Any, step: JsonObject, *, base_url: str, output_dir: Path) -> None:
     flow_id = str(step.get("_flow_id", "unnamed-flow"))
 
+    if "viewport" in step:
+        viewport = step["viewport"]
+        if not isinstance(viewport, dict):
+            raise SystemExit(f"{flow_id}: viewport must be an object")
+        page.set_viewport_size(
+            {
+                "width": int(viewport["width"]),
+                "height": int(viewport["height"]),
+            }
+        )
+
     if "goto" in step:
         page.goto(absolutize(base_url, str(step["goto"])))
 

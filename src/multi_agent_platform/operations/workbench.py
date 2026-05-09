@@ -91,6 +91,7 @@ async def build_operations_workbench_envelope(
     range_preset: str = "60m",
     severity: str | None = None,
     subsystem: str | None = None,
+    run_id: str | UUID | None = None,
 ) -> OperationsWorkbenchEnvelope:
     start, end = _range_window(range_preset)
     dashboard = await service.dashboard(
@@ -102,12 +103,24 @@ async def build_operations_workbench_envelope(
         severity=severity,
         subsystem=subsystem,
     )
-    run_debug = await _first_visible_run_debug(
-        scope=scope,
-        principal=principal,
-        service=service,
-        logs=visible_logs,
-    )
+    run_debug = None
+    if run_id is not None:
+        try:
+            run_debug = await build_run_debug_envelope(
+                scope=scope,
+                principal=principal,
+                service=service,
+                workflow_run_id=run_id,
+            )
+        except RunDebugNotFoundError:
+            run_debug = None
+    if run_debug is None:
+        run_debug = await _first_visible_run_debug(
+            scope=scope,
+            principal=principal,
+            service=service,
+            logs=visible_logs,
+        )
 
     return OperationsWorkbenchEnvelope(
         page_id="react-operations-workbench",

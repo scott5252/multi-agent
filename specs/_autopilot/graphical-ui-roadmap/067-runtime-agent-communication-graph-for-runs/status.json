@@ -1,0 +1,156 @@
+{
+  "schema_version": "1.0",
+  "spec": "067",
+  "title": "Runtime Agent Communication Graph For Runs",
+  "feature_dir": "specs/067-runtime-agent-communication-graph-for-runs",
+  "status": "completed",
+  "active_phase": "validation",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/067-runtime-agent-communication-graph-for-runs/spec.md",
+        "specs/067-runtime-agent-communication-graph-for-runs/checklists/requirements.md"
+      ],
+      "notes": "Created from generated specify.md prompt with no NEEDS CLARIFICATION markers."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/067-runtime-agent-communication-graph-for-runs/spec.md"
+      ],
+      "notes": "Recorded six autopilot clarifications for placement, no new persistence, status precedence, unmapped evidence, safe selected details, and validation coverage."
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/067-runtime-agent-communication-graph-for-runs/plan.md",
+        "specs/067-runtime-agent-communication-graph-for-runs/research.md",
+        "specs/067-runtime-agent-communication-graph-for-runs/data-model.md",
+        "specs/067-runtime-agent-communication-graph-for-runs/contracts/runtime-agent-graph.md",
+        "specs/067-runtime-agent-communication-graph-for-runs/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned runtime graph projection under Admin run inspection and operations workbench, with no new persistence, generated contract updates, React AgentGraphPanel reuse, QA seed, Playwright, and curl coverage."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/067-runtime-agent-communication-graph-for-runs/tasks.md"
+      ],
+      "notes": "Generated 49 dependency-ordered, file-specific tasks across runtime graph contracts, projection, Admin route, workbench integration, QA seed, curl coverage, docs, and validation."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "coverage_summary": "Functional requirements FR-001 through FR-018 map to runtime contract, projection, route, UI integration, accessibility, redaction, QA documentation, Playwright, or curl-regression tasks. No constitution conflicts found.",
+      "remediation": "No remediation required before implementation."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_agent_graph.py",
+        "src/multi_agent_platform/db/repositories/runtime_orchestration.py",
+        "src/multi_agent_platform/operations/runtime_agent_graph.py",
+        "src/multi_agent_platform/api/routers/admin_run_inspection.py",
+        "src/multi_agent_platform/operations/workbench.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/components/workflows/AgentGraphPanel.tsx",
+        "frontend/admin/src/components/workbench/WorkbenchPage.tsx",
+        "frontend/admin/src/components/workbench/RuntimeAgentGraphPanel.test.tsx",
+        "frontend/admin/src/test/workbenchTestData.ts",
+        "tests/fixtures/runtime_agent_graph.py",
+        "tests/unit/operations/test_runtime_agent_graph.py",
+        "tests/integration/api/test_admin_runtime_agent_graph_api.py",
+        "tests/unit/operations/test_workbench_service.py",
+        "scripts/qa/seed_runtime_agent_graph_qa067.py",
+        "curl_testing.md",
+        "specs/067-runtime-agent-communication-graph-for-runs/qa067.md",
+        "specs/067-runtime-agent-communication-graph-for-runs/qa067_ui.md",
+        "specs/067-runtime-agent-communication-graph-for-runs/qa067_user_guide.md",
+        "specs/067-runtime-agent-communication-graph-for-runs/.env.qa067",
+        "specs/067-runtime-agent-communication-graph-for-runs/pr_notes.md",
+        "specs/_autopilot/graphical-ui-roadmap/067-runtime-agent-communication-graph-for-runs/validation.yml",
+        ".agents/skills/multi-agent-curl-test/scripts/run_curl_test.py"
+      ],
+      "notes": "Implemented tenant-scoped runtime agent graph projection, Admin run inspection route, operations workbench integration, generated React contracts, runtime graph UI states, deterministic QA067 seed data, docs, Playwright coverage, and curl regression coverage."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "uv run pytest --no-cov tests/unit/operations/test_runtime_agent_graph.py tests/integration/api/test_admin_runtime_agent_graph_api.py",
+      "uv run pytest --no-cov tests/unit/operations/test_workbench_service.py::test_persisted_run_debug_uses_runtime_bundle_steps_and_events",
+      "npm --prefix frontend/admin test -- WorkbenchPage RuntimeAgentGraphPanel AgentGraphPanel",
+      "npm --prefix frontend/admin run typecheck",
+      "npm --prefix frontend/admin run build",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run mypy src",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/graphical-ui-roadmap/067-runtime-agent-communication-graph-for-runs/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/graphical-ui-roadmap/067-runtime-agent-communication-graph-for-runs/validation.yml --start-processes"
+    ],
+    "screenshots": [
+      "output/playwright/qa067_ui/qa067-runtime-agent-graph-desktop.png",
+      "output/playwright/qa067_ui/qa067-runtime-agent-graph-mobile.png"
+    ],
+    "notes": "Generated contracts, focused backend and frontend tests, frontend typecheck/build, Ruff, format, mypy, full Spec QA, and desktop/mobile Playwright validation passed. Playwright screenshots were visually inspected."
+  },
+  "curl_testing": {
+    "status": "completed",
+    "coverage": [
+      "curl_testing.md section 16.5a GET /admin/runs/{workflow_run_id}/agent-graph",
+      "curl_testing.md section 16.8 Runtime agent graph cross-tenant denial"
+    ],
+    "command": "docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa067-after-spec",
+    "artifact_dir": ".data/curl_test_runs/qa067-after-spec",
+    "result": "passed: 212 commands, 0 failed"
+  },
+  "blocker": null,
+  "history": [
+    {
+      "phase": "specify",
+      "status": "completed",
+      "summary": "Specification and quality checklist created for the Runtime Agent Communication Graph."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "summary": "Autopilot clarifications recorded in spec.md; no user-blocking ambiguity found."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "summary": "Plan, research, data model, runtime graph contract, quickstart, and AGENTS plan pointer updated."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "summary": "Tasks file created with 49 executable tasks organized by user story."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "summary": "Cross-artifact analysis found no critical, high, medium, or low issues; implementation may proceed."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "summary": "Implemented the runtime agent communication graph for runs with backend projection, Admin route, workbench UI integration, tests, QA seed, docs, and curl coverage."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "summary": "Generated types, focused tests, Ruff, format, mypy, Spec QA, Playwright desktop/mobile validation, curl coverage review, and multi-agent curl regression passed for Spec 067."
+    }
+  ]
+}

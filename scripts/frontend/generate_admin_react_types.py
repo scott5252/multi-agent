@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from multi_agent_platform.api.schemas.admin_agent_graph import AgentCommunicationGraph
 from multi_agent_platform.api.schemas.admin_channel_telegram_briefing_react import (
     BriefingPreferenceExportRequest,
     BriefingPreferenceImportRequest,
@@ -163,6 +164,7 @@ def schema_payload() -> dict[str, Any]:
         "RunDebugEnvelope": RunDebugEnvelope.model_json_schema(),
         "WorkbenchExportSnapshot": WorkbenchExportSnapshot.model_json_schema(),
         "WorkflowBuilderEnvelope": WorkflowBuilderEnvelope.model_json_schema(),
+        "AgentCommunicationGraph": AgentCommunicationGraph.model_json_schema(),
         "WorkflowReferenceCatalog": WorkflowReferenceCatalog.model_json_schema(),
         "BuilderMutationResult": BuilderMutationResult.model_json_schema(),
         "WorkflowDraftCreateActionRequest": (
@@ -414,6 +416,68 @@ export type WorkflowBuilderSeverity =
   | "warning"
   | "blocking"
   | "critical";
+export type AgentGraphSource = "draft" | "published_version" | "runtime_run";
+export type AgentGraphState = "ready" | "empty" | "partial" | "denied";
+export type AgentGraphNodeCategory =
+  | "coordinator_agent"
+  | "sub_agent"
+  | "tool"
+  | "join"
+  | "approval"
+  | "handoff"
+  | "terminal"
+  | "subworkflow"
+  | "unknown";
+export type AgentGraphEdgeCategory =
+  | "delegates_to"
+  | "sends_context_to"
+  | "returns_result_to"
+  | "joins_at"
+  | "hands_off_to"
+  | "failure_routes_to"
+  | "retries"
+  | "approval_resumes"
+  | "transitions_to";
+export type AgentGraphBadgeSeverity =
+  | "info"
+  | "warning"
+  | "blocking"
+  | "critical";
+export type AgentGraphBadgeSource =
+  | "status"
+  | "validation"
+  | "reference"
+  | "provenance"
+  | "runtime";
+export type AgentGraphReferenceType =
+  | "role"
+  | "prompt_profile"
+  | "prompt"
+  | "profile"
+  | "provider"
+  | "skill"
+  | "contract"
+  | "subworkflow"
+  | "join_policy"
+  | "approval_gate"
+  | "workflow_version"
+  | "run_step"
+  | "timeline_event"
+  | "handoff"
+  | "approval"
+  | "gateway_attempt"
+  | "tool_call"
+  | "delivery"
+  | "artifact"
+  | "lineage"
+  | "bundle"
+  | "interaction_evidence";
+export type AgentGraphReferenceStatus =
+  | "ready"
+  | "warning"
+  | "blocked"
+  | "missing"
+  | "unknown";
 export type GovernanceStatus =
   | "ready"
   | "degraded"
@@ -1263,6 +1327,94 @@ export interface WorkflowGraphPreview {{
   edges: WorkflowGraphEdge[];
   join_policies: WorkflowJoinPolicySummary[];
   accessibility_summary: string;
+}}
+
+export interface AgentGraphLayoutHint {{
+  x: number;
+  y: number;
+}}
+
+export interface AgentGraphBadge {{
+  code: string;
+  severity: AgentGraphBadgeSeverity;
+  label: string;
+  summary: string;
+  blocking: boolean;
+  source: AgentGraphBadgeSource;
+}}
+
+export interface AgentGraphReferenceSummary {{
+  reference_id: string;
+  reference_type: AgentGraphReferenceType;
+  label: string;
+  summary: string;
+  status: AgentGraphReferenceStatus;
+  href: string | null;
+}}
+
+export interface AgentGraphNode {{
+  node_id: string;
+  node_key: string;
+  category: AgentGraphNodeCategory;
+  label: string;
+  summary: string;
+  status: string;
+  role_key: string | null;
+  layout: AgentGraphLayoutHint;
+  references: AgentGraphReferenceSummary[];
+  badges: AgentGraphBadge[];
+  accessibility_label: string;
+}}
+
+export interface AgentGraphEdge {{
+  edge_id: string;
+  edge_key: string;
+  source_node_id: string;
+  target_node_id: string;
+  category: AgentGraphEdgeCategory;
+  label: string;
+  summary: string;
+  contract_key: string | null;
+  status: string;
+  references: AgentGraphReferenceSummary[];
+  badges: AgentGraphBadge[];
+  accessibility_label: string;
+}}
+
+export interface AgentGraphProvenance {{
+  source_type: AgentGraphSource;
+  workflow_draft_id: string | null;
+  workflow_version_bundle_id: string | null;
+  workflow_run_id: string | null;
+  run_bundle_id: string | null;
+  run_status: string | null;
+  workflow_lineage_id: string;
+  workflow_key: string;
+  revision: string;
+  source_revision_id: string | null;
+  source_digest: string | null;
+  scope_type: string;
+  tenant_id: string | null;
+  evidence_counts: Record<string, number>;
+  generated_at: string;
+}}
+
+export interface AgentGraphAccessibility {{
+  summary: string;
+  node_summaries: string[];
+  edge_summaries: string[];
+}}
+
+export interface AgentCommunicationGraph {{
+  graph_id: string;
+  source: AgentGraphSource;
+  state: AgentGraphState;
+  partial: boolean;
+  provenance: AgentGraphProvenance;
+  nodes: AgentGraphNode[];
+  edges: AgentGraphEdge[];
+  badges: AgentGraphBadge[];
+  accessibility: AgentGraphAccessibility;
 }}
 
 export interface ValidationFinding {{
@@ -3803,6 +3955,28 @@ export function assertWorkflowReferenceCatalog(
     throw new Error("Workflow reference catalog is missing option groups");
   }}
   return value as unknown as WorkflowReferenceCatalog;
+}}
+
+export function assertAgentCommunicationGraph(
+  value: unknown,
+): AgentCommunicationGraph {{
+  if (!isObject(value)) {{
+    throw new Error("Agent communication graph must be an object");
+  }}
+  if (
+    !hasString(value, "graph_id") ||
+    !hasString(value, "source") ||
+    !hasString(value, "state")
+  ) {{
+    throw new Error("Agent communication graph is missing graph metadata");
+  }}
+  if (!isObject(value.provenance) || !isObject(value.accessibility)) {{
+    throw new Error("Agent communication graph is missing safe provenance");
+  }}
+  if (!Array.isArray(value.nodes) || !Array.isArray(value.edges)) {{
+    throw new Error("Agent communication graph is missing topology arrays");
+  }}
+  return value as unknown as AgentCommunicationGraph;
 }}
 
 export function assertBuilderMutationResult(

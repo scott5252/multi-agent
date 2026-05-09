@@ -1,6 +1,6 @@
 # Sequential curl API Test Plan
 
-This document is a sequential JSON/API walkthrough for specs 001 through 060.
+This document is a sequential JSON/API walkthrough for specs 001 through 065.
 It is based on the implemented FastAPI route inventory in
 `multi_agent_platform.api.main` and the feature QA/integration tests.
 
@@ -460,6 +460,20 @@ Expected `200`:
 {"nodes":[{"id":"triage-node","type":"role","label":"Triage"}],"edges":[],"warnings":[]}
 ```
 
+### 3.7a GET /admin/workflows/drafts/{workflow_draft_id}/agent-graph
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/workflows/drafts/$WORKFLOW_DRAFT_ID/agent-graph" \
+  | jq -e '.source == "draft" and .state == "ready" and .partial == false and (.nodes | length) >= 1 and .nodes[0].category == "coordinator_agent" and (.accessibility.node_summaries | length) >= 1'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
 ### 3.8 GET /admin/workflows/drafts/{workflow_draft_id}/revisions
 
 ```bash
@@ -554,6 +568,20 @@ Expected `200`:
 
 ```json
 {"workflow_version_bundle_id":"55555555-aaaa-aaaa-aaaa-555555555555","slug":"curl-triage-flow","display_version":"v1","status":"published","compiled_bundle_digest":"sha256:example","sharing_grants":[]}
+```
+
+### 3.14a GET /admin/workflows/versions/{workflow_version_bundle_id}/agent-graph
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/workflows/versions/$WORKFLOW_VERSION_BUNDLE_ID/agent-graph" \
+  | jq -e '.source == "published_version" and .partial == false and .provenance.workflow_version_bundle_id == env.WORKFLOW_VERSION_BUNDLE_ID and (.nodes | length) >= 1 and (.accessibility.node_summaries | length) >= 1'
+```
+
+Expected `200`:
+
+```json
+true
 ```
 
 ### 3.15 POST /admin/workflows/versions/{workflow_version_bundle_id}/sharing-grants
@@ -2482,6 +2510,20 @@ Expected `200`:
 {"workflow_run_id":"77777777-aaaa-aaaa-aaaa-777777777777","workflow_version_bundle_id":"55555555-aaaa-aaaa-aaaa-555555555555","bundle_digest":"sha256:example","redaction_applied":true}
 ```
 
+### 16.5a GET /admin/runs/{workflow_run_id}/agent-graph with replay evidence
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/runs/$RUNTIME_RUN_ID/agent-graph?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.source == "runtime_run" and .provenance.workflow_run_id == env.RUNTIME_RUN_ID and (.nodes | length) >= 4 and (.edges | length) >= 3 and ([.nodes[].status] | index("succeeded")) != null and ([.nodes[].status] | index("retry_scheduled")) != null and (.provenance.evidence_counts.interaction_evidence // 0) >= 1 and ([.edges[].references[]? | select(.reference_type == "interaction_evidence")] | length) >= 1'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
 ### 16.6 POST /admin/runs/{workflow_run_id}/exports
 
 ```bash
@@ -2506,6 +2548,18 @@ Expected `403`:
 
 ```json
 {"detail":{"category":"forbidden","message":"cross tenant access denied","trace_id":"trace-..."}}
+```
+
+### 16.8 Runtime agent graph cross-tenant denial
+
+```bash
+curl -sS -i -H "$GLOBEX_HEADER" "$BASE_URL/admin/runs/$RUNTIME_RUN_ID/agent-graph?tenant_id=$ACME_TENANT_ID"
+```
+
+Expected `403`:
+
+```json
+{"detail":{"category":"forbidden","message":"admin inspection denied","trace_id":"trace-..."}}
 ```
 
 ## 17. Design Review Domain APIs
@@ -3007,7 +3061,7 @@ The walkthrough covers the JSON/API endpoints from specs 001 through 064:
 - Operations foundation: `/health/live`, `/health/ready`, `/version`, `/dependencies`
 - Auth and access: `/auth/me`, `/auth/tenant-context/{tenant_id}`, `/admin/tenants/{tenant_id}/role-grants`, `/admin/role-grants`, `/admin/support-overrides`, `/admin/support-overrides/{support_override_request_id}/approve`
 - Admin saved-filter JSON restore: `/admin/filters/{admin_area}/{filter_id}/restore`
-- Workflow registry: all `/admin/workflows` JSON endpoints
+- Workflow registry: all `/admin/workflows` JSON endpoints, including draft and published Agent Communication Graph JSON projections
 - Durable runtime: all `/runtime/runs` JSON endpoints
 - Immutable memory: all `/memory` JSON endpoints
 - Channels: all `/runs` JSON endpoints, `/runs/{run_id}/events` SSE, `/channels/telegram/link-token`, `/channels/telegram/webhook/{secret}`

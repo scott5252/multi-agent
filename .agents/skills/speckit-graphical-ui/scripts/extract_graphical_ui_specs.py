@@ -392,9 +392,7 @@ def render_policy(spec: RoadmapSpec) -> dict[str, object]:
             "do_not_commit": True,
         },
         "validation": {
-            "required_playwright_flows": [
-                f"qa{spec.number}-graphical-ui-smoke"
-            ],
+            "required_playwright_flows": [f"qa{spec.number}-graphical-ui-smoke"],
             "required_quality_commands": [
                 "generated-react-types-fresh",
                 "frontend-install-deps",
@@ -612,8 +610,8 @@ def main() -> int:
                     "id": "queue-complete",
                     "command": (
                         "jq -e '.next_spec == null and all(.specs[]; "
-                        ".status == \"completed\" and .validation == "
-                        "\"completed\")' "
+                        '.status == "completed" and .validation == '
+                        '"completed")\' '
                         "specs/_autopilot/graphical-ui-roadmap/queue.json"
                     ),
                 },
@@ -628,7 +626,7 @@ def main() -> int:
                         "specs/068-durable-agent-interaction-evidence-and-"
                         "replay-graph; "
                         "do bash .specify/extensions/qa-docs/scripts/bash/"
-                        "validate-qa-documents.sh \"$d\"; done"
+                        'validate-qa-documents.sh "$d"; done'
                     ),
                 },
                 {
@@ -636,7 +634,7 @@ def main() -> int:
                     "command": (
                         "set -e; for f in specs/_autopilot/"
                         "graphical-ui-roadmap/*/validation.yml; do "
-                        "uv run python scripts/qa/run_spec_qa.py \"$f\"; done"
+                        'uv run python scripts/qa/run_spec_qa.py "$f"; done'
                     ),
                 },
                 {
@@ -644,7 +642,7 @@ def main() -> int:
                     "command": (
                         "set -e; for f in specs/_autopilot/"
                         "graphical-ui-roadmap/*/validation.yml; do "
-                        "uv run python scripts/qa/run_playwright_ui.py \"$f\" "
+                        'uv run python scripts/qa/run_playwright_ui.py "$f" '
                         "--start-processes; done"
                     ),
                 },

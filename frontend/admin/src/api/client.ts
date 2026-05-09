@@ -1,4 +1,5 @@
 import {
+  assertAgentCommunicationGraph,
   assertBuilderMutationResult,
   assertGovernanceDashboard,
   assertGovernanceMutationResult,
@@ -64,6 +65,7 @@ import {
   assertTimelineResponse,
   type ArtifactDownloadUrlResponse,
   type ArtifactListResponse,
+  type AgentCommunicationGraph,
   type BuilderMutationResult,
   type CallbackRegistrationRequest,
   type CallbackRegistrationResponse,
@@ -363,6 +365,62 @@ export async function fetchWorkflowLookups(
     throw new Error(detail);
   }
   return assertWorkflowReferenceCatalog(await response.json());
+}
+
+export async function fetchDraftAgentGraph(
+  workflowDraftId: string,
+): Promise<AgentCommunicationGraph> {
+  const response = await fetch(
+    `/admin/workflows/drafts/${workflowDraftId}/agent-graph`,
+    {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    },
+  );
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertAgentCommunicationGraph(await response.json());
+}
+
+export async function fetchVersionAgentGraph(
+  workflowVersionBundleId: string,
+): Promise<AgentCommunicationGraph> {
+  const response = await fetch(
+    `/admin/workflows/versions/${workflowVersionBundleId}/agent-graph`,
+    {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    },
+  );
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertAgentCommunicationGraph(await response.json());
+}
+
+export async function fetchRunAgentGraph(
+  workflowRunId: string,
+  tenantId?: string | null,
+): Promise<AgentCommunicationGraph> {
+  const url = new URL(
+    `/admin/runs/${workflowRunId}/agent-graph`,
+    window.location.origin,
+  );
+  if (tenantId) {
+    url.searchParams.set("tenant_id", tenantId);
+  }
+  const response = await fetch(url.toString(), {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return assertAgentCommunicationGraph(await response.json());
 }
 
 export async function createWorkflowDraft(

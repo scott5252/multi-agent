@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 
 import {
+  fetchRunAgentGraph,
   fetchOperationsWorkbench,
   requestWorkbenchExport,
 } from "../../api/client";
 import type {
+  AgentCommunicationGraph,
   OperationsWorkbenchEnvelope,
   WorkbenchExportSnapshot,
 } from "../../api/generated/reactAdminApi";
 import { CommonState } from "../states/CommonState";
+import { AgentGraphPanel } from "../workflows/AgentGraphPanel";
 import { WorkbenchExportPanel } from "./WorkbenchExportPanel";
 import { WorkbenchReliabilityPanel } from "./WorkbenchReliabilityPanel";
 import { WorkbenchSummaryGrid } from "./WorkbenchSummaryGrid";
@@ -18,6 +21,10 @@ export function WorkbenchPage({ workbenchUrl }: { workbenchUrl: string }) {
   const [envelope, setEnvelope] = useState<OperationsWorkbenchEnvelope | null>(null);
   const [exportSnapshot, setExportSnapshot] =
     useState<WorkbenchExportSnapshot | null>(null);
+  const [runGraph, setRunGraph] = useState<AgentCommunicationGraph | null>(null);
+  const [runGraphError, setRunGraphError] = useState<string | null>(null);
+  const [runGraphLoading, setRunGraphLoading] = useState(false);
+  const [graphReloadToken, setGraphReloadToken] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,6 +46,42 @@ export function WorkbenchPage({ workbenchUrl }: { workbenchUrl: string }) {
       alive = false;
     };
   }, [workbenchUrl]);
+
+  useEffect(() => {
+    if (!envelope?.run_debug) {
+      setRunGraph(null);
+      setRunGraphError(null);
+      setRunGraphLoading(false);
+      return;
+    }
+    let alive = true;
+    const tenantId =
+      envelope.run_debug.tenant_scope?.tenant_id ?? envelope.scope.tenant_id;
+    setRunGraphLoading(true);
+    fetchRunAgentGraph(envelope.run_debug.workflow_run_id, tenantId)
+      .then((payload) => {
+        if (alive) {
+          setRunGraph(payload);
+          setRunGraphError(null);
+        }
+      })
+      .catch((caught: unknown) => {
+        if (alive) {
+          setRunGraph(null);
+          setRunGraphError(
+            caught instanceof Error ? caught.message : "Runtime graph unavailable",
+          );
+        }
+      })
+      .finally(() => {
+        if (alive) {
+          setRunGraphLoading(false);
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [envelope, graphReloadToken]);
 
   async function exportEvidence() {
     if (!envelope) {
@@ -95,6 +138,15 @@ export function WorkbenchPage({ workbenchUrl }: { workbenchUrl: string }) {
         panels={envelope.health_panels}
       />
       {envelope.run_debug ? <WorkbenchTimeline runDebug={envelope.run_debug} /> : null}
+      {envelope.run_debug ? (
+        <AgentGraphPanel
+          error={runGraphError}
+          graph={runGraph}
+          loading={runGraphLoading}
+          onRetry={() => setGraphReloadToken((value) => value + 1)}
+          sourceLabel="Runtime run"
+        />
+      ) : null}
       <WorkbenchReliabilityPanel reliability={envelope.reliability} />
       <WorkbenchExportPanel
         exportSnapshot={exportSnapshot ?? envelope.exports}

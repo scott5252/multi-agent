@@ -221,3 +221,17 @@ def test_workflow_registry_validate_publish_and_sharing_contract(
     }.issubset(published.json())
     assert detail.status_code == 200
     assert shared.status_code == 201
+
+
+def test_workflow_registry_agent_graph_routes_are_in_openapi() -> None:
+    app = create_app()
+    with TestClient(app) as client:
+        openapi = client.get("/openapi.json").json()
+
+    paths = openapi["paths"]
+    assert "/admin/workflows/drafts/{workflow_draft_id}/agent-graph" in paths
+    assert "/admin/workflows/versions/{workflow_version_bundle_id}/agent-graph" in paths
+    draft_response = paths["/admin/workflows/drafts/{workflow_draft_id}/agent-graph"][
+        "get"
+    ]["responses"]["200"]
+    assert "AgentCommunicationGraph" in json.dumps(draft_response)

@@ -1704,6 +1704,187 @@ textarea {
   stroke-width: 2;
 }
 
+.agent-graph-panel {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: var(--admin-space-4);
+  padding: var(--admin-space-5);
+}
+
+.agent-graph-status,
+.agent-graph-detail-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2);
+}
+
+.agent-graph-layout {
+  display: grid;
+  gap: var(--admin-space-4);
+  grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.6fr);
+}
+
+.agent-graph-canvas {
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  height: 28rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.agent-graph-flow-node {
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-ink);
+  font-family: var(--admin-font-sans);
+  max-width: 12rem;
+  overflow-wrap: anywhere;
+}
+
+.agent-node-coordinator-agent {
+  border-color: #2f6f73;
+}
+
+.agent-node-sub-agent {
+  border-color: #4f6fb0;
+}
+
+.agent-node-tool {
+  border-color: #70743f;
+}
+
+.agent-node-join {
+  border-color: #7a5b9a;
+}
+
+.agent-node-approval {
+  border-color: #9a5d3f;
+}
+
+.agent-node-handoff {
+  border-color: #3f7d57;
+}
+
+.agent-node-terminal {
+  border-color: #5f6673;
+}
+
+.agent-graph-flow-edge .react-flow__edge-path {
+  stroke: var(--admin-accent);
+  stroke-width: 2;
+}
+
+.agent-graph-node-label {
+  display: grid;
+  gap: var(--admin-space-1);
+  min-width: 8rem;
+}
+
+.agent-graph-node-label small {
+  color: var(--admin-muted);
+}
+
+.agent-graph-detail {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  display: grid;
+  gap: var(--admin-space-3);
+  min-width: 0;
+  padding: var(--admin-space-4);
+}
+
+.agent-graph-detail h3,
+.agent-graph-detail p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.agent-graph-detail p {
+  color: var(--admin-muted);
+}
+
+.agent-graph-lists {
+  display: grid;
+  gap: var(--admin-space-3);
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.agent-graph-list,
+.agent-graph-badges,
+.agent-graph-references ul {
+  display: grid;
+  gap: var(--admin-space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.agent-graph-list-button {
+  align-items: flex-start;
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-ink);
+  cursor: pointer;
+  display: grid;
+  gap: var(--admin-space-2);
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: var(--admin-space-3);
+  text-align: left;
+  width: 100%;
+}
+
+.agent-graph-list-button[aria-pressed="true"] {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-accent) 20%, transparent);
+}
+
+.agent-graph-list-button span {
+  display: grid;
+  gap: var(--admin-space-1);
+  min-width: 0;
+}
+
+.agent-graph-list-button small,
+.agent-graph-references small,
+.agent-graph-badges span {
+  color: var(--admin-muted);
+  overflow-wrap: anywhere;
+}
+
+.agent-graph-badges li,
+.agent-graph-references li {
+  display: grid;
+  gap: var(--admin-space-1);
+}
+
+.agent-graph-references h4 {
+  margin: 0;
+}
+
+.agent-graph-references p {
+  margin: 0;
+}
+
+.agent-graph-state {
+  background: var(--admin-surface-raised);
+  border: 1px dashed var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  display: grid;
+  gap: var(--admin-space-2);
+  padding: var(--admin-space-4);
+}
+
+.agent-graph-state p {
+  color: var(--admin-muted);
+  margin: 0;
+}
+
 .workflow-node-label {
   display: grid;
   gap: var(--admin-space-1);
@@ -2581,6 +2762,18 @@ textarea {
 
   .workflow-flow-canvas {
     height: 20rem;
+  }
+
+  .agent-graph-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-graph-canvas {
+    height: 22rem;
+  }
+
+  .agent-graph-list-button {
+    grid-template-columns: 1fr;
   }
 
   .usage-hero {

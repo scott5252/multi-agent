@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0",
+  "spec": "068",
+  "title": "Durable Agent Interaction Evidence And Replay Graph",
+  "feature_dir": "specs/068-durable-agent-interaction-evidence-and-replay-graph",
+  "status": "completed",
+  "active_phase": "completed",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/068-durable-agent-interaction-evidence-and-replay-graph/spec.md",
+        "specs/068-durable-agent-interaction-evidence-and-replay-graph/checklists/requirements.md"
+      ],
+      "notes": "Created from generated specify.md prompt with no NEEDS CLARIFICATION markers."
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/068-durable-agent-interaction-evidence-and-replay-graph/spec.md"
+      ],
+      "notes": "Recorded six autopilot clarifications, including the decision that new safe durable interaction evidence is required because Specs 065-067 do not preserve explicit ordered source/target replay semantics."
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/068-durable-agent-interaction-evidence-and-replay-graph/plan.md",
+        "specs/068-durable-agent-interaction-evidence-and-replay-graph/research.md",
+        "specs/068-durable-agent-interaction-evidence-and-replay-graph/data-model.md",
+        "specs/068-durable-agent-interaction-evidence-and-replay-graph/contracts/interaction-replay-graph.md",
+        "specs/068-durable-agent-interaction-evidence-and-replay-graph/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned additive runtime_interaction_evidence persistence, repository idempotency, graph execution instrumentation, runtime graph replay projection, generated contracts, React detail reuse, QA seed, Playwright, and curl coverage."
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/068-durable-agent-interaction-evidence-and-replay-graph/tasks.md"
+      ],
+      "notes": "Generated 48 dependency-ordered, file-specific tasks across migration, runtime interaction evidence persistence, graph execution instrumentation, replay projection, tests, docs, Playwright, curl, and final stability."
+    },
+    "analyze": {
+      "status": "completed",
+      "findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "coverage_summary": "Functional requirements FR-001 through FR-015 map to persistence, repository/service, graph execution instrumentation, replay projection, UI, QA docs, Playwright, or curl-regression tasks. No constitution conflicts found.",
+      "remediation": "No remediation required before implementation."
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "alembic/versions/0022_runtime_interaction_evidence.py",
+        "src/multi_agent_platform/db/models/runtime_orchestration.py",
+        "src/multi_agent_platform/db/repositories/runtime_orchestration.py",
+        "src/multi_agent_platform/runtime/orchestration/interaction_evidence.py",
+        "src/multi_agent_platform/runtime/orchestration/graph_execution.py",
+        "src/multi_agent_platform/operations/runtime_agent_graph.py",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/components/workbench/RuntimeAgentGraphPanel.test.tsx",
+        "scripts/qa/seed_runtime_interaction_evidence_qa068.py",
+        "curl_testing.md"
+      ],
+      "notes": "Implemented durable runtime interaction evidence storage, idempotent recording helpers, graph execution instrumentation, replay graph projection, generated TypeScript update, React replay detail coverage, QA seed, and curl evidence assertions."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/068-durable-agent-interaction-evidence-and-replay-graph",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/graphical-ui-roadmap/068-durable-agent-interaction-evidence-and-replay-graph/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/graphical-ui-roadmap/068-durable-agent-interaction-evidence-and-replay-graph/validation.yml --start-processes",
+      "docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa068-after-spec"
+    ],
+    "playwright_screenshots": [
+      "output/playwright/qa068_ui/qa068-interaction-replay-graph-desktop.png",
+      "output/playwright/qa068_ui/qa068-interaction-replay-graph-mobile.png"
+    ],
+    "curl_output_dir": ".data/curl_test_runs/qa068-after-spec",
+    "curl_succeeded_commands": 212,
+    "curl_failed_commands": 0,
+    "notes": "Spec QA, desktop/mobile Playwright replay graph validation, QA docs, and multi-agent curl regression completed successfully."
+  },
+  "curl_testing": {
+    "status": "completed",
+    "sections": [
+      "16.5a GET /admin/runs/{workflow_run_id}/agent-graph with replay evidence",
+      "16.8 Runtime agent graph cross-tenant denial"
+    ],
+    "notes": "curl_testing.md section 16.5a now requires interaction_evidence counts and edge references; the curl runner seeds runtime_interaction_evidence rows for the runtime audit fixture."
+  },
+  "blocker": null,
+  "history": [
+    {
+      "phase": "specify",
+      "status": "completed",
+      "summary": "Specification and quality checklist created for durable interaction evidence and replay graph support."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "summary": "Autopilot clarifications recorded in spec.md; new safe durable interaction evidence is required for high-fidelity replay."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "summary": "Plan, research, data model, replay graph contract, quickstart, and AGENTS plan pointer updated."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "summary": "Tasks file created with 48 executable tasks organized by user story."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "summary": "Cross-artifact analysis found no critical, high, medium, or low issues; implementation may proceed."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "summary": "Completed Spec 068 implementation, QA docs, Spec QA, Playwright desktop/mobile replay validation, curl_testing coverage update, and multi-agent curl regression with 212 succeeded commands and no failures."
+    }
+  ]
+}

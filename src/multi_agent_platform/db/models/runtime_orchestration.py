@@ -9,6 +9,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -83,6 +84,30 @@ class RuntimeApprovalStatus(StrEnum):
     REJECTED = "rejected"
     CANCELLED = "cancelled"
     TIMED_OUT = "timed_out"
+
+
+class RuntimeInteractionKind(StrEnum):
+    DELEGATION = "delegation"
+    CONTEXT_TRANSFER = "context_transfer"
+    RESULT_RETURN = "result_return"
+    JOIN_CONTRIBUTION = "join_contribution"
+    APPROVAL_PAUSE = "approval_pause"
+    APPROVAL_RESUME = "approval_resume"
+    HANDOFF = "handoff"
+    TOOL_CALL = "tool_call"
+    CHECKPOINT = "checkpoint"
+    MANUAL_RESOLUTION = "manual_resolution"
+    RUN_COMPLETION = "run_completion"
+
+
+class RuntimeInteractionStatus(StrEnum):
+    RECORDED = "recorded"
+    SENT = "sent"
+    RECEIVED = "received"
+    COMPLETED = "completed"
+    PAUSED = "paused"
+    FAILED = "failed"
+    SKIPPED = "skipped"
 
 
 class RuntimeExecutionBundleRecord(Base):
@@ -359,6 +384,65 @@ class ApprovalDecisionRecord(Base):
     )
     accepted: Mapped[bool]
     rejection_reason: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+
+
+class RuntimeInteractionEvidenceRecord(Base):
+    __tablename__ = "runtime_interaction_evidence"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "workflow_run_id",
+            "idempotency_key",
+            name="uq_runtime_interaction_evidence_tenant_run_idempotency",
+        ),
+        Index(
+            "ix_runtime_interaction_evidence_tenant_run_sequence",
+            "tenant_id",
+            "workflow_run_id",
+            "sequence",
+        ),
+        Index(
+            "ix_runtime_interaction_evidence_tenant_run_edge",
+            "tenant_id",
+            "workflow_run_id",
+            "source_node_key",
+            "target_node_key",
+        ),
+    )
+
+    interaction_evidence_id: Mapped[UUID] = mapped_column(
+        primary_key=True, default=uuid4
+    )
+    tenant_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("tenants.tenant_id"), nullable=True
+    )
+    workflow_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("runtime_workflow_runs.workflow_run_id", ondelete="CASCADE")
+    )
+    source_node_key: Mapped[str] = mapped_column(String(128))
+    target_node_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    source_run_step_id: Mapped[UUID | None] = mapped_column(nullable=True)
+    target_run_step_id: Mapped[UUID | None] = mapped_column(nullable=True)
+    timeline_event_id: Mapped[UUID | None] = mapped_column(nullable=True)
+    interaction_kind: Mapped[RuntimeInteractionKind] = mapped_column(
+        Enum(RuntimeInteractionKind, native_enum=False)
+    )
+    status: Mapped[RuntimeInteractionStatus] = mapped_column(
+        Enum(RuntimeInteractionStatus, native_enum=False)
+    )
+    sequence: Mapped[int] = mapped_column(Integer)
+    safe_summary: Mapped[str] = mapped_column(Text())
+    classification: Mapped[str] = mapped_column(String(64), default="safe-summary")
+    payload_digest: Mapped[str] = mapped_column(String(64))
+    artifact_refs: Mapped[list[object]] = mapped_column(JSON, default=list)
+    provenance: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
+    idempotency_key: Mapped[str] = mapped_column(String(160))
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )

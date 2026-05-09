@@ -1,8 +1,164 @@
 {
   "schema_version": "1.0",
-  "state": "prepared",
-  "current_spec": "065",
-  "completed_specs": [],
+  "state": "completed",
+  "current_spec": null,
+  "completed_specs": [
+    "065",
+    "066",
+    "067",
+    "068"
+  ],
   "blocked": null,
-  "history": []
+  "final_validation": {
+    "completed_at": "2026-05-09T05:39:40Z",
+    "summary": "Final whole-roadmap stability gate completed for Specs 065 through 068.",
+    "commands": [
+      {
+        "id": "queue-complete",
+        "status": "passed",
+        "summary": "queue.json has next_spec null and all specs completed."
+      },
+      {
+        "id": "qa-docs-all",
+        "status": "passed",
+        "summary": "QA documents validated for Specs 065, 066, 067, and 068."
+      },
+      {
+        "id": "spec-qa-all",
+        "status": "passed",
+        "summary": "All generated validation manifests passed run_spec_qa.py."
+      },
+      {
+        "id": "playwright-all",
+        "status": "passed",
+        "summary": "All generated Playwright validations passed with managed processes."
+      },
+      {
+        "id": "ruff-check",
+        "status": "passed",
+        "summary": "uv run ruff check . passed."
+      },
+      {
+        "id": "ruff-format-check",
+        "status": "passed",
+        "summary": "uv run ruff format --check . passed after formatting tests/unit/operations/test_runtime_agent_graph.py."
+      },
+      {
+        "id": "mypy",
+        "status": "passed",
+        "summary": "uv run mypy src passed."
+      },
+      {
+        "id": "pytest-coverage",
+        "status": "passed",
+        "summary": "1332 tests passed; coverage threshold reached at 90.01%."
+      },
+      {
+        "id": "generated-react-types-fresh",
+        "status": "passed",
+        "summary": "Generated React admin API types are up to date."
+      },
+      {
+        "id": "frontend-install-deps",
+        "status": "passed",
+        "summary": "npm ci completed with 0 vulnerabilities."
+      },
+      {
+        "id": "frontend-typecheck",
+        "status": "passed",
+        "summary": "npm run typecheck passed."
+      },
+      {
+        "id": "frontend-vitest",
+        "status": "passed",
+        "summary": "npm test passed with 76 files and 121 tests."
+      },
+      {
+        "id": "frontend-build",
+        "status": "passed",
+        "summary": "npm run build passed; Vite reported only the existing bundle-size warning."
+      },
+      {
+        "id": "multi-agent-curl-test-final",
+        "status": "passed",
+        "summary": "Final curl regression passed with 212 succeeded commands and 0 failed commands.",
+        "artifact_dir": ".data/curl_test_runs/graphical-ui-final"
+      }
+    ],
+    "playwright_output_dirs": [
+      "output/playwright/qa065_ui",
+      "output/playwright/qa066_ui",
+      "output/playwright/qa067_ui",
+      "output/playwright/qa068_ui"
+    ],
+    "remaining_risk": "No known blocker. Vite build retains the existing chunk-size warning for the admin bundle."
+  },
+  "history": [
+    {
+      "spec": "065",
+      "phase": "specify",
+      "status": "completed",
+      "summary": "Created Spec 065 specification and requirements checklist."
+    },
+    {
+      "spec": "065",
+      "phase": "validation",
+      "status": "completed",
+      "summary": "Completed Spec 065 implementation, QA docs, Spec QA, Playwright, and multi-agent curl regression."
+    },
+    {
+      "spec": "066",
+      "phase": "validation",
+      "status": "completed",
+      "summary": "Completed Spec 066 implementation, QA docs, Spec QA, Playwright desktop/mobile validation, and multi-agent curl regression."
+    },
+    {
+      "spec": "067",
+      "phase": "validation",
+      "status": "completed",
+      "summary": "Completed Spec 067 implementation, QA docs, Spec QA, Playwright desktop/mobile validation, curl_testing coverage review, and multi-agent curl regression."
+    },
+    {
+      "spec": "068",
+      "phase": "specify",
+      "status": "completed",
+      "summary": "Completed Spec 068 specify phase."
+    },
+    {
+      "spec": "068",
+      "phase": "clarify",
+      "status": "completed",
+      "summary": "Completed Spec 068 clarify phase."
+    },
+    {
+      "spec": "068",
+      "phase": "plan",
+      "status": "completed",
+      "summary": "Completed Spec 068 plan phase."
+    },
+    {
+      "spec": "068",
+      "phase": "tasks",
+      "status": "completed",
+      "summary": "Completed Spec 068 tasks phase."
+    },
+    {
+      "spec": "068",
+      "phase": "analyze",
+      "status": "completed",
+      "summary": "Completed Spec 068 analyze phase."
+    },
+    {
+      "spec": "068",
+      "phase": "validation",
+      "status": "completed",
+      "summary": "Completed Spec 068 implementation, QA docs, Spec QA, Playwright desktop/mobile replay validation, curl_testing coverage review, and multi-agent curl regression."
+    },
+    {
+      "spec": "065-068",
+      "phase": "final_validation",
+      "status": "completed",
+      "summary": "Completed final whole-roadmap stability gate, including queue, QA docs, spec QA, Playwright, backend quality, frontend quality, coverage, generated types, and final multi-agent curl regression."
+    }
+  ]
 }

@@ -7,6 +7,10 @@ from hashlib import sha256
 from logging import Logger
 from uuid import UUID
 
+from multi_agent_platform.admin.workflow_registry.agent_graph import (
+    build_draft_agent_graph,
+    build_published_agent_graph,
+)
 from multi_agent_platform.admin.workflow_registry.compiler import (
     compile_workflow_blueprint,
 )
@@ -35,6 +39,7 @@ from multi_agent_platform.admin.workflow_registry.sharing import (
 from multi_agent_platform.admin.workflow_registry.validation import (
     validate_authoring_document,
 )
+from multi_agent_platform.api.schemas.admin_agent_graph import AgentCommunicationGraph
 from multi_agent_platform.api.schemas.workflow_editor import (
     EditorLookupResponse,
     GraphPreviewResponse,
@@ -922,6 +927,35 @@ class WorkflowRegistryService:
                 ]
         return build_graph_preview(document, findings=findings)
 
+    async def get_agent_communication_graph_for_draft(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+    ) -> AgentCommunicationGraph:
+        record = await self.repository.get_draft_record(workflow_draft_id)
+        if record is None:
+            raise WorkflowNotFoundError("workflow draft not found")
+        self._ensure_visible(principal, record)
+        return build_draft_agent_graph(self._to_response(record))
+
+    async def get_agent_communication_graph_for_version(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_version_bundle_id: UUID,
+    ) -> AgentCommunicationGraph:
+        record = await self.repository.get_version_record(workflow_version_bundle_id)
+        if record is None:
+            raise WorkflowNotFoundError("workflow version not found")
+        if not await self._can_view_version(principal=principal, record=record):
+            raise WorkflowAccessError("workflow version is outside the current scope")
+        document = await self._document_for_version(record)
+        return build_published_agent_graph(
+            self._to_version_response(record),
+            document=document,
+        )
+
     async def list_draft_revisions(
         self,
         *,
@@ -1478,6 +1512,32 @@ class WorkflowRegistryService:
             ],
             published_at=record.version.published_at,
         )
+
+    async def _document_for_version(
+        self,
+        record: WorkflowVersionRecord,
+    ) -> WorkflowDraftDocument | None:
+        raw_document = record.version.summary_json.get("document")
+        if isinstance(raw_document, dict):
+            return WorkflowDraftDocument.model_validate(raw_document)
+        if record.version.compiled_bundle_artifact_id is None:
+            return None
+        artifact = await self.artifact_repository.get(
+            record.version.compiled_bundle_artifact_id
+        )
+        if artifact is None:
+            return None
+        try:
+            payload = await self.storage_provider.get(artifact.storage_key)
+            raw_bundle = json.loads(payload.decode("utf-8"))
+        except Exception:
+            return None
+        if not isinstance(raw_bundle, dict):
+            return None
+        raw_bundle_document = raw_bundle.get("document")
+        if not isinstance(raw_bundle_document, dict):
+            return None
+        return WorkflowDraftDocument.model_validate(raw_bundle_document)
 
     def _to_sharing_grant_response(
         self,

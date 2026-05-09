@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "roadmap_file": "graphical_ui.md",
   "spec_range": "065..068",
-  "next_spec": "065",
+  "next_spec": null,
   "specs": [
     {
       "number": "065",
@@ -13,16 +13,16 @@
       "validation_file": "specs/_autopilot/graphical-ui-roadmap/065-agent-communication-graph-contracts-and-projections/validation.yml",
       "feature_dir": "specs/065-agent-communication-graph-contracts-and-projections",
       "branch": "codex/065-agent-communication-graph-contracts-and-projections",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "066",
@@ -33,16 +33,16 @@
       "validation_file": "specs/_autopilot/graphical-ui-roadmap/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/validation.yml",
       "feature_dir": "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions",
       "branch": "codex/066-react-agent-graph-viewer-for-workflow-drafts-and-versions",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "067",
@@ -53,16 +53,16 @@
       "validation_file": "specs/_autopilot/graphical-ui-roadmap/067-runtime-agent-communication-graph-for-runs/validation.yml",
       "feature_dir": "specs/067-runtime-agent-communication-graph-for-runs",
       "branch": "codex/067-runtime-agent-communication-graph-for-runs",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "068",
@@ -73,16 +73,16 @@
       "validation_file": "specs/_autopilot/graphical-ui-roadmap/068-durable-agent-interaction-evidence-and-replay-graph/validation.yml",
       "feature_dir": "specs/068-durable-agent-interaction-evidence-and-replay-graph",
       "branch": "codex/068-durable-agent-interaction-evidence-and-replay-graph",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     }
   ],
   "run_contract": {

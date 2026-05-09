@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  runtimeAgentGraphFixture,
   workbenchEnvelopeFixture,
   workbenchExportFixture,
 } from "../../test/workbenchTestData";
@@ -16,10 +17,16 @@ describe("WorkbenchPage", () => {
   it("loads platform workbench summaries without unsafe payloads", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => workbenchEnvelopeFixture,
-      }),
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => workbenchEnvelopeFixture,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => runtimeAgentGraphFixture,
+        }),
     );
 
     render(<WorkbenchPage workbenchUrl="/admin/app/operations.json" />);
@@ -28,6 +35,8 @@ describe("WorkbenchPage", () => {
       expect(screen.getByText("Operations workbench")).toBeInTheDocument();
     });
     expect(screen.getByText("Workflow run 11111111 from live audit evidence")).toBeInTheDocument();
+    expect(await screen.findByText("Runtime run communication")).toBeInTheDocument();
+    expect(screen.getByText("retry_scheduled")).toBeInTheDocument();
     expect(screen.getByText("Redacted signals")).toBeInTheDocument();
     expect(screen.queryByText(/qa029/i)).not.toBeInTheDocument();
   });
@@ -40,6 +49,10 @@ describe("WorkbenchPage", () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => workbenchEnvelopeFixture,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => runtimeAgentGraphFixture,
         })
         .mockResolvedValueOnce({
           ok: true,

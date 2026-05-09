@@ -10,6 +10,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.api.deps import get_session
+from multi_agent_platform.api.schemas.admin_agent_graph import AgentCommunicationGraph
 from multi_agent_platform.api.schemas.audit_debugging import (
     CreateDebugEvidenceExportRequest,
     DebugEvidenceExport,
@@ -24,6 +25,7 @@ from multi_agent_platform.api.schemas.audit_debugging import (
     VersionBundleSummary,
 )
 from multi_agent_platform.audit.inspection import bundle_to_dict
+from multi_agent_platform.audit.models import InspectionAction
 from multi_agent_platform.audit.service import (
     AuditDebuggingAuthorizationError,
     AuditDebuggingRateLimitError,
@@ -33,6 +35,12 @@ from multi_agent_platform.auth.dependencies import require_authorized_principal
 from multi_agent_platform.auth.principal import PrincipalContext
 from multi_agent_platform.db.repositories.audit_debugging import (
     AuditDebuggingRepository,
+)
+from multi_agent_platform.db.repositories.runtime_orchestration import (
+    RuntimeOrchestrationRepository,
+)
+from multi_agent_platform.operations.runtime_agent_graph import (
+    build_runtime_agent_graph,
 )
 
 router = APIRouter(prefix="/admin/runs", tags=["production-audit-debugging"])
@@ -246,6 +254,41 @@ async def bundle(
     if record is None:
         raise HTTPException(status_code=404, detail="bundle not found")
     return VersionBundleSnapshot.model_validate(bundle_to_dict(record))
+
+
+@router.get("/{workflow_run_id}/agent-graph", response_model=AgentCommunicationGraph)
+async def runtime_agent_graph(
+    workflow_run_id: UUID,
+    principal: PrincipalDep,
+    session: SessionDep,
+    tenant_id: TenantQuery = None,
+) -> AgentCommunicationGraph:
+    target_tenant_id = tenant_id if tenant_id is not None else principal.tenant_id
+    try:
+        await _service(session).ensure_authorized(
+            principal=principal,
+            tenant_id=target_tenant_id,
+            workflow_run_id=workflow_run_id,
+            action=InspectionAction.TIMELINE,
+        )
+    except Exception as exc:
+        raise _error(exc, principal.trace_id) from exc
+
+    graph = await build_runtime_agent_graph(
+        repository=RuntimeOrchestrationRepository(session),
+        workflow_run_id=workflow_run_id,
+        tenant_id=target_tenant_id,
+    )
+    if graph is None:
+        raise HTTPException(
+            status_code=404,
+            detail=InspectionError(
+                category="not_found",
+                message="run not found within authorized scope",
+                trace_id=principal.trace_id,
+            ).model_dump(),
+        )
+    return graph
 
 
 @router.post(
