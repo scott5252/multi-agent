@@ -3198,6 +3198,54 @@ Expected `200`:
 ### 18.4 React workflow URL scenarios
 
 ```bash
+cat >/tmp/curl-react-workflow-create.json <<JSON
+{
+  "idempotency_key": "curl-react-workflow-create",
+  "scope_type": "tenant",
+  "tenant_id": "$ACME_TENANT_ID",
+  "workflow_kind": "main_workflow",
+  "slug": "curl-react-api-scenario",
+  "display_name": "Curl React API Scenario",
+  "description": "Created through the React workflow create action.",
+  "document": {
+    "workflow_key": "curl-react-api-scenario",
+    "display_name": "Curl React API Scenario",
+    "description": "Created through the React workflow create action.",
+    "workflow_kind": "main_workflow",
+    "entry_node_key": "start",
+    "contracts": [
+      {"contract_key": "input", "contract_kind": "workflow_input", "json_schema": {"type": "object"}},
+      {"contract_key": "output", "contract_kind": "workflow_output", "json_schema": {"type": "object"}}
+    ],
+    "roles": [
+      {"role_key": "creator", "display_name": "Creator", "purpose": "Validate React create API coverage", "input_contract_key": "input", "output_contract_key": "output", "graph_node_keys": ["start"]}
+    ],
+    "prompt_profile_references": [],
+    "skill_installations": [],
+    "nodes": [
+      {"node_key": "start", "node_type": "role", "display_name": "Start", "role_key": "creator"},
+      {"node_key": "done", "node_type": "terminal", "display_name": "Done"}
+    ],
+    "edges": [
+      {"edge_key": "edge-start-done", "source_node_key": "start", "target_node_key": "done", "edge_type": "success"}
+    ],
+    "join_policies": [],
+    "approval_gates": [],
+    "subworkflow_refs": [],
+    "test_requirements": [],
+    "editor_annotations": {"section_notes": {"metadata": "Curl React create scenario"}, "graph_layout": {}, "collapsed_sections": []}
+  }
+}
+JSON
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/workflows?tenant_id=$ACME_TENANT_ID" \
+  --data @/tmp/curl-react-workflow-create.json \
+  | tee /tmp/curl-react-workflow-create-response.json \
+  | jq -e '.status == "accepted" and (.audit_reference_id | startswith("workflow-draft:")) and (.next_action.href | contains("/admin/app/workflows/drafts/"))'
+export REACT_CREATED_WORKFLOW_DRAFT_ID="$(jq -r '.audit_reference_id | split(":")[1]' /tmp/curl-react-workflow-create-response.json)"
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/app/workflows/drafts/$REACT_CREATED_WORKFLOW_DRAFT_ID/detail.json?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.draft.name == "Curl React API Scenario"'
 react_workflow_urls=(
   "/admin/app/workflows?tenant_id=$ACME_TENANT_ID"
   "/admin/app/workflows/new?tenant_id=$ACME_TENANT_ID"
@@ -3239,37 +3287,84 @@ cat >/tmp/curl-react-workflow-save.json <<JSON
   "name": "Curl React Workflow Full Document",
   "description": "Saved through the React workflow document route.",
   "change_summary": "Curl React full document save",
-  "client_context": {"active_section": "metadata"},
-  "selected_prompt_ref": null,
-  "selected_profile_ref": null,
-  "join_policy": "wait_for_required_branches",
+  "client_context": {"active_section": "graph", "mutation_source": "curl_testing"},
+  "selected_prompt_ref": "coordinator-prompt-profile",
+  "selected_profile_ref": "coordinator-runtime-profile",
+  "join_policy": "evidence-join",
   "force_stale": false,
   "document": {
     "workflow_key": "curl-triage-flow-copy",
     "display_name": "Curl React Workflow Full Document",
     "description": "Saved through the React workflow document route.",
     "workflow_kind": "main_workflow",
-    "entry_node_key": "triage-node",
+    "entry_node_key": "start",
     "contracts": [
-      {"contract_key": "inbound", "json_schema": {"type": "object"}},
-      {"contract_key": "result", "json_schema": {"type": "object"}}
+      {"contract_key": "request", "contract_kind": "workflow_input", "json_schema": {"type": "object"}},
+      {"contract_key": "finding", "contract_kind": "data_contract", "json_schema": {"type": "object"}},
+      {"contract_key": "result", "contract_kind": "workflow_output", "json_schema": {"type": "object"}},
+      {"contract_key": "approval-decision", "contract_kind": "approval_decision", "json_schema": {"type": "object"}}
     ],
     "roles": [
-      {"role_key": "triage-role", "display_name": "Triage Role", "purpose": "Assess intake", "input_contract_key": "inbound", "output_contract_key": "result", "graph_node_keys": ["triage-node"]}
+      {
+        "role_key": "coordinator",
+        "display_name": "Coordinator",
+        "purpose": "Coordinate the workflow setup review",
+        "responsibilities": ["Collect request context", "Prepare final response"],
+        "profile_reference_key": "coordinator-prompt-profile",
+        "prompt_reference_keys": ["coordinator-prompt-profile"],
+        "input_contract_key": "request",
+        "output_contract_key": "result",
+        "graph_node_keys": ["start"]
+      },
+      {
+        "role_key": "research",
+        "display_name": "Research",
+        "purpose": "Review workflow setup evidence",
+        "responsibilities": ["Summarize durable references"],
+        "input_contract_key": "request",
+        "output_contract_key": "finding",
+        "graph_node_keys": ["research"]
+      },
+      {
+        "role_key": "review",
+        "display_name": "Review",
+        "purpose": "Check setup risks before approval",
+        "responsibilities": ["Assess release readiness"],
+        "input_contract_key": "request",
+        "output_contract_key": "finding",
+        "graph_node_keys": ["review"]
+      }
     ],
-    "prompt_profile_references": [],
+    "prompt_profile_references": [
+      {"reference_key": "coordinator-prompt-profile", "role_key": "coordinator", "agent_key": "coordinator", "agent_kind": "agent", "source_scope": "tenant", "readiness_status": "ready"}
+    ],
     "skill_installations": [],
     "nodes": [
-      {"node_key": "triage-node", "node_type": "role", "display_name": "Triage", "role_key": "triage-role"},
+      {"node_key": "start", "node_type": "role", "display_name": "Coordinate", "role_key": "coordinator", "editor_position": {"x": 0, "y": 0}},
+      {"node_key": "research", "node_type": "role", "display_name": "Research", "role_key": "research", "editor_position": {"x": 220, "y": -80}},
+      {"node_key": "review", "node_type": "role", "display_name": "Review", "role_key": "review", "editor_position": {"x": 220, "y": 80}},
+      {"node_key": "join", "node_type": "join", "display_name": "Join Evidence", "join_policy_key": "evidence-join", "editor_position": {"x": 460, "y": 0}},
+      {"node_key": "approval", "node_type": "approval", "display_name": "Manager Approval", "approval_gate_key": "manager-approval", "editor_position": {"x": 660, "y": 0}},
       {"node_key": "done", "node_type": "terminal", "display_name": "Done"}
     ],
     "edges": [
-      {"edge_key": "edge-triage-done", "source_node_key": "triage-node", "target_node_key": "done", "edge_type": "success"}
+      {"edge_key": "edge-start-research", "source_node_key": "start", "target_node_key": "research", "contract_key": "request", "edge_type": "success"},
+      {"edge_key": "edge-start-review", "source_node_key": "start", "target_node_key": "review", "contract_key": "request", "edge_type": "success"},
+      {"edge_key": "edge-research-join", "source_node_key": "research", "target_node_key": "join", "contract_key": "finding", "edge_type": "success"},
+      {"edge_key": "edge-review-join", "source_node_key": "review", "target_node_key": "join", "contract_key": "finding", "edge_type": "success"},
+      {"edge_key": "edge-join-approval", "source_node_key": "join", "target_node_key": "approval", "contract_key": "result", "edge_type": "success"},
+      {"edge_key": "edge-approval-done", "source_node_key": "approval", "target_node_key": "done", "contract_key": "approval-decision", "edge_type": "success"}
     ],
-    "join_policies": [],
-    "approval_gates": [],
+    "join_policies": [
+      {"join_policy_key": "evidence-join", "strategy": "quorum", "inbound_edge_keys": ["edge-research-join", "edge-review-join"], "required_branches": ["research", "review"], "quorum_count": 2, "failure_behavior": "block", "output_merge_contract_key": "result"}
+    ],
+    "approval_gates": [
+      {"approval_gate_key": "manager-approval", "display_name": "Manager Approval", "approver_scope": "tenant_admin", "reason": "Review workflow setup changes", "decision_contract_key": "approval-decision", "resume_behavior": "continue_on_approval"}
+    ],
     "subworkflow_refs": [],
-    "test_requirements": [],
+    "test_requirements": [
+      {"requirement_key": "agent-test-bench-pass", "suite_id": "$AGENT_SUITE_ID", "target_type": "workflow_draft", "freshness_policy": "latest_revision", "latest_result_id": "$AGENT_RUN_ID", "latest_result_status": "passed", "safe_summary": "Curl agent test run is passing."}
+    ],
     "editor_annotations": {"section_notes": {"metadata": "Curl React full document save"}, "graph_layout": {}, "collapsed_sections": []}
   }
 }
@@ -3278,13 +3373,24 @@ curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/save?tenant_id=$ACME_TENANT_ID" \
   --data @/tmp/curl-react-workflow-save.json \
   | tee /tmp/curl-react-workflow-save-response.json \
-  | jq -e '.status == "accepted" and .editor_state.document.editor_annotations.section_notes.metadata == "Curl React full document save"'
+  | jq -e '.status == "accepted" and (.editor_state.document.roles | length) == 3 and (.editor_state.document.prompt_profile_references | length) == 1 and (.editor_state.document.join_policies | length) == 1 and .editor_state.document.test_requirements[0].suite_id == env.AGENT_SUITE_ID and .editor_state.document.editor_annotations.section_notes.metadata == "Curl React full document save"'
 export REACT_WORKFLOW_SAVED_REVISION="$(jq -r '.revision' /tmp/curl-react-workflow-save-response.json)"
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/detail.json?tenant_id=$ACME_TENANT_ID" \
+  | tee /tmp/curl-react-workflow-reloaded.json \
+  | jq -e '.draft.revision == env.REACT_WORKFLOW_SAVED_REVISION and (.draft.document.roles | length) == 3 and .draft.document.join_policies[0].strategy == "quorum" and .draft.document.test_requirements[0].latest_result_status == "passed"'
 curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/save?tenant_id=$ACME_TENANT_ID" \
   --data @/tmp/curl-react-workflow-save.json \
   | tee /tmp/curl-react-workflow-replay.json \
   | jq -e '.status == "idempotent_replay" and .idempotency.replayed == true'
+jq '.description = "Different payload with reused idempotency key" | .document.description = "Different payload with reused idempotency key"' \
+  /tmp/curl-react-workflow-save.json > /tmp/curl-react-workflow-idempotency-conflict.json
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/save?tenant_id=$ACME_TENANT_ID" \
+  --data @/tmp/curl-react-workflow-idempotency-conflict.json \
+  | tee /tmp/curl-react-workflow-idempotency-conflict-response.json \
+  | jq -e '.status == "validation_error" and .validation.findings[0].field_path == "idempotency_key"'
 jq '.idempotency_key = "curl-react-workflow-stale" | .force_stale = true' \
   /tmp/curl-react-workflow-save.json > /tmp/curl-react-workflow-stale.json
 curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
@@ -3292,7 +3398,7 @@ curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   --data @/tmp/curl-react-workflow-stale.json \
   | tee /tmp/curl-react-workflow-stale-response.json \
   | jq -e '.status == "stale_conflict"'
-jq '.revision = env.REACT_WORKFLOW_SAVED_REVISION | .idempotency_key = "curl-react-workflow-invalid" | .document.edges += [{"edge_key":"edge-missing-node","source_node_key":"triage-node","target_node_key":"missing-node"}]' \
+jq '.revision = env.REACT_WORKFLOW_SAVED_REVISION | .idempotency_key = "curl-react-workflow-invalid" | .document.edges += [{"edge_key":"edge-missing-node","source_node_key":"start","target_node_key":"missing-node"}]' \
   /tmp/curl-react-workflow-save.json > /tmp/curl-react-workflow-invalid.json
 curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
   "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/save?tenant_id=$ACME_TENANT_ID" \
@@ -3379,6 +3485,7 @@ react_tenant_workspace_urls=(
   "/admin/app/memberships/audit.json?tenant_id=$ACME_TENANT_ID"
   "/admin/app/channels?tenant_id=$ACME_TENANT_ID"
   "/admin/app/channels/runs?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/channels/runs?tenant_id=$ACME_TENANT_ID&workflow_id=curl-triage-flow"
   "/admin/app/channels/runs/$CHANNEL_RUN_ID?tenant_id=$ACME_TENANT_ID"
   "/admin/app/channels/shell.json?tenant_id=$ACME_TENANT_ID"
   "/admin/app/channels/bootstrap.json?tenant_id=$ACME_TENANT_ID"
@@ -3394,6 +3501,29 @@ react_tenant_workspace_urls=(
 for url in "${react_tenant_workspace_urls[@]}"; do
   curl -sS -H "$ACME_HEADER" "$BASE_URL$url" >/dev/null
 done
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/test-bench/suites?tenant_id=$ACME_TENANT_ID" \
+  -d '{"name":"Curl React Test Bench Guard","description":"React route mutation coverage.","target_type":"workflow_draft","target_id":"curl-triage-flow","target_revision":"draft-rev-1","default_safe_mode":"mock_model","pass_threshold":0.95,"required_for_publish":true,"idempotency_key":"react-suite-curl-001"}' \
+  | tee /tmp/curl-react-test-bench-suite.json \
+  | jq -e '.status == "accepted" and .suite.summary.suite_name == "Curl React Test Bench Guard"'
+export REACT_AGENT_SUITE_ID="$(jq -r '.suite.summary.suite_id' /tmp/curl-react-test-bench-suite.json)"
+export REACT_AGENT_SUITE_REVISION="$(jq -r '.suite.summary.suite_revision' /tmp/curl-react-test-bench-suite.json)"
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/test-bench/suites/$REACT_AGENT_SUITE_ID/cases?tenant_id=$ACME_TENANT_ID" \
+  -d '{"name":"React route case","fixture_summary":"Fixture uses safe workflow setup summary.","expected_contract_summary":"Summary status is required.","assertions":[],"evaluator_reference_id":"react-curl-evaluator","idempotency_key":"react-case-curl-001"}' \
+  | tee /tmp/curl-react-test-bench-case.json \
+  | jq -e '.status == "accepted" and .case.case_revision != null'
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/test-bench/suites/$REACT_AGENT_SUITE_ID/runs?tenant_id=$ACME_TENANT_ID" \
+  -d '{"target_revision":"draft-rev-1","safe_mode":"real_model_side_effects_disabled","run_reason":"Curl React mutation coverage","idempotency_key":"react-run-curl-001"}' \
+  | tee /tmp/curl-react-test-bench-run.json \
+  | jq -e '.status == "accepted" and .run.progress.status == "passed" and .run.publish_gate.gate_id != null'
+export REACT_AGENT_GATE_ID="$(jq -r '.run.publish_gate.gate_id' /tmp/curl-react-test-bench-run.json)"
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/test-bench/gates/$REACT_AGENT_GATE_ID/refresh?tenant_id=$ACME_TENANT_ID" \
+  -d '{"target_revision":"draft-rev-1","idempotency_key":"react-gate-curl-001"}' \
+  | tee /tmp/curl-react-test-bench-gate.json \
+  | jq -e '.status == "accepted" and .gate.evidence_status == "passed" and .gate.target_revision == "draft-rev-1"'
 curl -sS -i -H "$ACME_HEADER" \
   "$BASE_URL/admin/app/test-bench/artifacts/00000000-0000-0000-0000-000000000000.json?tenant_id=$ACME_TENANT_ID"
 ```

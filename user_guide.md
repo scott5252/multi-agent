@@ -6,8 +6,8 @@ production-like installation. It is written for administrators and operators who
 do not write code every day, but it stays precise about the current system so
 that setup decisions are repeatable.
 
-This document reflects the repository state reviewed on May 8, 2026. It covers
-feature specifications 001 through 059, the Python code under
+This document reflects the repository state reviewed on May 9, 2026. It covers
+feature specifications 001 through 073, the Python code under
 `src/multi_agent_platform`, and the Admin browser implementation under
 `frontend/admin`.
 
@@ -111,6 +111,15 @@ Some areas are intentionally lighter in the current code:
   reference is missing or cannot be resolved. Local OpenAI-compatible providers
   may run without credentials only when the endpoint passes the configured local
   allowlist.
+- The workflow builder now supports a complete custom workflow setup path. It
+  can save full workflow documents through the React Admin mutation contract,
+  edit role/contract/graph/join/approval/subworkflow structure through visible
+  controls, bind prompt and runtime profile references per agent, attach
+  repository-backed Test Bench evidence, validate and publish with backend-owned
+  gates, and hand the published workflow to runtime launch or Design Reviews.
+  The browser remains a guided authoring surface; the backend remains the
+  source of truth for revision checks, idempotency, validation, publish
+  readiness, evidence freshness, authorization, and redaction.
 
 These notes are not warnings to avoid the system. They are the boundaries to
 know when moving from local evaluation to a production deployment.
@@ -322,6 +331,23 @@ areas:
 - Spec 068, durable interaction replay evidence: tenant-scoped safe interaction
   records for delegation, context transfer, result return, joins, approvals,
   handoffs, tool calls, checkpoints, manual resolution, and replay details.
+- Spec 069, workflow document authoring contracts and mutation APIs: complete
+  workflow document save/load contracts, section summaries, idempotent replay,
+  stale conflict recovery, validation finding mapping, and redaction-safe
+  mutation evidence.
+- Spec 070, React workflow graph and agent role builder: browser controls for
+  roles, contracts, graph nodes and edges, join policies, approval gates,
+  subworkflow references, and graph layout without raw JSON editing.
+- Spec 071, prompt profile creation and per-agent binding UI: per-role prompt
+  and runtime profile binding matrix, safe readiness badges, reference key
+  generation, and durable save/reload behavior.
+- Spec 072, custom workflow test evidence and publish setup: required publish
+  evidence setup in the workflow builder, safe case creation, deterministic run
+  launch, current/stale/failed evidence distinctions, and Test Bench handoff.
+- Spec 073, end-to-end custom workflow setup wizard and runtime launch:
+  checklist-driven workflow creation, three-agent starter, evidence setup,
+  validation, publish, runtime launch prefill, Design Reviews workflow
+  selection, mobile layout checks, and tenant isolation.
 
 ## 1. Overview
 
@@ -341,6 +367,10 @@ The system has several major capabilities:
 - Workflow registry and workflow builder pages for creating draft workflows,
   validating graphs and references, reviewing revisions, and publishing
   immutable workflow bundles.
+- A checklist-driven custom workflow setup path for tenant admins: create a
+  draft, apply a three-agent starter, bind prompt/profile references, attach
+  required deterministic evidence, validate, publish, and open runtime launch
+  or Design Reviews handoff surfaces.
 - Published workflow graph execution for role nodes, sub-agent nodes, joins,
   approvals, terminal nodes, parallel fanout, partial failures, and durable
   checkpoint/resume evidence.
@@ -404,6 +434,8 @@ A complete local setup has:
 - At least one prompt version and one agent runtime profile.
 - Optional Daily Intelligence Briefing preference profiles for tenant users.
 - At least one workflow draft that validates and publishes.
+- A complete workflow setup path that can be verified through the browser
+  without raw JSON edits.
 - Current passing test-bench evidence for any workflow draft that declares
   required suites.
 - Optional skill packages and tenant installations.
@@ -531,7 +563,9 @@ Important browser pages:
 
 - `/admin/app` - Admin home and authorized workspace shell.
 - `/admin/app/operations` - operations, reliability, and run debug workbench.
-- `/admin/app/workflows` - workflow registry and guided builder.
+- `/admin/app/workflows` - workflow registry, guided builder, custom workflow
+  setup checklist, graph/role authoring, prompt/profile binding, required
+  evidence setup, validation, publish, and launch handoff.
 - `/admin/app/design-reviews` - Design Review Council sessions, reusable
   template readiness, review rounds, manual decisions, quorum evidence, and
   handoff references.
@@ -556,10 +590,12 @@ Important browser pages:
 ### Admin UI Visual Tour
 
 The screenshots below were captured from the running local server on May 8-9,
-2026 with Playwright at desktop viewports. The Admin pages use the
-`tenant-admin-acme` local principal so tenant-scoped controls and records are
-visible. If a Markdown viewer scales a screenshot down, open the image
-directly.
+2026 with Playwright at desktop viewports. The workflow setup screenshots for
+Specs 069 through 073 are captured from the focused Playwright QA runs under
+`output/playwright/qa069_ui` through `output/playwright/qa073_ui`. The Admin
+pages use the `tenant-admin-acme` local principal so tenant-scoped controls and
+records are visible. If a Markdown viewer scales a screenshot down, open the
+image directly.
 
 Common shell elements appear on nearly every Admin page:
 
@@ -676,12 +712,115 @@ Common shell elements appear on nearly every Admin page:
 - The empty state is truthful: no workflow rows are currently available for
   the captured Acme scope.
 - Create draft starts a guided workflow draft flow for the active tenant.
-- The active draft area shows graph, reference, validation, and publish
+- The active draft area shows full-document authoring, graph, prompt/profile
+  reference, required evidence, validation, publish, revision, and launch
   controls once a draft exists.
+- Complete workflow saves post the canonical workflow document plus revision,
+  idempotency key, safe client context, and change summary to the backend-owned
+  save route.
+- Duplicate saves replay safely. Same-key different-payload saves return safe
+  idempotency validation findings. Stale saves return recovery guidance without
+  overwriting the local draft.
 - Validation and publish sections use backend-owned evidence, including
   required test-bench gates when configured.
 - The page keeps older workflow URLs compatible through redirects into this
   Admin workspace.
+
+#### Workflow Document Save Contract
+
+![Workflow document save contract](output/playwright/qa069_ui/qa069-workflow-setup-smoke.png)
+
+- The workflow builder loads a canonical `WorkflowDraftDocument` and safe
+  section summaries from `/admin/app/workflows/drafts/{workflow_draft_id}/detail.json`.
+- Saving a draft persists roles, prompt/profile references, skill references,
+  contracts, nodes, edges, join policies, approval gates, subworkflow
+  references, required test requirements, and editor annotations in one
+  revisioned document.
+- Backend validation maps malformed documents to safe section and field-path
+  findings so reviewers can return directly to metadata, roles, graph,
+  references, tests, or publish readiness.
+- The JSON inspector remains read-only and redacted. It must not expose raw
+  prompts, completions, credential values, provider payloads, tool payloads,
+  memory contents, private channel content, stack traces, or local filesystem
+  paths.
+
+#### Workflow Graph And Role Builder
+
+![Workflow graph and role builder](output/playwright/qa070_ui/qa070-workflow-graph-role-desktop.png)
+
+- Role cards let authorized admins edit role keys, names, kind, purpose,
+  responsibilities, contracts, prompt/profile references, skill bindings, and
+  graph node references through form controls.
+- Contract cards define workflow input, output, data, handoff, artifact,
+  memory, tool-access, approval-decision, failure, and compatibility contracts
+  without editing raw JSON.
+- Graph topology controls edit the entry node, nodes, edges, edge contracts,
+  branch conditions, retry metadata, and node layout positions.
+- Join controls support `all_success`, `quorum`, `first_success`, and
+  `manual_resolution` strategies with required branches, quorum count,
+  timeout, failure behavior, and merge contract metadata.
+- Approval controls capture approver scope, optional role code, decision
+  contract, resume behavior, timeout, visibility, and reviewer instructions.
+- The canvas is visual, and node/edge/join lists provide keyboard-readable
+  equivalents for accessibility and mobile review.
+
+#### Prompt And Runtime Profile Binding
+
+![Prompt/profile binding](output/playwright/qa071_ui/qa071-prompt-profile-binding-desktop.png)
+
+- The Per-Agent Bindings area summarizes prompt and runtime profile readiness
+  for every role in the workflow document.
+- The binding matrix shows ready, missing, incomplete, or blocked state without
+  rendering raw prompt template content.
+- Role binding controls can generate safe prompt reference keys and runtime
+  profile reference keys, then save those references back into the workflow
+  document.
+- Graph summaries and role fields show safe binding readiness and reference
+  keys only. Credential values, provider headers, prompt bodies, completions,
+  private messages, raw tool payloads, memory contents, and unauthorized tenant
+  labels must not appear.
+- Mixed readiness is allowed while authoring. Validation and publish readiness
+  decide whether unresolved prompt/profile references block release.
+
+#### Required Publish Evidence Setup
+
+![Required publish evidence setup](output/playwright/qa072_ui/qa072-workflow-test-evidence-desktop.png)
+
+- The Required publish evidence section helps attach authorized Test Bench
+  suites to the workflow draft and current revision.
+- Create suite, Attach suite, Add safe case, Launch deterministic run, and
+  Clear run result actions write through backend-owned Test Bench and workflow
+  save routes.
+- Evidence cards distinguish current passing evidence from stale, missing,
+  failed, queued, running, or blocked evidence. The browser must not claim stale
+  or failed evidence is current.
+- Publish readiness and validation findings link back to evidence setup when a
+  required suite is missing, stale, or failing.
+- The workflow document stores safe requirement references and summaries. It
+  does not store protected run payloads, prompt bodies, provider headers,
+  credentials, tool payloads, private channel messages, stack traces, or local
+  filesystem paths.
+
+#### End-To-End Custom Workflow Setup
+
+![End-to-end workflow setup](output/playwright/qa073_ui/qa073-workflow-setup-desktop.png)
+
+- The Custom workflow launch checklist appears near the top of the builder and
+  groups the setup path into Metadata, Agents, Prompts And Profiles, Graph,
+  Contracts, Evidence, Validation, Publish, and Launch.
+- Apply three-agent starter creates a realistic coordinator, research agent,
+  and synthesis agent with prompt/profile references, contracts, role nodes,
+  a join node, edges, and a join policy.
+- The checklist summarizes progress for reviewers, but backend validation,
+  repository-backed Test Bench evidence, and publish readiness remain the
+  release source of truth.
+- After publish, Open runtime launch sends the workflow id to the run
+  workspace. The run page preselects the workflow but does not start a run until
+  the user submits Start Run.
+- Select in Design Reviews opens the Design Reviews workspace with the
+  published workflow available for authorized session creation.
+- Mobile views should stack checklist cards, evidence cards, controls, and
+  long ids without overlap.
 
 #### Workflow Agent Graph
 
@@ -707,6 +846,8 @@ Common shell elements appear on nearly every Admin page:
   status, manual-decision count, approved handoff count, and template readiness.
 - Create request starts a durable design review session from a safe request
   summary, quorum policy, and optional authorized published workflow bundle.
+- Workflow selectors can be prefilled from a published workflow handoff. The
+  selected workflow must still be visible to the active principal and tenant.
 - Sessions lists only live tenant-scoped records. Empty states do not invent
   reviewer rows, quorum decisions, or handoffs.
 - Selected session details expose safe revisions, rounds, reviewer verdict
@@ -851,6 +992,9 @@ Common shell elements appear on nearly every Admin page:
   action state.
 - New run opens a blank run-start state.
 - Workflow selects the safe workflow reference to run.
+- Links from a published workflow can prefill the Workflow field through a safe
+  `workflow_id` query value, but a run does not start until Start Run is
+  submitted.
 - Request summary is the only free-text request content shown in the browser.
   It should remain a safe summary rather than a private message or raw payload.
 - Start Run submits the workflow reference and request summary to the retained
@@ -1414,41 +1558,69 @@ preference context pinned at creation time.
 
 Use `/admin/app/workflows` for the guided React browser flow. Older workflow
 browser links should redirect into this workspace or return safe non-Jinja
-responses.
+responses. A tenant admin can now complete the full custom workflow setup
+journey from this page without raw JSON editing.
 
-1. Create a new workflow draft.
-2. Fill in metadata such as name, description, owner, tenant visibility, and
+1. Create a new workflow draft from the workflow registry.
+2. Open the new draft from the create result.
+3. Review the Custom workflow launch checklist near the top of the builder.
+4. Fill in metadata such as name, description, owner, tenant visibility, and
    intended business use.
-3. Define input and output contracts so the workflow has clear boundaries.
-4. Add nodes for agent work, sub-agent work, decisions, approvals, tool calls,
-   or reusable subworkflows.
-5. Add edges to describe execution order.
-6. Attach prompt/profile references where needed.
-7. Attach model routing overrides only where they are necessary.
-8. Attach skill installations and tool policies needed by each step.
+5. Apply the three-agent starter when you want a complete baseline. It creates
+   coordinator, research, and synthesis roles plus starter contracts, role
+   nodes, a join node, edges, prompt/profile references, and a join policy.
+6. Adjust role cards through visible controls for role key, name, kind,
+   purpose, responsibilities, contracts, prompt/profile references, skill
+   bindings, and graph node references.
+7. Define input, output, approval-decision, handoff, artifact, memory,
+   tool-access, or data contracts so the workflow has clear boundaries.
+8. Edit graph topology with entry node, node, edge, edge-contract, branch,
+   retry, and layout controls.
 9. Configure approval gates for human review points.
 10. Configure join policies for parallel work, such as `all_success`, `quorum`,
     `first_success`, or `manual_resolution`.
-11. Add test requirements that must pass before publish.
-12. Save the draft.
-13. Validate the draft.
-14. Review graph preview and validation messages.
-15. Resolve reference errors, missing skill versions, missing prompt/profile
-    grants, invalid edges, and contract problems.
-16. Review the publish gate page.
-17. Publish the workflow.
-18. Inspect the immutable published bundle detail page.
-19. Start a run through the Web UI, Web API, or Telegram after channel setup.
+11. Add subworkflow references only to authorized published workflow versions.
+12. Use the Per-Agent Bindings area to attach prompt and runtime profile
+    references to each role. Safe reference keys and readiness badges are shown;
+    raw prompt bodies and credential values are not.
+13. Attach model routing overrides only where they are necessary.
+14. Attach skill installations and tool policies needed by each step.
+15. Use Required publish evidence to create or attach a Test Bench suite, add a
+    safe deterministic case, and launch a deterministic run for the current
+    draft revision.
+16. Save the draft. The save route stores the complete workflow document with a
+    revision token and idempotency key.
+17. Validate the draft and review backend-owned findings.
+18. Resolve reference errors, missing skill versions, missing prompt/profile
+    grants, invalid edges, missing evidence, stale evidence, and contract
+    problems through the linked sections.
+19. Review the publish gate page or the publish section in the builder.
+20. Prepare and confirm publish only when validation and current required
+    evidence are ready.
+21. Inspect the immutable published bundle detail page and Agent Communication
+    Graph.
+22. Open runtime launch from the workflow handoff. The workflow field is
+    prefilled, but a run starts only after the operator submits Start Run.
+23. Open Design Reviews from the workflow handoff if the published workflow
+    should be used as a review workflow selection.
+24. Start a run through the Web UI, Web API, or Telegram after channel setup.
 
 Workflow validation is intentionally strict. It checks graph structure,
 reference visibility, exact skill versions, secret-like text markers, approval
 scope, join strategies, and publish gate evidence. Required test evidence is
 loaded from the Agent Test Bench repository for the same tenant, workflow draft,
-and current draft revision. Legacy `latest_result_status` fields remain
-parseable compatibility metadata, but they should not be treated as release
-evidence unless repository-backed current passing test runs also exist. Skill
-references should use specific immutable versions rather than floating labels
-such as `latest`, `main`, or `dev`.
+and current draft revision. The browser checklist can summarize progress, but it
+does not override backend validation or publish readiness. Legacy
+`latest_result_status` fields remain parseable compatibility metadata, but they
+should not be treated as release evidence unless repository-backed current
+passing test runs also exist. Skill references should use specific immutable
+versions rather than floating labels such as `latest`, `main`, or `dev`.
+
+The workflow document save route is revisioned and idempotent. An exact replay
+of a save returns an idempotent replay result without creating another
+revision. Reusing an idempotency key for a different document returns a safe
+validation error. A stale save returns safe reload guidance and leaves the
+current document intact.
 
 When a published workflow run is claimed by the durable worker, the graph
 executor loads the pinned bundle document and runs graph nodes in dependency
@@ -1624,18 +1796,27 @@ Supported safe execution modes:
 
 ### Creating A Test Suite
 
-1. Open `/admin/app/test-bench`.
+You can create and run suites directly in `/admin/app/test-bench`, or from a
+workflow draft's Required publish evidence section when the suite is for that
+draft.
+
+1. Open `/admin/app/test-bench`, or open the workflow builder and scroll to
+   Required publish evidence.
 2. Create a new suite.
 3. Choose the tenant.
 4. Choose the target type and target id.
-5. Add safe fixture summaries.
-6. Add one or more test cases.
-7. Define expected contract shapes.
-8. Add deterministic assertions or evaluator settings.
-9. Choose the model/tool mode.
-10. Set a pass threshold.
-11. Save the suite.
-12. Run the suite.
+5. For workflow publish evidence, target the workflow draft and current draft
+   revision.
+6. Add safe fixture summaries.
+7. Add one or more test cases, or use Add safe case from the workflow evidence
+   panel for deterministic evidence.
+8. Define expected contract shapes.
+9. Add deterministic assertions or evaluator settings.
+10. Choose the model/tool mode.
+11. Set a pass threshold.
+12. Save the suite.
+13. Run the suite, or use Launch deterministic run from the workflow evidence
+    panel.
 
 Results include pass/fail status, step traces, provider/model metadata,
 prompt/profile and skill references, token usage summary, latency, contract

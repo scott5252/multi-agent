@@ -10,13 +10,13 @@ It was prepared from:
 
 - the original architecture plan in `docs/architecture.md`
 - the expansion plan in `docs/Architecture2.md`
-- Spec Kit feature directories `001` through `059`
+- Spec Kit feature directories `001` through `073`
 - the implemented Python package under `src/multi_agent_platform`
 - the React admin workspace under `frontend/admin`
 - Alembic migrations, tests, React static assets, generated contracts, and
   project settings
 
-As of this review, specs `001` through `059` have implementation artifacts in
+As of this review, specs `001` through `073` have implementation artifacts in
 source code. Specs `020` through `025` add the current graph execution worker,
 governed skill-tool execution boundary, Telegram alias delivery persistence,
 Daily Intelligence Briefing preferences, repository-backed workflow publish
@@ -33,7 +33,16 @@ production Admin route data, add backend-owned provenance and truthful empty
 states, retire the production sample patterns route, replace deterministic
 domain projections with live repository/service-backed projections across the
 major Admin workspaces, enforce the final live-only decommission gate, and
-remove user-facing transitional "React" labels from the product UI.
+remove user-facing transitional "React" labels from the product UI. Specs `060`
+through `064` add the Design Reviewer Council domain, coordinator, Admin
+workspace, reusable template, and publish evidence gates. Specs `065` through
+`068` add safe Agent Communication Graph contracts, draft/published graph
+rendering, runtime run graph overlays, and durable interaction replay evidence.
+Specs `069` through `073` complete the custom workflow setup path with
+full-document save contracts, editable role/contract/graph controls,
+per-agent prompt/profile bindings, workflow-attached Test Bench evidence,
+backend-owned validation/publish readiness, runtime launch prefill, and Design
+Reviews handoff.
 
 ## User Guide
 
@@ -47,10 +56,14 @@ The platform is a multi-tenant backend for building and operating AI workflows
 made of agents and sub-agents. A non-technical description is:
 
 1. Administrators configure tenants, users, model providers, prompts, agent
-   profiles, skills, workflows, required tests, Telegram settings and aliases,
-   briefing preferences, reliability controls, and operations dashboards through
-   the Admin console at `/admin/app`. Older browser URLs now route through
-   non-Jinja compatibility redirects or safe responses.
+   profiles, skills, custom workflows, required tests, Telegram settings and
+   aliases, briefing preferences, reliability controls, and operations
+   dashboards through the Admin console at `/admin/app`. The workflow builder
+   now supports checklist-guided custom workflow setup with editable agent
+   roles, contracts, graph topology, joins, approvals, prompt/profile bindings,
+   required evidence, publish, runtime launch, and Design Reviews handoff.
+   Older browser URLs now route through non-Jinja compatibility redirects or
+   safe responses.
 2. Users send requests through Web UI, Web API, Telegram commands, or
    tenant-configured Telegram alias text such as `Morning briefing`.
 3. The channel layer normalizes those requests into workflow runs, resolves
@@ -243,6 +256,11 @@ operator visibility.
 | `066-react-agent-graph-viewer-for-workflow-drafts-and-versions` | Read-only Admin graph viewer embedded in workflow draft/version pages with canvas, node/edge lists, selected details, partial/empty/denied states, and safe references | `frontend/admin/src/components/workflows/AgentGraphPanel.tsx`, `frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx`, `frontend/admin/src/api/client.ts`, `frontend/admin/src/styles/admin.css` | No new tables; consumes Spec 065 graph contracts |
 | `067-runtime-agent-communication-graph-for-runs` | Runtime Agent Communication Graph for run inspection, overlaying published topology with run steps, timeline, handoffs, gateway/tool/delivery summaries, statuses, and partial evidence | `operations/runtime_agent_graph.py`, `api/routers/admin_run_inspection.py`, `frontend/admin/src/components/workbench/WorkbenchPage.tsx`, `frontend/admin/src/components/workflows/AgentGraphPanel.tsx` | No new tables; derives from runtime and workflow evidence |
 | `068-durable-agent-interaction-evidence-and-replay-graph` | Durable safe interaction evidence for delegation, context transfer, result return, joins, approvals, handoffs, tool calls, checkpoints, manual resolution, and replay graph references | `runtime/orchestration/interaction_evidence.py`, `runtime/orchestration/graph_execution.py`, `operations/runtime_agent_graph.py`, `db/models/runtime_orchestration.py`, `db/repositories/runtime_orchestration.py` | `0022_runtime_interaction_evidence.py` |
+| `069-workflow-document-authoring-contracts-and-mutation-apis` | Full workflow document load/save contracts, section summaries, idempotent React save replay, stale conflict recovery, safe validation findings, and redacted mutation evidence | `admin/workflow_builder.py`, `admin/workflow_registry/service.py`, `api/schemas/workflow_registry.py`, `api/schemas/admin_workflow_builder.py`, `api/routers/admin_react.py`, `frontend/admin/src/components/workflows/workflowDocumentEditor.ts`, `frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx` | `0023_workflow_document_authoring_idempotency.py` |
+| `070-react-workflow-graph-and-agent-role-builder` | Editable workflow roles, contracts, graph nodes/edges, join policies, approval gates, subworkflow references, graph canvas, and keyboard-readable graph lists without raw JSON editing | `frontend/admin/src/components/workflows/WorkflowRoleEditor.tsx`, `frontend/admin/src/components/workflows/WorkflowContractEditor.tsx`, `frontend/admin/src/components/workflows/WorkflowGraphPanel.tsx`, `frontend/admin/src/components/workflows/WorkflowJoinApprovalEditor.tsx`, `frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx` | Reuses workflow draft document and revision tables |
+| `071-prompt-profile-creation-and-per-agent-binding-ui` | Per-agent prompt/runtime profile binding matrix, safe reference catalogs, readiness summaries, generated reference keys, and durable save/reload through the workflow document | `frontend/admin/src/components/workflows/WorkflowPromptProfileBinder.tsx`, `frontend/admin/src/components/workflows/workflowPromptProfileBinding.ts`, `frontend/admin/src/components/workflows/WorkflowRoleEditor.tsx`, `admin/workflow_builder.py`, `api/schemas/admin_workflow_builder.py` | Reuses prompt/profile and workflow registry tables |
+| `072-custom-workflow-test-evidence-and-publish-setup` | Workflow builder evidence panel for attaching required Test Bench suites, adding safe deterministic cases, launching deterministic evidence runs, and linking blockers back to publish readiness | `frontend/admin/src/components/workflows/WorkflowTestEvidencePanel.tsx`, `frontend/admin/src/components/workflows/workflowTestEvidence.ts`, `testing/agent_bench/react_test_bench.py`, `testing/agent_bench/service.py`, `admin/workflow_registry/publish_gate.py`, `frontend/admin/src/components/workflows/WorkflowValidationPanel.tsx` | Reuses workflow registry and agent test-bench tables |
+| `073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch` | Workflow setup checklist, three-agent starter transformation, publish-state refresh, runtime launch `workflow_id` prefill, Design Reviews requested workflow selection, and mobile workflow setup checks | `frontend/admin/src/components/workflows/WorkflowSetupWizardPanel.tsx`, `frontend/admin/src/components/workflows/workflowSetupWizard.ts`, `frontend/admin/src/components/userRuns/UserRunPage.tsx`, `frontend/admin/src/components/designReviews/DesignReviewWorkspacePage.tsx`, `frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx` | Reuses workflow registry, runtime channel, and design-review records |
 
 ## Repository Shape
 
@@ -660,8 +678,28 @@ workflow tenant, current `workflow_draft_id`, and current
 failing runs, unavailable suites, or cross-tenant evidence block publication
 with redaction-safe diagnostics.
 
+Specs `069` through `073` make `/admin/app/workflows` a complete custom
+workflow setup surface. The builder loads a canonical `WorkflowDraftDocument`
+and safe section summaries, then saves the complete authoring document through
+`POST /admin/app/workflows/drafts/{workflow_draft_id}/save` with revision,
+idempotency key, scope hash, payload hash, safe client context, and change
+summary. Exact duplicate saves replay as `idempotent_replay`; same-key
+different-payload saves return safe validation findings; stale saves return
+reload guidance without overwriting the current draft. The browser exposes
+visible controls for roles, contracts, graph topology, joins, approvals,
+subworkflow references, per-agent prompt/profile references, required Test
+Bench evidence, validation, publish, runtime launch prefill, and Design Reviews
+handoff. Backend validation, publish readiness, Test Bench evidence, tenant
+authorization, and redaction remain authoritative.
+
 ```mermaid
 flowchart TD
+    f6n0["Checklist-Guided Workflow Setup"] --> f6n1["Admin Creates Draft"]
+    f6n0 --> f6n17["Apply Three-Agent Starter"]
+    f6n17 --> f6n18["Edit Roles, Contracts, Graph, Joins, And Approvals"]
+    f6n18 --> f6n19["Bind Prompt/Profile References"]
+    f6n19 --> f6n20["Attach Required Test Evidence"]
+    f6n20 --> f6n2["WorkflowRegistryService"]
     f6n1["Admin Creates Draft"] --> f6n2["WorkflowRegistryService"]
     f6n2["WorkflowRegistryService"] --> f6n3["Workflow Lineage"]
     f6n2["WorkflowRegistryService"] --> f6n4["Active Draft"]
@@ -677,6 +715,7 @@ flowchart TD
     f6n13["Publish Gate"] --> f6n14["Published Workflow Bundle"]
     f6n14["Published Workflow Bundle"] --> f6n15["Artifact Storage"]
     f6n14["Published Workflow Bundle"] --> f6n16["Runtime Start"]
+    f6n14["Published Workflow Bundle"] --> f6n21["Design Reviews Handoff"]
 ```
 
 The primary authoring document is `WorkflowDraftDocument` in
@@ -694,6 +733,12 @@ The primary authoring document is `WorkflowDraftDocument` in
 - test-suite requirements
 - editor annotations
 
+The React workflow setup controls edit this document instead of holding a
+separate browser-only workflow representation. The checklist and setup panels
+are progress aids derived from safe document summaries, validation findings,
+publish readiness, and Test Bench evidence; they do not override backend
+decisions.
+
 Important code:
 
 - `admin/workflow_builder.py`
@@ -706,8 +751,17 @@ Important code:
 - `api/routers/admin_workflows.py`
 - `api/routers/admin_workflow_ui.py`
 - `api/routers/admin_react.py`
+- `api/schemas/workflow_registry.py`
 - `api/schemas/admin_workflow_builder.py`
 - `frontend/admin/src/components/workflows/`
+- `frontend/admin/src/components/workflows/WorkflowSetupWizardPanel.tsx`
+- `frontend/admin/src/components/workflows/WorkflowRoleEditor.tsx`
+- `frontend/admin/src/components/workflows/WorkflowContractEditor.tsx`
+- `frontend/admin/src/components/workflows/WorkflowGraphPanel.tsx`
+- `frontend/admin/src/components/workflows/WorkflowPromptProfileBinder.tsx`
+- `frontend/admin/src/components/workflows/WorkflowTestEvidencePanel.tsx`
+- `frontend/admin/src/components/userRuns/UserRunPage.tsx`
+- `frontend/admin/src/components/designReviews/DesignReviewWorkspacePage.tsx`
 - `testing/agent_bench/service.py`
 - `db/repositories/agent_tests.py`
 
@@ -719,6 +773,10 @@ Important tables:
 - `validation_results`
 - `workflow_version_bundles`
 - `registry_sharing_grants`
+
+Spec `069` adds React save idempotency metadata to
+`workflow_draft_revisions`: `react_save_idempotency_key`,
+`react_save_scope_hash`, and `react_save_payload_hash`.
 
 Related tables queried for publish evidence:
 
@@ -1564,7 +1622,11 @@ suite evidence. Spec `033` adds the React workspace at
 `/admin/app/test-bench` for suite/case authoring, safe run launch, run progress,
 diagnostics, artifact references, publish-gate evidence, and audit review. A
 required suite is ready only when a same-tenant passing run matches the workflow
-draft target and the current draft revision id.
+draft target and the current draft revision id. Spec `072` also exposes the
+same evidence lifecycle inside the workflow builder, where tenant admins can
+attach required suites, add a safe deterministic case, launch a deterministic
+run for the current draft revision, and inspect stale/missing/failed/current
+evidence without leaving `/admin/app/workflows`.
 
 ```mermaid
 flowchart TD
@@ -1618,6 +1680,9 @@ Legacy `latest_result_status` fields in workflow documents remain parseable as
 compatibility metadata, but they are not authoritative for validation or
 publication. Cross-tenant suite references fail closed without revealing the
 foreign suite name, run id, fixtures, transcripts, tenant names, or payloads.
+Spec `072` keeps that same backend ownership: the workflow builder evidence
+panel writes safe requirement references and Test Bench records, then publish
+readiness re-queries the repository before any workflow version can be released.
 
 ## Token Usage And Cost Analytics
 
@@ -1965,6 +2030,9 @@ Alembic migrations currently present:
 - `0018_user_tenant_membership_administration.py`
 - `0019_telegram_alias_delivery.py`
 - `0020_briefing_preferences.py`
+- `0021_design_review_domain.py`
+- `0022_runtime_interaction_evidence.py`
+- `0023_workflow_document_authoring_idempotency.py`
 
 ## End-To-End Sequence: Membership Administration
 
@@ -2220,13 +2288,24 @@ sequenceDiagram
     participant Admin as Admin
     participant UI as Admin Workflow UI
     participant Service as WorkflowRegistryService
+    participant Bench as Agent Test Bench
     participant Validator as Validation And Publish Gate
     participant Storage as Artifact Storage
     participant DB as Database
 
     Admin->>UI: Create or edit workflow draft
-    UI->>Service: create_draft or save_draft(base_revision_number)
-    Service->>DB: Persist active draft and immutable revision
+    UI->>Service: Load detail.json with WorkflowDraftDocument and section summaries
+    Admin->>UI: Edit roles, contracts, graph, joins, approvals, and prompt/profile bindings
+    Admin->>UI: Attach required evidence or add safe deterministic case
+    UI->>Bench: Create/attach suite, save case, launch deterministic run
+    Bench->>DB: Persist suite, case, run, steps, and artifacts
+    UI->>Service: create_draft or save full document with revision and idempotency key
+    Service->>DB: Persist active draft, immutable revision, and save hash metadata
+    alt Exact duplicate save
+        Service-->>UI: Return idempotent_replay without a new revision
+    else Same key with different payload or stale revision
+        Service-->>UI: Return safe validation finding or stale reload guidance
+    end
     Admin->>UI: Validate draft
     UI->>Service: validate_draft
     Service->>Validator: validate_authoring_document
@@ -2244,6 +2323,7 @@ sequenceDiagram
     Service->>Storage: Store compiled bundle artifact
     Service->>DB: Persist workflow_version_bundle
     Service-->>UI: Published immutable version
+    UI-->>Admin: Offer runtime launch workflow_id prefill and Design Reviews handoff
 ```
 
 ## End-To-End Sequence: Model Provider Setup And Runtime Use
@@ -2417,7 +2497,7 @@ sequenceDiagram
 | Foundation | tenants, tenant limits, queue jobs, job leases, artifacts, secret references, health |
 | Auth/access | principals, role grants, support overrides, delegated credentials, access decisions |
 | Membership administration | user invitations, tenant memberships, membership audit records, membership UI/API snapshots, masked email and subject display, principal suspension/reactivation workflows |
-| Workflow registry | lineages, drafts, revisions, validations, published bundles, sharing grants |
+| Workflow registry | lineages, drafts, full authoring documents, save idempotency metadata, revisions, validations, published bundles, sharing grants, setup checklist summaries, prompt/profile binding references, and launch handoff metadata |
 | Workflow graph projections | derived draft and published Agent Communication Graph contracts, safe node/edge labels, references, validation badges, layout hints, accessibility summaries, and read-only Admin graph viewer state |
 | Design review | sessions, immutable design revisions, rounds, reviewer assignments, verdicts, quorum decisions, manual decisions, template readiness, required evidence, and development handoff references |
 | Runtime orchestration | execution bundles, workflow runs, graph execution plans, node steps, execution waves, joins, leases, checkpoints, handoffs, side effects, approvals, partial failures, model-backed role evidence, final output refs, lineage, timeline, runtime communication graphs, and interaction replay evidence |
@@ -2428,7 +2508,7 @@ sequenceDiagram
 | Prompt/profile | prompt lineages, drafts, versions, grants, profile drafts, profile versions, active profile pointers |
 | Skill registry | skill packages, package versions, tenant grants, installations, credentials, smoke tests, quarantine, audit |
 | Skill execution | gateway request/result schemas, first-party read-only adapter registry, mock fixtures, redacted tool outputs, policy decisions, diagnostics projections |
-| Test bench | suites, cases, assertions, runs, run steps, artifacts, publication requirements, repository-backed required-test evidence snapshots |
+| Test bench | suites, cases, assertions, runs, run steps, artifacts, publication requirements, workflow-attached evidence setup actions, and repository-backed required-test evidence snapshots |
 | Usage | usage events, pricing versions, rollups, exports, reconciliation records |
 | Telegram config | tenant configs, command aliases, update receipts, token audits, linked identity summaries, diagnostics |
 | Briefing preferences | preference profile heads, immutable preference revisions, safe preference audit events, runtime resolver context |
@@ -2464,7 +2544,7 @@ Tests are organized by architectural boundary:
 - `tests/fixtures`: deterministic test data and subsystem fixtures
 
 Spec-specific QA and validation artifacts for the newest implemented slices are
-under `specs/020-*` through `specs/059-*`, including QA guides, UI
+under `specs/020-*` through `specs/073-*`, including QA guides, UI
 walkthroughs, plain-language user guides, testing instructions, PR review
 notes, Playwright evidence expectations, validation manifests, and `.env.qa0xx`
 files where needed.
@@ -2528,6 +2608,14 @@ current behavior:
   interaction replay evidence. These surfaces are inspection and evidence
   layers; they do not create editable graph topology or store raw message
   transcripts.
+- Specs `069` through `073` add the editable custom workflow setup path inside
+  `/admin/app/workflows`. The browser can now save full workflow documents,
+  edit role/contract/graph/join/approval/subworkflow structure, bind prompt and
+  runtime profile references per agent, attach and launch required Test Bench
+  evidence, validate, publish, and hand a published workflow to runtime launch
+  or Design Reviews. The checklist and handoff links are guidance; backend
+  validation, publish gates, authorization, idempotency, evidence freshness, and
+  redaction remain authoritative.
 - Spec `021` implements a governed skill-tool execution package and diagnostics
   surface, but it does not add a dedicated persistent skill execution table.
   Diagnostics are generated through request-scoped gateway instances, while
@@ -2571,8 +2659,12 @@ current behavior:
 | Membership audit record | Safe append-only summary of membership administration allows, denials, invitations, identity links, role changes, and status changes. |
 | Workflow lineage | The stable identity for a workflow across drafts and published versions. |
 | Workflow draft | A mutable authoring record for a workflow. |
+| Workflow setup checklist | Browser-derived progress summary for custom workflow setup across metadata, agents, prompts/profiles, graph, contracts, evidence, validation, publish, and launch. It does not override backend readiness. |
+| Workflow document save | Revisioned full-document workflow save that carries an idempotency key, safe client context, change summary, scope hash, and payload hash. |
+| Per-agent binding matrix | Workflow builder view that shows prompt and runtime profile reference readiness for each role without rendering raw prompt bodies or credentials. |
 | Draft revision | An immutable snapshot of a workflow draft after a save. |
 | Published workflow bundle | An immutable, runtime-ready version of a workflow stored with compiled metadata and artifact references. |
+| Runtime launch prefill | Safe handoff from a published workflow to the run workspace using `workflow_id` as a selection hint. It does not start a run by itself. |
 | Runtime execution bundle | A per-run clone of the published workflow bundle, pinned for reproducibility. |
 | Graph execution plan | Normalized executable view of a published workflow bundle's nodes, edges, roles, contracts, joins, and terminals. |
 | Execution wave | Set of dependency-ready graph nodes scheduled together because none depends on another node in the same wave. |

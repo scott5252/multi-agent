@@ -6,14 +6,22 @@ This guide shows how to configure and test the Design Reviewer Council scenario
 from a clean local install using the Admin browser UI. The scenario is already
 available in the system as the reusable `Design Reviewer Council` template, so
 the setup path is to install the template, verify the generated workflow and
-test evidence, publish the workflow, create a design review session, and launch
-a review round.
+test evidence, review the new workflow setup panels, publish the workflow, use
+the runtime launch and Design Reviews handoff links, create a design review
+session, and launch a review round.
 
 After opening the local Admin login page, do not navigate by editing the
 browser address bar. Use the UI links, left navigation, command search,
 buttons, row actions, and in-page links described below. Terminal commands and
 API calls at the end of this document include URLs because they are not browser
 navigation steps.
+
+For browser instructions, quoted names such as `Workflow Registry`, `Open
+draft`, and `Create session` are visible labels in the UI. If a section is not
+visible, scroll down within the page first. If a left-navigation link is hidden
+on a narrow screen, use the Admin menu or command search to find the same label.
+When this guide says to confirm something, read the visible label or status on
+the page; do not inspect developer tools or edit JSON.
 
 ## Scenario
 
@@ -47,7 +55,10 @@ records needed for the Design Reviewer Council scenario:
 - A tenant-owned `Design Reviewer Council` workflow draft.
 - A required `Design Reviewer Council Required Evidence` Test Bench suite.
 - Current publish-gate evidence for the council workflow draft.
+- Browser-visible workflow setup state: full-document saves, section summaries,
+  role/contract/graph controls, prompt/profile bindings, and evidence setup.
 - An immutable published workflow version bundle.
+- Runtime launch and Design Reviews workflow-selection handoff checks.
 - A design review session, one launched review round, runtime graph evidence,
   and an approved handoff after the API completion test.
 
@@ -158,14 +169,20 @@ show the council required suite until the template install action creates it.
 On-page actions:
 
 1. Open the local Admin login page supplied by your running API environment.
-2. If you opened the Admin entrypoint first and see an unauthenticated page,
-   click `Open local login`.
-3. Choose the `Acme Tenant Admin` local principal card.
-4. Click `Sign In`.
-5. Confirm the browser lands on the Admin console home screen.
-6. In the top bar, confirm `Signed in` shows the Acme tenant admin principal.
-7. In `Active scope`, confirm the scope is `Acme`; if another scope is
-   selected, use the `Switch admin scope` dropdown instead of editing the URL.
+   For the default local server, this is the first and only browser address you
+   should type manually: `http://127.0.0.1:8000/auth/local-login`.
+2. If you opened `/admin/app` first and see an unauthenticated page, click the
+   `Open local login` button. This takes you to the same local login page.
+3. Find the local-principal card labeled `Acme Tenant Admin`. The card should
+   show an Acme tenant/admin role, not a platform-only or Globex principal.
+4. Click the `Sign In` button on that card.
+5. Wait for the Admin console home screen to load. Do not use the browser Back
+   button during sign-in.
+6. In the top bar, read the `Signed in` value and confirm it identifies the
+   Acme tenant admin principal.
+7. In `Active scope`, confirm the scope is `Acme`. If another scope is selected,
+   open the `Switch admin scope` dropdown in the top bar, choose `Acme`, and
+   wait for the page to refresh.
 
 Explanation: This step gives the browser a tenant-admin principal with access
 to tenant-scoped workflow, test, and design review setup. The Design Reviews
@@ -187,16 +204,26 @@ Screen check:
 
 On-page actions:
 
-1. On Console Home, review the left navigation groups.
-2. Use `Workflow Registry` under `Workflows` when this guide asks you to inspect
-   or publish the council workflow.
-3. Use `Design Reviews` under `Workflows` when this guide asks you to install
-   the template, create a session, launch a round, or inspect handoff state.
-4. Use `Configuration`, `Model Providers`, `Prompt Library`, or `Agent
-   Profiles` under `Model And Skill Config` and `Prompt Runtime` when checking
-   governance readiness.
-5. Use `Agent Tests` when checking required evidence and publish-gate state.
-6. Use `Run Search` or the `Open runtime graph` link from a round card when
+1. On Console Home, look at the left sidebar. It is grouped by product area.
+   You will use links in this sidebar for the rest of the tutorial.
+2. Under `Workflows`, locate `Workflow Registry`. Click this link when the guide
+   asks you to inspect, validate, publish, or launch from the council workflow.
+   Inside the registry, open workflows with row buttons such as `Open draft`.
+3. Under `Workflows`, locate `Design Reviews`. Click this link when the guide
+   asks you to install the council template, create a review session, launch a
+   review round, or inspect handoff state.
+4. When the workflow builder opens Design Reviews through `Select in Design
+   Reviews`, use that button. It carries the selected published workflow for
+   you; do not type a Design Reviews URL.
+5. Use `Configuration`, `Model Providers`, `Prompt Library`, or `Agent Profiles`
+   only when checking optional governance readiness. The main deterministic
+   tutorial can continue even when no live provider is configured.
+6. Use the workflow builder's `Open Agent Tests` link, or the left-sidebar
+   `Agent Tests` link, when checking required publish evidence.
+7. Use the workflow builder's `Open runtime launch` button only to verify that
+   the run workspace preselects the workflow. A prefilled workflow does not
+   start a run until `Start Run` is clicked.
+8. Use `Run Search` or the `Open runtime graph` link from a round card when
    inspecting runtime graph evidence.
 
 Explanation: The Admin shell exposes authorized destinations as clickable
@@ -222,13 +249,21 @@ Screen check:
 On-page actions:
 
 1. Click `Design Reviews` in the left navigation.
-2. Confirm the `History` area is empty if this is a clean database.
-3. Find the `Council template` panel near the top of the Design Reviews page.
-4. If the button says `Install template`, click it.
-5. If the button says `Refresh evidence`, click it when the template is stale,
-   evidence is pending, or you want to refresh required runs.
-6. Wait for the mutation note that says `Template ready`.
-7. Confirm the template card shows a workflow revision, `Publish gate`, required
+2. Wait for the Design Reviews page to finish loading. The page should show
+   summary cards near the top and a `History` area for sessions.
+3. If this is a clean database, confirm `History` has no user-created sessions.
+   It is okay if the template panel already exists.
+4. Find the `Council template` panel near the top of the page. This is the
+   panel that configures the reusable Design Reviewer Council workflow.
+5. If the panel button says `Install template`, click it once. This creates the
+   council workflow, required Test Bench suite, and required evidence setup.
+6. If the panel button says `Refresh evidence`, click it when the template is
+   stale, evidence is pending, or you want to refresh the required deterministic
+   evidence. If the panel already says the template is ready and published, you
+   can leave it unchanged and continue.
+7. Wait for the mutation message or status text to say `Template ready`, `Ready`,
+   or `Published`. Do not navigate away while the button is busy.
+8. Confirm the template card shows a workflow revision, `Publish gate`, required
    `Evidence`, and safe evidence `Modes`.
 
 Explanation: This is the main configuration action for the scenario. The button
@@ -249,157 +284,333 @@ Screen check:
 - The template action button is `Install template` before first setup and
   `Refresh evidence` after setup exists.
 
-## Step 4 - Inspect The Workflow Draft And Agent Graph
+## Step 4 - Open The Workflow Draft And Review The Save Contract
 
-![Workflow setup page for the Design Reviewer Council graph](../docs/assets/design-reviewer-example/admin-ui/workflows-wide.png)
+![Workflow document save contract](../output/playwright/qa069_ui/qa069-workflow-setup-smoke.png)
 
 On-page actions:
 
 1. Click `Workflow Registry` in the left navigation.
-2. Confirm the page shows the `Workflow Registry` and `Workflow builder`
-   surfaces.
-3. In the `Registry` list, find `Design Reviewer Council`.
-4. Click `Open draft` on that row.
-5. In the draft form, confirm the `Name` is `Design Reviewer Council`.
-6. Confirm the `Description` describes council review, synthesis, and handoff.
-7. Confirm the `Join policy` is the four-of-five quorum policy created by the
-   template.
-8. Review the `Graph` preview and confirm it includes lead intake, five
-   reviewer nodes, review quorum, synthesis, development handoff, and complete.
-9. Use the draft communication graph `Node list` and `Edge list` to verify the
-   same topology in a keyboard-readable form.
+2. Wait for the Workflows page to load. You should see a registry/list area and
+   a builder area. If the page opens at an empty builder, stay on the page and
+   use the registry list.
+3. In the `Registry` list, find the row named `Design Reviewer Council`. If
+   there are many rows, scan the visible workflow names; do not use the address
+   bar to jump to a draft.
+4. On the `Design Reviewer Council` row, click `Open draft`.
+5. Wait until the builder title and fields change to the council draft.
+6. In the draft form, confirm the `Name` field reads `Design Reviewer Council`.
+7. Read the `Description` field and confirm it mentions council review,
+   reviewer synthesis, and development handoff.
+8. Review the section summaries or draft facts near the builder header. They
+   should summarize metadata, roles, references, contracts, graph, tests, and
+   publish readiness without showing raw workflow JSON.
+9. Do not edit fields just to test saving. Use `Save draft` only after an
+   intentional browser edit that you are allowed to keep.
+10. If you do click `Save draft`, wait for the save message. A successful save
+    should say the draft was saved or accepted and should not show raw payloads.
+11. Use `Simulate stale save` only as a reviewer diagnostic. It should return
+    safe reload guidance and must not overwrite the current council draft.
+12. If a save or stale result appears, read the mutation note and validation
+    links. The result should expose only safe section names, field paths, ids,
+    digests, and summaries.
 
-Explanation: This page verifies that the template produced the workflow the
-session will launch. The workflow draft is acyclic: one runtime workflow run
-represents one review round, and the Design Review coordinator owns any
-cross-round iteration. The graph should fan out from the lead intake node to
-five reviewer nodes, join at the quorum node, and continue through synthesis
-and handoff. If the registry opens a different draft first, use the
-`Design Reviewer Council` row action named `Open draft`. If no council draft is
-visible, return to `Design Reviews` with the left navigation and run `Install
-template` again.
+Explanation: Spec 069 makes the browser workflow builder a full-document
+authoring surface. The durable source of truth is still the backend
+`WorkflowDraftDocument`, not a browser-only copy and not hand-authored JSON.
+Exact duplicate saves replay idempotently, same-key different-payload saves
+return safe validation findings, and stale saves return recovery guidance. If
+the registry opens a different draft first, use the `Design Reviewer Council`
+row action named `Open draft`. If no council draft is visible, return to
+`Design Reviews` with the left navigation and run `Install template` again.
 
 Screen check:
 
 - The workflow form exposes `Name`, `Description`, and `Join policy`.
-- `Pinned runtime inputs` exposes prompt and runtime profile selectors when
-  governance records are available.
-- The graph panels show backend-owned node and edge summaries rather than raw
-  workflow JSON.
+- The builder shows save, validation, publish, revision, and launch controls
+  for the selected draft.
+- Save and stale-conflict results are redaction-safe and section-oriented.
+- The JSON inspector, if visible, remains read-only and redacted.
 
-![Workflow Agent Graph for the Design Reviewer Council graph](../docs/assets/design-reviewer-example/admin-ui/workflow-agent-graph-wide.png)
+## Step 5 - Use The Checklist, Role Builder, And Graph Controls
+
+![Custom workflow setup checklist](../output/playwright/qa073_ui/qa073-workflow-setup-desktop.png)
 
 On-page actions:
 
-1. In the `Draft communication` panel, select the lead node.
-2. Select one reviewer node and confirm it is categorized as a reviewer or role
-   node.
-3. Select the review quorum node and confirm the detail panel explains the join.
-4. Select an edge from a reviewer to quorum and confirm the edge detail is safe
-   and summarized.
-5. Use the graph lists if the visual canvas is hard to inspect.
+1. Stay on the `Design Reviewer Council` workflow draft.
+2. Near the top of the builder, find the section titled `Custom workflow launch
+   checklist`. It appears as a set of progress cards or checklist rows.
+3. Read the checklist groups: `Metadata`, `Agents`, `Prompts And Profiles`,
+   `Graph`, `Contracts`, `Evidence`, `Validation`, `Publish`, and `Launch`.
+4. Use checklist links or cards as shortcuts to sections farther down the page.
+   If a card is not clickable in your viewport, scroll manually to the matching
+   section name.
+5. Treat the checklist as progress guidance only. Backend validation, Test Bench
+   evidence, and publish readiness remain the release source of truth.
+6. Do not click `Apply three-agent starter` on the council template. That
+   action is for a new custom workflow draft, not for the reusable five-reviewer
+   council template.
+7. To practice the starter separately, click `Create workflow` in `Workflow
+   Registry`, click the create result's `Open draft`, and then click `Apply
+   three-agent starter` on that disposable draft. Return to the council draft
+   afterward with the `Design Reviewer Council` row's `Open draft` action.
+8. Scroll to `Roles`. Review the lead, five reviewer, quorum, synthesis,
+   handoff, and terminal roles created by the template.
+9. In each role card, read the role key, display name, kind, purpose,
+   responsibilities, input/output contracts, prompt/profile references, skill
+   bindings, and graph node references. Use expand/collapse controls if the
+   card is collapsed.
+10. Scroll to `Contracts`. Confirm request, reviewer output, quorum decision,
+    synthesis, handoff, and final result boundaries are represented as contract
+    cards.
+11. Scroll to `Graph topology`. Confirm the entry node, role nodes, reviewer
+    fanout, review quorum join, synthesis, handoff, and complete node are
+    visible as fields, selectors, and safe summaries.
+12. Scroll to `Joins` and `Approvals`. Confirm the quorum join uses the council
+    policy and that any approval controls show approver scope, decision
+    contract, resume behavior, and safe reviewer instructions.
+13. If you only inspected the template, leave the fields unchanged. If you made
+    an authorized edit, click `Save draft` and wait for the saved/accepted
+    message before continuing.
 
-Explanation: The Agent Communication Graph is the safest way to inspect agent
-communication topology from the browser. Selecting nodes and edges shows safe
-references, badges, and summaries without rendering raw prompts, completions,
-credential values, or private payloads. The list views are important because
-they provide a keyboard-readable alternative to the graph canvas. A missing or
-partial graph should be treated as a real backend state, not a reason to edit
-the browser URL.
+![Workflow graph and role builder](../output/playwright/qa070_ui/qa070-workflow-graph-role-desktop.png)
+
+On-page actions:
+
+1. In the visual graph area, confirm the canvas shows connected boxes or nodes,
+   not a blank empty area.
+2. If the canvas is difficult to read, use the node, edge, and join lists beside
+   or below it. These lists contain the same topology in text form.
+3. Click the lead/intake node in the canvas or node list. Confirm the detail
+   panel describes intake or coordination.
+4. Click one reviewer node. Confirm the detail panel identifies it as a role or
+   reviewer-style node.
+5. Click the review quorum join node or join row. Confirm the detail panel shows
+   the strategy, required branches, quorum count, timeout, and failure behavior
+   in readable language.
+6. Click an edge from a reviewer to quorum. Confirm the edge detail is a safe
+   summary and not raw JSON.
+
+Explanation: Specs 070 and 073 add editable workflow structure controls. The
+Design Reviewer Council workflow remains acyclic: one runtime workflow run
+represents one review round, and the Design Review coordinator owns any
+cross-round iteration. The graph should fan out from lead intake to five
+reviewer nodes, join at review quorum, and continue through synthesis and
+handoff. The lists beside the canvas are part of the expected UI, not fallback
+debug output.
 
 Screen check:
 
 - The graph panel title includes `Draft communication`.
 - The detail panel starts with `Select a node or edge` before selection.
 - Node and edge lists are visible below or beside the canvas.
+- Role, contract, graph, join, approval, and subworkflow controls are visible
+  without editing raw JSON.
 
-## Step 5 - Confirm Required Agent Test Evidence
+## Step 6 - Confirm Prompt And Runtime Profile Bindings
+
+![Prompt and runtime profile binding matrix](../output/playwright/qa071_ui/qa071-prompt-profile-binding-desktop.png)
+
+On-page actions:
+
+1. From the same workflow draft, scroll to `Per-Agent Bindings`.
+2. Review the `Binding Matrix`. Each row represents one council role, and each
+   row should show prompt and runtime profile readiness as safe reference labels
+   and badges.
+3. Find `Role Binding Controls`. Use its role selector/dropdown to choose one
+   council role, such as a reviewer role.
+4. Review the prompt reference and runtime profile reference fields for the
+   selected role. They should show reference keys, version labels, readiness,
+   and safe summaries only.
+5. If a role already shows ready prompt/profile references, do not change it.
+   Continue to the next role.
+6. If a role is incomplete and you are authorized to update it, use the visible
+   prompt/profile controls to select or generate safe references. Then click
+   `Save draft` and wait for the saved/accepted message.
+7. If you need to author or inspect prompt/profile records directly, use the
+   left navigation links `Prompt Library`, `Agent Profiles`, or `Configuration`
+   rather than editing the browser URL.
+8. Leave prompt editor disclosures closed for screenshots unless the review is
+   explicitly about prompt authoring. The workflow setup screenshots should not
+   show raw prompt template content.
+9. After any binding change, reload with the browser refresh button and confirm
+   the binding matrix still shows the saved state.
+
+Explanation: Spec 071 moves prompt/profile readiness into the workflow setup
+path. The matrix is meant to help reviewers see whether every role has the
+references needed for publication. It must not expose raw prompts, completions,
+credential values, provider headers, private channel content, tool payloads,
+memory contents, local paths, or unauthorized tenant labels.
+
+Screen check:
+
+- `Per-Agent Bindings`, `Binding Matrix`, and `Role Binding Controls` are
+  visible.
+- Readiness badges distinguish ready, missing, incomplete, or blocked states.
+- Graph and role summaries show safe binding counts and reference keys only.
+
+## Step 7 - Confirm Required Evidence In The Workflow Builder
+
+![Required publish evidence in the workflow builder](../output/playwright/qa072_ui/qa072-workflow-test-evidence-desktop.png)
+
+On-page actions:
+
+1. From the council workflow draft, scroll to `Required publish evidence`.
+2. Read the evidence summary at the top of the section. It should tell you
+   whether evidence is current, missing, stale, failed, queued, running, or
+   blocked.
+3. Confirm the `Design Reviewer Council Required Evidence` suite is already
+   attached or is available in the authorized suite selector/dropdown.
+4. If the suite is already attached and current, do not click `Attach suite` or
+   `Launch deterministic run`; continue to Step 8.
+5. Click `Open Agent Tests` when you want to inspect the suite in the Test Bench
+   workspace through a browser UI link.
+6. Click `Attach suite` only if the council suite is authorized, visible in the
+   selector, and not already attached.
+7. Click `Add safe case` only when you need to create deterministic local
+   evidence for the current draft. Wait for a safe mutation message before
+   continuing.
+8. Click `Launch deterministic run` only when evidence is missing or stale.
+   Wait for the run result to appear; it should not show transcripts or provider
+   payloads.
+9. If a run result is shown and you need to re-run evidence, use `Clear run
+   result` before launching another deterministic run.
+10. In the publish panel, click `Review evidence setup` if the publish gate or
+    validation finding points back to missing, stale, or failed evidence.
+11. Confirm focus or scroll returns to `Required publish evidence`.
+
+Explanation: Spec 072 brings required Test Bench setup into the workflow
+builder. You can still inspect the suite in `Agent Tests`, but publication no
+longer depends on manually copied `latest_result_status` text. Validation,
+publish-gate evaluation, and final publish re-query the backend Test Bench
+records for the same tenant, workflow draft, and current draft revision.
+
+Screen check:
+
+- The evidence section has attach, safe-case, deterministic-run, and Test Bench
+  navigation actions.
+- Evidence cards use safe ids and summaries.
+- Stale or failed evidence is never described as current.
 
 ![Agent Tests setup page for Design Reviewer publish-gate evidence](../docs/assets/design-reviewer-example/admin-ui/test-bench-wide.png)
 
 On-page actions:
 
-1. Click `Agent Tests` in the left navigation.
-2. In `Reusable suites`, open the `Design Reviewer Council Required Evidence`
-   suite with `Open suite`.
-3. In `Suite and case forms`, confirm the suite is required for publish and is
+1. If you clicked `Open Agent Tests`, confirm the `Agent Tests` workspace opens
+   from the link. The left navigation should still show the Acme scope.
+2. In `Reusable suites`, find `Design Reviewer Council Required Evidence`.
+3. Click `Open suite` on that suite card or row.
+4. In `Suite and case forms`, confirm the suite is required for publish and is
    bound to the current council workflow draft revision.
-4. Confirm the case list includes quorum success, revision-required,
-   blocking-issue, manual-resolution, retry, cancel, approved-handoff,
-   cross-tenant-denial, redaction, Admin live-data, and model-safe-boundary
-   coverage.
-5. In `Run launcher`, choose a safe mode such as `Mock model` for
-   deterministic local evidence.
-6. Click `Launch run` only when evidence is missing or stale.
-7. In `Publish-gate evidence`, click `Refresh evidence` when you need the gate
-   panel to re-read the latest passing run.
+5. Review the case list. It should include coverage for quorum success,
+   revision-required, blocking-issue, manual-resolution, retry, cancel,
+   approved-handoff, cross-tenant-denial, redaction, Admin live-data, and
+   model-safe-boundary behavior.
+6. In `Run launcher`, choose a safe mode such as `Mock model` for deterministic
+   local evidence. Do not choose a live provider mode for this tutorial.
+7. Return to `Workflow Registry` through the left navigation when finished.
 
-Explanation: The council template installs a required agent-test suite so the
-workflow cannot be published on synthetic or stale evidence. The Test Bench UI
+Explanation: The Test Bench UI remains the detailed evidence workspace. It
 shows live suites, cases, run status, diagnostics, artifacts, gates, and audit
-records for the active scope. The deterministic safe mode is the expected local
-path because it avoids real provider calls while still exercising persistence,
-tenancy, idempotency, and publish-gate logic. Empty panels mean the tenant has
-no durable records for that surface yet.
+records for the active scope. Empty panels mean the tenant has no durable
+records for that surface yet.
 
-Screen check:
-
-- The Test Bench page has sections for suites, runs, diagnostics, gates, and
-  audit.
-- Suite cards expose `Open suite` actions.
-- Run detail panels show progress, assertion diagnostics, traces, artifact
-  references, and audit references only after a run exists.
-
-## Step 6 - Publish The Council Workflow
+## Step 8 - Validate, Publish, And Use Launch Handoffs
 
 ![Workflow setup page for the Design Reviewer Council graph](../docs/assets/design-reviewer-example/admin-ui/workflows-wide.png)
 
 On-page actions:
 
 1. Click `Workflow Registry` in the left navigation.
-2. In the `Registry` list, find `Design Reviewer Council` and click its
-   `Open draft` action.
-3. In the `Validation` panel, click `Run validation`.
-4. If required evidence was refreshed in Agent Tests, click `Mark evidence
-   current` only when the UI allows it.
-5. In the `Publish gate` panel, click `Check publish gate`.
-6. When the decision is ready, click `Prepare publish`.
-7. Review the confirmation message in the `Publish result` panel.
-8. Click `Confirm publish`.
-9. Confirm a `Published version` section appears and that a published version
-   communication graph is available or truthfully unavailable.
+2. In the `Registry` list, find `Design Reviewer Council` and click its `Open
+   draft` action.
+3. Scroll to the `Validation` or `Backend-owned findings` panel.
+4. Click `Run validation`.
+5. Wait for the validation result to refresh. If the result shows blockers,
+   read the linked section name before doing anything else.
+6. If a finding points to evidence, click its section link or the publish
+   panel's `Review evidence setup` link. Resolve the issue in `Required publish
+   evidence`, then return to validation.
+7. In the `Publish gate` or `Evidence and decision` panel, click `Check publish
+   gate`.
+8. Wait for the gate decision. If it says blocked, use the visible blocker links
+   to return to the relevant section and fix the issue before continuing.
+9. When the gate is ready, click `Prepare publish`.
+10. Read the confirmation message in the `Publish result` panel. Confirm it
+    refers to the `Design Reviewer Council` workflow.
+11. Click `Confirm publish`.
+12. Wait for the publish result to show accepted/published.
+13. Confirm a `Published version` section appears and that a published version
+    communication graph is available or truthfully unavailable.
+14. In the launch checklist or handoff area, click `Open runtime launch`.
+15. Confirm the run workspace opens and the `Workflow` field is prefilled with
+    the published council workflow.
+16. Do not click `Start Run` unless you intentionally want to launch a user run;
+    prefill is only a selection hint.
+17. Return to the workflow draft using the browser Back button or the `Workflow
+    Registry` link.
+18. Click `Select in Design Reviews`.
+19. Confirm the Design Reviews workspace opens and the workflow selector
+    contains or selects the published council workflow.
+
+![Run workspace with workflow prefill](../docs/assets/design-reviewer-example/admin-ui/run-workspace-wide.png)
+
+On-page actions:
+
+1. Confirm the page is the user-facing run workspace, not the workflow builder.
+   The page should contain run-start fields rather than workflow-editing cards.
+2. Confirm the `Workflow` field is already selected from the handoff. The value
+   should match the published council workflow.
+3. Enter a safe request summary only if you intend to run the workflow as a
+   separate user-run test.
+4. Leave `Start Run` untouched during the Design Reviewer setup. This tutorial
+   launches review rounds from Design Reviews instead.
+5. Use the left navigation or browser Back button to return to the Admin
+   workflow or Design Reviews path.
 
 Explanation: Design Review sessions can launch only against authorized
 published workflow version bundles. Publishing freezes the validated draft into
 an immutable version that appears in the Design Reviews `Workflow` dropdown.
-The three publish buttons reflect the actual browser flow: check readiness,
-prepare the publish action, then confirm it. If the template was already
-published, use this step to verify the published version and continue.
+Specs 072 and 073 make the browser flow more direct: evidence blockers link
+back to the evidence panel, and a published workflow can hand off to runtime
+launch or Design Reviews without requiring address-bar edits. The launch links
+carry safe workflow ids only; they do not start runs or bypass authorization.
+If the template was already published, use this step to verify the published
+version, runtime prefill, and Design Reviews selection, then continue.
 
 Screen check:
 
 - `Backend-owned findings` reports validation status and blockers.
 - `Evidence and decision` reports publish-gate readiness and required evidence.
 - `Confirm publish` is disabled until the UI has a publish confirmation ready.
+- `Open runtime launch` opens the run workspace with a prefilled workflow.
+- `Select in Design Reviews` opens the Design Reviews workspace with an
+  authorized workflow selection hint.
 
-## Step 7 - Check Optional Governance Readiness
+## Step 9 - Check Optional Governance Readiness
 
 ![Governance setup page for Design Reviewer providers, prompts, profiles, and routing](../docs/assets/design-reviewer-example/admin-ui/governance-wide.png)
 
 On-page actions:
 
-1. Click `Configuration` in the left navigation to open governance.
+1. Click `Configuration` in the left navigation to open governance. This step is
+   optional for the deterministic tutorial path.
 2. In `Setup`, review readiness counts for provider connections, prompt
-   lineages, runtime profiles, routing, and provenance.
-3. In `Providers`, click `Run probe` only for safe provider diagnostics that are
-   already configured by policy.
-4. Click `Prompt Library` in the left navigation, then use `Preview redaction
-   check` and `Save summary` for existing prompt records when updates are
-   authorized.
-5. Click `Agent Profiles` in the left navigation, then use `Resolve` and `Save
-   profile` for existing profile records when updates are authorized.
-6. Return to `Configuration` and click `Preview routing` to verify read-only
-   routing behavior.
+   lineages, runtime profiles, routing, and provenance. Read the counts only;
+   do not create credentials for this tutorial.
+3. In `Providers`, click `Run probe` only if a safe local or fake provider
+   diagnostic is already configured by policy.
+4. Click `Prompt Library` in the left navigation only if you need to inspect
+   prompt records. Use `Preview redaction check` and `Save summary` only for
+   existing prompt records that you are authorized to update.
+5. Click `Agent Profiles` in the left navigation only if you need to inspect
+   profile records. Use `Resolve` and `Save profile` only for existing profile
+   records that you are authorized to update.
+6. Return to `Configuration` and click `Preview routing` only when you need to
+   verify read-only routing behavior.
+7. Return to `Design Reviews` or `Workflow Registry` through the left navigation
+   when finished.
 
 Explanation: Governance is required for model-backed execution, but the clean
 deterministic tutorial path can run without live provider calls. The browser
@@ -418,25 +629,29 @@ Screen check:
 - Prompt and profile panels show save and preview actions only for authorized
   records.
 
-## Step 8 - Create A Design Review Session
+## Step 10 - Create A Design Review Session
 
 ![Design Reviews workspace for the Design Reviewer Council](../docs/assets/design-reviewer-example/admin-ui/design-reviews-wide.png)
 
 On-page actions:
 
 1. Click `Design Reviews` in the left navigation.
-2. In `New session`, paste the scenario request into `Request summary`.
-3. In `Quorum policy`, choose `Four of five, no blockers`.
-4. In `Workflow`, choose the published `design-reviewer-council` workflow
-   version.
-5. Click `Create session`.
-6. In `History`, click `Select` for the new session.
-7. Confirm the selected session detail shows the request summary and session
+2. Find the `New session` or `Create request` form.
+3. In `Request summary`, paste the scenario request from the top of this guide.
+   Do not paste private customer data, credentials, or long raw documents.
+4. In `Quorum policy`, choose `Four of five, no blockers`.
+5. In `Workflow`, choose the published `design-reviewer-council` workflow
+   version. If more than one option is present, choose the one matching the
+   council workflow name/key.
+6. Click `Create session`.
+7. Wait for the session to appear in `History`.
+8. In `History`, click `Select` for the new session.
+9. Confirm the selected session detail shows the request summary and session
    status.
 
 Explanation: This creates the tenant-scoped design review session and its first
 immutable revision summary. The `Workflow` dropdown is populated from
-published workflow version bundles, so it remains empty until Step 6 publishes
+published workflow version bundles, so it remains empty until Step 8 publishes
 the council workflow. The `Quorum policy` dropdown maps directly to coordinator
 policies such as `four_of_five_no_blockers` and `three_of_four_no_blockers`.
 The `Select` action loads revisions, rounds, manual decisions, coordinator
@@ -449,19 +664,21 @@ Screen check:
 - `History` shows live tenant sessions with status and active revision.
 - The selected session detail appears below the create/history panels.
 
-## Step 9 - Launch A Review Round
+## Step 11 - Launch A Review Round
 
 ![Design Reviews workspace for the Design Reviewer Council](../docs/assets/design-reviewer-example/admin-ui/design-reviews-wide.png)
 
 On-page actions:
 
-1. With the session selected, find the `Session actions` area.
-2. Confirm `Launch workflow` is set to the published council workflow.
+1. With the session selected, find the `Session actions` area. It appears below
+   or near the selected session detail.
+2. Confirm `Launch workflow` is set to the published council workflow. If it is
+   empty, return to Step 8 and confirm publish succeeded.
 3. Click `Launch round`.
 4. Wait for the mutation note that says `Round launched`.
 5. In `Rounds` under `Reviewer evidence`, confirm Round 1 appears with reviewer
    count and quorum count.
-6. Click `Open runtime graph` on the round card.
+6. On the Round 1 card, find and click `Open runtime graph`.
 
 Explanation: `Launch round` asks the coordinator to create exactly one live,
 acyclic workflow run for the active design revision. The browser action also
@@ -479,19 +696,23 @@ Screen check:
   workflow run id when a run exists.
 - `Open runtime graph` is a real link from the round card to Operations.
 
-## Step 10 - Inspect Runtime Graph Evidence
+## Step 12 - Inspect Runtime Graph Evidence
 
 ![Runtime replay graph for the Design Reviewer Council example](../docs/assets/design-reviewer-example/admin-ui/interaction-replay-graph-wide.png)
 
 On-page actions:
 
-1. Use the `Open runtime graph` link from the round card.
+1. Use the `Open runtime graph` link from the round card. This should open the
+   Operations workbench without requiring you to type a URL.
 2. Confirm the Operations page opens to `Runtime run communication`.
-3. Select runtime graph nodes to inspect safe status summaries.
-4. Select runtime graph edges to inspect handoff, run-step, timeline, or
-   interaction evidence references.
-5. Review node and edge lists when you need a keyboard-readable graph view.
-6. Click `Design Reviews` in the left navigation to return to the session.
+3. In the runtime graph canvas or node list, click a node to inspect its safe
+   status summary.
+4. Click one edge to inspect handoff, run-step, timeline, or interaction
+   evidence references.
+5. Review the node and edge lists when you need a keyboard-readable graph view.
+6. Do not expect raw reviewer messages or model payloads here; this page shows
+   safe summaries and references only.
+7. Click `Design Reviews` in the left navigation to return to the session.
 
 Explanation: The runtime graph overlays the published workflow topology with
 run-specific state and durable interaction evidence. This is the browser view
@@ -506,23 +727,28 @@ Screen check:
 - The runtime graph section is titled `Runtime run communication`.
 - `Redacted signals` appears below the workbench evidence.
 
-## Step 11 - Resolve Manual Decisions Or Verify Handoff
+## Step 13 - Resolve Manual Decisions Or Verify Handoff
 
 ![Design Reviews workspace for the Design Reviewer Council](../docs/assets/design-reviewer-example/admin-ui/design-reviews-wide.png)
 
 On-page actions:
 
 1. Return to `Design Reviews` with the left navigation.
-2. Click the `Refresh` icon in `History`.
+2. Click the `Refresh` icon or button in `History` so the page reads the latest
+   session state.
 3. Click `Select` for the active session.
-4. If a manual decision is required, choose `Revise`, `Approve exception`,
+4. Look at the selected session detail. If it says manual action is required,
+   find the `Manual decisions` area.
+5. If a manual decision is required, choose `Revise`, `Approve exception`,
    `Retry`, or `Cancel` in the `Decision` dropdown.
-5. Enter a safe, non-sensitive explanation in `Safe rationale`.
-6. Enter `Next revision summary` when the decision is `Revise`.
-7. Check `Accepted risk` only for an explicit risk acceptance.
-8. Click `Record decision`.
-9. If quorum has passed, inspect `Handoff` and confirm `Development reference`
-   shows status, approved revision, digest, and summary.
+6. Enter a safe, non-sensitive explanation in `Safe rationale`. Do not paste
+   raw customer data, credentials, prompts, transcripts, or stack traces.
+7. Enter `Next revision summary` only when the decision is `Revise`.
+8. Check `Accepted risk` only for an explicit risk acceptance.
+9. Click `Record decision` and wait for the decision to appear in `Manual
+   decisions`.
+10. If quorum has passed, inspect `Handoff` and confirm `Development reference`
+    shows status, approved revision, digest, and summary.
 
 Explanation: Manual decisions are available only when the coordinator reports
 that the session is paused for human action. Recording a decision creates
@@ -552,9 +778,15 @@ Use these checks if a clean install does not match the tutorial screens:
   tenant scope and confirm you are not signed in as a platform-only principal.
 - If `Workflow` is empty in `New session`, return to `Workflow Registry`, open
   the `Design Reviewer Council` draft, and complete the publish buttons in
-  Step 6.
+  Step 8.
 - If `Agent Tests` does not show the required suite, return to `Design
-  Reviews` and run `Install template` or `Refresh evidence`.
+  Reviews` and run `Install template` or `Refresh evidence`, then open the
+  council draft and inspect `Required publish evidence`.
+- If `Open runtime launch` does not prefill a workflow, return to `Workflow
+  Registry`, open the council draft, and confirm the workflow is published in
+  Step 8.
+- If `Select in Design Reviews` opens Design Reviews without a workflow option,
+  confirm the council workflow was published for the active Acme scope.
 - If `Open runtime graph` does not appear, select the session from `History`
   and launch a review round first.
 
@@ -574,31 +806,52 @@ URL.
 On-page actions:
 
 1. Click `Design Reviews` in the left navigation.
-2. Click `Refresh evidence` in the council template panel and confirm the
-   template is ready or already published.
-3. Click `Workflow Registry`, open the `Design Reviewer Council` draft with
-   `Open draft`, then run `Check publish gate` and confirm the published
-   council workflow is still ready.
-4. Click `Design Reviews`, create a new session with the scenario request, and
-   select the published council workflow.
-5. Click `Create session`, then `Select` the session from `History`.
-6. Click `Launch round`.
-7. In `Reviewer evidence`, click `Open runtime graph`.
-8. Confirm Operations shows `Runtime run communication`.
-9. Click `Design Reviews`, click `Refresh`, select the session, and inspect
-   `Rounds`, `Manual decisions`, and `Handoff`.
+2. In the `Council template` panel, click `Refresh evidence` only if the panel
+   is stale, pending, or not ready. Confirm the template is ready or already
+   published before moving on.
+3. Click `Workflow Registry` in the left navigation.
+4. In the registry list, find `Design Reviewer Council` and click `Open draft`.
+5. Confirm `Custom workflow launch checklist`, `Per-Agent Bindings`, and
+   `Required publish evidence` are visible on the builder page.
+6. Scroll to validation, click `Run validation`, and wait for the result.
+7. Scroll to the publish gate, click `Check publish gate`, and confirm the
+   published council workflow is still ready or already published.
+8. Click `Open runtime launch`.
+9. Confirm the run workspace opens and the `Workflow` field is already selected.
+   Do not click `Start Run`.
+10. Return to the council draft with the browser Back button or the `Workflow
+    Registry` link.
+11. Click `Select in Design Reviews` from the workflow builder handoff area.
+12. In Design Reviews, find the `Create request` form.
+13. Paste the scenario request into `Request summary`.
+14. Choose `Four of five, no blockers` in `Quorum policy`.
+15. Select or confirm the published council workflow in `Workflow`.
+16. Click `Create session`.
+17. Wait for the new session to appear in `History`, then click `Select` for
+    that session.
+18. In `Session actions`, click `Launch round`.
+19. In `Reviewer evidence`, find the new round card and click `Open runtime
+    graph`.
+20. Confirm Operations shows `Runtime run communication`.
+21. Click `Design Reviews`, click `Refresh`, select the session, and inspect
+    `Rounds`, `Manual decisions`, and `Handoff`.
 
 Explanation: This UI test verifies the user can navigate the entire scenario
 through links, buttons, dropdowns, and row actions. It covers template
-readiness, publish-gate visibility, session creation, round launch, runtime
-graph navigation, and safe evidence inspection. The current browser UI does
-not provide a form for entering reviewer verdicts directly. Use the API test
-below to complete a round with deterministic verdicts, then refresh the UI to
-see the approved handoff.
+readiness, workflow setup panels, evidence setup, publish-gate visibility,
+runtime launch prefill, Design Reviews handoff, session creation, round launch,
+runtime graph navigation, and safe evidence inspection. The current browser UI
+does not provide a form for entering reviewer verdicts directly. Use the API
+test below to complete a round with deterministic verdicts, then refresh the UI
+to see the approved handoff.
 
 Expected result:
 
 - The browser never requires address-bar edits after login.
+- Workflow setup panels are reachable from `Workflow Registry` and visible on
+  the council draft.
+- `Open runtime launch` opens the run workspace with the workflow prefilled but
+  does not start a run.
 - A new design review session appears in `History`.
 - `Launch round` creates a round with a workflow run id.
 - `Open runtime graph` opens Operations through a UI link.
