@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec Kit Workflow Setup Autopilot"
+  short_description: "Run workflow setup specs with QA"
+  default_prompt: "Use $speckit-workflow-setup-autopilot to prepare and run the workflow setup roadmap."

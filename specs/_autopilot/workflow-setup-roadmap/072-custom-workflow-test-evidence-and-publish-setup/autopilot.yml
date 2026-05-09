@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.2",
+  "roadmap_file": "docs/workflow_setup_specs.md",
+  "react_ui2_context_file": "docs/react_ui2.md",
+  "spec_number": "072",
+  "feature": {
+    "name": "custom-workflow-test-evidence-and-publish-setup",
+    "title": "Custom Workflow Test Evidence And Publish Setup",
+    "feature_directory": "specs/072-custom-workflow-test-evidence-and-publish-setup",
+    "branch": "codex/072-custom-workflow-test-evidence-and-publish-setup"
+  },
+  "phase_prompt_files": {
+    "specify": "specify.md",
+    "clarify": "clarify.md",
+    "plan": "plan.md",
+    "tasks": "tasks.md",
+    "analyze": "analyze.md",
+    "implement": "implement.md"
+  },
+  "prompt_files": [
+    "specify.md",
+    "plan.md",
+    "tasks.md"
+  ],
+  "policy_file": "policy.yml",
+  "validation_file": "validation.yml",
+  "post_spec_validation": {
+    "update_curl_testing_for_new_or_changed_apis": true,
+    "required_curl_skill": "multi-agent-curl-test",
+    "curl_testing_file": "curl_testing.md",
+    "curl_command": "if ! docker info >/dev/null 2>&1; then command -v open >/dev/null 2>&1 && open -a Docker || true; for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done; fi; docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+  },
+  "git": {
+    "commit": false,
+    "stage": false,
+    "push": false
+  }
+}

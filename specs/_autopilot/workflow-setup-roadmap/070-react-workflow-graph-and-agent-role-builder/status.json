@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "070",
+  "title": "React Workflow Graph And Agent Role Builder",
+  "state": "pending",
+  "current_phase": null,
+  "completed_phases": [],
+  "validation": "pending",
+  "blocker": null,
+  "history": []
+}

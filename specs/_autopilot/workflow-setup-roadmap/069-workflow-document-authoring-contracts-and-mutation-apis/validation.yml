@@ -1,0 +1,94 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 069 - Workflow Document Authoring Contracts And Mutation APIs",
+    "spec_number": "069",
+    "spec_slug": "workflow-document-authoring-contracts-and-mutation-apis",
+    "feature_dir": "specs/069-workflow-document-authoring-contracts-and-mutation-apis",
+    "autopilot_dir": "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis",
+    "branch": "codex/069-workflow-document-authoring-contracts-and-mutation-apis",
+    "qa_id": "qa069",
+    "qa_label": "QA069",
+    "qa_database": "multi_agent_platform_qa069",
+    "qa_env_file": "specs/069-workflow-document-authoring-contracts-and-mutation-apis/.env.qa069",
+    "artifact_root": ".data/qa069-artifacts",
+    "playwright_output_dir": "output/playwright/qa069_ui",
+    "manual_qa_user_guide": "specs/069-workflow-document-authoring-contracts-and-mutation-apis/qa069_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa069-after-spec",
+    "workflow_setup_source": "docs/workflow_setup_specs.md",
+    "react_ui2_context_file": "docs/react_ui2.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa069-workflow-setup-smoke",
+        "steps": [
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"tenant-admin-acme\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Workflow"
+          },
+          {
+            "screenshot": "qa069-workflow-setup-smoke.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  },
+  "extra_quality_commands": [
+    {
+      "id": "generated-react-types-fresh",
+      "command": "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "frontend-install-deps",
+      "command": "cd frontend/admin && npm ci",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-typecheck",
+      "command": "cd frontend/admin && npm run typecheck",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-vitest",
+      "command": "cd frontend/admin && npm test",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-build",
+      "command": "cd frontend/admin && npm run build",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    }
+  ],
+  "post_spec_validation": {
+    "curl_testing": {
+      "file": "curl_testing.md",
+      "require_update_when_public_api_changes": true,
+      "require_commands_for_new_route_families": true,
+      "evidence_note": "Record the curl_testing.md sections covering new or changed workflow setup APIs in this spec's status.json."
+    },
+    "curl_test": {
+      "skill": "multi-agent-curl-test",
+      "database": "multi_agent_curl_test",
+      "command": "if ! docker info >/dev/null 2>&1; then command -v open >/dev/null 2>&1 && open -a Docker || true; for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done; fi; docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+    }
+  }
+}

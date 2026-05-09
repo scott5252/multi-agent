@@ -1,0 +1,179 @@
+{
+  "schema_version": "1.0",
+  "roadmap_file": "docs/workflow_setup_specs.md",
+  "react_ui2_context_file": "docs/react_ui2.md",
+  "spec_range": "069..073",
+  "next_spec": "069",
+  "specs": [
+    {
+      "number": "069",
+      "title": "Workflow Document Authoring Contracts And Mutation APIs",
+      "slug": "workflow-document-authoring-contracts-and-mutation-apis",
+      "autopilot_dir": "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis",
+      "autopilot_file": "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/autopilot.yml",
+      "validation_file": "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/validation.yml",
+      "feature_dir": "specs/069-workflow-document-authoring-contracts-and-mutation-apis",
+      "branch": "codex/069-workflow-document-authoring-contracts-and-mutation-apis",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "070",
+      "title": "React Workflow Graph And Agent Role Builder",
+      "slug": "react-workflow-graph-and-agent-role-builder",
+      "autopilot_dir": "specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder",
+      "autopilot_file": "specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/autopilot.yml",
+      "validation_file": "specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/validation.yml",
+      "feature_dir": "specs/070-react-workflow-graph-and-agent-role-builder",
+      "branch": "codex/070-react-workflow-graph-and-agent-role-builder",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "071",
+      "title": "Prompt Profile Creation And Per-Agent Binding UI",
+      "slug": "prompt-profile-creation-and-per-agent-binding-ui",
+      "autopilot_dir": "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui",
+      "autopilot_file": "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui/autopilot.yml",
+      "validation_file": "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui/validation.yml",
+      "feature_dir": "specs/071-prompt-profile-creation-and-per-agent-binding-ui",
+      "branch": "codex/071-prompt-profile-creation-and-per-agent-binding-ui",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "072",
+      "title": "Custom Workflow Test Evidence And Publish Setup",
+      "slug": "custom-workflow-test-evidence-and-publish-setup",
+      "autopilot_dir": "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup",
+      "autopilot_file": "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/autopilot.yml",
+      "validation_file": "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/validation.yml",
+      "feature_dir": "specs/072-custom-workflow-test-evidence-and-publish-setup",
+      "branch": "codex/072-custom-workflow-test-evidence-and-publish-setup",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "073",
+      "title": "End-To-End Custom Workflow Setup Wizard And Runtime Launch",
+      "slug": "end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
+      "autopilot_dir": "specs/_autopilot/workflow-setup-roadmap/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
+      "autopilot_file": "specs/_autopilot/workflow-setup-roadmap/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch/autopilot.yml",
+      "validation_file": "specs/_autopilot/workflow-setup-roadmap/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch/validation.yml",
+      "feature_dir": "specs/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
+      "branch": "codex/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    }
+  ],
+  "run_contract": {
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true,
+    "update_curl_testing_for_new_or_changed_apis": true,
+    "run_multi_agent_curl_test_after_every_spec": true,
+    "run_playwright_after_every_spec": true,
+    "run_frontend_quality_after_every_spec": true
+  },
+  "final_stability_gate": {
+    "required": true,
+    "run_after_next_spec_null": true,
+    "commands": [
+      {
+        "id": "queue-complete",
+        "command": "jq -e '.next_spec == null and all(.specs[]; .status == \"completed\" and .validation == \"completed\")' specs/_autopilot/workflow-setup-roadmap/queue.json"
+      },
+      {
+        "id": "qa-docs-all",
+        "command": "set -e; for d in specs/069-workflow-document-authoring-contracts-and-mutation-apis specs/070-react-workflow-graph-and-agent-role-builder specs/071-prompt-profile-creation-and-per-agent-binding-ui specs/072-custom-workflow-test-evidence-and-publish-setup specs/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch; do bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh \"$d\"; done"
+      },
+      {
+        "id": "spec-qa-all",
+        "command": "set -e; for f in specs/_autopilot/workflow-setup-roadmap/*/validation.yml; do uv run python scripts/qa/run_spec_qa.py \"$f\"; done"
+      },
+      {
+        "id": "playwright-all",
+        "command": "set -e; for f in specs/_autopilot/workflow-setup-roadmap/*/validation.yml; do uv run python scripts/qa/run_playwright_ui.py \"$f\" --start-processes; done"
+      },
+      {
+        "id": "ruff-check",
+        "command": "uv run ruff check ."
+      },
+      {
+        "id": "ruff-format-check",
+        "command": "uv run ruff format --check ."
+      },
+      {
+        "id": "mypy",
+        "command": "uv run mypy src"
+      },
+      {
+        "id": "pytest-coverage",
+        "command": "uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90"
+      },
+      {
+        "id": "generated-react-types-fresh",
+        "command": "uv run python scripts/frontend/generate_admin_react_types.py --check"
+      },
+      {
+        "id": "frontend-install-deps",
+        "command": "cd frontend/admin && npm ci"
+      },
+      {
+        "id": "frontend-typecheck",
+        "command": "cd frontend/admin && npm run typecheck"
+      },
+      {
+        "id": "frontend-vitest",
+        "command": "cd frontend/admin && npm test"
+      },
+      {
+        "id": "frontend-build",
+        "command": "cd frontend/admin && npm run build"
+      },
+      {
+        "id": "multi-agent-curl-test-final",
+        "command": "if ! docker info >/dev/null 2>&1; then command -v open >/dev/null 2>&1 && open -a Docker || true; for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done; fi; docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/workflow-setup-final"
+      }
+    ]
+  }
+}

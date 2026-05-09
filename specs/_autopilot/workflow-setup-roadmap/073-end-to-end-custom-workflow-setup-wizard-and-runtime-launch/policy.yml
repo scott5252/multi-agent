@@ -1,0 +1,44 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 073 - End-To-End Custom Workflow Setup Wizard And Runtime Launch",
+    "spec_number": "073",
+    "spec_slug": "end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
+    "feature_dir": "specs/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
+    "autopilot_dir": "specs/_autopilot/workflow-setup-roadmap/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
+    "branch": "codex/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
+    "qa_id": "qa073",
+    "qa_label": "QA073",
+    "qa_database": "multi_agent_platform_qa073",
+    "qa_env_file": "specs/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch/.env.qa073",
+    "artifact_root": ".data/qa073-artifacts",
+    "playwright_output_dir": "output/playwright/qa073_ui",
+    "manual_qa_user_guide": "specs/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch/qa073_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa073-after-spec",
+    "workflow_setup_source": "docs/workflow_setup_specs.md",
+    "react_ui2_context_file": "docs/react_ui2.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa073-workflow-setup-smoke"
+    ],
+    "required_quality_commands": [
+      "generated-react-types-fresh",
+      "frontend-install-deps",
+      "frontend-typecheck",
+      "frontend-vitest",
+      "frontend-build"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review",
+      "multi-agent-curl-test"
+    ]
+  }
+}
