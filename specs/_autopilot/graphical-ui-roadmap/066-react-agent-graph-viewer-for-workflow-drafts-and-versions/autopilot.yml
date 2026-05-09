@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.2",
+  "roadmap_file": "graphical_ui.md",
+  "spec_number": "066",
+  "feature": {
+    "name": "react-agent-graph-viewer-for-workflow-drafts-and-versions",
+    "title": "React Agent Graph Viewer For Workflow Drafts And Versions",
+    "feature_directory": "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions",
+    "branch": "codex/066-react-agent-graph-viewer-for-workflow-drafts-and-versions"
+  },
+  "phase_prompt_files": {
+    "specify": "specify.md",
+    "clarify": "clarify.md",
+    "plan": "plan.md",
+    "tasks": "tasks.md",
+    "analyze": "analyze.md",
+    "implement": "implement.md"
+  },
+  "prompt_files": [
+    "specify.md",
+    "plan.md",
+    "tasks.md"
+  ],
+  "policy_file": "policy.yml",
+  "validation_file": "validation.yml",
+  "post_spec_validation": {
+    "update_curl_testing_for_new_or_changed_apis": true,
+    "required_curl_skill": "multi-agent-curl-test",
+    "curl_testing_file": "curl_testing.md",
+    "curl_command": "if ! docker info >/dev/null 2>&1; then command -v open >/dev/null 2>&1 && open -a Docker || true; for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done; fi; docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+  },
+  "git": {
+    "commit": false,
+    "stage": false,
+    "push": false
+  }
+}

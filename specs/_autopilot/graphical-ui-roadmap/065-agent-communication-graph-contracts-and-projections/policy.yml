@@ -1,0 +1,42 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 065 - Agent Communication Graph Contracts And Projections",
+    "spec_number": "065",
+    "spec_slug": "agent-communication-graph-contracts-and-projections",
+    "feature_dir": "specs/065-agent-communication-graph-contracts-and-projections",
+    "autopilot_dir": "specs/_autopilot/graphical-ui-roadmap/065-agent-communication-graph-contracts-and-projections",
+    "branch": "codex/065-agent-communication-graph-contracts-and-projections",
+    "qa_id": "qa065",
+    "qa_label": "QA065",
+    "qa_database": "multi_agent_platform_qa065",
+    "qa_env_file": "specs/065-agent-communication-graph-contracts-and-projections/.env.qa065",
+    "artifact_root": ".data/qa065-artifacts",
+    "playwright_output_dir": "output/playwright/qa065_ui",
+    "manual_qa_user_guide": "specs/065-agent-communication-graph-contracts-and-projections/qa065_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa065-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa065-graphical-ui-smoke"
+    ],
+    "required_quality_commands": [
+      "generated-react-types-fresh",
+      "frontend-install-deps",
+      "frontend-typecheck",
+      "frontend-vitest",
+      "frontend-build"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review",
+      "multi-agent-curl-test"
+    ]
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "schema_version": "1.0",
+  "roadmap_file": "graphical_ui.md",
+  "spec_range": "065..068",
+  "next_spec": "065",
+  "specs": [
+    {
+      "number": "065",
+      "title": "Agent Communication Graph Contracts And Projections",
+      "slug": "agent-communication-graph-contracts-and-projections",
+      "autopilot_dir": "specs/_autopilot/graphical-ui-roadmap/065-agent-communication-graph-contracts-and-projections",
+      "autopilot_file": "specs/_autopilot/graphical-ui-roadmap/065-agent-communication-graph-contracts-and-projections/autopilot.yml",
+      "validation_file": "specs/_autopilot/graphical-ui-roadmap/065-agent-communication-graph-contracts-and-projections/validation.yml",
+      "feature_dir": "specs/065-agent-communication-graph-contracts-and-projections",
+      "branch": "codex/065-agent-communication-graph-contracts-and-projections",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "066",
+      "title": "React Agent Graph Viewer For Workflow Drafts And Versions",
+      "slug": "react-agent-graph-viewer-for-workflow-drafts-and-versions",
+      "autopilot_dir": "specs/_autopilot/graphical-ui-roadmap/066-react-agent-graph-viewer-for-workflow-drafts-and-versions",
+      "autopilot_file": "specs/_autopilot/graphical-ui-roadmap/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/autopilot.yml",
+      "validation_file": "specs/_autopilot/graphical-ui-roadmap/066-react-agent-graph-viewer-for-workflow-drafts-and-versions/validation.yml",
+      "feature_dir": "specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions",
+      "branch": "codex/066-react-agent-graph-viewer-for-workflow-drafts-and-versions",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "067",
+      "title": "Runtime Agent Communication Graph For Runs",
+      "slug": "runtime-agent-communication-graph-for-runs",
+      "autopilot_dir": "specs/_autopilot/graphical-ui-roadmap/067-runtime-agent-communication-graph-for-runs",
+      "autopilot_file": "specs/_autopilot/graphical-ui-roadmap/067-runtime-agent-communication-graph-for-runs/autopilot.yml",
+      "validation_file": "specs/_autopilot/graphical-ui-roadmap/067-runtime-agent-communication-graph-for-runs/validation.yml",
+      "feature_dir": "specs/067-runtime-agent-communication-graph-for-runs",
+      "branch": "codex/067-runtime-agent-communication-graph-for-runs",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    },
+    {
+      "number": "068",
+      "title": "Durable Agent Interaction Evidence And Replay Graph",
+      "slug": "durable-agent-interaction-evidence-and-replay-graph",
+      "autopilot_dir": "specs/_autopilot/graphical-ui-roadmap/068-durable-agent-interaction-evidence-and-replay-graph",
+      "autopilot_file": "specs/_autopilot/graphical-ui-roadmap/068-durable-agent-interaction-evidence-and-replay-graph/autopilot.yml",
+      "validation_file": "specs/_autopilot/graphical-ui-roadmap/068-durable-agent-interaction-evidence-and-replay-graph/validation.yml",
+      "feature_dir": "specs/068-durable-agent-interaction-evidence-and-replay-graph",
+      "branch": "codex/068-durable-agent-interaction-evidence-and-replay-graph",
+      "status": "pending",
+      "phases": {
+        "specify": "pending",
+        "clarify": "pending",
+        "plan": "pending",
+        "tasks": "pending",
+        "analyze": "pending",
+        "implement": "pending"
+      },
+      "validation": "pending"
+    }
+  ],
+  "run_contract": {
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true,
+    "update_curl_testing_for_new_or_changed_apis": true,
+    "run_multi_agent_curl_test_after_every_spec": true,
+    "run_playwright_after_every_spec": true
+  },
+  "final_stability_gate": {
+    "required": true,
+    "run_after_next_spec_null": true,
+    "commands": [
+      {
+        "id": "queue-complete",
+        "command": "jq -e '.next_spec == null and all(.specs[]; .status == \"completed\" and .validation == \"completed\")' specs/_autopilot/graphical-ui-roadmap/queue.json"
+      },
+      {
+        "id": "qa-docs-all",
+        "command": "set -e; for d in specs/065-agent-communication-graph-contracts-and-projections specs/066-react-agent-graph-viewer-for-workflow-drafts-and-versions specs/067-runtime-agent-communication-graph-for-runs specs/068-durable-agent-interaction-evidence-and-replay-graph; do bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh \"$d\"; done"
+      },
+      {
+        "id": "spec-qa-all",
+        "command": "set -e; for f in specs/_autopilot/graphical-ui-roadmap/*/validation.yml; do uv run python scripts/qa/run_spec_qa.py \"$f\"; done"
+      },
+      {
+        "id": "playwright-all",
+        "command": "set -e; for f in specs/_autopilot/graphical-ui-roadmap/*/validation.yml; do uv run python scripts/qa/run_playwright_ui.py \"$f\" --start-processes; done"
+      },
+      {
+        "id": "ruff-check",
+        "command": "uv run ruff check ."
+      },
+      {
+        "id": "ruff-format-check",
+        "command": "uv run ruff format --check ."
+      },
+      {
+        "id": "mypy",
+        "command": "uv run mypy src"
+      },
+      {
+        "id": "pytest-coverage",
+        "command": "uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90"
+      },
+      {
+        "id": "generated-react-types-fresh",
+        "command": "uv run python scripts/frontend/generate_admin_react_types.py --check"
+      },
+      {
+        "id": "frontend-install-deps",
+        "command": "cd frontend/admin && npm ci"
+      },
+      {
+        "id": "frontend-typecheck",
+        "command": "cd frontend/admin && npm run typecheck"
+      },
+      {
+        "id": "frontend-vitest",
+        "command": "cd frontend/admin && npm test"
+      },
+      {
+        "id": "frontend-build",
+        "command": "cd frontend/admin && npm run build"
+      },
+      {
+        "id": "multi-agent-curl-test-final",
+        "command": "if ! docker info >/dev/null 2>&1; then command -v open >/dev/null 2>&1 && open -a Docker || true; for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done; fi; docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/graphical-ui-final"
+      }
+    ]
+  }
+}

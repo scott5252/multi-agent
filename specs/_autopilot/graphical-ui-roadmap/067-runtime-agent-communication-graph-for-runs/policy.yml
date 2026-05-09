@@ -1,0 +1,42 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 067 - Runtime Agent Communication Graph For Runs",
+    "spec_number": "067",
+    "spec_slug": "runtime-agent-communication-graph-for-runs",
+    "feature_dir": "specs/067-runtime-agent-communication-graph-for-runs",
+    "autopilot_dir": "specs/_autopilot/graphical-ui-roadmap/067-runtime-agent-communication-graph-for-runs",
+    "branch": "codex/067-runtime-agent-communication-graph-for-runs",
+    "qa_id": "qa067",
+    "qa_label": "QA067",
+    "qa_database": "multi_agent_platform_qa067",
+    "qa_env_file": "specs/067-runtime-agent-communication-graph-for-runs/.env.qa067",
+    "artifact_root": ".data/qa067-artifacts",
+    "playwright_output_dir": "output/playwright/qa067_ui",
+    "manual_qa_user_guide": "specs/067-runtime-agent-communication-graph-for-runs/qa067_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa067-after-spec"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa067-graphical-ui-smoke"
+    ],
+    "required_quality_commands": [
+      "generated-react-types-fresh",
+      "frontend-install-deps",
+      "frontend-typecheck",
+      "frontend-vitest",
+      "frontend-build"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review",
+      "multi-agent-curl-test"
+    ]
+  }
+}
