@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from multi_agent_platform.config.service import ModelSkillConfigService
 from multi_agent_platform.config.settings import Settings
 from multi_agent_platform.db.models.runtime_orchestration import (
     RuntimeTimelineEventRecord,
@@ -11,11 +13,17 @@ from multi_agent_platform.db.models.runtime_orchestration import (
 from multi_agent_platform.db.repositories.runtime_orchestration import (
     RuntimeOrchestrationRepository,
 )
+from multi_agent_platform.model_providers.gateway import ModelGateway
 from multi_agent_platform.reliability.models import RecoveryOutcome
 from multi_agent_platform.runtime.orchestration.graph_execution import (
     GraphExecutionService,
     GraphExecutionStatus,
 )
+from multi_agent_platform.runtime.orchestration.model_backed_roles import (
+    ModelSkillConfigRolePinResolver,
+    build_role_node_executor,
+)
+from multi_agent_platform.storage.base import StorageProvider
 
 
 @dataclass(slots=True, frozen=True)
@@ -35,10 +43,18 @@ class OrchestrationWorker:
         session: AsyncSession,
         settings: Settings,
         worker_id: str,
+        model_gateway_factory: Callable[[AsyncSession], ModelGateway] | None = None,
+        model_skill_service_factory: Callable[[AsyncSession], ModelSkillConfigService]
+        | None = None,
+        storage_provider: StorageProvider | None = None,
     ) -> None:
         self.repository = RuntimeOrchestrationRepository(session)
+        self.session = session
         self.settings = settings
         self.worker_id = worker_id
+        self.model_gateway_factory = model_gateway_factory
+        self.model_skill_service_factory = model_skill_service_factory
+        self.storage_provider = storage_provider
 
     async def poll_once(self) -> OrchestrationWorkerResult:
         lease = await self.repository.claim_next_run(
@@ -57,7 +73,21 @@ class OrchestrationWorker:
                 trace_id=self.worker_id,
             )
         )
-        graph_result = await GraphExecutionService(self.repository).execute_claimed_run(
+        role_executor = build_role_node_executor(
+            model_gateway=self.model_gateway_factory(self.session)
+            if self.model_gateway_factory is not None
+            else None,
+            pin_resolver=ModelSkillConfigRolePinResolver(
+                self.model_skill_service_factory(self.session)
+            )
+            if self.model_skill_service_factory is not None
+            else None,
+            storage_provider=self.storage_provider,
+        )
+        graph_result = await GraphExecutionService(
+            self.repository,
+            role_executor=role_executor,
+        ).execute_claimed_run(
             workflow_run_id=lease.workflow_run_id,
             worker_id=self.worker_id,
         )

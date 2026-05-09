@@ -72,6 +72,8 @@ class GraphRole:
     role_kind: str
     profile_reference_key: str | None = None
     output_contract_key: str | None = None
+    execution_mode: str | None = None
+    agent_profile_version_id: UUID | None = None
     skill_installation_keys: tuple[str, ...] = field(default_factory=tuple)
 
 
@@ -166,6 +168,12 @@ def build_graph_execution_plan(
             role_kind=str(role.get("role_kind") or "agent"),
             profile_reference_key=_optional_str(role.get("profile_reference_key")),
             output_contract_key=_optional_str(role.get("output_contract_key")),
+            execution_mode=_optional_str(
+                role.get("execution_mode") or role.get("role_execution_mode")
+            ),
+            agent_profile_version_id=_optional_uuid(
+                role.get("agent_profile_version_id")
+            ),
             skill_installation_keys=tuple(
                 str(item) for item in _as_sequence(role.get("skill_installation_keys"))
             ),
@@ -576,7 +584,17 @@ class GraphExecutionService:
                     "profile_reference_key": role.profile_reference_key,
                     "skill_installation_keys": list(role.skill_installation_keys),
                     "output_contract_key": role.output_contract_key,
+                    "output_contract_schema": dict(
+                        plan.contracts_by_key.get(role.output_contract_key or "", {})
+                    ),
+                    "execution_mode": role.execution_mode,
+                    "agent_profile_version_id": str(role.agent_profile_version_id)
+                    if role.agent_profile_version_id
+                    else None,
                 },
+                run_step_id=step.run_step_id,
+                run_bundle_id=run.run_bundle_id,
+                workflow_version_bundle_id=plan.workflow_version_bundle_id,
             ),
         )
 
@@ -958,20 +976,32 @@ def _result_output_ref(
     node_key: str,
     result: RoleExecutionResult,
 ) -> dict[str, object]:
-    return {
+    output_ref: dict[str, object] = {
         "source": node_key,
         "safe_summary": result.safe_summary,
         "payload_digest": result.payload_digest,
         "structured_output": result.structured_output,
     }
+    if result.usage_summary:
+        output_ref["usage_summary"] = dict(result.usage_summary)
+    if result.provenance:
+        output_ref["provenance"] = dict(result.provenance)
+    if result.artifact_refs:
+        output_ref["artifact_refs"] = [dict(item) for item in result.artifact_refs]
+    return output_ref
 
 
 def _result_error_ref(result: RoleExecutionResult) -> dict[str, object]:
-    return {
+    error_ref: dict[str, object] = {
         "safe_summary": result.safe_summary,
         "error_code": result.error_code or "role_node_failed",
         "payload_digest": result.payload_digest,
     }
+    if result.structured_output:
+        error_ref["structured_output"] = result.structured_output
+    if result.provenance:
+        error_ref["provenance"] = dict(result.provenance)
+    return error_ref
 
 
 def _extract_workflow_document(
@@ -1151,6 +1181,15 @@ def _optional_int(value: object) -> int | None:
     if isinstance(value, str):
         return int(value)
     raise GraphValidationError("expected integer")
+
+
+def _optional_uuid(value: object) -> UUID | None:
+    if value is None or value == "":
+        return None
+    try:
+        return value if isinstance(value, UUID) else UUID(str(value))
+    except (TypeError, ValueError) as exc:
+        raise GraphValidationError("expected UUID") from exc
 
 
 def utc_now() -> datetime:

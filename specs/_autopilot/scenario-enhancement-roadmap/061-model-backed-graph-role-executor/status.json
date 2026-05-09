@@ -1,0 +1,121 @@
+{
+  "spec": "061",
+  "title": "Model-Backed Graph Role Executor",
+  "status": "completed",
+  "active_phase": "completed",
+  "feature_dir": "specs/061-model-backed-graph-role-executor",
+  "branch": "codex/061-model-backed-graph-role-executor",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/061-model-backed-graph-role-executor/spec.md",
+        "specs/061-model-backed-graph-role-executor/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 061 feature specification from generated specify prompt with no unresolved clarification markers."
+    },
+    "clarify": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/061-model-backed-graph-role-executor/spec.md"
+      ],
+      "auto_clarifications": [
+        "Existing deterministic execution remains default; model-backed execution requires explicit run/workflow execution mode and valid tenant-scoped pins.",
+        "Only safe summaries, structured contract metadata, artifact references, digests, policy references, and provenance may be included in inputs/results.",
+        "Local QA uses mocked ModelGateway/provider responses and local-principal seed data only.",
+        "Invalid pins, policies, credentials, tenant scope, redaction, or output contracts fail closed before graph success.",
+        "Spec 061 owns role-node execution only; coordinator loops, Admin workspace, templates, and publish gates are deferred."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/061-model-backed-graph-role-executor/plan.md",
+        "specs/061-model-backed-graph-role-executor/research.md",
+        "specs/061-model-backed-graph-role-executor/data-model.md",
+        "specs/061-model-backed-graph-role-executor/contracts/model-backed-role-executor.md",
+        "specs/061-model-backed-graph-role-executor/contracts/model-backed-role-executor-ui.md",
+        "specs/061-model-backed-graph-role-executor/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned additive runtime executor, output contract validation, model gateway integration, worker factory wiring, QA, and regression validation with no migration planned."
+    },
+    "tasks": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/061-model-backed-graph-role-executor/tasks.md"
+      ],
+      "task_count": 43,
+      "notes": "Generated dependency-ordered runtime, worker wiring, test, QA, curl review, and validation tasks across three independently testable stories."
+    },
+    "analyze": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts_reviewed": [
+        "specs/061-model-backed-graph-role-executor/spec.md",
+        "specs/061-model-backed-graph-role-executor/plan.md",
+        "specs/061-model-backed-graph-role-executor/tasks.md",
+        "specs/061-model-backed-graph-role-executor/contracts/model-backed-role-executor.md",
+        "specs/061-model-backed-graph-role-executor/contracts/model-backed-role-executor-ui.md",
+        "specs/061-model-backed-graph-role-executor/data-model.md",
+        "specs/061-model-backed-graph-role-executor/quickstart.md",
+        "curl_testing.md",
+        "specs/_autopilot/scenario-enhancement-roadmap/061-model-backed-graph-role-executor/validation.yml"
+      ],
+      "findings": [],
+      "critical_findings_remaining": 0,
+      "notes": "Spec, plan, and tasks are mutually consistent. No CRITICAL or HIGH findings were found."
+    },
+    "implement": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "src/multi_agent_platform/runtime/orchestration/model_backed_roles.py",
+        "src/multi_agent_platform/runtime/orchestration/role_output_contracts.py",
+        "src/multi_agent_platform/runtime/orchestration/graph_roles.py",
+        "src/multi_agent_platform/runtime/orchestration/graph_execution.py",
+        "src/multi_agent_platform/bootstrap/worker.py",
+        "src/multi_agent_platform/workers/orchestration.py",
+        "src/multi_agent_platform/workers/loops.py",
+        "tests/contract/test_model_backed_role_executor_contracts.py",
+        "tests/unit/runtime/orchestration/test_model_backed_roles.py",
+        "tests/integration/runtime/test_model_backed_graph_execution.py",
+        "scripts/qa/seed_model_backed_roles_qa061.py",
+        "scripts/qa/verify_model_backed_roles_qa061.py",
+        "specs/061-model-backed-graph-role-executor/qa061.md",
+        "specs/061-model-backed-graph-role-executor/qa061_ui.md",
+        "specs/061-model-backed-graph-role-executor/qa061_user_guide.md",
+        "specs/061-model-backed-graph-role-executor/pr_notes.md"
+      ],
+      "notes": "Implemented model-backed role execution through ModelGateway with safe context/result metadata, output contract validation, worker wiring, QA scripts, and documentation."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "completed_at": "2026-05-08",
+    "commands": [
+      "uv run pytest tests/contract/test_model_backed_role_executor_contracts.py tests/unit/runtime/orchestration/test_model_backed_roles.py tests/unit/runtime/orchestration/test_graph_roles.py tests/unit/bootstrap/test_worker_gateway_bootstrap.py tests/integration/runtime/test_model_backed_graph_execution.py --no-cov",
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/061-model-backed-graph-role-executor",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/scenario-enhancement-roadmap/061-model-backed-graph-role-executor/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/scenario-enhancement-roadmap/061-model-backed-graph-role-executor/validation.yml --start-processes",
+      "docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa061-after-spec"
+    ],
+    "evidence": [
+      "output/playwright/qa061_ui/qa061-scenario-enhancement-smoke.png",
+      ".data/curl_test_runs/qa061-after-spec",
+      ".data/qa061-artifacts/evidence/qa061-model-backed-role-seed.json"
+    ],
+    "notes": "Focused tests, QA docs, Spec Kit QA, Playwright smoke, and full multi-agent curl regression passed."
+  },
+  "curl_testing": {
+    "status": "reviewed",
+    "updated": false,
+    "notes": "Spec 061 added runtime executor internals and worker wiring without a new or changed public/admin/runtime JSON API route family; existing full curl regression passed."
+  },
+  "blockers": []
+}

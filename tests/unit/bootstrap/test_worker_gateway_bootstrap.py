@@ -14,9 +14,13 @@ async def test_worker_bootstrap_exposes_gateway_ready_dependencies(settings) -> 
         assert bootstrap.gateway_dependencies_ready is True
         assert all(bootstrap.gateway_dependency_status.values())
         assert bootstrap.model_gateway_factory is container.model_gateway_factory
+        assert bootstrap.model_skill_service_factory is (
+            container.model_skill_service_factory
+        )
         assert bootstrap.model_provider_service_factory is (
             container.model_provider_service_factory
         )
+        assert bootstrap.storage_provider is container.storage_provider
         assert bootstrap.retry_decision_helper is container.retry_decision_helper
         assert bootstrap.breaker_decision_helper is container.breaker_decision_helper
     finally:

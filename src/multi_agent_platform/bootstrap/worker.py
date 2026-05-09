@@ -7,8 +7,10 @@ from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.bootstrap.container import Container
+from multi_agent_platform.config.service import ModelSkillConfigService
 from multi_agent_platform.model_providers.gateway import ModelGateway
 from multi_agent_platform.model_providers.service import ModelProviderService
+from multi_agent_platform.storage.base import StorageProvider
 
 
 @dataclass(slots=True)
@@ -18,9 +20,11 @@ class WorkerBootstrap:
     gateway_dependencies_ready: bool
     gateway_dependency_status: dict[str, bool]
     model_gateway_factory: Callable[[AsyncSession], ModelGateway] | None
+    model_skill_service_factory: Callable[[AsyncSession], ModelSkillConfigService]
     model_provider_service_factory: (
         Callable[[AsyncSession], ModelProviderService] | None
     )
+    storage_provider: StorageProvider
     retry_decision_helper: object | None
     breaker_decision_helper: object | None
     skill_registry_lifecycle_ready: bool = False
@@ -38,6 +42,9 @@ def build_worker_bootstrap(container: Container) -> WorkerBootstrap:
             container.provider_adapter_registry_factory is not None
         ),
         "model_gateway_factory": container.model_gateway_factory is not None,
+        "model_skill_service_factory": container.model_skill_service_factory
+        is not None,
+        "storage_provider": container.storage_provider is not None,
         "provider_secret_resolver_factory": (
             container.provider_secret_resolver_factory is not None
         ),
@@ -53,7 +60,9 @@ def build_worker_bootstrap(container: Container) -> WorkerBootstrap:
         gateway_dependencies_ready=all(status.values()),
         gateway_dependency_status=status,
         model_gateway_factory=container.model_gateway_factory,
+        model_skill_service_factory=container.model_skill_service_factory,
         model_provider_service_factory=container.model_provider_service_factory,
+        storage_provider=container.storage_provider,
         retry_decision_helper=container.retry_decision_helper,
         breaker_decision_helper=container.breaker_decision_helper,
         skill_registry_lifecycle_ready=True,

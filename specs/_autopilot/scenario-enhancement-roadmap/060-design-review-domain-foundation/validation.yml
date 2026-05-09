@@ -16,6 +16,32 @@
     "manual_qa_user_guide": "specs/060-design-review-domain-foundation/qa060_user_guide.md",
     "curl_test_output_dir": ".data/curl_test_runs/qa060-after-spec"
   },
+  "extra_commands": [
+    {
+      "id": "seed-design-review-qa060",
+      "command": "uv run python scripts/qa/seed_design_review_qa060.py | tee /tmp/qa060-seed.txt",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Seeded QA060 design review live records"
+      ]
+    },
+    {
+      "id": "exercise-design-review-api-qa060",
+      "command": "uv run python scripts/qa/exercise_design_review_api_qa060.py",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Exercised QA060 design review API routes"
+      ]
+    },
+    {
+      "id": "verify-design-review-persistence-qa060",
+      "command": "uv run python scripts/qa/verify_design_review_qa060.py",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Verified QA060 design review live-data persistence"
+      ]
+    }
+  ],
   "playwright": {
     "flows": [
       {
@@ -32,7 +58,7 @@
           },
           {
             "screenshot": "qa060-scenario-enhancement-smoke.png",
-            "full_page": true
+            "full_page": false
           }
         ]
       }

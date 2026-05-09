@@ -29,6 +29,16 @@ from multi_agent_platform.admin.channel_telegram_briefing import (
     build_telegram_config_result,
     build_webhook_validation_result,
 )
+from multi_agent_platform.admin.design_review.coordinator import (
+    DesignReviewCoordinator,
+)
+from multi_agent_platform.admin.design_review.react_workspace import (
+    build_design_review_workspace,
+)
+from multi_agent_platform.admin.design_review.service import DesignReviewService
+from multi_agent_platform.admin.design_review.template import (
+    build_design_review_template_service,
+)
 from multi_agent_platform.admin.governance import (
     build_credential_reference_result,
     build_governance_dashboard,
@@ -141,6 +151,9 @@ from multi_agent_platform.api.schemas.admin_channel_telegram_briefing_react impo
     TelegramAliasSaveRequest,
     TelegramConfigSaveRequest,
     WebhookValidationRequest,
+)
+from multi_agent_platform.api.schemas.admin_design_review_workspace import (
+    DesignReviewWorkspaceEnvelope,
 )
 from multi_agent_platform.api.schemas.admin_governance import (
     GovernanceDashboard,
@@ -322,6 +335,7 @@ from multi_agent_platform.db.repositories.briefing_preferences import (
     BriefingPreferenceRepository,
 )
 from multi_agent_platform.db.repositories.channels import ChannelRepository
+from multi_agent_platform.db.repositories.design_review import DesignReviewRepository
 from multi_agent_platform.db.repositories.memberships import MembershipRepository
 from multi_agent_platform.db.repositories.model_providers import ModelProviderRepository
 from multi_agent_platform.db.repositories.model_skill_config import (
@@ -3377,6 +3391,74 @@ async def react_admin_memberships_audit(
     )
 
 
+@router.get("/admin/app/design-reviews", response_class=HTMLResponse)
+async def react_admin_design_reviews_app(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+) -> HTMLResponse:
+    return await react_admin_app(
+        request=request,
+        principal=principal,
+        session=session,
+        container=container,
+        tenant_id=tenant_id,
+    )
+
+
+@router.get(
+    "/admin/app/design-reviews/bootstrap.json",
+    response_model=DesignReviewWorkspaceEnvelope,
+    responses={
+        401: {"model": SafeProblemDetail},
+        403: {"model": SafeProblemDetail},
+    },
+)
+async def react_admin_design_reviews_bootstrap(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    container: ContainerDep,
+    tenant_id: Annotated[str | None, Query()] = None,
+    selected_session_id: Annotated[UUID | None, Query(alias="session_id")] = None,
+) -> DesignReviewWorkspaceEnvelope:
+    try:
+        shell = await build_react_shell(
+            request=request,
+            principal=principal,
+            session=session,
+            tenant_id=tenant_id,
+        )
+    except AdminConsoleAccessError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.reason_category,
+        ) from exc
+    repository = DesignReviewRepository(session)
+    return await build_design_review_workspace(
+        db_session=session,
+        repository=repository,
+        service=DesignReviewService(repository),
+        coordinator=DesignReviewCoordinator(
+            design_repository=repository,
+            runtime_repository=RuntimeOrchestrationRepository(session),
+        ),
+        template_service=build_design_review_template_service(
+            session=session,
+            storage_provider=container.storage_provider,
+            workflow_registry_artifact_prefix=(
+                container.settings.workflow_registry_artifact_prefix
+            ),
+            logger=container.logger,
+        ),
+        scope=_scope_response(shell.active_scope),
+        principal=principal,
+        selected_session_id=selected_session_id,
+    )
+
+
 @router.get("/admin/app/channels", response_class=HTMLResponse)
 async def react_admin_channels_app(
     request: Request,
@@ -4709,15 +4791,11 @@ async def _system_health_summary(container: ContainerDep) -> ReactAdminSystemHea
         dependency_label = (
             "dependency" if degraded_dependencies == 1 else "dependencies"
         )
-        summary = (
-            f"{degraded_dependencies} platform {dependency_label} degraded."
-        )
+        summary = f"{degraded_dependencies} platform {dependency_label} degraded."
     else:
         health_status = "not_ready"
         label = "Not ready"
-        dependency_label = (
-            "dependency" if unavailable_required == 1 else "dependencies"
-        )
+        dependency_label = "dependency" if unavailable_required == 1 else "dependencies"
         summary = (
             f"{unavailable_required} required platform {dependency_label} unavailable."
         )

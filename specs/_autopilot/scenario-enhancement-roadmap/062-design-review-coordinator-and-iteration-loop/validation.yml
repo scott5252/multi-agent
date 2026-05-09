@@ -16,6 +16,24 @@
     "manual_qa_user_guide": "specs/062-design-review-coordinator-and-iteration-loop/qa062_user_guide.md",
     "curl_test_output_dir": ".data/curl_test_runs/qa062-after-spec"
   },
+  "extra_commands": [
+    {
+      "id": "seed-design-review-coordinator-qa062",
+      "command": "uv run python scripts/qa/seed_design_review_coordinator_qa062.py | tee /tmp/qa062-seed.txt",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Seeded QA062 design review coordinator loop"
+      ]
+    },
+    {
+      "id": "verify-design-review-coordinator-qa062",
+      "command": "uv run python scripts/qa/verify_design_review_coordinator_qa062.py | tee /tmp/qa062-post-ui-evidence.txt",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Verified QA062 design review coordinator loop"
+      ]
+    }
+  ],
   "playwright": {
     "flows": [
       {
@@ -32,7 +50,7 @@
           },
           {
             "screenshot": "qa062-scenario-enhancement-smoke.png",
-            "full_page": true
+            "full_page": false
           }
         ]
       }

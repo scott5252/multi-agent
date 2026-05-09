@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "roadmap_file": "scenario_enhancement.md",
   "spec_range": "060..064",
-  "next_spec": "060",
+  "next_spec": null,
   "specs": [
     {
       "number": "060",
@@ -13,16 +13,16 @@
       "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/060-design-review-domain-foundation/validation.yml",
       "feature_dir": "specs/060-design-review-domain-foundation",
       "branch": "codex/060-design-review-domain-foundation",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "061",
@@ -33,16 +33,16 @@
       "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/061-model-backed-graph-role-executor/validation.yml",
       "feature_dir": "specs/061-model-backed-graph-role-executor",
       "branch": "codex/061-model-backed-graph-role-executor",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "062",
@@ -53,16 +53,16 @@
       "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/062-design-review-coordinator-and-iteration-loop/validation.yml",
       "feature_dir": "specs/062-design-review-coordinator-and-iteration-loop",
       "branch": "codex/062-design-review-coordinator-and-iteration-loop",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "063",
@@ -73,16 +73,16 @@
       "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/063-admin-design-review-workspace/validation.yml",
       "feature_dir": "specs/063-admin-design-review-workspace",
       "branch": "codex/063-admin-design-review-workspace",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "064",
@@ -93,16 +93,16 @@
       "validation_file": "specs/_autopilot/scenario-enhancement-roadmap/064-design-reviewer-template-test-bench-and-publish-gates/validation.yml",
       "feature_dir": "specs/064-design-reviewer-template-test-bench-and-publish-gates",
       "branch": "codex/064-design-reviewer-template-test-bench-and-publish-gates",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     }
   ],
   "run_contract": {

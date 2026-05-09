@@ -16,6 +16,34 @@
     "manual_qa_user_guide": "specs/063-admin-design-review-workspace/qa063_user_guide.md",
     "curl_test_output_dir": ".data/curl_test_runs/qa063-after-spec"
   },
+  "extra_commands": [
+    {
+      "id": "seed-design-review-workspace-qa063",
+      "command": "uv run python scripts/qa/seed_design_review_workspace_qa063.py | tee /tmp/qa063-seed.txt",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Seeded QA063 design review workspace live records"
+      ]
+    },
+    {
+      "id": "verify-design-review-workspace-qa063",
+      "command": "uv run python scripts/qa/verify_design_review_workspace_qa063.py | tee /tmp/qa063-post-ui-evidence.txt",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Verified QA063 design review workspace live data"
+      ]
+    }
+  ],
+  "playwright_pre_commands": [
+    {
+      "id": "seed-design-review-workspace-qa063-before-ui",
+      "command": "uv run python scripts/qa/seed_design_review_workspace_qa063.py | tee /tmp/qa063-ui-seed.txt",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Seeded QA063 design review workspace live records"
+      ]
+    }
+  ],
   "playwright": {
     "flows": [
       {
@@ -34,11 +62,11 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Design"
+            "expect_text": "QA063 workspace seeded design review."
           },
           {
             "screenshot": "qa063-scenario-enhancement-smoke.png",
-            "full_page": true
+            "full_page": false
           }
         ]
       }

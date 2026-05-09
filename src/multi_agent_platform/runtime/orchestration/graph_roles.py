@@ -22,6 +22,9 @@ class RoleExecutionContext:
     attempt: int
     input_summary: Mapping[str, object]
     pinned_context: Mapping[str, object] = field(default_factory=dict)
+    run_step_id: UUID | None = None
+    run_bundle_id: UUID | None = None
+    workflow_version_bundle_id: UUID | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -31,6 +34,9 @@ class RoleExecutionResult:
     structured_output: dict[str, object]
     payload_digest: str
     error_code: str | None = None
+    usage_summary: Mapping[str, object] = field(default_factory=dict)
+    provenance: Mapping[str, object] = field(default_factory=dict)
+    artifact_refs: tuple[dict[str, object], ...] = field(default_factory=tuple)
 
     @property
     def succeeded(self) -> bool:

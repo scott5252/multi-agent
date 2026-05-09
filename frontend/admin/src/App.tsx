@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { fetchBootstrap } from "./api/client";
 import { ChannelTelegramBriefingPage } from "./components/channelTelegramBriefing/ChannelTelegramBriefingPage";
+import { DesignReviewWorkspacePage } from "./components/designReviews/DesignReviewWorkspacePage";
 import { GovernancePage } from "./components/governance/GovernancePage";
 import { ConsoleHomePage } from "./components/home/ConsoleHomePage";
 import { MembershipPage } from "./components/memberships/MembershipPage";
@@ -163,6 +164,16 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
       <AdminShell bootstrap={bootstrap}>
         <MembershipPage
           membershipsUrl={`/admin/app/memberships/bootstrap.json${window.location.search}`}
+        />
+      </AdminShell>
+    );
+  }
+
+  if (window.location.pathname === "/admin/app/design-reviews") {
+    return (
+      <AdminShell bootstrap={bootstrap}>
+        <DesignReviewWorkspacePage
+          workspaceUrl={`/admin/app/design-reviews/bootstrap.json${window.location.search}`}
         />
       </AdminShell>
     );

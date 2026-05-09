@@ -589,6 +589,16 @@ def live_data_route_targets() -> tuple[LiveDataRouteTarget, ...]:
         ),
         (
             "GET",
+            "/admin/app/home.json",
+            "platform-admin",
+            "platform",
+            True,
+            True,
+            True,
+            None,
+        ),
+        (
+            "GET",
             "/admin/app/config.json",
             "platform-admin",
             "platform",
@@ -1466,6 +1476,16 @@ def live_data_route_targets() -> tuple[LiveDataRouteTarget, ...]:
             False,
             False,
             "057",
+        ),
+        (
+            "GET",
+            "/admin/app/design-reviews/bootstrap.json",
+            "tenant-admin-acme",
+            "tenant",
+            True,
+            True,
+            False,
+            "063",
         ),
     )
     return tuple(

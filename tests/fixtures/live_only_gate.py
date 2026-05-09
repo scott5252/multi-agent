@@ -13,6 +13,7 @@ QA058_ROUTE_PROBE_PATHS = (
     "/admin/app/channels/bootstrap.json",
     "/admin/app/usage/bootstrap.json",
     "/admin/app/operations.json",
+    "/admin/app/design-reviews/bootstrap.json",
 )
 
 QA058_FORBIDDEN_RESPONSE_MARKERS = (

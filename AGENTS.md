@@ -247,5 +247,5 @@ admin workflows.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the latest plan:
-`specs/059-admin-ui-transitional-react-label-removal/plan.md`
+`specs/064-design-reviewer-template-test-bench-and-publish-gates/plan.md`
 <!-- SPECKIT END -->

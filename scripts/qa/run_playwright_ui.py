@@ -154,6 +154,8 @@ def main() -> int:
     playwright_config = config.get("playwright")
     if not isinstance(playwright_config, dict):
         raise SystemExit("validation file does not define a playwright object")
+    env = os.environ.copy()
+    env["SPECKIT_VALIDATION_FILE"] = str(validation_file)
 
     if args.dry_run:
         if args.start_processes:
@@ -163,13 +165,22 @@ def main() -> int:
                 run_command(
                     command_spec,
                     cwd=repo_root,
-                    base_env=os.environ.copy(),
+                    base_env=env,
                     dry_run=True,
                 )
             start_processes(
                 config,
                 cwd=repo_root,
-                base_env=os.environ.copy(),
+                base_env=env,
+                dry_run=True,
+            )
+        for command_spec in config_command_list(config, "playwright_pre_commands"):
+            if not isinstance(command_spec, dict):
+                raise SystemExit("each playwright pre-command entry must be an object")
+            run_command(
+                command_spec,
+                cwd=repo_root,
+                base_env=env,
                 dry_run=True,
             )
         print_dry_run(playwright_config)
@@ -199,13 +210,22 @@ def main() -> int:
                 run_command(
                     command_spec,
                     cwd=repo_root,
-                    base_env=os.environ.copy(),
+                    base_env=env,
                     dry_run=False,
                 )
             processes = start_processes(
                 config,
                 cwd=repo_root,
-                base_env=os.environ.copy(),
+                base_env=env,
+                dry_run=False,
+            )
+        for command_spec in config_command_list(config, "playwright_pre_commands"):
+            if not isinstance(command_spec, dict):
+                raise SystemExit("each playwright pre-command entry must be an object")
+            run_command(
+                command_spec,
+                cwd=repo_root,
+                base_env=env,
                 dry_run=False,
             )
 

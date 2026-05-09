@@ -6,6 +6,7 @@ export const reactPrimaryRoutes = new Set([
   "/admin/app/operations",
   "/admin/app/workflows",
   "/admin/app/workflows/new",
+  "/admin/app/design-reviews",
   "/admin/app/governance",
   "/admin/app/skills",
   "/admin/app/test-bench",

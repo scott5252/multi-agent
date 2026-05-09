@@ -1,0 +1,1 @@
+"""Design review admin domain."""

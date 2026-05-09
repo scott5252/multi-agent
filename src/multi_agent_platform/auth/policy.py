@@ -950,6 +950,11 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
         requested_action="read_react_admin_bootstrap",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
+    "GET:/admin/app/home.json": ProtectedSurface(
+        surface_key="GET:/admin/app/home.json",
+        requested_action="read_react_admin_home",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
     "GET:/admin/app/config.json": ProtectedSurface(
         surface_key="GET:/admin/app/config.json",
         requested_action="read_react_admin_config",
@@ -1337,6 +1342,75 @@ SURFACE_POLICIES: dict[str, ProtectedSurface] = {
     "GET:/admin/app/test-bench/audit.json": ProtectedSurface(
         surface_key="GET:/admin/app/test-bench/audit.json",
         requested_action="read_react_admin_test_audit",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/design-reviews/sessions": ProtectedSurface(
+        surface_key="POST:/admin/design-reviews/sessions",
+        requested_action="create_design_review_session",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "POST:/admin/design-reviews/templates/council/install": ProtectedSurface(
+        surface_key="POST:/admin/design-reviews/templates/council/install",
+        requested_action="install_design_review_council_template",
+        classification=SurfaceClassification.TENANT_ADMIN,
+    ),
+    "GET:/admin/design-reviews/sessions": ProtectedSurface(
+        surface_key="GET:/admin/design-reviews/sessions",
+        requested_action="list_design_review_sessions",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/design-reviews/sessions/{session_id}": ProtectedSurface(
+        surface_key="GET:/admin/design-reviews/sessions/{session_id}",
+        requested_action="read_design_review_session",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/design-reviews/sessions/{session_id}/revisions": ProtectedSurface(
+        surface_key="GET:/admin/design-reviews/sessions/{session_id}/revisions",
+        requested_action="list_design_review_revisions",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/design-reviews/sessions/{session_id}/rounds": ProtectedSurface(
+        surface_key="GET:/admin/design-reviews/sessions/{session_id}/rounds",
+        requested_action="list_design_review_rounds",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/design-reviews/rounds/{round_id}": ProtectedSurface(
+        surface_key="GET:/admin/design-reviews/rounds/{round_id}",
+        requested_action="read_design_review_round",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/design-reviews/rounds/{round_id}/quorum-decision": ProtectedSurface(
+        surface_key="GET:/admin/design-reviews/rounds/{round_id}/quorum-decision",
+        requested_action="read_design_review_quorum_decision",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "GET:/admin/design-reviews/sessions/{session_id}/manual-decisions"
+    ): ProtectedSurface(
+        surface_key="GET:/admin/design-reviews/sessions/{session_id}/manual-decisions",
+        requested_action="list_design_review_manual_decisions",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    (
+        "POST:/admin/design-reviews/sessions/{session_id}/manual-decisions"
+    ): ProtectedSurface(
+        surface_key="POST:/admin/design-reviews/sessions/{session_id}/manual-decisions",
+        requested_action="create_design_review_manual_decision",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/design-reviews/sessions/{session_id}/handoff": ProtectedSurface(
+        surface_key="GET:/admin/design-reviews/sessions/{session_id}/handoff",
+        requested_action="read_design_review_development_handoff",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/design-reviews": ProtectedSurface(
+        surface_key="GET:/admin/app/design-reviews",
+        requested_action="render_react_admin_design_reviews",
+        classification=SurfaceClassification.AUTHENTICATED,
+    ),
+    "GET:/admin/app/design-reviews/bootstrap.json": ProtectedSurface(
+        surface_key="GET:/admin/app/design-reviews/bootstrap.json",
+        requested_action="read_react_admin_design_review_workspace",
         classification=SurfaceClassification.AUTHENTICATED,
     ),
     "GET:/admin/app/memberships": ProtectedSurface(

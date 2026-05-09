@@ -105,6 +105,9 @@ async def poll_orchestration_once(bootstrap: WorkerBootstrap) -> object | None:
             session=session,
             settings=bootstrap.container.settings,
             worker_id=bootstrap.worker_id,
+            model_gateway_factory=bootstrap.model_gateway_factory,
+            model_skill_service_factory=bootstrap.model_skill_service_factory,
+            storage_provider=bootstrap.storage_provider,
         )
         result = await worker.poll_once()
         return result if result.claimed else None

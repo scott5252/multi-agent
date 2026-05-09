@@ -1,0 +1,552 @@
+openapi: 3.1.0
+info:
+  title: Design Review Domain Foundation
+  version: 0.1.0
+paths:
+  /admin/design-reviews/sessions:
+    post:
+      summary: Create a tenant-scoped design review session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DesignReviewSessionCreateRequest"
+      responses:
+        "201":
+          description: Created design review session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignReviewSessionResponse"
+        "200":
+          description: Replayed idempotent session creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignReviewSessionResponse"
+        "401":
+          description: Missing or invalid principal
+        "403":
+          description: Tenant scope denied
+        "422":
+          description: Validation error
+    get:
+      summary: List tenant-scoped design review sessions
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Authorized session list or truthful empty state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignReviewSessionListResponse"
+        "401":
+          description: Missing or invalid principal
+        "403":
+          description: Tenant scope denied
+  /admin/design-reviews/sessions/{session_id}:
+    get:
+      summary: Get design review session detail
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Authorized session detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignReviewSessionDetailResponse"
+        "401":
+          description: Missing or invalid principal
+        "403":
+          description: Tenant scope denied
+        "404":
+          description: Session not found
+  /admin/design-reviews/sessions/{session_id}/revisions:
+    get:
+      summary: List safe revision metadata for a session
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Safe revision metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DesignRevisionResponse"
+  /admin/design-reviews/sessions/{session_id}/rounds:
+    get:
+      summary: List safe round metadata for a session
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Safe round metadata or empty state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DesignReviewRoundResponse"
+  /admin/design-reviews/rounds/{round_id}:
+    get:
+      summary: Get round detail with assignments and verdict metadata
+      parameters:
+        - name: round_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Safe round detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignReviewRoundDetailResponse"
+        "403":
+          description: Tenant scope denied
+        "404":
+          description: Round not found
+  /admin/design-reviews/rounds/{round_id}/quorum-decision:
+    get:
+      summary: Get quorum decision metadata for a round
+      parameters:
+        - name: round_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Quorum decision or pending state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignQuorumDecisionResponse"
+        "404":
+          description: Round not found
+  /admin/design-reviews/sessions/{session_id}/manual-decisions:
+    get:
+      summary: List append-only manual decision metadata for a session
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Manual decision metadata or empty state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, state]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DesignManualDecisionResponse"
+                  state:
+                    $ref: "#/components/schemas/DesignReviewState"
+        "403":
+          description: Tenant scope denied
+        "404":
+          description: Session not found
+    post:
+      summary: Record an append-only manual decision
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DesignManualDecisionCreateRequest"
+      responses:
+        "201":
+          description: Manual decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignManualDecisionResponse"
+        "200":
+          description: Replayed idempotent manual decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignManualDecisionResponse"
+        "403":
+          description: Tenant scope denied
+        "404":
+          description: Session not found
+  /admin/design-reviews/sessions/{session_id}/handoff:
+    get:
+      summary: Get development handoff metadata for a session
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Handoff metadata or pending state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignDevelopmentHandoffResponse"
+        "404":
+          description: Session not found
+components:
+  schemas:
+    DesignReviewSessionCreateRequest:
+      type: object
+      required: [tenant_id, request_summary, quorum_policy_key, idempotency_key]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        request_summary:
+          type: string
+          maxLength: 4000
+        quorum_policy_key:
+          type: string
+          maxLength: 120
+        workflow_version_bundle_id:
+          type: string
+          format: uuid
+          nullable: true
+        initial_revision:
+          $ref: "#/components/schemas/DesignRevisionCreateMetadata"
+        idempotency_key:
+          type: string
+          maxLength: 160
+    DesignRevisionCreateMetadata:
+      type: object
+      required: [safe_summary, payload_digest]
+      properties:
+        author_role_key:
+          type: string
+          default: requester
+        safe_summary:
+          type: string
+          maxLength: 4000
+        artifact_id:
+          type: string
+          format: uuid
+          nullable: true
+        payload_digest:
+          type: string
+          maxLength: 128
+    DesignReviewSessionListResponse:
+      type: object
+      required: [items, state]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DesignReviewSessionResponse"
+        state:
+          $ref: "#/components/schemas/DesignReviewState"
+    DesignReviewSessionDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/DesignReviewSessionResponse"
+        - type: object
+          required: [revisions, rounds, manual_decisions, handoff]
+          properties:
+            revisions:
+              type: array
+              items:
+                $ref: "#/components/schemas/DesignRevisionResponse"
+            rounds:
+              type: array
+              items:
+                $ref: "#/components/schemas/DesignReviewRoundResponse"
+            manual_decisions:
+              type: array
+              items:
+                $ref: "#/components/schemas/DesignManualDecisionResponse"
+            handoff:
+              $ref: "#/components/schemas/DesignDevelopmentHandoffResponse"
+    DesignReviewSessionResponse:
+      type: object
+      required:
+        - design_review_session_id
+        - tenant_id
+        - status
+        - request_summary
+        - active_revision_number
+        - quorum_policy_key
+        - owner_principal_id
+        - replayed
+      properties:
+        design_review_session_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        request_summary:
+          type: string
+        active_revision_number:
+          type: integer
+        quorum_policy_key:
+          type: string
+        workflow_version_bundle_id:
+          type: string
+          format: uuid
+          nullable: true
+        owner_principal_id:
+          type: string
+        replayed:
+          type: boolean
+    DesignRevisionResponse:
+      type: object
+      required: [design_revision_id, revision_number, author_role_key, safe_summary, payload_digest]
+      properties:
+        design_revision_id:
+          type: string
+          format: uuid
+        revision_number:
+          type: integer
+        author_role_key:
+          type: string
+        safe_summary:
+          type: string
+        artifact_id:
+          type: string
+          format: uuid
+          nullable: true
+        payload_digest:
+          type: string
+        previous_revision_id:
+          type: string
+          format: uuid
+          nullable: true
+    DesignReviewRoundResponse:
+      type: object
+      required: [design_review_round_id, round_number, status, reviewer_count, quorum_count]
+      properties:
+        design_review_round_id:
+          type: string
+          format: uuid
+        round_number:
+          type: integer
+        status:
+          type: string
+        workflow_run_id:
+          type: string
+          format: uuid
+          nullable: true
+        reviewer_count:
+          type: integer
+        quorum_count:
+          type: integer
+    DesignReviewRoundDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/DesignReviewRoundResponse"
+        - type: object
+          required: [assignments, verdicts, quorum_decision]
+          properties:
+            assignments:
+              type: array
+              items:
+                type: object
+            verdicts:
+              type: array
+              items:
+                type: object
+            quorum_decision:
+              $ref: "#/components/schemas/DesignQuorumDecisionResponse"
+    DesignQuorumDecisionResponse:
+      type: object
+      required: [state]
+      properties:
+        state:
+          $ref: "#/components/schemas/DesignReviewState"
+        status:
+          type: string
+          nullable: true
+        approval_count:
+          type: integer
+          nullable: true
+        blocking_issue_count:
+          type: integer
+          nullable: true
+        next_action:
+          type: string
+          nullable: true
+        policy_version:
+          type: string
+          nullable: true
+        safe_rationale:
+          type: string
+          nullable: true
+    DesignManualDecisionCreateRequest:
+      type: object
+      required: [tenant_id, decision_type, safe_rationale, idempotency_key]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        round_id:
+          type: string
+          format: uuid
+          nullable: true
+        decision_type:
+          type: string
+          enum: [revise, approve_exception, retry, cancel]
+        safe_rationale:
+          type: string
+          maxLength: 4000
+        accepted_risk:
+          type: boolean
+          default: false
+        idempotency_key:
+          type: string
+          maxLength: 160
+    DesignManualDecisionResponse:
+      type: object
+      required: [design_manual_decision_id, decision_type, actor_principal_id, safe_rationale, accepted_risk, replayed]
+      properties:
+        design_manual_decision_id:
+          type: string
+          format: uuid
+        decision_type:
+          type: string
+        actor_principal_id:
+          type: string
+        safe_rationale:
+          type: string
+        accepted_risk:
+          type: boolean
+        replayed:
+          type: boolean
+    DesignDevelopmentHandoffResponse:
+      type: object
+      required: [state]
+      properties:
+        state:
+          $ref: "#/components/schemas/DesignReviewState"
+        design_development_handoff_id:
+          type: string
+          format: uuid
+          nullable: true
+        approved_revision_id:
+          type: string
+          format: uuid
+          nullable: true
+        artifact_id:
+          type: string
+          format: uuid
+          nullable: true
+        safe_summary:
+          type: string
+          nullable: true
+        output_digest:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+    DesignReviewState:
+      type: object
+      required: [kind, summary]
+      properties:
+        kind:
+          type: string
+          enum: [ready, empty, pending, denied, unavailable]
+        summary:
+          type: string

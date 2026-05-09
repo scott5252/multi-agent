@@ -239,6 +239,264 @@ textarea {
   margin-top: var(--admin-space-4);
 }
 
+.design-review-page {
+  display: grid;
+  gap: var(--admin-space-4);
+}
+
+.design-review-hero {
+  background: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
+  padding: var(--admin-space-5) 0;
+}
+
+.design-review-summary,
+.design-review-grid,
+.verdict-grid,
+.decision-grid {
+  display: grid;
+  gap: var(--admin-space-3);
+}
+
+.design-review-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.design-review-card,
+.design-review-panel,
+.mutation-note,
+.round-card,
+.revision-list article,
+.verdict-grid article {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+}
+
+.design-review-card {
+  padding: var(--admin-space-4);
+}
+
+.design-review-card span,
+.muted-copy {
+  color: var(--admin-muted);
+}
+
+.design-review-card strong {
+  display: block;
+  font-size: 1.8rem;
+  margin: var(--admin-space-1) 0;
+}
+
+.design-review-grid {
+  grid-template-columns: minmax(18rem, 26rem) minmax(0, 1fr);
+}
+
+.template-setup-panel {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.template-state-grid {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.template-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-3);
+}
+
+.design-review-panel,
+.design-review-detail {
+  display: grid;
+  gap: var(--admin-space-3);
+}
+
+.design-review-panel {
+  padding: var(--admin-space-4);
+}
+
+.design-review-panel label,
+.manual-action-form label,
+.action-cluster label {
+  display: grid;
+  gap: var(--admin-space-1);
+  font-weight: 700;
+}
+
+.design-review-panel input,
+.design-review-panel select,
+.design-review-panel textarea,
+.manual-action-form input,
+.manual-action-form select,
+.manual-action-form textarea,
+.action-cluster select {
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-ink);
+  min-height: 2.35rem;
+  padding: var(--admin-space-2);
+}
+
+.primary-button,
+.text-button,
+.icon-button {
+  align-items: center;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 700;
+  gap: var(--admin-space-2);
+  justify-content: center;
+  min-height: 2.35rem;
+  padding: 0 var(--admin-space-3);
+}
+
+.primary-button {
+  background: var(--admin-ink);
+  border: 1px solid var(--admin-ink);
+  color: var(--admin-surface);
+}
+
+.primary-button:disabled,
+.text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.text-button,
+.icon-button {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  color: var(--admin-ink);
+}
+
+.icon-button {
+  width: 2.35rem;
+}
+
+.mutation-note {
+  align-items: center;
+  display: flex;
+  gap: var(--admin-space-3);
+  padding: var(--admin-space-3);
+}
+
+.mutation-note.success {
+  border-color: var(--admin-success);
+}
+
+.section-heading,
+.round-heading,
+.action-cluster,
+.checkbox-row {
+  align-items: center;
+  display: flex;
+  gap: var(--admin-space-3);
+  justify-content: space-between;
+}
+
+.design-review-detail {
+  min-width: 0;
+}
+
+.design-review-actions {
+  display: grid;
+  gap: var(--admin-space-3);
+}
+
+.manual-action-form {
+  align-items: start;
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: var(--admin-space-3);
+  grid-template-columns: auto minmax(8rem, 12rem) minmax(12rem, 1fr);
+  padding: var(--admin-space-3);
+}
+
+.manual-action-form .checkbox-row {
+  justify-content: flex-start;
+}
+
+.revision-list {
+  display: grid;
+  gap: var(--admin-space-3);
+}
+
+.revision-list article,
+.round-card,
+.verdict-grid article {
+  padding: var(--admin-space-3);
+}
+
+.decision-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.decision-grid dt {
+  color: var(--admin-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.decision-grid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.verdict-grid {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin-top: var(--admin-space-3);
+}
+
+.decision-list {
+  display: grid;
+  gap: var(--admin-space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.status-pill {
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+}
+
+.compact-table td {
+  vertical-align: top;
+}
+
+.sr-only {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+
+@media (max-width: 960px) {
+  .design-review-summary,
+  .design-review-grid,
+  .decision-grid,
+  .manual-action-form {
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading,
+  .round-heading,
+  .action-cluster {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .command-menu,
 .saved-filters,
 .common-state {

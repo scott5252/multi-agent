@@ -1,0 +1,123 @@
+{
+  "spec": "064",
+  "title": "Design Reviewer Template, Test Bench, And Publish Gates",
+  "status": "completed",
+  "active_phase": null,
+  "feature_dir": "specs/064-design-reviewer-template-test-bench-and-publish-gates",
+  "branch": "codex/064-design-reviewer-template-test-bench-and-publish-gates",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/spec.md",
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "completed_at": "2026-05-08"
+    },
+    "clarify": {
+      "status": "completed",
+      "artifacts": [
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/spec.md"
+      ],
+      "auto_clarifications": [
+        "Explicit tenant-scoped Admin install action",
+        "Deterministic local plus governed model-backed safe-mode evidence",
+        "Current workflow draft revision evidence freshness",
+        "Live-data-only Admin setup and empty states"
+      ],
+      "completed_at": "2026-05-08"
+    },
+    "plan": {
+      "status": "completed",
+      "artifacts": [
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/plan.md",
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/research.md",
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/data-model.md",
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/contracts/template-api.md",
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/contracts/template-ui.md",
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/quickstart.md",
+        "AGENTS.md"
+      ],
+      "completed_at": "2026-05-08"
+    },
+    "tasks": {
+      "status": "completed",
+      "artifacts": [
+        "specs/064-design-reviewer-template-test-bench-and-publish-gates/tasks.md"
+      ],
+      "task_count": 34,
+      "completed_at": "2026-05-08"
+    },
+    "analyze": {
+      "status": "completed",
+      "summary": {
+        "critical_issues": 0,
+        "high_issues": 0,
+        "coverage": "All FR-001 through FR-018 and SC-001 through SC-007 map to tasks T001 through T034.",
+        "constitution_alignment": "No unresolved constitution conflicts."
+      },
+      "completed_at": "2026-05-08"
+    },
+    "implement": {
+      "status": "completed",
+      "artifacts": [
+        "src/multi_agent_platform/admin/design_review/template.py",
+        "src/multi_agent_platform/admin/design_review/react_workspace.py",
+        "src/multi_agent_platform/api/routers/admin_design_review.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/api/schemas/design_review.py",
+        "src/multi_agent_platform/api/schemas/admin_design_review_workspace.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "frontend/admin/src/components/designReviews/DesignReviewWorkspacePage.tsx",
+        "frontend/admin/src/components/designReviews/DesignReviewWorkspacePage.test.tsx",
+        "frontend/admin/src/styles/admin.css",
+        "scripts/qa/seed_design_review_template_qa064.py",
+        "scripts/qa/verify_design_review_template_qa064.py",
+        "curl_testing.md"
+      ],
+      "completed_at": "2026-05-09"
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "completed_at": "2026-05-09",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/064-design-reviewer-template-test-bench-and-publish-gates",
+      "uv run ruff check scripts/qa/seed_design_review_template_qa064.py scripts/qa/verify_design_review_template_qa064.py src/multi_agent_platform/admin/design_review/template.py src/multi_agent_platform/api/routers/admin_design_review.py src/multi_agent_platform/api/routers/admin_react.py src/multi_agent_platform/api/schemas/design_review.py src/multi_agent_platform/api/schemas/admin_design_review_workspace.py tests/unit/admin/design_review/test_design_review_template.py tests/integration/api/test_admin_design_review_template_api.py",
+      "uv run mypy src/multi_agent_platform/admin/design_review/template.py src/multi_agent_platform/admin/design_review/react_workspace.py src/multi_agent_platform/api/routers/admin_design_review.py src/multi_agent_platform/api/routers/admin_react.py src/multi_agent_platform/api/schemas/design_review.py src/multi_agent_platform/api/schemas/admin_design_review_workspace.py",
+      "uv run pytest tests/unit/admin/design_review/test_design_review_template.py tests/integration/api/test_admin_design_review_template_api.py tests/integration/api/test_admin_design_review_workspace_api.py --no-cov",
+      "uv run pytest tests/contract/test_admin_react_contract.py tests/unit/admin/test_live_data_inventory_scanner.py --no-cov",
+      "npm --prefix frontend/admin test",
+      "npm --prefix frontend/admin run typecheck",
+      "npm --prefix frontend/admin run build",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/scenario-enhancement-roadmap/064-design-reviewer-template-test-bench-and-publish-gates/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/scenario-enhancement-roadmap/064-design-reviewer-template-test-bench-and-publish-gates/validation.yml --start-processes",
+      "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa064-after-spec"
+    ],
+    "artifacts": [
+      "specs/064-design-reviewer-template-test-bench-and-publish-gates/qa064.md",
+      "specs/064-design-reviewer-template-test-bench-and-publish-gates/qa064_ui.md",
+      "specs/064-design-reviewer-template-test-bench-and-publish-gates/.env.qa064",
+      "specs/064-design-reviewer-template-test-bench-and-publish-gates/qa064_user_guide.md",
+      "specs/064-design-reviewer-template-test-bench-and-publish-gates/pr_notes.md",
+      ".data/qa064-artifacts/evidence/qa064-template-seed.json",
+      ".data/qa064-artifacts/evidence/qa064-template-verify.json",
+      "output/playwright/qa064_ui/qa064-scenario-enhancement-smoke.png",
+      ".data/curl_test_runs/qa064-after-spec"
+    ],
+    "summary": "QA docs, focused tests, full frontend tests, typecheck, build, run_spec_qa with coverage, Playwright UI validation, and full multi-agent curl regression all passed."
+  },
+  "curl_testing": {
+    "status": "completed",
+    "sections": [
+      "17.29 POST /admin/design-reviews/templates/council/install",
+      "17.30 POST /admin/design-reviews/templates/council/install replay",
+      "17.31 GET /admin/app/design-reviews/bootstrap.json template setup",
+      "17.32 Design review template cross-tenant denial"
+    ],
+    "evidence": ".data/curl_test_runs/qa064-after-spec",
+    "notes": "New template install, idempotent replay, workspace bootstrap template setup, and cross-tenant denial commands passed in the full curl regression."
+  },
+  "blockers": []
+}

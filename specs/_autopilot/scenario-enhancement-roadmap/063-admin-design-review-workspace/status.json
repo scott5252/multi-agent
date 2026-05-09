@@ -1,0 +1,135 @@
+{
+  "spec": "063",
+  "title": "Admin Design Review Workspace",
+  "status": "completed",
+  "active_phase": "completed",
+  "feature_dir": "specs/063-admin-design-review-workspace",
+  "branch": "codex/063-admin-design-review-workspace",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/063-admin-design-review-workspace/spec.md",
+        "specs/063-admin-design-review-workspace/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 063 feature specification from the roadmap prompt with autonomous clarification defaults."
+    },
+    "clarify": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/063-admin-design-review-workspace/spec.md"
+      ],
+      "auto_clarifications": [
+        "Workspace records must come only from live backend-owned design-review data.",
+        "Workflow options come from authorized published workflow bundles.",
+        "Manual controls render only when backend coordinator state requires manual resolution.",
+        "Local QA may seed deterministic live rows but production routes must not include sample records.",
+        "Visible product copy avoids implementation-framework labels."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/063-admin-design-review-workspace/plan.md",
+        "specs/063-admin-design-review-workspace/research.md",
+        "specs/063-admin-design-review-workspace/data-model.md",
+        "specs/063-admin-design-review-workspace/contracts/workspace-api.md",
+        "specs/063-admin-design-review-workspace/contracts/workspace-ui.md",
+        "specs/063-admin-design-review-workspace/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned additive React workspace, backend-owned envelope, live workflow options, QA seed/verify scripts, and curl validation with no migration planned."
+    },
+    "tasks": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/063-admin-design-review-workspace/tasks.md"
+      ],
+      "task_count": 23,
+      "notes": "Generated dependency-ordered backend, React, QA, curl, and validation tasks."
+    },
+    "analyze": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts_reviewed": [
+        "specs/063-admin-design-review-workspace/spec.md",
+        "specs/063-admin-design-review-workspace/plan.md",
+        "specs/063-admin-design-review-workspace/tasks.md",
+        "specs/063-admin-design-review-workspace/contracts/workspace-api.md",
+        "specs/063-admin-design-review-workspace/contracts/workspace-ui.md",
+        "specs/063-admin-design-review-workspace/data-model.md",
+        "specs/063-admin-design-review-workspace/quickstart.md",
+        "specs/_autopilot/scenario-enhancement-roadmap/063-admin-design-review-workspace/validation.yml"
+      ],
+      "findings": [],
+      "critical_findings_remaining": 0,
+      "notes": "Spec, plan, and tasks are mutually consistent. No CRITICAL or HIGH findings were found."
+    },
+    "implement": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "src/multi_agent_platform/api/schemas/admin_design_review_workspace.py",
+        "src/multi_agent_platform/admin/design_review/react_workspace.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/api/ui/admin_console.py",
+        "src/multi_agent_platform/auth/policy.py",
+        "src/multi_agent_platform/admin/migration_hardening/live_data_inventory.py",
+        "frontend/admin/src/components/designReviews/DesignReviewWorkspacePage.tsx",
+        "frontend/admin/src/components/designReviews/DesignReviewWorkspacePage.test.tsx",
+        "frontend/admin/src/App.tsx",
+        "frontend/admin/src/routes.tsx",
+        "frontend/admin/src/styles/admin.css",
+        "scripts/qa/seed_design_review_workspace_qa063.py",
+        "scripts/qa/verify_design_review_workspace_qa063.py",
+        "scripts/qa/run_playwright_ui.py",
+        "tests/integration/api/test_admin_design_review_workspace_api.py",
+        "tests/contract/test_admin_react_contract.py",
+        "tests/fixtures/live_only_gate.py",
+        "curl_testing.md"
+      ],
+      "notes": "Implemented the tenant-scoped React design review workspace with live backend envelope, create/launch/manual actions, QA seeding and verification, live-data inventory registration, and curl coverage."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "completed_at": "2026-05-08",
+    "commands": [
+      "uv run pytest tests/integration/api/test_admin_design_review_workspace_api.py --no-cov",
+      "npm --prefix frontend/admin test -- DesignReviewWorkspace",
+      "npm --prefix frontend/admin test",
+      "npm --prefix frontend/admin run typecheck",
+      "npm --prefix frontend/admin run build",
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/063-admin-design-review-workspace",
+      "uv run pytest tests/unit/admin/test_live_data_inventory_scanner.py tests/contract/test_admin_react_contract.py tests/integration/api/test_admin_design_review_workspace_api.py --no-cov",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/scenario-enhancement-roadmap/063-admin-design-review-workspace/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/scenario-enhancement-roadmap/063-admin-design-review-workspace/validation.yml --start-processes",
+      "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa063-after-spec"
+    ],
+    "artifacts": [
+      ".data/qa063-artifacts/evidence/qa063-workspace-seed.json",
+      ".data/qa063-artifacts/evidence/qa063-workspace-verify.json",
+      "output/playwright/qa063_ui/qa063-scenario-enhancement-smoke.png",
+      ".data/curl_test_runs/qa063-after-spec"
+    ],
+    "notes": "Full Spec QA, seeded Playwright validation, frontend tests/build, QA docs validation, and all 204 curl walkthrough sections passed."
+  },
+  "curl_testing": {
+    "status": "completed",
+    "sections": [
+      "17.24 Seed QA063 design review workspace records",
+      "17.25 GET /admin/app/design-reviews/bootstrap.json",
+      "17.26 GET /admin/app/design-reviews/bootstrap.json empty tenant",
+      "17.27 GET /admin/app/design-reviews",
+      "17.28 Design review workspace cross-tenant denial"
+    ],
+    "run_artifacts": ".data/curl_test_runs/qa063-after-spec",
+    "notes": "Added and validated React workspace bootstrap, empty tenant, HTML host, and cross-tenant denial coverage."
+  },
+  "blockers": []
+}

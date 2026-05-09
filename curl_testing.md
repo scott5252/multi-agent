@@ -1,6 +1,6 @@
 # Sequential curl API Test Plan
 
-This document is a sequential JSON/API walkthrough for specs 001 through 025.
+This document is a sequential JSON/API walkthrough for specs 001 through 060.
 It is based on the implemented FastAPI route inventory in
 `multi_agent_platform.api.main` and the feature QA/integration tests.
 
@@ -2508,9 +2508,501 @@ Expected `403`:
 {"detail":{"category":"forbidden","message":"cross tenant access denied","trace_id":"trace-..."}}
 ```
 
-## 17. Coverage Checklist
+## 17. Design Review Domain APIs
 
-The walkthrough covers the JSON/API endpoints from specs 001 through 025:
+These endpoints cover the Spec 060 design review domain foundation. The first
+step seeds reviewer round evidence that is not yet created through a public
+route, then creates an API session used by the remaining session commands.
+
+### 17.1 POST /admin/design-reviews/sessions
+
+```bash
+QA060_SEED_OUTPUT="$(uv run python scripts/qa/seed_design_review_qa060.py)"
+printf '%s\n' "$QA060_SEED_OUTPUT"
+export DESIGN_REVIEW_SEEDED_SESSION_ID="$(printf '%s\n' "$QA060_SEED_OUTPUT" | sed -n 's/^design_review_session_id=//p')"
+export DESIGN_REVIEW_SEEDED_ROUND_ID="$(printf '%s\n' "$QA060_SEED_OUTPUT" | sed -n 's/^design_review_round_id=//p')"
+DESIGN_REVIEW_CREATE_RESPONSE="$(curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions" \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","request_summary":"QA060 curl design review session.","quorum_policy_key":"four_of_five_no_blockers","idempotency_key":"qa060-curl-create"}')"
+printf '%s\n' "$DESIGN_REVIEW_CREATE_RESPONSE" | jq .
+export DESIGN_REVIEW_SESSION_ID="$(printf '%s\n' "$DESIGN_REVIEW_CREATE_RESPONSE" | jq -r '.design_review_session_id')"
+export DESIGN_REVIEW_REVISION_ID="$(printf '%s\n' "$DESIGN_REVIEW_CREATE_RESPONSE" | jq -r '.current_revision.design_revision_id')"
+test "$DESIGN_REVIEW_SESSION_ID" != "null"
+test "$DESIGN_REVIEW_REVISION_ID" != "null"
+```
+
+Expected `201`:
+
+```json
+{"design_review_session_id":"11111111-1717-1717-1717-111111111111","tenant_id":"11111111-1111-1111-1111-111111111111","status":"draft","replayed":false,"current_revision":{"revision_number":1}}
+```
+
+### 17.2 POST /admin/design-reviews/sessions idempotent replay
+
+```bash
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions" \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","request_summary":"QA060 curl replay should return the existing session.","quorum_policy_key":"four_of_five_no_blockers","idempotency_key":"qa060-curl-create"}' \
+  | jq -e --arg session_id "$DESIGN_REVIEW_SESSION_ID" '.design_review_session_id == $session_id and .replayed == true'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.3 GET /admin/design-reviews/sessions
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.items | length >= 1'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.4 GET /admin/design-reviews/sessions/{session_id}
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_REVIEW_SESSION_ID?tenant_id=$ACME_TENANT_ID" \
+  | jq -e --arg session_id "$DESIGN_REVIEW_SESSION_ID" '.design_review_session_id == $session_id and (.revisions | length) == 1'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.5 GET /admin/design-reviews/sessions/{session_id}/revisions
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_REVIEW_SESSION_ID/revisions?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.items[0].revision_number == 1'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.6 GET /admin/design-reviews/sessions/{session_id}/rounds
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_REVIEW_SEEDED_SESSION_ID/rounds?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.items[0].round_number == 1'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.7 GET /admin/design-reviews/rounds/{round_id}
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/rounds/$DESIGN_REVIEW_SEEDED_ROUND_ID?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '(.assignments | length) >= 2 and (.verdicts | length) >= 2'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.8 GET /admin/design-reviews/rounds/{round_id}/quorum-decision
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/rounds/$DESIGN_REVIEW_SEEDED_ROUND_ID/quorum-decision?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.status == "revision_required" and .next_action == "revise"'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.9 POST /admin/design-reviews/sessions/{session_id}/manual-decisions
+
+```bash
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_REVIEW_SESSION_ID/manual-decisions" \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","decision_type":"revise","safe_rationale":"QA060 curl asks for clearer design notes.","idempotency_key":"qa060-curl-manual"}' \
+  | jq -e '.decision_type == "revise" and .replayed == false'
+```
+
+Expected `201`:
+
+```json
+true
+```
+
+### 17.10 GET /admin/design-reviews/sessions/{session_id}/manual-decisions
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_REVIEW_SESSION_ID/manual-decisions?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.items | length == 1'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.11 GET /admin/design-reviews/sessions/{session_id}/handoff
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_REVIEW_SEEDED_SESSION_ID/handoff?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.status == "ready" and .state.kind == "ready"'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.12 GET /admin/design-reviews/sessions empty tenant state
+
+```bash
+curl -sS -H "$GLOBEX_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions?tenant_id=$GLOBEX_TENANT_ID" \
+  | jq -e '.items == [] and .state.kind == "empty"'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.13 Design review cross-tenant denial
+
+```bash
+curl -sS -i -H "$GLOBEX_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_REVIEW_SESSION_ID?tenant_id=$ACME_TENANT_ID"
+```
+
+Expected `403`:
+
+```json
+{"detail":"design review access denied"}
+```
+
+### 17.14 Seed QA062 design review coordinator loop
+
+```bash
+QA062_SEED_OUTPUT="$(uv run python scripts/qa/seed_design_review_coordinator_qa062.py)"
+printf '%s\n' "$QA062_SEED_OUTPUT"
+export DESIGN_COORDINATOR_SEEDED_SESSION_ID="$(printf '%s\n' "$QA062_SEED_OUTPUT" | sed -n 's/^design_review_session_id=//p')"
+export DESIGN_COORDINATOR_SEEDED_ROUND_ID="$(printf '%s\n' "$QA062_SEED_OUTPUT" | sed -n 's/^design_review_round_id=//p')"
+export DESIGN_COORDINATOR_WORKFLOW_BUNDLE_ID="62626262-6262-6262-6262-626262626262"
+test "$DESIGN_COORDINATOR_SEEDED_SESSION_ID" != ""
+test "$DESIGN_COORDINATOR_SEEDED_ROUND_ID" != ""
+curl -sS "$BASE_URL/health/live" >/dev/null
+```
+
+Expected `200`:
+
+```json
+{"quorum_status":"passed","handoff_state":"ready"}
+```
+
+### 17.15 GET /admin/design-reviews/sessions/{session_id}/coordinator
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_COORDINATOR_SEEDED_SESSION_ID/coordinator?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.session.status == "approved" and .handoff.state.kind == "ready" and .latest_quorum_decision.status == "passed"'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.16 POST /admin/design-reviews/sessions for coordinator revision flow
+
+```bash
+DESIGN_COORDINATOR_CREATE_RESPONSE="$(curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions" \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","request_summary":"QA062 curl coordinator revision flow.","quorum_policy_key":"four_of_five_no_blockers","workflow_version_bundle_id":"'"$DESIGN_COORDINATOR_WORKFLOW_BUNDLE_ID"'","idempotency_key":"qa062-curl-session"}')"
+printf '%s\n' "$DESIGN_COORDINATOR_CREATE_RESPONSE" | jq .
+export DESIGN_COORDINATOR_SESSION_ID="$(printf '%s\n' "$DESIGN_COORDINATOR_CREATE_RESPONSE" | jq -r '.design_review_session_id')"
+test "$DESIGN_COORDINATOR_SESSION_ID" != "null"
+```
+
+Expected `201`:
+
+```json
+{"status":"draft","replayed":false}
+```
+
+### 17.17 POST /admin/design-reviews/sessions/{session_id}/coordinator/launch-round
+
+```bash
+DESIGN_COORDINATOR_LAUNCH_RESPONSE="$(curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_COORDINATOR_SESSION_ID/coordinator/launch-round" \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","workflow_version_bundle_id":"'"$DESIGN_COORDINATOR_WORKFLOW_BUNDLE_ID"'","reviewers":[{"reviewer_key":"reviewer-0","role_key":"reviewer-role-0","enabled":true},{"reviewer_key":"reviewer-1","role_key":"reviewer-role-1","enabled":true},{"reviewer_key":"reviewer-2","role_key":"reviewer-role-2","enabled":true},{"reviewer_key":"reviewer-3","role_key":"reviewer-role-3","enabled":true},{"reviewer_key":"reviewer-4","role_key":"reviewer-role-4","enabled":true}],"idempotency_key":"qa062-curl-launch"}')"
+printf '%s\n' "$DESIGN_COORDINATOR_LAUNCH_RESPONSE" | jq .
+export DESIGN_COORDINATOR_ROUND_ID="$(printf '%s\n' "$DESIGN_COORDINATOR_LAUNCH_RESPONSE" | jq -r '.round.design_review_round_id')"
+export DESIGN_COORDINATOR_RUN_ID="$(printf '%s\n' "$DESIGN_COORDINATOR_LAUNCH_RESPONSE" | jq -r '.workflow_run_id')"
+test "$DESIGN_COORDINATOR_ROUND_ID" != "null"
+test "$DESIGN_COORDINATOR_RUN_ID" != "null"
+```
+
+Expected `201`:
+
+```json
+{"next_action":"wait_for_runtime","replayed":false}
+```
+
+### 17.18 GET coordinator state after launch
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_COORDINATOR_SESSION_ID/coordinator?tenant_id=$ACME_TENANT_ID" \
+  | jq -e --arg round_id "$DESIGN_COORDINATOR_ROUND_ID" '.session.status == "reviewing" and .latest_round.design_review_round_id == $round_id'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.19 POST /admin/design-reviews/rounds/{round_id}/coordinator/complete revision required
+
+```bash
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/design-reviews/rounds/$DESIGN_COORDINATOR_ROUND_ID/coordinator/complete" \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","safe_synthesis_summary":"QA062 curl council requests revision.","next_revision_summary":"QA062 curl revision summary.","idempotency_key":"qa062-curl-complete-revision","verdicts":[{"reviewer_key":"reviewer-0","verdict":"approved","score":5,"blocking_issue_count":0,"safe_feedback_summary":"Reviewer zero approved.","output_digest":"qa062-r0"},{"reviewer_key":"reviewer-1","verdict":"approved","score":5,"blocking_issue_count":0,"safe_feedback_summary":"Reviewer one approved.","output_digest":"qa062-r1"},{"reviewer_key":"reviewer-2","verdict":"approved","score":5,"blocking_issue_count":0,"safe_feedback_summary":"Reviewer two approved.","output_digest":"qa062-r2"},{"reviewer_key":"reviewer-3","verdict":"changes_requested","score":3,"blocking_issue_count":0,"safe_feedback_summary":"Reviewer three requested changes.","output_digest":"qa062-r3"},{"reviewer_key":"reviewer-4","verdict":"changes_requested","score":3,"blocking_issue_count":0,"safe_feedback_summary":"Reviewer four requested changes.","output_digest":"qa062-r4"}]}' \
+  | jq -e '.quorum_decision.status == "revision_required" and .created_revision.revision_number == 2 and .next_action == "revise"'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.20 POST coordinator launch second round
+
+```bash
+DESIGN_COORDINATOR_SECOND_LAUNCH_RESPONSE="$(curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_COORDINATOR_SESSION_ID/coordinator/launch-round" \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","workflow_version_bundle_id":"'"$DESIGN_COORDINATOR_WORKFLOW_BUNDLE_ID"'","reviewers":[{"reviewer_key":"reviewer-0","role_key":"reviewer-role-0","enabled":true},{"reviewer_key":"reviewer-1","role_key":"reviewer-role-1","enabled":true},{"reviewer_key":"reviewer-2","role_key":"reviewer-role-2","enabled":true},{"reviewer_key":"reviewer-3","role_key":"reviewer-role-3","enabled":true},{"reviewer_key":"reviewer-4","role_key":"reviewer-role-4","enabled":true}],"idempotency_key":"qa062-curl-launch-second"}')"
+printf '%s\n' "$DESIGN_COORDINATOR_SECOND_LAUNCH_RESPONSE" | jq .
+export DESIGN_COORDINATOR_SECOND_ROUND_ID="$(printf '%s\n' "$DESIGN_COORDINATOR_SECOND_LAUNCH_RESPONSE" | jq -r '.round.design_review_round_id')"
+test "$DESIGN_COORDINATOR_SECOND_ROUND_ID" != "null"
+```
+
+Expected `201`:
+
+```json
+{"round":{"round_number":2}}
+```
+
+### 17.21 POST coordinator completion with manual resolution
+
+```bash
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/design-reviews/rounds/$DESIGN_COORDINATOR_SECOND_ROUND_ID/coordinator/complete" \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","safe_synthesis_summary":"QA062 curl council found a blocker.","idempotency_key":"qa062-curl-complete-manual","verdicts":[{"reviewer_key":"reviewer-0","verdict":"approved","score":5,"blocking_issue_count":1,"safe_feedback_summary":"Reviewer zero found a blocker.","output_digest":"qa062-m0"},{"reviewer_key":"reviewer-1","verdict":"approved","score":5,"blocking_issue_count":0,"safe_feedback_summary":"Reviewer one approved.","output_digest":"qa062-m1"},{"reviewer_key":"reviewer-2","verdict":"approved","score":5,"blocking_issue_count":0,"safe_feedback_summary":"Reviewer two approved.","output_digest":"qa062-m2"},{"reviewer_key":"reviewer-3","verdict":"approved","score":5,"blocking_issue_count":0,"safe_feedback_summary":"Reviewer three approved.","output_digest":"qa062-m3"},{"reviewer_key":"reviewer-4","verdict":"changes_requested","score":3,"blocking_issue_count":0,"safe_feedback_summary":"Reviewer four requested changes.","output_digest":"qa062-m4"}]}' \
+  | jq -e '.quorum_decision.status == "manual_resolution" and .session.status == "manual_resolution" and .next_action == "manual_decision"'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.22 POST /admin/design-reviews/sessions/{session_id}/coordinator/manual-decisions
+
+```bash
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_COORDINATOR_SESSION_ID/coordinator/manual-decisions" \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","round_id":"'"$DESIGN_COORDINATOR_SECOND_ROUND_ID"'","decision_type":"revise","safe_rationale":"QA062 curl manual decision requests a revision.","next_revision_summary":"QA062 curl manual revision summary.","idempotency_key":"qa062-curl-manual-revise"}' \
+  | jq -e '.manual_decision.decision_type == "revise" and .created_revision.revision_number == 3 and .next_action == "launch_round"'
+```
+
+Expected `201`:
+
+```json
+true
+```
+
+### 17.23 Coordinator cross-tenant denial
+
+```bash
+curl -sS -i -H "$GLOBEX_HEADER" \
+  "$BASE_URL/admin/design-reviews/sessions/$DESIGN_COORDINATOR_SESSION_ID/coordinator?tenant_id=$ACME_TENANT_ID"
+```
+
+Expected `403`:
+
+```json
+{"detail":"design review access denied"}
+```
+
+### 17.24 Seed QA063 design review workspace records
+
+```bash
+QA063_SEED_OUTPUT="$(uv run python scripts/qa/seed_design_review_workspace_qa063.py)"
+printf '%s\n' "$QA063_SEED_OUTPUT"
+export DESIGN_WORKSPACE_SESSION_ID="$(printf '%s\n' "$QA063_SEED_OUTPUT" | sed -n 's/^design_review_session_id=//p')"
+export DESIGN_WORKSPACE_ROUND_ID="$(printf '%s\n' "$QA063_SEED_OUTPUT" | sed -n 's/^design_review_round_id=//p')"
+export DESIGN_WORKSPACE_WORKFLOW_BUNDLE_ID="63636363-6363-6363-6363-636363636363"
+test "$DESIGN_WORKSPACE_SESSION_ID" != ""
+test "$DESIGN_WORKSPACE_ROUND_ID" != ""
+curl -sS "$BASE_URL/health/live" >/dev/null
+```
+
+Expected `200`:
+
+```json
+{"handoff_state":"ready","quorum_status":"passed"}
+```
+
+### 17.25 GET /admin/app/design-reviews/bootstrap.json
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/app/design-reviews/bootstrap.json?tenant_id=$ACME_TENANT_ID&session_id=$DESIGN_WORKSPACE_SESSION_ID" \
+  | jq -e '.selected_session.session.design_review_session_id == env.DESIGN_WORKSPACE_SESSION_ID and .selected_session.handoff.state.kind == "ready" and .selected_session.rounds[-1].quorum_decision.status == "passed" and (.selected_session.rounds[-1].verdicts | length) == 5 and .actions.create_session.href == "/admin/design-reviews/sessions"'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.26 GET /admin/app/design-reviews/bootstrap.json empty tenant
+
+```bash
+curl -sS -H "$GLOBEX_HEADER" \
+  "$BASE_URL/admin/app/design-reviews/bootstrap.json?tenant_id=$GLOBEX_TENANT_ID" \
+  | jq -e '.state.state == "empty" and (.sessions | length) == 0 and .selected_session == null'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.27 GET /admin/app/design-reviews
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/app/design-reviews?tenant_id=$ACME_TENANT_ID" \
+  | grep -q 'id="root"'
+```
+
+Expected `200`:
+
+```html
+id="root"
+```
+
+### 17.28 Design review workspace cross-tenant denial
+
+```bash
+curl -sS -i -H "$GLOBEX_HEADER" \
+  "$BASE_URL/admin/app/design-reviews/bootstrap.json?tenant_id=$ACME_TENANT_ID&session_id=$DESIGN_WORKSPACE_SESSION_ID"
+```
+
+Expected `403`:
+
+```json
+{"detail":"cross_tenant_scope"}
+```
+
+### 17.29 POST /admin/design-reviews/templates/council/install
+
+```bash
+DESIGN_TEMPLATE_INSTALL_OUTPUT="$(curl -sS -H "$ACME_HEADER" -H 'Content-Type: application/json' \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","idempotency_key":"curl-qa064-install","safe_mode":"both"}' \
+  "$BASE_URL/admin/design-reviews/templates/council/install")"
+printf '%s\n' "$DESIGN_TEMPLATE_INSTALL_OUTPUT"
+export DESIGN_TEMPLATE_DRAFT_ID="$(printf '%s\n' "$DESIGN_TEMPLATE_INSTALL_OUTPUT" | jq -r '.workflow_draft_id')"
+test "$DESIGN_TEMPLATE_DRAFT_ID" != ""
+printf '%s\n' "$DESIGN_TEMPLATE_INSTALL_OUTPUT" \
+  | jq -e '.ready_to_publish == true and .required_evidence_status == "passing" and .publish_gate_status == "ready" and (.evidence_modes | index("deterministic")) != null and (.evidence_modes | index("model backed safe")) != null'
+```
+
+Expected `201`:
+
+```json
+true
+```
+
+### 17.30 POST /admin/design-reviews/templates/council/install replay
+
+```bash
+curl -sS -H "$ACME_HEADER" -H 'Content-Type: application/json' \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","idempotency_key":"curl-qa064-install","safe_mode":"both"}' \
+  "$BASE_URL/admin/design-reviews/templates/council/install" \
+  | jq -e '.replayed == true and .workflow_draft_id == env.DESIGN_TEMPLATE_DRAFT_ID'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.31 GET /admin/app/design-reviews/bootstrap.json template setup
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/app/design-reviews/bootstrap.json?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.template_setup.status == "ready" and .template_setup.workflow_draft_id == env.DESIGN_TEMPLATE_DRAFT_ID and .template_setup.ready_to_publish == true and .template_setup.install_action.href == "/admin/design-reviews/templates/council/install"'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
+### 17.32 Design review template cross-tenant denial
+
+```bash
+curl -sS -i -H "$GLOBEX_HEADER" -H 'Content-Type: application/json' \
+  -d '{"tenant_id":"'"$ACME_TENANT_ID"'","idempotency_key":"curl-qa064-denied"}' \
+  "$BASE_URL/admin/design-reviews/templates/council/install"
+```
+
+Expected `403`:
+
+```json
+{"detail":"design review template access denied"}
+```
+
+## 18. Coverage Checklist
+
+The walkthrough covers the JSON/API endpoints from specs 001 through 064:
 
 - Operations foundation: `/health/live`, `/health/ready`, `/version`, `/dependencies`
 - Auth and access: `/auth/me`, `/auth/tenant-context/{tenant_id}`, `/admin/tenants/{tenant_id}/role-grants`, `/admin/role-grants`, `/admin/support-overrides`, `/admin/support-overrides/{support_override_request_id}/approve`
@@ -2531,8 +3023,8 @@ The walkthrough covers the JSON/API endpoints from specs 001 through 025:
 - Operations console: all `/admin/operations/api` endpoints
 - Reliability controls: all `/admin/reliability` JSON endpoints
 - Audit and debugging: all `/admin/runs` JSON endpoints
+- Design review domain foundation, coordinator, workspace bootstrap, and reusable template setup: all `/admin/design-reviews` JSON endpoints and `/admin/app/design-reviews/bootstrap.json`
 
 Known non-JSON API-adjacent routes, such as admin shell pages, prompt/profile
 form pages, workflow UI pages, reliability UI pages, and model-provider form
-pages, return HTML and are validated in the browser/UI QA guides instead of
-this JSON curl sequence.
+pages, return HTML and are primarily validated in the browser/UI QA guides.

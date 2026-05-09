@@ -1,0 +1,122 @@
+{
+  "spec": "060",
+  "title": "Design Review Domain Foundation",
+  "status": "completed",
+  "active_phase": "validation",
+  "feature_dir": "specs/060-design-review-domain-foundation",
+  "branch": "codex/060-design-review-domain-foundation",
+  "phases": {
+    "specify": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/060-design-review-domain-foundation/spec.md",
+        "specs/060-design-review-domain-foundation/checklists/requirements.md",
+        ".specify/feature.json"
+      ],
+      "notes": "Created Spec 060 feature specification from generated specify prompt with no unresolved clarification markers."
+    },
+    "clarify": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/060-design-review-domain-foundation/spec.md"
+      ],
+      "auto_clarifications": [
+        "Spec 060 owns backend records/contracts only; later specs own model execution, coordinator, UI, and templates.",
+        "Tenant-scoped idempotency keys deduplicate create-session and evidence writes.",
+        "Records and responses store safe summaries, metadata, artifact references, digests, provenance, and policy references only.",
+        "Manual decisions are append-only auditable records and do not silently override blocking issues.",
+        "API surface is backend-owned authenticated admin JSON; browser UI rendering is deferred."
+      ]
+    },
+    "plan": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/060-design-review-domain-foundation/plan.md",
+        "specs/060-design-review-domain-foundation/research.md",
+        "specs/060-design-review-domain-foundation/data-model.md",
+        "specs/060-design-review-domain-foundation/contracts/design-review-domain.openapi.yaml",
+        "specs/060-design-review-domain-foundation/contracts/design-review-domain-ui.md",
+        "specs/060-design-review-domain-foundation/quickstart.md",
+        "AGENTS.md"
+      ],
+      "notes": "Planned additive backend-only design-review domain with migration, service/repository/schema/router, tests, QA, and curl coverage."
+    },
+    "tasks": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "specs/060-design-review-domain-foundation/tasks.md"
+      ],
+      "task_count": 48,
+      "notes": "Generated dependency-ordered backend, migration, test, curl, QA, and validation tasks across three independently testable stories."
+    },
+    "analyze": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts_reviewed": [
+        "specs/060-design-review-domain-foundation/spec.md",
+        "specs/060-design-review-domain-foundation/plan.md",
+        "specs/060-design-review-domain-foundation/tasks.md",
+        "specs/060-design-review-domain-foundation/contracts/design-review-domain.openapi.yaml",
+        "specs/060-design-review-domain-foundation/contracts/design-review-domain-ui.md",
+        "specs/060-design-review-domain-foundation/data-model.md",
+        "specs/060-design-review-domain-foundation/quickstart.md",
+        "curl_testing.md",
+        "specs/_autopilot/scenario-enhancement-roadmap/060-design-review-domain-foundation/validation.yml"
+      ],
+      "findings": [
+        {
+          "severity": "high",
+          "summary": "Manual-decision metadata required an explicit read route in addition to session detail and POST manual-decision recording.",
+          "remediation": "Added GET /admin/design-reviews/sessions/{session_id}/manual-decisions to the UI/OpenAPI contracts and task coverage."
+        }
+      ],
+      "critical_findings_remaining": 0,
+      "notes": "No CRITICAL findings remain after one local artifact remediation loop."
+    },
+    "implement": {
+      "status": "completed",
+      "completed_at": "2026-05-08",
+      "artifacts": [
+        "alembic/versions/0021_design_review_domain.py",
+        "src/multi_agent_platform/admin/design_review/",
+        "src/multi_agent_platform/db/models/design_review.py",
+        "src/multi_agent_platform/db/repositories/design_review.py",
+        "src/multi_agent_platform/api/schemas/design_review.py",
+        "src/multi_agent_platform/api/routers/admin_design_review.py",
+        "tests/unit/admin/design_review/",
+        "tests/unit/db/test_design_review_repository.py",
+        "tests/contract/test_design_review_contracts.py",
+        "tests/integration/api/test_admin_design_review_api.py",
+        "scripts/qa/seed_design_review_qa060.py",
+        "scripts/qa/exercise_design_review_api_qa060.py",
+        "scripts/qa/verify_design_review_qa060.py",
+        "curl_testing.md"
+      ],
+      "notes": "Implemented durable design review schema, service/repository layer, authenticated admin JSON routes, redaction-safe contracts, QA scripts/docs, and curl coverage."
+    }
+  },
+  "validation": {
+    "status": "completed",
+    "completed_at": "2026-05-08",
+    "commands": [
+      "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/060-design-review-domain-foundation",
+      "uv run pytest tests/unit/admin/design_review tests/unit/db/test_design_review_repository.py tests/contract/test_design_review_contracts.py tests/integration/api/test_admin_design_review_api.py tests/integration/api/test_admin_live_data_inventory_routes.py::test_route_registry_has_no_static_admin_react_json_gaps tests/unit/admin/test_live_data_inventory_scanner.py::test_route_target_registry_covers_static_admin_react_json_routes --no-cov",
+      "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/scenario-enhancement-roadmap/060-design-review-domain-foundation/validation.yml",
+      "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/scenario-enhancement-roadmap/060-design-review-domain-foundation/validation.yml --start-processes",
+      "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa060-after-spec"
+    ],
+    "evidence": [
+      "output/playwright/qa060_ui/qa060-scenario-enhancement-smoke.png",
+      ".data/curl_test_runs/qa060-after-spec"
+    ]
+  },
+  "curl_testing": {
+    "status": "completed",
+    "notes": "Added Section 17 Design Review Domain APIs to curl_testing.md and validated the full curl suite with no failed commands."
+  },
+  "blockers": []
+}

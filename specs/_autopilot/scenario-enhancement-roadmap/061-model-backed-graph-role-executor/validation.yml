@@ -16,6 +16,24 @@
     "manual_qa_user_guide": "specs/061-model-backed-graph-role-executor/qa061_user_guide.md",
     "curl_test_output_dir": ".data/curl_test_runs/qa061-after-spec"
   },
+  "extra_commands": [
+    {
+      "id": "seed-model-backed-roles-qa061",
+      "command": "uv run python scripts/qa/seed_model_backed_roles_qa061.py | tee /tmp/qa061-seed.txt",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Seeded QA061 model-backed role executor evidence"
+      ]
+    },
+    {
+      "id": "verify-model-backed-roles-qa061",
+      "command": "uv run python scripts/qa/verify_model_backed_roles_qa061.py",
+      "expect_exit_code": 0,
+      "expect_contains": [
+        "Verified QA061 model-backed role executor evidence"
+      ]
+    }
+  ],
   "playwright": {
     "flows": [
       {
