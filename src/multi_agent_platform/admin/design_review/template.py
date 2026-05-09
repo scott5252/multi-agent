@@ -127,6 +127,19 @@ class DesignReviewTemplateService:
             idempotency_key,
             field_name="idempotency_key",
         )
+        published_state = await self._published_template_state(
+            tenant_id=tenant_id,
+            template_key=safe_template_key,
+        )
+        active_record = await self._find_template_draft_record(
+            tenant_id=tenant_id,
+            template_key=safe_template_key,
+        )
+        if published_state is not None and active_record is None:
+            return DesignReviewTemplateInstallResult(
+                state=published_state,
+                replayed=True,
+            )
         draft, replayed = await self._get_or_create_draft(
             principal=principal,
             tenant_id=tenant_id,
@@ -207,6 +220,12 @@ class DesignReviewTemplateService:
             template_key=safe_template_key,
         )
         if record is None:
+            published_state = await self._published_template_state(
+                tenant_id=tenant_id,
+                template_key=safe_template_key,
+            )
+            if published_state is not None:
+                return published_state
             return DesignReviewTemplateState(
                 status="not_installed",
                 template_key=safe_template_key,
@@ -337,6 +356,99 @@ class DesignReviewTemplateService:
         except WorkflowRegistryError as exc:
             raise DesignReviewConflictError(str(exc)) from exc
         return created, False
+
+    async def _published_template_state(
+        self,
+        *,
+        tenant_id: UUID,
+        template_key: str,
+    ) -> DesignReviewTemplateState | None:
+        lineage = await self.workflow_service.repository.get_lineage_by_slug(
+            scope_type=WorkflowScopeType.TENANT.value,
+            tenant_id=tenant_id,
+            slug=template_key,
+        )
+        if lineage is None:
+            return None
+        repository = self.workflow_service.repository
+        version = await repository.get_latest_published_version_for_lineage(
+            lineage.workflow_lineage_id
+        )
+        if version is None:
+            return None
+        record = await self.workflow_service.repository.get_draft_record(
+            version.published_from_draft_id
+        )
+        workflow_key = template_key
+        display_name = lineage.display_name
+        suite: AgentTestSuite | None = None
+        latest_run: AgentTestRun | None = None
+        deterministic_run: AgentTestRun | None = None
+        model_safe_run: AgentTestRun | None = None
+        if record is not None:
+            document = WorkflowDraftDocument.model_validate(
+                record.revision.authoring_document_json
+            )
+            workflow_key = document.workflow_key
+            display_name = document.display_name
+            suite = await self.agent_repository.find_suite_for_tenant(
+                tenant_id=tenant_id,
+                target_type=WORKFLOW_TARGET_TYPE,
+                target_id=str(record.draft.workflow_draft_id),
+                name=COUNCIL_REQUIRED_SUITE_NAME,
+            )
+            target_version = str(version.published_from_revision_id)
+            if suite is not None:
+                latest_run = await self.agent_repository.latest_passing_run_for_suite(
+                    suite_id=suite.agent_test_suite_id,
+                    tenant_id=tenant_id,
+                    target_version=target_version,
+                )
+                deterministic_run = await self._latest_run_for_safe_mode(
+                    tenant_id=tenant_id,
+                    suite=suite,
+                    target_version=target_version,
+                    safe_mode="mock_model",
+                )
+                model_safe_run = await self._latest_run_for_safe_mode(
+                    tenant_id=tenant_id,
+                    suite=suite,
+                    target_version=target_version,
+                    safe_mode="real_model_side_effects_disabled",
+                )
+        evidence_modes = []
+        if deterministic_run is not None:
+            evidence_modes.append("deterministic")
+        if model_safe_run is not None:
+            evidence_modes.append("model backed safe")
+        required_evidence_status = "passing" if latest_run is not None else "missing"
+        safe_summary = (
+            "Council template is published with current required evidence."
+            if latest_run is not None
+            else "Council template is published; required evidence is unavailable."
+        )
+        return DesignReviewTemplateState(
+            status="published",
+            template_key=workflow_key,
+            workflow_draft_id=version.published_from_draft_id,
+            workflow_lineage_id=lineage.workflow_lineage_id,
+            workflow_draft_revision_id=version.published_from_revision_id,
+            workflow_key=workflow_key,
+            display_name=display_name,
+            agent_test_suite_id=suite.agent_test_suite_id if suite else None,
+            latest_run_id=latest_run.agent_test_run_id if latest_run else None,
+            deterministic_run_id=deterministic_run.agent_test_run_id
+            if deterministic_run
+            else None,
+            model_safe_run_id=model_safe_run.agent_test_run_id
+            if model_safe_run
+            else None,
+            required_evidence_status=required_evidence_status,
+            publish_gate_status="published",
+            evidence_modes=tuple(evidence_modes),
+            ready_to_publish=True,
+            safe_summary=safe_summary,
+        )
 
     async def _find_template_draft_record(
         self,

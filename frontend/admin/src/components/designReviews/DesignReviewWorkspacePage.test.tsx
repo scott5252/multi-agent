@@ -278,6 +278,10 @@ describe("DesignReviewWorkspacePage", () => {
     expect(screen.getByText("Clear layout and accessible labels.")).toBeInTheDocument();
     expect(screen.getByText("Approved implementation reference.")).toBeInTheDocument();
     expect(screen.getByText("passed")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open runtime graph" })).toHaveAttribute(
+      "href",
+      `/admin/app/operations?tenant_id=${tenantId}&run_id=eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee&panel=runtime-graph#runtime-run-graph`,
+    );
     expect(screen.queryByText(/raw prompt/i)).not.toBeInTheDocument();
   });
 

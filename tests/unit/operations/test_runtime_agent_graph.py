@@ -17,6 +17,11 @@ from multi_agent_platform.db.models.runtime_orchestration import (
     RuntimeRunStatus,
     RuntimeStepStatus,
 )
+from multi_agent_platform.db.models.workflow_registry import (
+    WorkflowDraftRevision,
+    WorkflowVersionBundle,
+    WorkflowVersionStatus,
+)
 from multi_agent_platform.db.repositories.runtime_orchestration import (
     RuntimeOrchestrationRepository,
 )
@@ -29,7 +34,10 @@ from multi_agent_platform.operations.runtime_agent_graph import (
     _step_status,
     build_runtime_agent_graph,
 )
-from tests.fixtures.runtime_agent_graph import runtime_graph_records
+from tests.fixtures.runtime_agent_graph import (
+    runtime_graph_document_dict,
+    runtime_graph_records,
+)
 
 
 @pytest.mark.asyncio
@@ -180,6 +188,48 @@ async def test_runtime_agent_graph_returns_partial_without_topology() -> None:
     assert graph.edges == ()
     assert graph.badges[0].code == "runtime.topology.partial"
     assert graph.provenance.workflow_key == "runtime-workflow"
+
+
+@pytest.mark.asyncio
+async def test_runtime_agent_graph_uses_published_revision_document() -> None:
+    workflow_run_id, tenant_id, repository = runtime_graph_records()
+    assert repository.bundle is not None
+    repository.bundle.workflow_version.pop("document")
+    revision_id = uuid4()
+    draft_id = uuid4()
+    repository.version = WorkflowVersionBundle(
+        workflow_version_bundle_id=repository.bundle.published_workflow_version_id,
+        workflow_lineage_id=uuid4(),
+        scope_type="tenant",
+        tenant_id=tenant_id,
+        version_sequence=1,
+        display_version="v1",
+        published_from_draft_id=draft_id,
+        published_from_revision_id=revision_id,
+        published_by_principal_id=uuid4(),
+        status=WorkflowVersionStatus.PUBLISHED,
+        published_at=repository.bundle.created_at,
+        summary_json={"workflow_key": "runtime-agent-review"},
+    )
+    repository.draft_revision = WorkflowDraftRevision(
+        workflow_draft_revision_id=revision_id,
+        workflow_draft_id=draft_id,
+        revision_number=1,
+        authoring_document_json=runtime_graph_document_dict(),
+        document_sha256="b" * 64,
+        created_by_principal_id=uuid4(),
+    )
+
+    graph = await build_runtime_agent_graph(
+        repository=cast(RuntimeOrchestrationRepository, repository),
+        workflow_run_id=workflow_run_id,
+        tenant_id=tenant_id,
+    )
+
+    assert graph is not None
+    assert graph.state == AgentGraphState.READY
+    assert {node.node_key for node in graph.nodes} >= {"coordinator", "specialist"}
+    assert graph.provenance.workflow_key == "runtime-agent-review"
 
 
 @pytest.mark.asyncio

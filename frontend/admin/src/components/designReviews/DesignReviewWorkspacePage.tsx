@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   CheckCircle2,
+  Network,
   Play,
   RefreshCw,
   Send,
@@ -446,7 +447,7 @@ export function DesignReviewWorkspacePage({
             workflowId={workflowId}
           />
           <RevisionPanel revisions={selected.revisions} />
-          <RoundPanel rounds={selected.rounds} />
+          <RoundPanel rounds={selected.rounds} tenantId={selected.session.tenant_id} />
           <ManualDecisionPanel decisions={selected.manual_decisions} />
           <HandoffPanel handoff={selected.handoff} />
         </section>
@@ -789,7 +790,13 @@ function RevisionPanel({ revisions }: { revisions: Revision[] }) {
   );
 }
 
-function RoundPanel({ rounds }: { rounds: RoundDetail[] }) {
+function RoundPanel({
+  rounds,
+  tenantId,
+}: {
+  rounds: RoundDetail[];
+  tenantId: string | null;
+}) {
   return (
     <section className="design-review-panel" aria-label="Review rounds">
       <div className="section-heading">
@@ -811,7 +818,16 @@ function RoundPanel({ rounds }: { rounds: RoundDetail[] }) {
               {round.round.reviewer_count} reviewers, quorum {round.round.quorum_count}
             </p>
             {round.round.workflow_run_id ? (
-              <small>Run {round.round.workflow_run_id}</small>
+              <div className="round-run-actions">
+                <small>Run {round.round.workflow_run_id}</small>
+                <a
+                  className="secondary-link round-graph-link"
+                  href={runtimeGraphHref(round.round.workflow_run_id, tenantId)}
+                >
+                  <Network aria-hidden="true" size={14} />
+                  Open runtime graph
+                </a>
+              </div>
             ) : null}
             <dl className="decision-grid">
               <div>
@@ -844,6 +860,16 @@ function RoundPanel({ rounds }: { rounds: RoundDetail[] }) {
       )}
     </section>
   );
+}
+
+function runtimeGraphHref(workflowRunId: string, tenantId: string | null): string {
+  const params = new URLSearchParams();
+  if (tenantId) {
+    params.set("tenant_id", tenantId);
+  }
+  params.set("run_id", workflowRunId);
+  params.set("panel", "runtime-graph");
+  return `/admin/app/operations?${params.toString()}#runtime-run-graph`;
 }
 
 function ManualDecisionPanel({ decisions }: { decisions: ManualDecision[] }) {

@@ -139,9 +139,11 @@ textarea {
 }
 
 .topbar-side {
-  align-items: flex-start;
+  align-items: center;
+  column-gap: var(--admin-space-5);
   flex-wrap: wrap;
   justify-content: flex-end;
+  row-gap: var(--admin-space-3);
 }
 
 .topbar h1,
@@ -175,21 +177,26 @@ textarea {
 .scope-switcher {
   display: flex;
   align-items: center;
-  gap: var(--admin-space-2);
+  gap: var(--admin-space-3);
   padding: 0;
 }
 
-.scope-switcher strong {
-  display: block;
-}
-
 .topbar-fact,
+.scope-switcher,
 .logout-link {
   min-height: 2.35rem;
 }
 
 .topbar-fact {
   color: var(--admin-ink);
+}
+
+.topbar-fact > span,
+.scope-switcher > div {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--admin-space-2);
+  min-width: 0;
 }
 
 .topbar-fact svg,
@@ -395,6 +402,26 @@ textarea {
   display: flex;
   gap: var(--admin-space-3);
   justify-content: space-between;
+}
+
+.round-run-actions,
+.run-debug-links {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2);
+}
+
+.round-run-actions {
+  justify-content: space-between;
+}
+
+.round-graph-link {
+  width: fit-content;
+}
+
+.runtime-graph-anchor {
+  scroll-margin-top: var(--admin-space-5);
 }
 
 .design-review-detail {

@@ -10,7 +10,11 @@ from multi_agent_platform.admin.design_review.template import (
     COUNCIL_REQUIREMENT_KEY,
     build_design_review_template_service,
 )
-from multi_agent_platform.api.schemas.workflow_registry import WorkflowDraftSaveRequest
+from multi_agent_platform.api.schemas.workflow_editor import PublishGateRequest
+from multi_agent_platform.api.schemas.workflow_registry import (
+    PublishDraftRequest,
+    WorkflowDraftSaveRequest,
+)
 from multi_agent_platform.auth.local_principals import LocalPrincipalCatalog
 from multi_agent_platform.db.repositories.agent_tests import AgentTestRepository
 from multi_agent_platform.db.repositories.workflow_registry import (
@@ -135,6 +139,61 @@ async def test_template_state_marks_evidence_stale_after_new_revision(
     assert state.status == "stale"
     assert state.required_evidence_status == "stale"
     assert state.ready_to_publish is False
+
+
+async def test_template_state_reports_published_after_workflow_publish(
+    session,
+    settings,
+    filesystem_storage_provider,
+    seeded_tenant,
+) -> None:
+    principal = _principal(settings, "tenant-admin-acme")
+    service = _service(session, settings, filesystem_storage_provider)
+    installed = await service.install_council_template(
+        principal=principal,
+        tenant_id=seeded_tenant.tenant_id,
+        idempotency_key="unit-template-published",
+    )
+    assert installed.state.workflow_draft_id is not None
+
+    validation = await service.workflow_service.validate_draft(
+        principal=principal,
+        workflow_draft_id=installed.state.workflow_draft_id,
+    )
+    gate = await service.workflow_service.evaluate_publish_gate(
+        principal=principal,
+        workflow_draft_id=installed.state.workflow_draft_id,
+        payload=PublishGateRequest(
+            validation_result_id=str(validation.validation_result_id)
+        ),
+    )
+    await service.workflow_service.publish_draft(
+        principal=principal,
+        workflow_draft_id=installed.state.workflow_draft_id,
+        payload=PublishDraftRequest(
+            validation_result_id=validation.validation_result_id,
+            publish_gate_id=gate.publish_gate_id,
+            reason="Publish council template.",
+        ),
+    )
+
+    state = await service.get_council_template_state(
+        principal=principal,
+        tenant_id=seeded_tenant.tenant_id,
+    )
+    refreshed = await service.install_council_template(
+        principal=principal,
+        tenant_id=seeded_tenant.tenant_id,
+        idempotency_key="unit-template-published-refresh",
+    )
+
+    assert state.status == "published"
+    assert state.publish_gate_status == "published"
+    assert state.required_evidence_status == "passing"
+    assert state.ready_to_publish is True
+    assert state.workflow_draft_id == installed.state.workflow_draft_id
+    assert refreshed.replayed is True
+    assert refreshed.state.status == "published"
 
 
 async def test_template_install_rejects_cross_tenant_admin(

@@ -385,7 +385,11 @@ class GraphExecutionService:
                 workflow_version_bundle_id=bundle.published_workflow_version_id
             )
             self._assert_tenant_compatible(run=run, version=version)
-            document = _extract_workflow_document(bundle.workflow_version, version)
+            document = await _extract_workflow_document(
+                self.repository,
+                bundle.workflow_version,
+                version,
+            )
             plan = build_graph_execution_plan(
                 document,
                 workflow_version_bundle_id=bundle.published_workflow_version_id,
@@ -1177,7 +1181,8 @@ def _result_error_ref(result: RoleExecutionResult) -> dict[str, object]:
     return error_ref
 
 
-def _extract_workflow_document(
+async def _extract_workflow_document(
+    repository: Any,
     workflow_version: Mapping[str, object],
     version: Any | None,
 ) -> Mapping[str, object]:
@@ -1205,6 +1210,14 @@ def _extract_workflow_document(
                 return document
             if "nodes" in candidate:
                 return candidate
+    get_revision = getattr(repository, "get_workflow_draft_revision", None)
+    revision_id = getattr(version, "published_from_revision_id", None)
+    if callable(get_revision) and revision_id is not None:
+        revision = await get_revision(workflow_draft_revision_id=revision_id)
+        if revision is not None:
+            document_json = getattr(revision, "authoring_document_json", None)
+            if isinstance(document_json, Mapping):
+                return document_json
     raise GraphValidationError("published workflow bundle has no executable document")
 
 

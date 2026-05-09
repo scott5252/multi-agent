@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 
@@ -9,6 +11,7 @@ from multi_agent_platform.runtime.orchestration.graph_execution import (
     GraphJoinPolicy,
     GraphValidationError,
     JoinDecisionType,
+    _extract_workflow_document,
     build_graph_execution_plan,
     evaluate_join_policy,
 )
@@ -238,6 +241,24 @@ def test_build_graph_execution_plan_validates_simple_graph() -> None:
     assert plan.entry_node_key == "entry"
     assert plan.terminal_node_keys == ("terminal",)
     assert plan.outbound_edges_by_source["entry"][0].target_node_key == "writer"
+
+
+@pytest.mark.asyncio
+async def test_extract_workflow_document_falls_back_to_source_revision() -> None:
+    revision_id = uuid4()
+
+    class Repository:
+        async def get_workflow_draft_revision(self, *, workflow_draft_revision_id):
+            assert workflow_draft_revision_id == revision_id
+            return SimpleNamespace(authoring_document_json=simple_graph_document())
+
+    document = await _extract_workflow_document(
+        Repository(),
+        {},
+        SimpleNamespace(summary_json={}, published_from_revision_id=revision_id),
+    )
+
+    assert document["workflow_key"] == "simple-graph"
 
 
 def test_build_graph_execution_plan_rejects_cycles() -> None:

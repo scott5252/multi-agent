@@ -83,6 +83,17 @@ export function WorkbenchPage({ workbenchUrl }: { workbenchUrl: string }) {
     };
   }, [envelope, graphReloadToken]);
 
+  useEffect(() => {
+    if (!envelope?.run_debug || window.location.hash !== "#runtime-run-graph") {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      document.getElementById("runtime-run-graph")?.scrollIntoView({
+        block: "start",
+      });
+    });
+  }, [envelope, runGraphLoading, runGraph]);
+
   async function exportEvidence() {
     if (!envelope) {
       return;
@@ -139,13 +150,15 @@ export function WorkbenchPage({ workbenchUrl }: { workbenchUrl: string }) {
       />
       {envelope.run_debug ? <WorkbenchTimeline runDebug={envelope.run_debug} /> : null}
       {envelope.run_debug ? (
-        <AgentGraphPanel
-          error={runGraphError}
-          graph={runGraph}
-          loading={runGraphLoading}
-          onRetry={() => setGraphReloadToken((value) => value + 1)}
-          sourceLabel="Runtime run"
-        />
+        <div className="runtime-graph-anchor" id="runtime-run-graph">
+          <AgentGraphPanel
+            error={runGraphError}
+            graph={runGraph}
+            loading={runGraphLoading}
+            onRetry={() => setGraphReloadToken((value) => value + 1)}
+            sourceLabel="Runtime run"
+          />
+        </div>
       ) : null}
       <WorkbenchReliabilityPanel reliability={envelope.reliability} />
       <WorkbenchExportPanel

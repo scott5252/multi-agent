@@ -80,7 +80,11 @@ async def build_runtime_agent_graph(
         if bundle is not None
         else None
     )
-    document = _document_for_runtime(bundle=bundle, version=version)
+    document = await _document_for_runtime(
+        repository=repository,
+        bundle=bundle,
+        version=version,
+    )
     if bundle is None or document is None:
         return _partial_without_topology(
             run=run,
@@ -126,8 +130,9 @@ async def build_runtime_agent_graph(
     )
 
 
-def _document_for_runtime(
+async def _document_for_runtime(
     *,
+    repository: RuntimeOrchestrationRepository,
     bundle: RuntimeExecutionBundleRecord | None,
     version: WorkflowVersionBundle | None,
 ) -> WorkflowDraftDocument | None:
@@ -137,6 +142,14 @@ def _document_for_runtime(
     ):
         if isinstance(candidate, dict):
             return WorkflowDraftDocument.model_validate(candidate)
+    if version is not None:
+        revision = await repository.get_workflow_draft_revision(
+            workflow_draft_revision_id=version.published_from_revision_id
+        )
+        if revision is not None and isinstance(revision.authoring_document_json, dict):
+            return WorkflowDraftDocument.model_validate(
+                revision.authoring_document_json
+            )
     return None
 
 

@@ -2,6 +2,13 @@ import type { RunDebugEnvelope } from "../../api/generated/reactAdminApi";
 import { Badge } from "../primitives";
 
 export function WorkbenchTimeline({ runDebug }: { runDebug: RunDebugEnvelope }) {
+  const links = [
+    { href: runtimeGraphHref(runDebug), label: "Runtime graph" },
+    ...runDebug.lineage,
+    ...runDebug.replay_links,
+    ...runDebug.fallback_links,
+  ];
+
   return (
     <section className="workbench-panel timeline-panel" aria-label="Run debug timeline">
       <div className="section-heading">
@@ -62,6 +69,24 @@ export function WorkbenchTimeline({ runDebug }: { runDebug: RunDebugEnvelope }) 
           </article>
         ))}
       </div>
+      <nav className="run-debug-links" aria-label="Run debug links">
+        {links.map((link) => (
+          <a className="secondary-link" href={link.href} key={`${link.label}:${link.href}`}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
     </section>
   );
+}
+
+function runtimeGraphHref(runDebug: RunDebugEnvelope): string {
+  const params = new URLSearchParams();
+  const tenantId = runDebug.tenant_scope?.tenant_id;
+  if (tenantId) {
+    params.set("tenant_id", tenantId);
+  }
+  params.set("run_id", runDebug.workflow_run_id);
+  params.set("panel", "runtime-graph");
+  return `/admin/app/operations?${params.toString()}#runtime-run-graph`;
 }

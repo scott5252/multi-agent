@@ -26,7 +26,10 @@ from multi_agent_platform.db.models.runtime_orchestration import (
     WorkerLeaseRecord,
     WorkflowRunRecord,
 )
-from multi_agent_platform.db.models.workflow_registry import WorkflowVersionBundle
+from multi_agent_platform.db.models.workflow_registry import (
+    WorkflowDraftRevision,
+    WorkflowVersionBundle,
+)
 from multi_agent_platform.runtime.orchestration.contracts import sha256_digest
 
 
@@ -79,6 +82,11 @@ class RuntimeOrchestrationRepository:
         self, *, workflow_version_bundle_id: UUID
     ) -> WorkflowVersionBundle | None:
         return await self.session.get(WorkflowVersionBundle, workflow_version_bundle_id)
+
+    async def get_workflow_draft_revision(
+        self, *, workflow_draft_revision_id: UUID
+    ) -> WorkflowDraftRevision | None:
+        return await self.session.get(WorkflowDraftRevision, workflow_draft_revision_id)
 
     async def list_timeline(
         self, *, workflow_run_id: UUID, tenant_id: UUID | None, limit: int = 100

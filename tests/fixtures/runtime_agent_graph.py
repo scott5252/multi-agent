@@ -21,6 +21,10 @@ from multi_agent_platform.db.models.runtime_orchestration import (
     SideEffectIntentRecord,
     WorkflowRunRecord,
 )
+from multi_agent_platform.db.models.workflow_registry import (
+    WorkflowDraftRevision,
+    WorkflowVersionBundle,
+)
 
 
 def runtime_graph_document_dict() -> dict[str, object]:
@@ -134,6 +138,8 @@ class RuntimeGraphFakeRepository:
         side_effects: list[SideEffectIntentRecord] | None = None,
         approvals: list[ApprovalGateRecord] | None = None,
         interactions: list[RuntimeInteractionEvidenceRecord] | None = None,
+        version: WorkflowVersionBundle | None = None,
+        draft_revision: WorkflowDraftRevision | None = None,
     ) -> None:
         self.run = run
         self.bundle = bundle
@@ -143,6 +149,8 @@ class RuntimeGraphFakeRepository:
         self.side_effects = side_effects or []
         self.approvals = approvals or []
         self.interactions = interactions or []
+        self.version = version
+        self.draft_revision = draft_revision
 
     async def get_run(
         self, *, workflow_run_id: UUID, tenant_id: UUID | None
@@ -162,6 +170,20 @@ class RuntimeGraphFakeRepository:
         return None
 
     async def get_workflow_version_bundle(self, *, workflow_version_bundle_id: UUID):
+        if (
+            self.version is not None
+            and self.version.workflow_version_bundle_id == workflow_version_bundle_id
+        ):
+            return self.version
+        return None
+
+    async def get_workflow_draft_revision(self, *, workflow_draft_revision_id: UUID):
+        if (
+            self.draft_revision is not None
+            and self.draft_revision.workflow_draft_revision_id
+            == workflow_draft_revision_id
+        ):
+            return self.draft_revision
         return None
 
     async def list_run_steps(

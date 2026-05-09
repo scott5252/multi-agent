@@ -4833,6 +4833,7 @@ def react_admin_command_search_from_shell(
 
 _HOME_QUICK_ACTION_IDS = (
     "workflow_registry",
+    "design_reviews",
     "operations_console",
     "run_search",
     "model_skill_config",
@@ -4846,6 +4847,7 @@ _HOME_QUICK_ACTION_IDS = (
 
 _HOME_WORKSPACE_IDS = (
     "workflow_registry",
+    "design_reviews",
     "operations_console",
     "run_search",
     "reliability_dashboard",
@@ -4867,6 +4869,10 @@ _HOME_ACTION_COPY: dict[str, tuple[str, str]] = {
     "workflow_registry": (
         "Review workflows",
         "Open drafts, validation results, publishing readiness, and sharing.",
+    ),
+    "design_reviews": (
+        "Open design reviews",
+        "Review council sessions, rounds, decisions, and handoff readiness.",
     ),
     "operations_console": (
         "Open operations",
@@ -4908,6 +4914,7 @@ _HOME_ACTION_COPY: dict[str, tuple[str, str]] = {
 
 _HOME_WORKSPACE_COPY: dict[str, str] = {
     "workflow_registry": "Draft, validate, publish, and share workflow versions.",
+    "design_reviews": "Review council sessions, runtime rounds, and handoffs.",
     "operations_console": "Track platform health, queues, delivery, and exports.",
     "run_search": "Inspect run timelines, failures, artifacts, and recovery signals.",
     "reliability_dashboard": (
