@@ -312,6 +312,7 @@ def _lookup_groups(
     roles = []
     subworkflows = []
     skills = []
+    profiles = []
     prompts = []
     tests = []
     if document is not None:
@@ -359,7 +360,7 @@ def _lookup_groups(
             )
             for skill in document.skill_installations
         ]
-        prompts = [
+        profiles = [
             _option(
                 lookup_kind="profiles",
                 value=reference.reference_key,
@@ -373,6 +374,19 @@ def _lookup_groups(
                 ),
             )
             for reference in document.prompt_profile_references
+        ]
+        prompts = [
+            _option(
+                lookup_kind="prompts",
+                value=reference.reference_key,
+                label=reference.agent_key or reference.reference_key,
+                scope_type=scope_type,
+                tenant_id=tenant_id,
+                status=reference.readiness_status,
+                detail_url="/admin/app/governance/prompts",
+            )
+            for reference in document.prompt_profile_references
+            if reference.prompt_version_ids or reference.prompt_reference_version_ids
         ]
         tests = [
             _option(
@@ -391,9 +405,11 @@ def _lookup_groups(
         ]
     return [
         EditorLookupGroup(
-            lookup_kind="profiles", label="Runtime Profiles", options=prompts
+            lookup_kind="profiles", label="Runtime Profiles", options=profiles
         ),
-        EditorLookupGroup(lookup_kind="prompts", label="Prompt Versions", options=[]),
+        EditorLookupGroup(
+            lookup_kind="prompts", label="Prompt Versions", options=prompts
+        ),
         EditorLookupGroup(lookup_kind="model_routes", label="Model Routes", options=[]),
         EditorLookupGroup(
             lookup_kind="provider_catalog",

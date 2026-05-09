@@ -139,6 +139,16 @@ describe("UserRunPage", () => {
     );
   });
 
+  it("prefills workflow id from runtime launch links", async () => {
+    render(
+      <UserRunPage search="?workflow_id=33333333-3333-4333-8333-333333333333" />,
+    );
+
+    expect(screen.getByDisplayValue("33333333-3333-4333-8333-333333333333")).toHaveValue(
+      "33333333-3333-4333-8333-333333333333",
+    );
+  });
+
   it("keeps action results safe when subscribing and creating artifact grants", async () => {
     const fetchMock = vi
       .fn()

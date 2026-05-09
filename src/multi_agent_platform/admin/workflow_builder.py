@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+import hashlib
+import json
+from collections.abc import Iterator, Sequence
 from datetime import UTC, datetime
 from uuid import UUID
+
+from pydantic import ValidationError
 
 from multi_agent_platform.api.schemas.admin_patterns import (
     AdminAction,
@@ -10,6 +14,7 @@ from multi_agent_platform.api.schemas.admin_patterns import (
     AdminMutationStatus,
     AdminSortDirection,
     ConfirmationRequirement,
+    IdempotencyReplay,
     PaginationState,
     RevisionConflict,
     SortField,
@@ -31,6 +36,7 @@ from multi_agent_platform.api.schemas.admin_react import (
     ReactAdminSourceKind,
 )
 from multi_agent_platform.api.schemas.admin_workflow_builder import (
+    WORKFLOW_BUILDER_UNSAFE_MARKERS,
     BuilderMutationResult,
     BuilderSection,
     ValidationFinding,
@@ -39,7 +45,6 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     WorkflowBuilderStatus,
     WorkflowCreateEnvelope,
     WorkflowCreateTemplate,
-    WorkflowDraftDocument,
     WorkflowEvidenceSummary,
     WorkflowGraphEdge,
     WorkflowGraphNode,
@@ -57,6 +62,9 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     WorkflowValidationSummary,
     WorkflowVersionDetail,
 )
+from multi_agent_platform.api.schemas.admin_workflow_builder import (
+    WorkflowDraftDocument as WorkflowDraftEditorDocument,
+)
 from multi_agent_platform.api.schemas.workflow_editor import (
     EditorLookupResponse,
     GraphPreviewResponse,
@@ -68,6 +76,9 @@ from multi_agent_platform.api.schemas.workflow_registry import (
     ValidationResultResponse,
     WorkflowDraftResponse,
     WorkflowVersionResponse,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    WorkflowDraftDocument as RegistryWorkflowDraftDocument,
 )
 from multi_agent_platform.api.schemas.workflow_registry import (
     WorkflowRegistryItem as LiveWorkflowRegistryItem,
@@ -247,11 +258,28 @@ def build_workflow_builder_envelope(
             empty_state=empty_state,
         )
 
-    draft_document = _draft_document_from_live(draft, graph_preview)
     validation = build_validation_summary(
         draft=draft, validation=draft.latest_validation
     )
-    publish_readiness = build_publish_readiness(draft=draft, gate=publish_gate)
+    published = (
+        version is not None
+        and version.published_from_draft_id == draft.workflow_draft_id
+        and version.published_from_revision_id
+        == draft.latest_revision.workflow_draft_revision_id
+    )
+    publish_readiness = build_publish_readiness(
+        draft=draft,
+        gate=publish_gate,
+        published=published,
+    )
+    sections = _sections_from_draft(
+        draft=draft, validation=validation, publish=publish_readiness
+    )
+    draft_document = _draft_document_from_live(
+        draft,
+        graph_preview,
+        section_summaries=sections,
+    )
     return WorkflowBuilderEnvelope(
         page_id="react-workflow-builder",
         title="Workflow builder",
@@ -263,9 +291,7 @@ def build_workflow_builder_envelope(
         registry=registry,
         create_state=create_state,
         draft=draft_document,
-        sections=_sections_from_draft(
-            draft=draft, validation=validation, publish=publish_readiness
-        ),
+        sections=sections,
         reference_catalog=reference_catalog,
         validation=validation,
         publish_readiness=publish_readiness,
@@ -469,6 +495,9 @@ def build_save_result(
     *,
     draft: WorkflowDraftResponse | None = None,
     conflict: RevisionConflict | None = None,
+    editor_state: WorkflowDraftEditorDocument | None = None,
+    idempotency_key: str | None = None,
+    replayed: bool = False,
 ) -> BuilderMutationResult:
     if conflict is not None:
         return BuilderMutationResult(
@@ -483,16 +512,38 @@ def build_save_result(
         )
     revision = _revision_label(draft)
     return BuilderMutationResult(
-        status=AdminMutationStatus.ACCEPTED,
-        summary="Draft saved as a durable workflow revision.",
+        status=AdminMutationStatus.IDEMPOTENT_REPLAY
+        if replayed
+        else AdminMutationStatus.ACCEPTED,
+        summary=(
+            "Workflow draft save was already applied for this idempotency key."
+            if replayed
+            else "Draft saved as a durable workflow revision."
+        ),
         revision=revision,
+        editor_state=editor_state,
         validation=build_validation_summary(
             draft=draft, validation=draft.latest_validation
         ),
+        idempotency=IdempotencyReplay(
+            idempotency_key=idempotency_key,
+            replayed=True,
+            original_result_reference=(
+                f"workflow-draft:{draft.workflow_draft_id}:revision:"
+                f"{draft.current_revision_number}"
+            ),
+            summary="Exact duplicate workflow save replayed without a new revision.",
+        )
+        if replayed and idempotency_key is not None
+        else None,
         toast=ToastHint(
             tone=ReactAdminNotificationTone.SUCCESS,
-            title="Draft saved",
-            summary="The latest durable workflow revision is now current.",
+            title="Draft save replayed" if replayed else "Draft saved",
+            summary=(
+                "The durable workflow revision was already current."
+                if replayed
+                else "The latest durable workflow revision is now current."
+            ),
         ),
         audit_reference_id=f"workflow-draft:{draft.workflow_draft_id}:revision:{draft.current_revision_number}",
     )
@@ -532,6 +583,30 @@ def build_create_result(
             summary="A durable workflow draft is ready to edit.",
         ),
         audit_reference_id=f"workflow-draft:{draft.workflow_draft_id}:created",
+    )
+
+
+def build_document_save_validation_result(
+    *,
+    revision: str,
+    findings: Sequence[ValidationFinding],
+    summary: str = "Workflow document has blocking validation findings.",
+    audit_reference_id: str | None = None,
+) -> BuilderMutationResult:
+    return BuilderMutationResult(
+        status=AdminMutationStatus.VALIDATION_ERROR,
+        summary=summary,
+        revision=revision,
+        validation=WorkflowValidationSummary(
+            validation_id=f"workflow-document-save-validation:{revision}",
+            status=WorkflowBuilderStatus.BLOCKED,
+            revision=revision,
+            generated_at_label="Pre-save validation",
+            summary=summary,
+            findings=tuple(findings),
+            artifact_reference_ids=(),
+        ),
+        audit_reference_id=audit_reference_id,
     )
 
 
@@ -709,6 +784,18 @@ def build_publish_readiness(
 ) -> WorkflowPublishReadiness:
     revision = _revision_label(draft)
     if gate is None:
+        if published:
+            return WorkflowPublishReadiness(
+                decision=AdminMutationStatus.ACCEPTED,
+                revision=revision,
+                summary="Workflow bundle has been published.",
+                blockers=(),
+                required_evidence=(),
+                published_bundle_summary=(
+                    "Published bundle pins durable workflow, validation, and evidence "
+                    "references."
+                ),
+            )
         return WorkflowPublishReadiness(
             decision=AdminMutationStatus.VALIDATION_ERROR,
             revision=revision,
@@ -826,14 +913,19 @@ def _registry_item_from_live(
 def _draft_document_from_live(
     draft: WorkflowDraftResponse,
     graph_preview: GraphPreviewResponse | None,
-) -> WorkflowDraftDocument:
+    *,
+    section_summaries: Sequence[BuilderSection] = (),
+) -> WorkflowDraftEditorDocument:
     document = draft.document
     graph = _graph_from_live(
         graph_preview,
         layout_revision=str(draft.latest_revision.workflow_draft_revision_id),
     )
-    return WorkflowDraftDocument(
+    return WorkflowDraftEditorDocument(
         workflow_draft_id=str(draft.workflow_draft_id),
+        workflow_draft_revision_id=str(
+            draft.latest_revision.workflow_draft_revision_id
+        ),
         workflow_lineage_id=str(draft.workflow_lineage_id),
         revision=_revision_label(draft),
         name=draft.display_name,
@@ -847,6 +939,8 @@ def _draft_document_from_live(
             f"{len(document.roles)} role{'s' if len(document.roles) != 1 else ''}"
         ),
         references_summary=_references_summary(document),
+        document=document,
+        section_summaries=tuple(section_summaries),
         graph=graph,
     )
 
@@ -927,10 +1021,26 @@ def _sections_from_draft(
             summary=f"{draft.display_name} revision {draft.current_revision_number}.",
         ),
         BuilderSection(
+            section_id="roles",
+            label="Roles",
+            status=WorkflowBuilderStatus.READY
+            if graph.roles
+            else WorkflowBuilderStatus.WARNING,
+            summary=f"{len(graph.roles)} role definitions.",
+        ),
+        BuilderSection(
             section_id="references",
             label="References",
             status=WorkflowBuilderStatus.READY,
             summary=_references_summary(graph),
+        ),
+        BuilderSection(
+            section_id="contracts",
+            label="Contracts",
+            status=WorkflowBuilderStatus.READY
+            if graph.contracts
+            else WorkflowBuilderStatus.WARNING,
+            summary=f"{len(graph.contracts)} workflow contracts.",
         ),
         BuilderSection(
             section_id="graph",
@@ -939,6 +1049,41 @@ def _sections_from_draft(
             summary=(
                 f"{len(graph.nodes)} nodes and {len(graph.edges)} edges in "
                 "the stored document."
+            ),
+        ),
+        BuilderSection(
+            section_id="joins",
+            label="Joins",
+            status=WorkflowBuilderStatus.READY,
+            summary=f"{len(graph.join_policies)} join policies.",
+        ),
+        BuilderSection(
+            section_id="approvals",
+            label="Approvals",
+            status=WorkflowBuilderStatus.READY,
+            summary=f"{len(graph.approval_gates)} approval gates.",
+        ),
+        BuilderSection(
+            section_id="subworkflows",
+            label="Subworkflows",
+            status=WorkflowBuilderStatus.READY,
+            summary=f"{len(graph.subworkflow_refs)} subworkflow references.",
+        ),
+        BuilderSection(
+            section_id="tests",
+            label="Tests",
+            status=WorkflowBuilderStatus.READY
+            if graph.test_requirements
+            else WorkflowBuilderStatus.WARNING,
+            summary=f"{len(graph.test_requirements)} required test entries.",
+        ),
+        BuilderSection(
+            section_id="annotations",
+            label="Annotations",
+            status=WorkflowBuilderStatus.READY,
+            summary=(
+                f"{len(graph.editor_annotations.section_notes)} section notes "
+                "and graph layout metadata."
             ),
         ),
         BuilderSection(
@@ -1064,11 +1209,261 @@ def _finding_from_live(finding: ValidationFindingResponse) -> ValidationFinding:
         else WorkflowBuilderSeverity.INFO,
         category=finding.category,
         section=finding.section_key or finding.field_path or "workflow",
+        field_path=finding.field_path,
+        graph_element_id=finding.graph_element_id,
         message=finding.message,
         recommended_action=finding.remediation or "Review the workflow document.",
         href=finding.safe_links[0] if finding.safe_links else None,
         evidence_reference_id=finding.reference_id,
     )
+
+
+def findings_from_authoring_validation(
+    findings: Sequence[dict[str, object]],
+) -> tuple[ValidationFinding, ...]:
+    return tuple(
+        _finding_from_authoring_validation(finding, index=index)
+        for index, finding in enumerate(findings, start=1)
+    )
+
+
+def findings_from_pydantic_error(exc: ValidationError) -> tuple[ValidationFinding, ...]:
+    findings: list[ValidationFinding] = []
+    for index, error in enumerate(exc.errors(include_url=False), start=1):
+        location = ".".join(str(part) for part in error.get("loc", ())) or "document"
+        message = str(error.get("msg", "Document field is invalid."))
+        section = _section_from_field_path(location)
+        if section == "metadata":
+            section = _section_from_validation_message(message)
+        findings.append(
+            ValidationFinding(
+                finding_id=f"document.shape.{index}",
+                severity=WorkflowBuilderSeverity.BLOCKING,
+                category="document",
+                section=section,
+                field_path=location,
+                message=message,
+                recommended_action=(
+                    "Update the referenced workflow document field and save again."
+                ),
+                href=f"#workflow-{section}",
+            )
+        )
+    return tuple(findings)
+
+
+def workflow_document_digest(document: RegistryWorkflowDraftDocument) -> str:
+    payload = document.model_dump(mode="json")
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def workflow_document_payload_digest(payload: object) -> str:
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def workflow_document_payload_size(payload: object) -> int:
+    return len(
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode(
+            "utf-8"
+        )
+    )
+
+
+def workflow_save_scope_hash(
+    *,
+    tenant_id: str | None,
+    principal_id: str,
+    workflow_draft_id: str,
+    revision: str,
+    route_family: str = "react-workflow-document-save",
+) -> str:
+    payload = {
+        "tenant_id": tenant_id,
+        "principal_id": principal_id,
+        "workflow_draft_id": workflow_draft_id,
+        "revision": revision,
+        "route_family": route_family,
+    }
+    return workflow_document_payload_digest(payload)
+
+
+def blocking_authoring_findings(
+    document: RegistryWorkflowDraftDocument,
+) -> tuple[ValidationFinding, ...]:
+    from multi_agent_platform.admin.workflow_registry.validation import (
+        validate_authoring_document,
+    )
+
+    visible_subworkflow_ids = {
+        reference.workflow_version_ref for reference in document.subworkflow_refs
+    }
+    findings = validate_authoring_document(
+        document,
+        available_subworkflow_version_ids=visible_subworkflow_ids,
+    )
+    blocking = [
+        finding
+        for finding in findings
+        if finding.get("blocking") is True
+        or str(finding.get("severity", "")).lower() in {"blocking", "critical"}
+    ]
+    return findings_from_authoring_validation(blocking)
+
+
+def oversized_document_finding(*, payload_size: int, limit: int) -> ValidationFinding:
+    return ValidationFinding(
+        finding_id="document.size.limit",
+        severity=WorkflowBuilderSeverity.BLOCKING,
+        category="document",
+        section="metadata",
+        field_path="document",
+        message="Workflow document payload is too large to save safely.",
+        recommended_action=(
+            f"Reduce the workflow document below {limit} bytes before saving."
+        ),
+        href="#workflow-metadata",
+        evidence_reference_id=f"payload-bytes:{payload_size}",
+    )
+
+
+def unsafe_document_findings(payload: object) -> tuple[ValidationFinding, ...]:
+    findings: list[ValidationFinding] = []
+    for field_path, value in _iter_document_strings(payload):
+        lowered = value.lower()
+        if any(marker in lowered for marker in WORKFLOW_BUILDER_UNSAFE_MARKERS) or any(
+            marker in lowered
+            for marker in (
+                "sk-",
+                "authorization:",
+                "bearer ",
+                "begin private key",
+                "/users/",
+            )
+        ):
+            section = _section_from_field_path(field_path)
+            findings.append(
+                ValidationFinding(
+                    finding_id=f"document.unsafe.{len(findings) + 1}",
+                    severity=WorkflowBuilderSeverity.BLOCKING,
+                    category="redaction",
+                    section=section,
+                    field_path=field_path,
+                    message="Workflow document field contains protected text.",
+                    recommended_action=(
+                        "Remove protected raw text and store only safe references."
+                    ),
+                    href=f"#workflow-{section}",
+                )
+            )
+            if len(findings) >= 5:
+                break
+    return tuple(findings)
+
+
+def _finding_from_authoring_validation(
+    finding: dict[str, object],
+    *,
+    index: int,
+) -> ValidationFinding:
+    field_path = str(finding.get("field_path") or "")
+    section = str(finding.get("section_key") or _section_from_field_path(field_path))
+    severity_value = str(finding.get("severity") or "").lower()
+    blocking = finding.get("blocking") is True or severity_value in {
+        "blocking",
+        "critical",
+    }
+    return ValidationFinding(
+        finding_id=str(finding.get("code") or field_path or f"document.{index}"),
+        severity=WorkflowBuilderSeverity.BLOCKING
+        if blocking
+        else WorkflowBuilderSeverity.WARNING
+        if severity_value in {"warning", "advisory"}
+        else WorkflowBuilderSeverity.INFO,
+        category=str(finding.get("category") or section or "document"),
+        section=section or "document",
+        field_path=field_path or None,
+        graph_element_id=str(finding.get("graph_element_id"))
+        if finding.get("graph_element_id") is not None
+        else None,
+        message=str(finding.get("message") or "Workflow document is invalid."),
+        recommended_action=str(
+            finding.get("remediation")
+            or "Update the referenced workflow document field and save again."
+        ),
+        href=f"#workflow-{section or 'metadata'}",
+        evidence_reference_id=str(finding.get("reference_id"))
+        if finding.get("reference_id") is not None
+        else None,
+    )
+
+
+def _iter_document_strings(
+    payload: object,
+    prefix: str = "document",
+) -> Iterator[tuple[str, str]]:
+    if isinstance(payload, str):
+        yield prefix, payload
+        return
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            yield from _iter_document_strings(value, f"{prefix}.{key}")
+        return
+    if isinstance(payload, list):
+        for index, value in enumerate(payload):
+            yield from _iter_document_strings(value, f"{prefix}[{index}]")
+
+
+def _section_from_field_path(field_path: str) -> str:
+    if not field_path:
+        return "metadata"
+    normalized = (
+        field_path.removeprefix("document.")
+        if field_path.startswith("document.")
+        else field_path
+    )
+    first = normalized.split("[", maxsplit=1)[0].split(".", maxsplit=1)[0]
+    return {
+        "display_name": "metadata",
+        "description": "metadata",
+        "workflow_key": "metadata",
+        "workflow_kind": "metadata",
+        "metadata": "metadata",
+        "roles": "roles",
+        "prompt_profile_references": "references",
+        "skill_installations": "references",
+        "contracts": "contracts",
+        "nodes": "graph",
+        "edges": "graph",
+        "entry_node_key": "graph",
+        "join_policies": "joins",
+        "approval_gates": "approvals",
+        "subworkflow_refs": "subworkflows",
+        "test_requirements": "tests",
+        "editor_annotations": "annotations",
+    }.get(first, "metadata")
+
+
+def _section_from_validation_message(message: str) -> str:
+    lowered = message.lower()
+    if any(marker in lowered for marker in ("edge", "node", "entry_node", "graph")):
+        return "graph"
+    if "role" in lowered:
+        return "roles"
+    if "join" in lowered:
+        return "joins"
+    if "approval" in lowered:
+        return "approvals"
+    if "subworkflow" in lowered:
+        return "subworkflows"
+    if "test" in lowered:
+        return "tests"
+    return "metadata"
 
 
 def _evidence_from_gate(

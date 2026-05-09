@@ -2,10 +2,205 @@
   "schema_version": "1.0",
   "spec_number": "070",
   "title": "React Workflow Graph And Agent Role Builder",
-  "state": "pending",
-  "current_phase": null,
-  "completed_phases": [],
-  "validation": "pending",
+  "state": "completed",
+  "current_phase": "validation",
+  "completed_phases": [
+    "specify",
+    "clarify",
+    "plan",
+    "tasks",
+    "analyze",
+    "implement",
+    "validation"
+  ],
+  "validation": "completed",
   "blocker": null,
-  "history": []
+  "history": [
+    {
+      "at": "2026-05-09T17:09:10Z",
+      "phase": "specify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/specify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:09:10Z",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/070-react-workflow-graph-and-agent-role-builder/spec.md",
+        "specs/070-react-workflow-graph-and-agent-role-builder/checklists/requirements.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:09:10Z",
+      "phase": "clarify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/clarify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:09:10Z",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/070-react-workflow-graph-and-agent-role-builder/spec.md"
+      ],
+      "auto_clarifications": [
+        "Spec 070 persists through the Spec 069 full-document save contract.",
+        "Prompt/profile create and publish flows are deferred to Spec 071.",
+        "Form and list controls are required; direct drag-and-drop canvas editing is optional.",
+        "Referenced item deletion must not silently cascade.",
+        "Graph state must have keyboard-readable equivalents and desktop/mobile visual evidence."
+      ]
+    },
+    {
+      "at": "2026-05-09T17:09:10Z",
+      "phase": "plan",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/plan.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:15:22Z",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/070-react-workflow-graph-and-agent-role-builder/plan.md",
+        "specs/070-react-workflow-graph-and-agent-role-builder/research.md",
+        "specs/070-react-workflow-graph-and-agent-role-builder/data-model.md",
+        "specs/070-react-workflow-graph-and-agent-role-builder/contracts/workflow-graph-role-builder.md",
+        "specs/070-react-workflow-graph-and-agent-role-builder/quickstart.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:15:22Z",
+      "phase": "tasks",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/tasks.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:20:23Z",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/070-react-workflow-graph-and-agent-role-builder/tasks.md"
+      ],
+      "summary": "Generated 53 dependency-ordered tasks covering roles, contracts, graph topology, validation recovery, QA docs, Playwright, curl review, and final validation."
+    },
+    {
+      "at": "2026-05-09T17:20:23Z",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/070-react-workflow-graph-and-agent-role-builder/spec.md",
+        "specs/070-react-workflow-graph-and-agent-role-builder/plan.md",
+        "specs/070-react-workflow-graph-and-agent-role-builder/tasks.md"
+      ],
+      "summary": "Remediated one documentation traceability gap by adding explicit README.md and docs/quickstart.md impact review. No remaining critical or high findings."
+    },
+    {
+      "at": "2026-05-09T17:20:23Z",
+      "phase": "implement",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/implement.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T18:13:07Z",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "frontend/admin/src/components/workflows/workflowDocumentEditor.ts",
+        "frontend/admin/src/components/workflows/WorkflowEditorControls.tsx",
+        "frontend/admin/src/components/workflows/WorkflowRoleEditor.tsx",
+        "frontend/admin/src/components/workflows/WorkflowContractEditor.tsx",
+        "frontend/admin/src/components/workflows/WorkflowTopologyEditor.tsx",
+        "frontend/admin/src/components/workflows/WorkflowJoinApprovalEditor.tsx",
+        "frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx",
+        "frontend/admin/src/components/workflows/WorkflowGraphPanel.tsx",
+        "frontend/admin/src/styles/admin.css",
+        "scripts/qa/seed_workflow_graph_role_builder_qa070.py",
+        "tests/integration/test_admin_react_routes.py"
+      ],
+      "summary": "Implemented role, contract, topology, join, approval, subworkflow, layout, dirty-document projection, save/revert wiring, dependency warnings, and QA seeded workflow coverage on top of the Spec 069 full-document save route."
+    },
+    {
+      "at": "2026-05-09T18:13:07Z",
+      "phase": "validation",
+      "status": "completed",
+      "commands": [
+        "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/070-react-workflow-graph-and-agent-role-builder",
+        "uv run pytest tests/contract/test_admin_react_contract.py tests/contract/test_workflow_builder_contract.py tests/integration/test_admin_react_routes.py tests/unit/admin/test_workflow_builder_service.py -q --no-cov",
+        "cd frontend/admin && npm test -- Workflow",
+        "cd frontend/admin && npm run typecheck",
+        "uv run python scripts/frontend/generate_admin_react_types.py --check",
+        "uv run ruff check .",
+        "uv run ruff format --check .",
+        "uv run mypy src",
+        "cd frontend/admin && npm run build",
+        "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/validation.yml",
+        "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/validation.yml --start-processes",
+        "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/qa070-after-spec"
+      ],
+      "playwright_screenshots": [
+        "output/playwright/qa070_ui/qa070-workflow-graph-role-desktop.png",
+        "output/playwright/qa070_ui/qa070-workflow-graph-role-mobile.png"
+      ],
+      "curl_test_artifacts": ".data/curl_test_runs/qa070-after-spec",
+      "curl_test_failed_sections": 0,
+      "repair_notes": [
+        "Updated frontend route smoke test to assert Workflow structure.",
+        "Adjusted Playwright manifest to assert visible Join Policies text instead of hidden select option text."
+      ]
+    }
+  ],
+  "status": "completed",
+  "blocked": null,
+  "auto_clarifications": [
+    "Spec 070 persists through the Spec 069 full-document save contract.",
+    "Prompt/profile create and publish flows are deferred to Spec 071.",
+    "Form and list controls are required; direct drag-and-drop canvas editing is optional.",
+    "Referenced item deletion must not silently cascade.",
+    "Graph state must have keyboard-readable equivalents and desktop/mobile visual evidence."
+  ],
+  "analysis_findings": {
+    "critical_blockers": 0,
+    "high_findings_remediated": 0,
+    "medium_findings_remediated": 1,
+    "coverage": "All FR/SC items have task coverage after local task remediation."
+  },
+  "task_count": 53,
+  "implementation_summary": {
+    "route_family": "/admin/app/workflows/drafts/{workflow_draft_id}/save",
+    "contract_updates": [
+      "No new backend route family; Spec 070 uses the Spec 069 full-document save contract.",
+      "React builder now edits workflow roles, contracts, graph nodes, graph edges, joins, approvals, subworkflows, and layout annotations through generated backend-owned save contracts."
+    ],
+    "frontend_updates": [
+      "WorkflowBuilderPage maintains an editable normalized document and sends full document saves.",
+      "WorkflowRoleEditor, WorkflowContractEditor, WorkflowTopologyEditor, and WorkflowJoinApprovalEditor provide visible add/edit/duplicate/reorder/delete controls.",
+      "WorkflowGraphPanel renders the dirty document projection with keyboard-readable node, edge, and join summaries."
+    ]
+  },
+  "curl_testing": {
+    "file": "curl_testing.md",
+    "section": "18.4a React workflow full document save scenarios",
+    "route_family": "/admin/app/workflows/drafts/{workflow_draft_id}/save",
+    "coverage": "No new route family for Spec 070; existing section 18.4a covers full document save, idempotent replay, stale conflict, and invalid graph validation for the route used by the new graph and role builder UI."
+  },
+  "validation_results": {
+    "qa_docs": "passed",
+    "spec_qa": "passed",
+    "playwright": "passed",
+    "multi_agent_curl_test": "passed",
+    "curl_test_artifact_dir": ".data/curl_test_runs/qa070-after-spec",
+    "playwright_output_dir": "output/playwright/qa070_ui"
+  }
 }

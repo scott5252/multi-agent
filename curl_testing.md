@@ -1,6 +1,6 @@
 # Sequential curl API Test Plan
 
-This document is a sequential JSON/API walkthrough for specs 001 through 068.
+This document is a sequential JSON/API walkthrough for specs 001 through 069.
 It is based on the implemented FastAPI route inventory in
 `multi_agent_platform.api.main` and the feature QA/integration tests.
 
@@ -3225,6 +3225,88 @@ Expected `200`:
 {"detail":"React workflow URLs returned successfully"}
 ```
 
+### 18.4a React workflow full document save scenarios
+
+```bash
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/detail.json?tenant_id=$ACME_TENANT_ID" \
+  | tee /tmp/curl-react-workflow-detail.json
+export REACT_WORKFLOW_REVISION="$(jq -r '.draft.revision' /tmp/curl-react-workflow-detail.json)"
+cat >/tmp/curl-react-workflow-save.json <<JSON
+{
+  "revision": "$REACT_WORKFLOW_REVISION",
+  "idempotency_key": "curl-react-workflow-save",
+  "name": "Curl React Workflow Full Document",
+  "description": "Saved through the React workflow document route.",
+  "change_summary": "Curl React full document save",
+  "client_context": {"active_section": "metadata"},
+  "selected_prompt_ref": null,
+  "selected_profile_ref": null,
+  "join_policy": "wait_for_required_branches",
+  "force_stale": false,
+  "document": {
+    "workflow_key": "curl-triage-flow-copy",
+    "display_name": "Curl React Workflow Full Document",
+    "description": "Saved through the React workflow document route.",
+    "workflow_kind": "main_workflow",
+    "entry_node_key": "triage-node",
+    "contracts": [
+      {"contract_key": "inbound", "json_schema": {"type": "object"}},
+      {"contract_key": "result", "json_schema": {"type": "object"}}
+    ],
+    "roles": [
+      {"role_key": "triage-role", "display_name": "Triage Role", "purpose": "Assess intake", "input_contract_key": "inbound", "output_contract_key": "result", "graph_node_keys": ["triage-node"]}
+    ],
+    "prompt_profile_references": [],
+    "skill_installations": [],
+    "nodes": [
+      {"node_key": "triage-node", "node_type": "role", "display_name": "Triage", "role_key": "triage-role"},
+      {"node_key": "done", "node_type": "terminal", "display_name": "Done"}
+    ],
+    "edges": [
+      {"edge_key": "edge-triage-done", "source_node_key": "triage-node", "target_node_key": "done", "edge_type": "success"}
+    ],
+    "join_policies": [],
+    "approval_gates": [],
+    "subworkflow_refs": [],
+    "test_requirements": [],
+    "editor_annotations": {"section_notes": {"metadata": "Curl React full document save"}, "graph_layout": {}, "collapsed_sections": []}
+  }
+}
+JSON
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/save?tenant_id=$ACME_TENANT_ID" \
+  --data @/tmp/curl-react-workflow-save.json \
+  | tee /tmp/curl-react-workflow-save-response.json \
+  | jq -e '.status == "accepted" and .editor_state.document.editor_annotations.section_notes.metadata == "Curl React full document save"'
+export REACT_WORKFLOW_SAVED_REVISION="$(jq -r '.revision' /tmp/curl-react-workflow-save-response.json)"
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/save?tenant_id=$ACME_TENANT_ID" \
+  --data @/tmp/curl-react-workflow-save.json \
+  | tee /tmp/curl-react-workflow-replay.json \
+  | jq -e '.status == "idempotent_replay" and .idempotency.replayed == true'
+jq '.idempotency_key = "curl-react-workflow-stale" | .force_stale = true' \
+  /tmp/curl-react-workflow-save.json > /tmp/curl-react-workflow-stale.json
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/save?tenant_id=$ACME_TENANT_ID" \
+  --data @/tmp/curl-react-workflow-stale.json \
+  | tee /tmp/curl-react-workflow-stale-response.json \
+  | jq -e '.status == "stale_conflict"'
+jq '.revision = env.REACT_WORKFLOW_SAVED_REVISION | .idempotency_key = "curl-react-workflow-invalid" | .document.edges += [{"edge_key":"edge-missing-node","source_node_key":"triage-node","target_node_key":"missing-node"}]' \
+  /tmp/curl-react-workflow-save.json > /tmp/curl-react-workflow-invalid.json
+curl -sS -X POST -H "$ACME_HEADER" -H "$JSON_HEADER" \
+  "$BASE_URL/admin/app/workflows/drafts/$WORKFLOW_COPY_DRAFT_ID/save?tenant_id=$ACME_TENANT_ID" \
+  --data @/tmp/curl-react-workflow-invalid.json \
+  | tee /tmp/curl-react-workflow-invalid-response.json \
+  | jq -e '.status == "validation_error" and .validation.findings[0].section == "graph"'
+```
+
+Expected `200`:
+
+```json
+true
+```
+
 ### 18.5 React governance URL scenarios
 
 ```bash
@@ -3423,12 +3505,12 @@ Expected `303`:
 ## 19. Coverage Checklist
 
 The walkthrough covers the JSON/API and URL-surface scenarios from specs 001
-through 068:
+through 069:
 
 - Operations foundation: `/health/live`, `/health/ready`, `/version`, `/dependencies`
 - Auth and access: `/auth/me`, `/auth/tenant-context/{tenant_id}`, `/auth/local-login.json`, `/auth/local-login`, `/auth/local-logout`, `/admin/tenants/{tenant_id}/role-grants`, `/admin/role-grants`, `/admin/support-overrides`, `/admin/support-overrides/{support_override_request_id}/approve`
 - Admin shell and saved filters: `/admin`, `/admin/scope`, `/admin/filters/{admin_area}.json`, `/admin/filters/{admin_area}`, `/admin/filters/{admin_area}/{filter_id}/restore`, and delete aliases for `/admin/filters/{admin_area}/{filter_id}`
-- Workflow registry: all `/admin/workflows` JSON endpoints, including draft and published Agent Communication Graph JSON projections
+- Workflow registry: all `/admin/workflows` JSON endpoints, including draft and published Agent Communication Graph JSON projections, plus React full document save, replay, stale conflict, and invalid graph validation coverage
 - Durable runtime: all `/runtime/runs` JSON endpoints
 - Immutable memory: all `/memory` JSON endpoints
 - Channels: all `/runs` JSON endpoints, `/runs/{run_id}/events` SSE, `/channels/telegram/link-token`, `/channels/telegram/webhook/{secret}`

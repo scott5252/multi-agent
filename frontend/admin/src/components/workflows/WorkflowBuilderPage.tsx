@@ -21,10 +21,14 @@ import type {
 import { buildIdempotencyKey } from "../../utils/adminActionMetadata";
 import { CommonState } from "../states/CommonState";
 import { AgentGraphPanel } from "./AgentGraphPanel";
+import { WorkflowContractEditor } from "./WorkflowContractEditor";
 import { WorkflowGraphPanel } from "./WorkflowGraphPanel";
+import { WorkflowJoinApprovalEditor } from "./WorkflowJoinApprovalEditor";
 import { WorkflowJsonInspector } from "./WorkflowJsonInspector";
 import { WorkflowPublishPanel } from "./WorkflowPublishPanel";
+import { WorkflowPromptProfileBinder } from "./WorkflowPromptProfileBinder";
 import { WorkflowReferencePicker } from "./WorkflowReferencePicker";
+import { WorkflowRoleEditor } from "./WorkflowRoleEditor";
 import { WorkflowCreatePage } from "./WorkflowCreatePage";
 import { WorkflowRegistryPage } from "./WorkflowRegistryPage";
 import { WorkflowRevisionPanel } from "./WorkflowRevisionPanel";
@@ -33,7 +37,17 @@ import {
   type WorkflowDraftFormValues,
 } from "./WorkflowSectionForm";
 import { WorkflowSharingPanel } from "./WorkflowSharingPanel";
+import { WorkflowSetupWizardPanel } from "./WorkflowSetupWizardPanel";
+import { WorkflowTestEvidencePanel } from "./WorkflowTestEvidencePanel";
+import { WorkflowTopologyEditor } from "./WorkflowTopologyEditor";
 import { WorkflowValidationPanel } from "./WorkflowValidationPanel";
+import {
+  applyWorkflowMetadata,
+  buildGraphPreviewFromDocument,
+  cloneWorkflowDocument,
+  type WorkflowEditorDocument,
+} from "./workflowDocumentEditor";
+import { buildThreeAgentStarterDocument } from "./workflowSetupWizard";
 
 interface WorkflowBuilderPageProps {
   builderUrl: string;
@@ -50,6 +64,8 @@ export function WorkflowBuilderPage({
   const [formValues, setFormValues] = useState<WorkflowDraftFormValues | null>(
     null,
   );
+  const [editorDocument, setEditorDocument] =
+    useState<WorkflowEditorDocument | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [draftAgentGraph, setDraftAgentGraph] =
     useState<AgentCommunicationGraph | null>(null);
@@ -87,8 +103,12 @@ export function WorkflowBuilderPage({
         if (!alive) {
           return;
         }
+        const selectedCatalog = catalogWithFallbacks(
+          lookupPayload,
+          builderPayload.reference_catalog,
+        );
         setEnvelope(builderPayload);
-        setCatalog(lookupPayload);
+        setCatalog(selectedCatalog);
         setValidation(builderPayload.validation ?? null);
         setPublishReadiness(builderPayload.publish_readiness ?? null);
         setFormValues(
@@ -100,10 +120,15 @@ export function WorkflowBuilderPage({
                   "wait_for_required_branches",
                 name: builderPayload.draft.name,
                 selected_profile_ref:
-                  lookupPayload.profile_options[0]?.reference_id ?? null,
+                  selectedCatalog.profile_options[0]?.reference_id ?? null,
                 selected_prompt_ref:
-                  lookupPayload.prompt_options[0]?.reference_id ?? null,
+                  selectedCatalog.prompt_options[0]?.reference_id ?? null,
               }
+            : null,
+        );
+        setEditorDocument(
+          builderPayload.draft
+            ? cloneWorkflowDocument(builderPayload.draft.document)
             : null,
         );
         setDirty(false);
@@ -200,6 +225,42 @@ export function WorkflowBuilderPage({
 
   function updateValues(values: WorkflowDraftFormValues) {
     setFormValues(values);
+    setEditorDocument((current) =>
+      current ? applyWorkflowMetadata(current, values) : current,
+    );
+    setDirty(true);
+  }
+
+  function updateEditorDocument(document: WorkflowEditorDocument) {
+    setEditorDocument(
+      formValues ? applyWorkflowMetadata(document, formValues) : document,
+    );
+    setDirty(true);
+  }
+
+  function revertEditorDocument() {
+    if (!envelope?.draft) {
+      return;
+    }
+    setFormValues({
+      description: envelope.draft.description,
+      join_policy:
+        envelope.draft.graph.join_policies[0]?.policy_id ??
+        "wait_for_required_branches",
+      name: envelope.draft.name,
+      selected_profile_ref: catalog?.profile_options[0]?.reference_id ?? null,
+      selected_prompt_ref: catalog?.prompt_options[0]?.reference_id ?? null,
+    });
+    setEditorDocument(cloneWorkflowDocument(envelope.draft.document));
+    setSaveResult(null);
+    setDirty(false);
+  }
+
+  function applyStarterWorkflow() {
+    if (!editorDocument) {
+      return;
+    }
+    setEditorDocument(buildThreeAgentStarterDocument(editorDocument));
     setDirty(true);
   }
 
@@ -254,13 +315,22 @@ export function WorkflowBuilderPage({
   }
 
   async function saveDraft(forceStale = false) {
-    if (!envelope?.draft || !formValues || !saveActionHref()) {
+    if (!envelope?.draft || !formValues || !editorDocument || !saveActionHref()) {
       return;
     }
+    const documentToSave = buildSaveDocument(editorDocument, formValues);
     setSaving(true);
     try {
       const result = await saveWorkflowDraft(saveActionHref() ?? "", {
+        change_summary: forceStale
+          ? "Simulated stale workflow document save"
+          : "Workflow document save",
+        client_context: {
+          active_section: "workflow-graph-role-builder",
+          form_version: "workflow-graph-role-builder.v1",
+        },
         description: formValues.description,
+        document: documentToSave,
         force_stale: forceStale,
         idempotency_key: buildIdempotencyKey(
           forceStale ? "workflow-save-stale" : "workflow-save",
@@ -278,20 +348,35 @@ export function WorkflowBuilderPage({
       if (result.publish_readiness) {
         setPublishReadiness(result.publish_readiness);
       }
-      if (result.status === "accepted") {
+      if (result.status === "accepted" || result.status === "idempotent_replay") {
         setDirty(false);
         setEnvelope((current) =>
-          current?.draft
+          current?.draft && result.editor_state
+            ? {
+                ...current,
+                draft: result.editor_state,
+                sections:
+                  result.editor_state.section_summaries.length > 0
+                    ? result.editor_state.section_summaries
+                    : current.sections,
+              }
+            : current?.draft
             ? {
                 ...current,
                 draft: {
                   ...current.draft,
                   description: formValues.description,
+                  document: documentToSave,
                   name: formValues.name,
                   revision: result.revision ?? current.draft.revision,
                 },
               }
             : current,
+        );
+        setEditorDocument(
+          result.editor_state
+            ? cloneWorkflowDocument(result.editor_state.document)
+            : cloneWorkflowDocument(documentToSave),
         );
       }
     } catch (caught: unknown) {
@@ -341,6 +426,24 @@ export function WorkflowBuilderPage({
       setPublishResult(result);
       if (result.publish_readiness) {
         setPublishReadiness(result.publish_readiness);
+      }
+      if (result.status === "accepted") {
+        const refreshed = await fetchWorkflowBuilder(builderUrl);
+        setEnvelope(refreshed);
+        setValidation(refreshed.validation ?? validation);
+        setPublishReadiness(refreshed.publish_readiness ?? publishReadiness);
+        if (refreshed.draft) {
+          setFormValues({
+            description: refreshed.draft.description,
+            join_policy:
+              refreshed.draft.graph.join_policies[0]?.policy_id ??
+              "wait_for_required_branches",
+            name: refreshed.draft.name,
+            selected_profile_ref: catalog?.profile_options[0]?.reference_id ?? null,
+            selected_prompt_ref: catalog?.prompt_options[0]?.reference_id ?? null,
+          });
+          setEditorDocument(cloneWorkflowDocument(refreshed.draft.document));
+        }
       }
     } catch (caught: unknown) {
       setPublishResult(null);
@@ -411,7 +514,7 @@ export function WorkflowBuilderPage({
     );
   }
 
-  if (!formValues || !validation || !publishReadiness) {
+  if (!formValues || !editorDocument || !validation || !publishReadiness) {
     return (
       <CommonState
         state={{
@@ -424,6 +527,11 @@ export function WorkflowBuilderPage({
       />
     );
   }
+
+  const editableGraph = buildGraphPreviewFromDocument(
+    editorDocument,
+    envelope.draft.graph,
+  );
 
   return (
     <div className="workflow-builder-page">
@@ -440,6 +548,14 @@ export function WorkflowBuilderPage({
         mutationResult={createResult}
         onCreate={() => void createDraft()}
       />
+      <WorkflowSetupWizardPanel
+        document={editorDocument}
+        onApplyStarter={applyStarterWorkflow}
+        publishedVersionId={versionGraphId}
+        publishReadiness={publishReadiness}
+        tenantId={envelope.scope.tenant_id}
+        validation={validation}
+      />
       <WorkflowSectionForm
         dirty={dirty}
         draft={envelope.draft}
@@ -448,6 +564,7 @@ export function WorkflowBuilderPage({
         mutationResult={saveResult}
         onChange={updateValues}
         onForceStale={() => void saveDraft(true)}
+        onRevert={revertEditorDocument}
         onSave={() => void saveDraft(false)}
         saving={saving}
         sections={envelope.sections}
@@ -464,7 +581,39 @@ export function WorkflowBuilderPage({
         selectedProfileRef={formValues.selected_profile_ref}
         selectedPromptRef={formValues.selected_prompt_ref}
       />
-      <WorkflowGraphPanel graph={envelope.draft.graph} />
+      <WorkflowRoleEditor
+        catalog={catalog}
+        document={editorDocument}
+        onChange={updateEditorDocument}
+      />
+      <WorkflowPromptProfileBinder
+        catalog={catalog}
+        document={editorDocument}
+        onChange={updateEditorDocument}
+      />
+      <WorkflowTestEvidencePanel
+        catalog={catalog}
+        document={editorDocument}
+        draftRevision={envelope.draft.workflow_draft_revision_id}
+        onChange={updateEditorDocument}
+        publishReadiness={publishReadiness}
+        tenantId={envelope.scope.tenant_id}
+        workflowDraftId={envelope.draft.workflow_draft_id}
+      />
+      <WorkflowContractEditor
+        document={editorDocument}
+        onChange={updateEditorDocument}
+      />
+      <WorkflowTopologyEditor
+        document={editorDocument}
+        onChange={updateEditorDocument}
+      />
+      <WorkflowJoinApprovalEditor
+        catalog={catalog}
+        document={editorDocument}
+        onChange={updateEditorDocument}
+      />
+      <WorkflowGraphPanel graph={editableGraph} />
       <AgentGraphPanel
         error={draftAgentGraphError}
         graph={draftAgentGraph}
@@ -570,7 +719,32 @@ function buildCreateDocument(slug: string, displayName: string) {
       },
     ],
     subworkflow_refs: [],
+    test_requirements: [],
     workflow_key: slug,
     workflow_kind: "main_workflow",
+  };
+}
+
+function buildSaveDocument(
+  document: WorkflowEditorDocument,
+  values: WorkflowDraftFormValues,
+): Record<string, unknown> {
+  return applyWorkflowMetadata(document, values);
+}
+
+function catalogWithFallbacks(
+  lookupCatalog: WorkflowReferenceCatalog,
+  selectedDraftCatalog: WorkflowReferenceCatalog,
+): WorkflowReferenceCatalog {
+  return {
+    ...lookupCatalog,
+    profile_options:
+      lookupCatalog.profile_options.length > 0
+        ? lookupCatalog.profile_options
+        : selectedDraftCatalog.profile_options,
+    prompt_options:
+      lookupCatalog.prompt_options.length > 0
+        ? lookupCatalog.prompt_options
+        : selectedDraftCatalog.prompt_options,
   };
 }

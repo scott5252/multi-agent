@@ -41,7 +41,7 @@ export function WorkflowGraphPanel({ graph }: WorkflowGraphPanelProps) {
       <div className="section-heading">
         <div>
           <p className="eyebrow">Graph</p>
-          <h2 id="graph-title">Runtime structure</h2>
+          <h2 id="graph-title">Workflow structure</h2>
         </div>
         <Badge tone={graph.layout_is_authoritative ? "success" : "warning"}>
           {graph.layout_is_authoritative ? "authoritative" : "preview"}

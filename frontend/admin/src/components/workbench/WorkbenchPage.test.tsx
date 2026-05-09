@@ -40,7 +40,7 @@ describe("WorkbenchPage", () => {
       "href",
       "/admin/app/operations?run_id=11111111-1111-4111-8111-111111111157&panel=runtime-graph#runtime-run-graph",
     );
-    expect(screen.getByText("retry_scheduled")).toBeInTheDocument();
+    expect(screen.getByText("telegram-retry-scheduled")).toBeInTheDocument();
     expect(screen.getByText("Redacted signals")).toBeInTheDocument();
     expect(screen.queryByText(/qa029/i)).not.toBeInTheDocument();
   });

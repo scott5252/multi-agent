@@ -21,8 +21,14 @@
   "playwright": {
     "flows": [
       {
-        "id": "qa070-workflow-setup-smoke",
+        "id": "qa070-workflow-graph-role-desktop",
         "steps": [
+          {
+            "viewport": {
+              "width": 1440,
+              "height": 1100
+            }
+          },
           {
             "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
           },
@@ -36,16 +42,93 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Workflow"
+            "expect_text": "QA070 Graph Role Builder"
           },
           {
-            "screenshot": "qa070-workflow-setup-smoke.png",
+            "expect_text": "Roles"
+          },
+          {
+            "expect_text": "Contracts"
+          },
+          {
+            "expect_text": "Graph Topology"
+          },
+      {
+        "expect_text": "Join Policies"
+      },
+          {
+            "expect_text": "Workflow structure"
+          },
+          {
+            "click": "button:has-text(\"Add role\")"
+          },
+          {
+            "expect_text": "New agent"
+          },
+          {
+            "click": "button:has-text(\"Save draft\")"
+          },
+          {
+            "expect_text": "Draft saved"
+          },
+          {
+            "goto": "/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "New agent"
+          },
+          {
+            "screenshot": "qa070-workflow-graph-role-desktop.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa070-workflow-graph-role-mobile",
+        "steps": [
+          {
+            "viewport": {
+              "width": 390,
+              "height": 900
+            }
+          },
+          {
+            "goto": "/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Workflow structure"
+          },
+          {
+            "expect_text": "New agent"
+          },
+          {
+            "expect_text": "Nodes"
+          },
+          {
+            "expect_text": "Edges and joins"
+          },
+          {
+            "screenshot": "qa070-workflow-graph-role-mobile.png",
             "full_page": true
           }
         ]
       }
     ]
   },
+  "playwright_pre_commands": [
+    {
+      "id": "seed-workflow-graph-role-builder",
+      "command": "uv run python scripts/qa/seed_workflow_graph_role_builder_qa070.py",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    }
+  ],
   "extra_quality_commands": [
     {
       "id": "generated-react-types-fresh",

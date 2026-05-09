@@ -25,6 +25,7 @@ interface WorkflowSectionFormProps {
   mutationResult: BuilderMutationResult | null;
   onChange: (values: WorkflowDraftFormValues) => void;
   onForceStale: () => void;
+  onRevert: () => void;
   onSave: () => void;
   saving: boolean;
   sections: BuilderSection[];
@@ -39,6 +40,7 @@ export function WorkflowSectionForm({
   mutationResult,
   onChange,
   onForceStale,
+  onRevert,
   onSave,
   saving,
   sections,
@@ -85,6 +87,10 @@ export function WorkflowSectionForm({
             <dt>Scope</dt>
             <dd>{draft.tenant_label ?? "Platform"}</dd>
           </div>
+          <div>
+            <dt>Sections</dt>
+            <dd>{draft.section_summaries.length}</dd>
+          </div>
         </dl>
         <label className="form-field" id="workflow-metadata">
           <span className="label">Name</span>
@@ -103,7 +109,7 @@ export function WorkflowSectionForm({
             value={values.description}
           />
         </label>
-        <label className="form-field" id="workflow-graph">
+        <label className="form-field" id="workflow-metadata-join-policy">
           <span className="label">Join policy</span>
           <select
             className="ui-input"
@@ -122,6 +128,15 @@ export function WorkflowSectionForm({
             {dirty ? "Unsaved changes" : "Draft matches last loaded revision"}
           </span>
           <div className="action-row">
+            <Button
+              disabled={!dirty || saving}
+              onClick={onRevert}
+              type="button"
+              variant="secondary"
+            >
+              <RotateCcw aria-hidden="true" size={16} />
+              Revert edits
+            </Button>
             <Button
               disabled={saving}
               onClick={onForceStale}
@@ -151,6 +166,10 @@ function MutationSummary({ result }: { result: BuilderMutationResult }) {
       <h2>{result.status.replace("_", " ")}</h2>
       <p>{result.summary}</p>
       {result.stale_conflict ? <p>{result.stale_conflict.message}</p> : null}
+      {result.stale_conflict ? (
+        <small>{result.stale_conflict.reload_href}</small>
+      ) : null}
+      {result.idempotency?.replayed ? <small>{result.idempotency.summary}</small> : null}
       {result.audit_reference_id ? <small>{result.audit_reference_id}</small> : null}
     </section>
   );

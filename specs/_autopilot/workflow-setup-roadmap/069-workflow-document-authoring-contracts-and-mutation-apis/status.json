@@ -2,10 +2,226 @@
   "schema_version": "1.0",
   "spec_number": "069",
   "title": "Workflow Document Authoring Contracts And Mutation APIs",
-  "state": "pending",
-  "current_phase": null,
-  "completed_phases": [],
-  "validation": "pending",
+  "state": "completed",
+  "current_phase": "validation",
+  "completed_phases": [
+    "specify",
+    "clarify",
+    "plan",
+    "tasks",
+    "analyze",
+    "implement",
+    "validation"
+  ],
+  "validation": "completed",
   "blocker": null,
-  "history": []
+  "history": [
+    {
+      "at": "2026-05-09T15:55:15.373Z",
+      "phase": "specify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/specify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T15:57:43.016Z",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/spec.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/checklists/requirements.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T15:57:43.016Z",
+      "phase": "clarify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/clarify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T15:58:31.031Z",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/spec.md"
+      ],
+      "auto_clarifications": [
+        "Full document save is required first; section patches optional only with identical backend guarantees.",
+        "Workflow saves store prompt/profile references only, not raw prompt template bodies.",
+        "Idempotency scoped to tenant, principal, draft, revision intent, route family, and payload hash.",
+        "Stale saves are rejected with safe recovery context; browser-side automatic merge is out of scope.",
+        "Contract extends existing React Admin workflow route and generated contract flow."
+      ]
+    },
+    {
+      "at": "2026-05-09T15:58:31.031Z",
+      "phase": "plan",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/plan.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T16:03:16.108Z",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/plan.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/research.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/data-model.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/contracts/workflow-document-authoring.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/quickstart.md",
+        "AGENTS.md"
+      ],
+      "decisions": [
+        "Full document save as primary mutation.",
+        "Revision-level idempotency fingerprints planned for durable replay.",
+        "Existing React Admin workflow route family extended."
+      ]
+    },
+    {
+      "at": "2026-05-09T16:03:16.108Z",
+      "phase": "tasks",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/tasks.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T16:05:11.642Z",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/tasks.md"
+      ],
+      "task_count": 58
+    },
+    {
+      "at": "2026-05-09T16:05:11.642Z",
+      "phase": "analyze",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/analyze.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T16:08:32Z",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/spec.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/plan.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/tasks.md"
+      ],
+      "findings": [
+        {
+          "id": "C1",
+          "severity": "HIGH",
+          "summary": "Documentation tasks needed an explicit README.md/docs/quickstart.md impact step for constitution compliance.",
+          "remediation": "Added T047 and expanded T002 to cover shared documentation impact."
+        },
+        {
+          "id": "C2",
+          "severity": "MEDIUM",
+          "summary": "FR-014 audit-summary behavior was implicit in the service save task.",
+          "remediation": "Expanded T018 to require safe audit summaries on React full-document saves."
+        }
+      ],
+      "critical_blockers": 0
+    },
+    {
+      "at": "2026-05-09T16:08:32Z",
+      "phase": "implement",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/tasks.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:06:03Z",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "alembic/versions/0023_workflow_document_authoring_idempotency.py",
+        "src/multi_agent_platform/api/routers/admin_react.py",
+        "src/multi_agent_platform/admin/workflow_builder.py",
+        "src/multi_agent_platform/admin/workflow_registry/service.py",
+        "src/multi_agent_platform/db/repositories/workflow_registry.py",
+        "frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "curl_testing.md"
+      ],
+      "summary": "Implemented full workflow document save/load contracts, durable idempotency replay, stale/idempotency conflict handling, safe validation findings, generated TypeScript updates, React save payload assembly, QA docs, and curl coverage."
+    },
+    {
+      "at": "2026-05-09T17:06:03Z",
+      "phase": "validation",
+      "status": "completed",
+      "commands": [
+        "bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh specs/069-workflow-document-authoring-contracts-and-mutation-apis",
+        "uv run ruff check .",
+        "uv run ruff format --check .",
+        "uv run mypy src",
+        "uv run pytest tests/contract/test_admin_react_contract.py tests/contract/test_workflow_builder_contract.py tests/integration/test_admin_react_routes.py tests/unit/admin/test_workflow_registry_service.py tests/unit/admin/test_workflow_builder_service.py -q --no-cov",
+        "cd frontend/admin && npm test -- Workflow",
+        "cd frontend/admin && npm run typecheck",
+        "uv run python scripts/qa/run_spec_qa.py specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/validation.yml",
+        "uv run python scripts/qa/run_playwright_ui.py specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/validation.yml --start-processes",
+        "uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --repo-root /Users/scottcornell/src/my-projects/multi-agent --output-dir .data/curl_test_runs/qa069-after-spec"
+      ],
+      "playwright_screenshots": [
+        "output/playwright/qa069_ui/qa069-workflow-setup-smoke.png"
+      ],
+      "curl_test_artifacts": ".data/curl_test_runs/qa069-after-spec",
+      "curl_test_succeeded_sections": 224,
+      "curl_test_failed_sections": 0
+    }
+  ],
+  "status": "completed",
+  "blocked": null,
+  "auto_clarifications": [
+    "Full document save is required first; section patches optional only with identical backend guarantees.",
+    "Workflow saves store prompt/profile references only, not raw prompt template bodies.",
+    "Idempotency scoped to tenant, principal, draft, revision intent, route family, and payload hash.",
+    "Stale saves are rejected with safe recovery context; browser-side automatic merge is out of scope.",
+    "Contract extends existing React Admin workflow route and generated contract flow."
+  ],
+  "analysis_findings": {
+    "critical_blockers": 0,
+    "high_findings_remediated": 1,
+    "medium_findings_remediated": 1,
+    "coverage": "All FR/SC items have task coverage after local task remediation."
+  },
+  "task_count": 59,
+  "implementation_summary": {
+    "new_migration": "alembic/versions/0023_workflow_document_authoring_idempotency.py",
+    "route_family": "/admin/app/workflows/drafts/{workflow_draft_id}/save",
+    "contract_updates": [
+      "WorkflowDraftDocument includes canonical document and section summaries.",
+      "WorkflowDraftSaveRequest accepts full document payload, change summary, and client context.",
+      "BuilderMutationResult returns editor_state and idempotent_replay status."
+    ],
+    "frontend_updates": [
+      "WorkflowBuilderPage sends full document saves with generated idempotency keys.",
+      "WorkflowSectionForm renders section summaries and safe idempotency/stale metadata.",
+      "WorkflowValidationPanel renders field paths and graph element ids safely."
+    ]
+  },
+  "curl_testing": {
+    "file": "curl_testing.md",
+    "section": "18.4a React workflow full document save scenarios",
+    "route_family": "/admin/app/workflows/drafts/{workflow_draft_id}/save",
+    "coverage": "detail, full document save, idempotent replay, stale conflict, and invalid graph validation"
+  },
+  "validation_results": {
+    "qa_docs": "passed",
+    "spec_qa": "passed",
+    "playwright": "passed",
+    "multi_agent_curl_test": "passed",
+    "curl_test_artifact_dir": ".data/curl_test_runs/qa069-after-spec",
+    "playwright_output_dir": "output/playwright/qa069_ui"
+  }
 }

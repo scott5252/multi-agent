@@ -61,6 +61,7 @@ class AdminMutationStatus(StrEnum):
     ACCEPTED = "accepted"
     VALIDATION_ERROR = "validation_error"
     STALE_CONFLICT = "stale_conflict"
+    IDEMPOTENT_REPLAY = "idempotent_replay"
     REPLAYED = "replayed"
     CONFIRMATION_REQUIRED = "confirmation_required"
     DEPENDENCY_UNAVAILABLE = "dependency_unavailable"

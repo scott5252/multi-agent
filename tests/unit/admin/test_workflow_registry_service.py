@@ -6,6 +6,7 @@ import pytest
 
 from multi_agent_platform.admin.workflow_registry.service import (
     DraftConflictError,
+    IdempotencyConflictError,
     PublishConflictError,
     WorkflowAccessError,
     WorkflowNotFoundError,
@@ -130,6 +131,82 @@ async def test_create_and_save_workflow_draft(
     assert created.current_revision_number == 1
     assert saved.current_revision_number == 2
     assert saved.display_name == "Customer Intake Updated"
+
+
+async def test_react_save_idempotency_replays_without_duplicate_revision(
+    session, settings, filesystem_storage_provider, sample_workflow_document
+) -> None:
+    principal = _principal(settings, "platform-admin")
+    service = build_service(session, settings, filesystem_storage_provider)
+    created = await service.create_draft(
+        principal=principal,
+        payload=WorkflowDraftCreateRequest(
+            scope_type="platform",
+            workflow_kind="main_workflow",
+            slug="react-save-idempotency",
+            display_name="React Save Idempotency",
+            document=sample_workflow_document.model_copy(
+                update={
+                    "workflow_key": "react-save-idempotency",
+                    "display_name": "React Save Idempotency",
+                }
+            ),
+        ),
+    )
+    payload = WorkflowDraftSaveRequest(
+        base_revision_number=created.current_revision_number,
+        display_name="React Save Idempotency Updated",
+        document=sample_workflow_document.model_copy(
+            update={
+                "workflow_key": "react-save-idempotency",
+                "display_name": "React Save Idempotency Updated",
+            }
+        ),
+        change_summary="React document save",
+    )
+
+    accepted = await service.save_draft_for_react(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=payload,
+        react_save_idempotency_key="react-save-key",
+        react_save_scope_hash="a" * 64,
+        react_save_payload_hash="b" * 64,
+    )
+    replayed = await service.save_draft_for_react(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+        payload=payload,
+        react_save_idempotency_key="react-save-key",
+        react_save_scope_hash="a" * 64,
+        react_save_payload_hash="b" * 64,
+    )
+    revisions = await service.list_draft_revisions(
+        principal=principal,
+        workflow_draft_id=created.workflow_draft_id,
+    )
+    persisted_revision = await WorkflowRegistryRepository(
+        session
+    ).get_revision_by_react_save_idempotency_key(
+        workflow_draft_id=created.workflow_draft_id,
+        idempotency_key="react-save-key",
+    )
+
+    assert accepted.replayed is False
+    assert replayed.replayed is True
+    assert replayed.draft.current_revision_number == 2
+    assert persisted_revision is not None
+    assert persisted_revision.react_save_payload_hash == "b" * 64
+    assert len(revisions.revisions) == 2
+    with pytest.raises(IdempotencyConflictError):
+        await service.save_draft_for_react(
+            principal=principal,
+            workflow_draft_id=created.workflow_draft_id,
+            payload=payload,
+            react_save_idempotency_key="react-save-key",
+            react_save_scope_hash="a" * 64,
+            react_save_payload_hash="c" * 64,
+        )
 
 
 async def test_builder_service_flows_cover_lookups_revisions_gate_and_copy(
@@ -881,10 +958,47 @@ async def test_get_version_blocks_tenant_without_sharing_grant(
         ),
     )
 
+    fetched = await service.get_version(
+        principal=platform_principal,
+        workflow_version_bundle_id=published.workflow_version_bundle_id,
+    )
+    latest = await service.get_latest_published_version_for_lineage(
+        principal=platform_principal,
+        workflow_lineage_id=created.workflow_lineage_id,
+    )
+    missing_latest = await service.get_latest_published_version_for_lineage(
+        principal=platform_principal,
+        workflow_lineage_id=uuid4(),
+    )
+
+    assert fetched.workflow_version_bundle_id == published.workflow_version_bundle_id
+    assert latest is not None
+    assert latest.workflow_version_bundle_id == published.workflow_version_bundle_id
+    assert missing_latest is None
+
+    with pytest.raises(WorkflowNotFoundError):
+        await service.get_version(
+            principal=platform_principal,
+            workflow_version_bundle_id=uuid4(),
+        )
+
     with pytest.raises(WorkflowAccessError):
         await service.get_version(
             principal=tenant_principal,
             workflow_version_bundle_id=published.workflow_version_bundle_id,
+        )
+
+    with pytest.raises(WorkflowAccessError):
+        await service.get_latest_published_version_for_lineage(
+            principal=tenant_principal,
+            workflow_lineage_id=created.workflow_lineage_id,
+        )
+
+    with pytest.raises(WorkflowAccessError):
+        await service.create_sharing_grant(
+            principal=tenant_principal,
+            workflow_version_bundle_id=published.workflow_version_bundle_id,
+            payload=RegistrySharingGrantCreateRequest(grantee_tenant_id=uuid4()),
         )
 
 

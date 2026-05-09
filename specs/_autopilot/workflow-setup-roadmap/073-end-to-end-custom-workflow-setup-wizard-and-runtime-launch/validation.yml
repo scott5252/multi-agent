@@ -21,8 +21,14 @@
   "playwright": {
     "flows": [
       {
-        "id": "qa073-workflow-setup-smoke",
+        "id": "qa073-workflow-setup-desktop",
         "steps": [
+          {
+            "viewport": {
+              "width": 1440,
+              "height": 1200
+            }
+          },
           {
             "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
           },
@@ -36,17 +42,160 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Workflow"
+            "expect_text": "Workflow registry"
           },
           {
-            "screenshot": "qa073-workflow-setup-smoke.png",
+            "click": "button:has-text(\"Create draft\")"
+          },
+          {
+            "expect_text": "Workflow draft created"
+          },
+          {
+            "click": "a:has-text(\"Open draft\")"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Custom workflow launch checklist"
+          },
+          {
+            "click": "button:has-text(\"Apply three-agent starter\")"
+          },
+          {
+            "expect_text": "3/3 agent roles are present."
+          },
+          {
+            "click": "button:has-text(\"Save draft\")"
+          },
+          {
+            "expect_text": "Draft saved"
+          },
+          {
+            "click": "button:has-text(\"Create suite\")"
+          },
+          {
+            "expect_text": "Suite result"
+          },
+          {
+            "click": "button:has-text(\"Save draft\")"
+          },
+          {
+            "expect_text": "Draft saved"
+          },
+          {
+            "click": "button:has-text(\"Add safe case\")"
+          },
+          {
+            "expect_text": "Case result"
+          },
+          {
+            "click": "button:has-text(\"Launch deterministic run\")"
+          },
+          {
+            "expect_text": "Run result"
+          },
+          {
+            "click": "button:has-text(\"Run validation\")"
+          },
+          {
+            "expect_text": "Validation result"
+          },
+          {
+            "click": "button:has-text(\"Prepare publish\")"
+          },
+          {
+            "expect_text": "confirmation required"
+          },
+          {
+            "click": "button:has-text(\"Confirm publish\")"
+          },
+          {
+            "expect_text": "Published version"
+          },
+          {
+            "expect_text": "Published version communication"
+          },
+          {
+            "screenshot": "qa073-workflow-setup-desktop.png",
             "full_page": true
+          },
+          {
+            "click": "a:has-text(\"Select in Design Reviews\")"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Design Reviews"
+          },
+          {
+            "expect_text": "Workflow"
+          }
+        ]
+      },
+      {
+        "id": "qa073-runtime-launch-mobile",
+        "steps": [
+          {
+            "viewport": {
+              "width": 390,
+              "height": 920
+            }
+          },
+          {
+            "goto": "/admin/app/workflows"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Custom workflow launch checklist"
+          },
+          {
+            "expect_text": "Open runtime launch"
+          },
+          {
+            "screenshot": "qa073-workflow-setup-mobile.png",
+            "full_page": true
+          },
+          {
+            "click": "a:has-text(\"Open runtime launch\")"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Run workspace"
+          },
+          {
+            "expect_text": "Start run"
           }
         ]
       }
     ]
   },
+  "extra_commands": [
+    {
+      "id": "workflow-runtime-launch-route",
+      "command": "curl --fail --silent -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/channels/runs?tenant_id=11111111-1111-1111-1111-111111111111&workflow_id=qa073-safe-workflow' | grep -q 'data-bootstrap-url'",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "design-reviews-query-route",
+      "command": "curl --fail --silent -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/design-reviews?tenant_id=11111111-1111-1111-1111-111111111111&workflow_version_bundle_id=00000000-0000-4000-8000-000000000073' | grep -q 'data-bootstrap-url'",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    }
+  ],
   "extra_quality_commands": [
+    {
+      "id": "focused-frontend-workflow-setup",
+      "command": "cd frontend/admin && npm test -- workflowSetupWizard WorkflowBuilderPage UserRunPage DesignReviewWorkspacePage",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
     {
       "id": "generated-react-types-fresh",
       "command": "uv run python scripts/frontend/generate_admin_react_types.py --check",
@@ -83,7 +232,7 @@
       "file": "curl_testing.md",
       "require_update_when_public_api_changes": true,
       "require_commands_for_new_route_families": true,
-      "evidence_note": "Record the curl_testing.md sections covering new or changed workflow setup APIs in this spec's status.json."
+      "evidence_note": "No public route family changed in Spec 073; existing workflow, Test Bench, runtime run, and Design Review curl sections remain authoritative."
     },
     "curl_test": {
       "skill": "multi-agent-curl-test",

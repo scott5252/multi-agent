@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
+from dataclasses import dataclass
 from enum import Enum
 from hashlib import sha256
 from logging import Logger
@@ -129,12 +130,22 @@ class DraftConflictError(WorkflowRegistryError):
     pass
 
 
+class IdempotencyConflictError(WorkflowRegistryError):
+    pass
+
+
 class PublishConflictError(WorkflowRegistryError):
     pass
 
 
 class ArtifactPersistenceError(WorkflowRegistryError):
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class WorkflowDraftSaveOutcome:
+    draft: WorkflowDraftResponse
+    replayed: bool = False
 
 
 def _enum_value(value: object) -> str:
@@ -469,6 +480,127 @@ class WorkflowRegistryService:
             scope_type=updated.lineage.scope_type,
         ).inc()
         return self._to_response(updated)
+
+    async def save_draft_for_react(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: WorkflowDraftSaveRequest,
+        react_save_idempotency_key: str,
+        react_save_scope_hash: str,
+        react_save_payload_hash: str,
+    ) -> WorkflowDraftSaveOutcome:
+        principal_id = self._principal_identity_id(principal)
+        record = await self.repository.get_draft_record(workflow_draft_id)
+        if record is None:
+            raise WorkflowNotFoundError("workflow draft not found")
+        self._ensure_editable(principal, record)
+        existing = await self.repository.get_revision_by_react_save_idempotency_key(
+            workflow_draft_id=workflow_draft_id,
+            idempotency_key=react_save_idempotency_key,
+        )
+        if existing is not None:
+            if (
+                existing.react_save_scope_hash == react_save_scope_hash
+                and existing.react_save_payload_hash == react_save_payload_hash
+            ):
+                return WorkflowDraftSaveOutcome(
+                    draft=self._to_response(record),
+                    replayed=True,
+                )
+            await self._record_event(
+                principal=principal,
+                action="workflow_registry.save_draft_rejected",
+                record=record,
+                payload={
+                    "outcome": "idempotency_conflict",
+                    "route_family": "react-workflow-document-save",
+                    "idempotency_key_digest": _safe_digest(react_save_idempotency_key)[
+                        :16
+                    ],
+                },
+            )
+            raise IdempotencyConflictError(
+                "workflow draft idempotency key was reused for a different save"
+            )
+        if record.draft.current_revision_number != payload.base_revision_number:
+            await self._record_event(
+                principal=principal,
+                action="workflow_registry.save_draft_rejected",
+                record=record,
+                payload={
+                    "outcome": "stale_revision",
+                    "submitted_revision": str(payload.base_revision_number),
+                    "current_revision": str(record.draft.current_revision_number),
+                    "route_family": "react-workflow-document-save",
+                },
+            )
+            raise DraftConflictError("workflow draft revision is stale")
+        _ = validate_authoring_document(payload.document)
+        document_json, document_sha256 = _canonical_document_json(payload.document)
+        changed_sections = self._changed_sections_for_revision(
+            current_json=document_json,
+            compared_json=record.revision.authoring_document_json,
+        )
+        record.lineage.display_name = payload.display_name
+        record.lineage.description = payload.description
+        updated = await self.repository.save_revision(
+            draft=record.draft,
+            document_json=document_json,
+            document_sha256=document_sha256,
+            change_summary=payload.change_summary,
+            principal_identity_id=principal_id,
+            react_save_idempotency_key=react_save_idempotency_key,
+            react_save_scope_hash=react_save_scope_hash,
+            react_save_payload_hash=react_save_payload_hash,
+        )
+        updated.lineage.display_name = payload.display_name
+        updated.lineage.description = payload.description
+        await self.repository.supersede_validation_results_for_draft(
+            record.draft.workflow_draft_id
+        )
+        await self.repository.session.flush()
+        await self._record_event(
+            principal=principal,
+            action="workflow_registry.save_draft",
+            record=updated,
+            payload={
+                "route_family": "react-workflow-document-save",
+                "validation_outcome": "accepted",
+                "changed_section_count": str(len(changed_sections)),
+                "changed_sections": ",".join(changed_sections[:12]),
+                "document_digest": document_sha256[:16],
+            },
+        )
+        WORKFLOW_REGISTRY_ACTION_COUNTER.labels(
+            action="save_draft",
+            scope_type=updated.lineage.scope_type,
+        ).inc()
+        return WorkflowDraftSaveOutcome(draft=self._to_response(updated))
+
+    async def record_draft_mutation_attempt(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        outcome: str,
+        payload: dict[str, str] | None = None,
+    ) -> None:
+        record = await self.repository.get_draft_record(workflow_draft_id)
+        if record is None:
+            raise WorkflowNotFoundError("workflow draft not found")
+        self._ensure_editable(principal, record)
+        await self._record_event(
+            principal=principal,
+            action="workflow_registry.save_draft_rejected",
+            record=record,
+            payload={
+                "outcome": outcome,
+                "route_family": "react-workflow-document-save",
+                **(payload or {}),
+            },
+        )
 
     async def validate_draft(
         self,
@@ -816,6 +948,26 @@ class WorkflowRegistryService:
         record = await self.repository.get_version_record(workflow_version_bundle_id)
         if record is None:
             raise WorkflowNotFoundError("workflow version not found")
+        if not await self._can_view_version(principal=principal, record=record):
+            raise WorkflowAccessError("workflow version is outside the current scope")
+        return self._to_version_response(record)
+
+    async def get_latest_published_version_for_lineage(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_lineage_id: UUID,
+    ) -> WorkflowVersionResponse | None:
+        latest_version = await self.repository.get_latest_published_version_for_lineage(
+            workflow_lineage_id
+        )
+        if latest_version is None:
+            return None
+        record = await self.repository.get_version_record(
+            latest_version.workflow_version_bundle_id
+        )
+        if record is None:
+            return None
         if not await self._can_view_version(principal=principal, record=record):
             raise WorkflowAccessError("workflow version is outside the current scope")
         return self._to_version_response(record)

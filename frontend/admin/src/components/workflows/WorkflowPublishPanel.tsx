@@ -22,7 +22,11 @@ export function WorkflowPublishPanel({
   const confirmationReady =
     lastResult?.status === "confirmation_required" || readiness.confirmation !== null;
   return (
-    <section className="workflow-publish-panel" aria-labelledby="publish-title">
+    <section
+      className="workflow-publish-panel"
+      id="workflow-publish"
+      aria-labelledby="publish-title"
+    >
       <div className="section-heading">
         <div>
           <p className="eyebrow">Publish gate</p>
@@ -42,6 +46,9 @@ export function WorkflowPublishPanel({
             {item.artifact_reference_id ? (
               <small>{item.artifact_reference_id}</small>
             ) : null}
+            <a className="inline-link" href={item.href ?? "#workflow-test-evidence"}>
+              Review evidence setup
+            </a>
           </article>
         ))}
       </div>

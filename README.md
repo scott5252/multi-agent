@@ -514,6 +514,29 @@ Primary React routes:
   route decisions, release rollback plan, performance, accessibility,
   redaction, and tenant-isolation evidence
 
+Reviewer documentation links:
+
+- Workflow builder: `docs/admin-workflow-builder.md`,
+  `docs/admin-workflow-builder-testing.md`, and
+  `docs/admin-workflow-builder-pr-notes.md` cover authoring, validation,
+  publication, revision history, audit evidence, and QA review for the Admin
+  workflow builder.
+- Prompt runtime profiles: `docs/prompt-runtime-profiles.md`,
+  `docs/prompt-runtime-profiles-testing.md`, and
+  `docs/prompt-runtime-profiles-pr-notes.md` document Spec 012 V2,
+  ModelGateway provenance, prompt/profile safety, and reviewer commands.
+- Model provider gateway: `/admin/model-providers` is the compatibility entry
+  for provider setup and health. Safe provider tests, Catalog sync,
+  ModelGateway attempt evidence, QA025, and `secret_reference_invalid`
+  diagnostics are covered by the provider gateway QA path.
+- Production Audit Debugging: reviewers can inspect
+  `/admin/runs/{workflow_run_id}/timeline` and `/admin/runs/debug-search` after
+  running `uv run alembic upgrade head` against the local QA database.
+- Skill registry: `/admin/app/skills/packages`,
+  `/admin/app/skills/installations`, and `/admin/app/skills/diagnostics` are
+  the browser-first package lifecycle, installation, and connector diagnostic
+  surfaces.
+
 ## Membership Administration
 
 Membership Administration is the Spec `018` user and tenant administration

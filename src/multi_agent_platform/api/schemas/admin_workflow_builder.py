@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -25,6 +26,9 @@ from multi_agent_platform.api.schemas.workflow_registry import (
     CopyDraftRequest,
     RestoreRevisionRequest,
     WorkflowDraftCreateRequest,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
+    WorkflowDraftDocument as RegistryWorkflowDraftDocument,
 )
 
 WORKFLOW_BUILDER_UNSAFE_MARKERS = (
@@ -190,14 +194,25 @@ class ValidationFinding(BaseModel):
     severity: WorkflowBuilderSeverity
     category: str
     section: str
+    field_path: str | None = None
+    graph_element_id: str | None = None
     message: str
     recommended_action: str
     href: str | None = None
     evidence_reference_id: str | None = None
 
-    @field_validator("category", "section", "message", "recommended_action")
+    @field_validator(
+        "category",
+        "section",
+        "field_path",
+        "graph_element_id",
+        "message",
+        "recommended_action",
+    )
     @classmethod
-    def text_is_safe(cls, value: str) -> str:
+    def optional_text_is_safe(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         return safe_builder_text(value, max_length=220)
 
 
@@ -478,6 +493,7 @@ class WorkflowDraftDocument(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     workflow_draft_id: str
+    workflow_draft_revision_id: str
     workflow_lineage_id: str
     revision: str
     name: str
@@ -487,6 +503,8 @@ class WorkflowDraftDocument(BaseModel):
     metadata_summary: str
     roles_summary: str
     references_summary: str
+    document: RegistryWorkflowDraftDocument
+    section_summaries: tuple[BuilderSection, ...] = Field(default_factory=tuple)
     graph: WorkflowGraphPreview
 
     @field_validator(
@@ -509,8 +527,11 @@ class WorkflowDraftSaveRequest(BaseModel):
 
     revision: str
     idempotency_key: str
-    name: str
-    description: str
+    name: str | None = None
+    description: str | None = None
+    document: dict[str, Any] | None = None
+    change_summary: str | None = None
+    client_context: dict[str, str] = Field(default_factory=dict)
     selected_prompt_ref: str | None = None
     selected_profile_ref: str | None = None
     join_policy: str = "wait_for_required_branches"
@@ -519,6 +540,7 @@ class WorkflowDraftSaveRequest(BaseModel):
     @field_validator(
         "name",
         "description",
+        "change_summary",
         "selected_prompt_ref",
         "selected_profile_ref",
     )
@@ -527,6 +549,16 @@ class WorkflowDraftSaveRequest(BaseModel):
         if value is None:
             return None
         return safe_builder_text(value, max_length=180)
+
+    @field_validator("client_context")
+    @classmethod
+    def client_context_is_safe(cls, value: dict[str, str]) -> dict[str, str]:
+        return {
+            safe_builder_text(key, max_length=80): safe_builder_text(
+                detail, max_length=160
+            )
+            for key, detail in value.items()
+        }
 
 
 class WorkflowDraftCreateActionRequest(WorkflowDraftCreateRequest):
@@ -577,6 +609,7 @@ class WorkflowPublishRequest(BaseModel):
 
 class BuilderMutationResult(MutationResult):
     revision: str | None = None
+    editor_state: WorkflowDraftDocument | None = None
     validation: WorkflowValidationSummary | None = None
     publish_readiness: WorkflowPublishReadiness | None = None
 

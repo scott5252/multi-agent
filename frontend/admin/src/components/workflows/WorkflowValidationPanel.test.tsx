@@ -24,6 +24,10 @@ describe("WorkflowValidationPanel", () => {
     expect(screen.getByText("Backend-owned findings")).toBeInTheDocument();
     expect(screen.getByText("Required Daily briefing test evidence is stale."))
       .toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Open section/ })).toHaveAttribute(
+      "href",
+      "#workflow-test-evidence",
+    );
     expect(screen.getByText("audit-workflow-save-qa030")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Run validation/ }));

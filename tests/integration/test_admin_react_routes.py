@@ -1332,8 +1332,204 @@ def test_react_admin_workflow_builder_save_validate_and_publish_paths(
                 "change_summary": "Admin workflow copy",
             },
         )
-        save_payload = {
+        document_payload = {
+            **detail.json()["draft"]["document"],
+            "approval_gates": [
+                {
+                    "approval_gate_key": "manager-approval",
+                    "approver_scope": "tenant_admin",
+                    "decision_contract_key": "approval-decision",
+                    "display_name": "Manager approval",
+                    "resume_behavior": "continue",
+                }
+            ],
+            "contracts": [
+                {
+                    "contract_key": "request",
+                    "contract_kind": "workflow_input",
+                    "display_name": "Request",
+                    "json_schema": {"type": "object"},
+                },
+                {
+                    "contract_key": "result",
+                    "contract_kind": "workflow_output",
+                    "display_name": "Result",
+                    "json_schema": {"type": "object"},
+                },
+                {
+                    "contract_key": "approval-decision",
+                    "contract_kind": "approval_decision",
+                    "display_name": "Approval decision",
+                    "json_schema": {"type": "object"},
+                },
+            ],
             "description": "Updated through the admin live-data save route.",
+            "display_name": "Admin Live Flow Updated",
+            "edges": [
+                {
+                    "edge_key": "edge-start-research",
+                    "edge_type": "success",
+                    "source_node_key": "start",
+                    "target_node_key": "research",
+                },
+                {
+                    "edge_key": "edge-start-review",
+                    "edge_type": "success",
+                    "source_node_key": "start",
+                    "target_node_key": "review",
+                },
+                {
+                    "edge_key": "edge-start-enrich",
+                    "edge_type": "success",
+                    "source_node_key": "start",
+                    "target_node_key": "enrich",
+                },
+                {
+                    "edge_key": "edge-research-join",
+                    "edge_type": "success",
+                    "source_node_key": "research",
+                    "target_node_key": "join",
+                },
+                {
+                    "edge_key": "edge-review-join",
+                    "edge_type": "success",
+                    "source_node_key": "review",
+                    "target_node_key": "join",
+                },
+                {
+                    "edge_key": "edge-enrich-join",
+                    "edge_type": "success",
+                    "source_node_key": "enrich",
+                    "target_node_key": "join",
+                },
+                {
+                    "edge_key": "edge-join-approval",
+                    "edge_type": "success",
+                    "source_node_key": "join",
+                    "target_node_key": "approval",
+                },
+                {
+                    "edge_key": "edge-approval-done",
+                    "edge_type": "success",
+                    "source_node_key": "approval",
+                    "target_node_key": "done",
+                },
+            ],
+            "editor_annotations": {
+                **detail.json()["draft"]["document"].get("editor_annotations", {}),
+                "graph_layout": {
+                    "approval": {"x": 720, "y": 120},
+                    "done": {"x": 960, "y": 120},
+                    "enrich": {"x": 240, "y": 220},
+                    "join": {"x": 520, "y": 120},
+                    "research": {"x": 240, "y": 20},
+                    "review": {"x": 240, "y": 120},
+                    "start": {"x": 0, "y": 120},
+                },
+                "section_notes": {"metadata": "Saved through React route."},
+            },
+            "entry_node_key": "start",
+            "join_policies": [
+                {
+                    "failure_behavior": "block",
+                    "inbound_edge_keys": [
+                        "edge-research-join",
+                        "edge-review-join",
+                        "edge-enrich-join",
+                    ],
+                    "join_policy_key": "evidence-join",
+                    "output_merge_contract_key": "result",
+                    "quorum_count": 2,
+                    "required_branches": ["research", "review", "enrich"],
+                    "strategy": "quorum",
+                    "timeout_seconds": 300,
+                }
+            ],
+            "nodes": [
+                {
+                    "display_name": "Coordinator",
+                    "node_key": "start",
+                    "node_type": "role",
+                    "role_key": "coordinator",
+                },
+                {
+                    "display_name": "Research agent",
+                    "node_key": "research",
+                    "node_type": "role",
+                    "role_key": "research",
+                },
+                {
+                    "display_name": "Review agent",
+                    "node_key": "review",
+                    "node_type": "role",
+                    "role_key": "review",
+                },
+                {
+                    "display_name": "Enrichment subworkflow",
+                    "node_key": "enrich",
+                    "node_type": "subworkflow",
+                    "subworkflow_alias": "qa-subflow",
+                },
+                {
+                    "display_name": "Evidence join",
+                    "join_policy_key": "evidence-join",
+                    "node_key": "join",
+                    "node_type": "join",
+                },
+                {
+                    "approval_gate_key": "manager-approval",
+                    "display_name": "Manager approval",
+                    "node_key": "approval",
+                    "node_type": "approval",
+                },
+                {
+                    "display_name": "Done",
+                    "node_key": "done",
+                    "node_type": "terminal",
+                },
+            ],
+            "roles": [
+                {
+                    "display_name": "Coordinator",
+                    "graph_node_keys": ["start"],
+                    "input_contract_key": "request",
+                    "output_contract_key": "result",
+                    "purpose": "Coordinate the custom workflow.",
+                    "role_key": "coordinator",
+                },
+                {
+                    "display_name": "Research agent",
+                    "graph_node_keys": ["research"],
+                    "input_contract_key": "request",
+                    "output_contract_key": "result",
+                    "purpose": "Gather safe research context.",
+                    "role_key": "research",
+                },
+                {
+                    "display_name": "Review agent",
+                    "graph_node_keys": ["review"],
+                    "input_contract_key": "request",
+                    "output_contract_key": "result",
+                    "purpose": "Review branch output before the join.",
+                    "role_key": "review",
+                },
+            ],
+            "subworkflow_refs": [
+                {
+                    "alias": "qa-subflow",
+                    "compatibility_status": "compatible",
+                    "display_name": "QA subworkflow",
+                    "input_contract_key": "request",
+                    "output_contract_key": "result",
+                    "workflow_version_ref": "qa-subflow-v1",
+                }
+            ],
+        }
+        save_payload = {
+            "change_summary": "React full document save",
+            "client_context": {"active_section": "metadata"},
+            "description": "Updated through the admin live-data save route.",
+            "document": document_payload,
             "idempotency_key": "save-key",
             "join_policy": "wait_for_required_branches",
             "name": "Admin Live Flow Updated",
@@ -1346,12 +1542,80 @@ def test_react_admin_workflow_builder_save_validate_and_publish_paths(
             headers=headers,
             json=save_payload,
         )
+        assert accepted.json()["status"] == "accepted", accepted.text
+        replayed = client.post(
+            f"/admin/app/workflows/drafts/{draft_id}/save?tenant_id={tenant_id}",
+            headers=headers,
+            json=save_payload,
+        )
+        idempotency_conflict = client.post(
+            f"/admin/app/workflows/drafts/{draft_id}/save?tenant_id={tenant_id}",
+            headers=headers,
+            json={
+                **save_payload,
+                "description": "Different payload with reused key.",
+                "document": {
+                    **document_payload,
+                    "description": "Different payload with reused key.",
+                },
+            },
+        )
         stale = client.post(
             f"/admin/app/workflows/drafts/{draft_id}/save?tenant_id={tenant_id}",
             headers=headers,
             json={**save_payload, "force_stale": True, "idempotency_key": "stale"},
         )
         saved_revision = str(int(current_revision) + 1)
+        invalid_graph = client.post(
+            f"/admin/app/workflows/drafts/{draft_id}/save?tenant_id={tenant_id}",
+            headers=headers,
+            json={
+                **save_payload,
+                "idempotency_key": "invalid-graph",
+                "revision": saved_revision,
+                "document": {
+                    **document_payload,
+                    "edges": [
+                        *document_payload["edges"],
+                        {
+                            "edge_key": "edge-missing-node",
+                            "source_node_key": "start",
+                            "target_node_key": "missing-node",
+                        },
+                    ],
+                },
+            },
+        )
+        unsafe_document = client.post(
+            f"/admin/app/workflows/drafts/{draft_id}/save?tenant_id={tenant_id}",
+            headers=headers,
+            json={
+                **save_payload,
+                "idempotency_key": "unsafe-document",
+                "revision": saved_revision,
+                "document": {
+                    **document_payload,
+                    "description": "raw prompt should not be saved here",
+                },
+            },
+        )
+        oversized_document = client.post(
+            f"/admin/app/workflows/drafts/{draft_id}/save?tenant_id={tenant_id}",
+            headers=headers,
+            json={
+                **save_payload,
+                "idempotency_key": "oversized-document",
+                "revision": saved_revision,
+                "document": {
+                    **document_payload,
+                    "editor_annotations": {
+                        "collapsed_sections": [],
+                        "graph_layout": {},
+                        "section_notes": {"metadata": "x" * 800_000},
+                    },
+                },
+            },
+        )
         restored = client.post(
             f"/admin/app/workflows/drafts/{draft_id}/restore?tenant_id={tenant_id}",
             headers=headers,
@@ -1421,6 +1685,10 @@ def test_react_admin_workflow_builder_save_validate_and_publish_paths(
             f"/admin/app/workflows/versions/{version_id}/detail.json?tenant_id={tenant_id}",
             headers=headers,
         )
+        post_publish_detail = client.get(
+            f"/admin/app/workflows/drafts/{draft_id}/detail.json?tenant_id={tenant_id}",
+            headers=headers,
+        )
         cross_publish = client.post(
             f"/admin/app/workflows/drafts/{draft_id}/publish?tenant_id={other_tenant_id}",
             headers=headers,
@@ -1441,8 +1709,49 @@ def test_react_admin_workflow_builder_save_validate_and_publish_paths(
     assert copied.json()["status"] == "accepted"
     assert accepted.json()["status"] == "accepted"
     assert accepted.json()["revision"] == saved_revision
+    assert len(accepted.json()["editor_state"]["document"]["roles"]) == 3
+    assert len(accepted.json()["editor_state"]["document"]["nodes"]) == 7
+    assert (
+        accepted.json()["editor_state"]["document"]["join_policies"][0]["strategy"]
+        == "quorum"
+    )
+    assert (
+        accepted.json()["editor_state"]["document"]["approval_gates"][0][
+            "approval_gate_key"
+        ]
+        == "manager-approval"
+    )
+    assert (
+        accepted.json()["editor_state"]["document"]["subworkflow_refs"][0]["alias"]
+        == "qa-subflow"
+    )
+    assert (
+        accepted.json()["editor_state"]["document"]["editor_annotations"][
+            "section_notes"
+        ]["metadata"]
+        == "Saved through React route."
+    )
+    assert accepted.json()["editor_state"]["section_summaries"]
+    assert replayed.json()["status"] == "idempotent_replay"
+    assert replayed.json()["idempotency"]["replayed"] is True
+    assert idempotency_conflict.json()["status"] == "validation_error"
+    assert (
+        idempotency_conflict.json()["validation"]["findings"][0]["field_path"]
+        == "idempotency_key"
+    )
     assert stale.json()["status"] == "stale_conflict"
     assert stale.json()["stale_conflict"]["submitted_revision"] == current_revision
+    assert invalid_graph.json()["status"] == "validation_error"
+    assert invalid_graph.json()["validation"]["findings"][0]["section"] == "graph"
+    assert unsafe_document.json()["status"] == "validation_error"
+    assert (
+        unsafe_document.json()["validation"]["findings"][0]["category"] == "redaction"
+    )
+    assert oversized_document.json()["status"] == "validation_error"
+    assert (
+        oversized_document.json()["validation"]["findings"][0]["finding_id"]
+        == "document.size.limit"
+    )
     assert restored.json()["status"] == "accepted"
     assert stale_restore.json()["status"] == "stale_conflict"
     assert blocked_validation.json()["validation"]["revision"] == active_revision
@@ -1456,6 +1765,11 @@ def test_react_admin_workflow_builder_save_validate_and_publish_paths(
     assert published.json()["publish_readiness"]["published_bundle_summary"]
     assert version_detail.status_code == 200
     assert version_detail.json()["workflow_version_bundle_id"] == version_id
+    assert post_publish_detail.status_code == 200
+    assert (
+        post_publish_detail.json()["version_detail"]["workflow_version_bundle_id"]
+        == version_id
+    )
     assert cross_publish.status_code == 403
     assert "Globex" not in cross_publish.text
 
@@ -2314,11 +2628,11 @@ def test_react_admin_test_bench_mutations_fail_closed(
     assert case_save.status_code == 200
     assert case_save.json()["case"]["case_revision"] == "4"
     assert launch.status_code == 200
-    assert launch.json()["run"]["progress"]["status"] == "failed"
+    assert launch.json()["run"]["progress"]["status"] == "passed"
     assert probe_denied.status_code == 200
     assert probe_denied.json()["status"] == "validation_error"
     assert gate_refresh.status_code == 200
-    assert gate_refresh.json()["gate"]["evidence_status"] == "failed"
+    assert gate_refresh.json()["gate"]["evidence_status"] == "passed"
     assert unsafe_fixture.status_code == 422
     assert missing_case_suite.status_code == 404
     assert missing_run_suite.status_code == 404

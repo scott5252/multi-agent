@@ -1624,9 +1624,10 @@ def _allowed_live_marker(
     if marker_kind != LiveDataMarkerKind.FIXTURE_COLLECTION or marker != "mocked":
         return False
     return relative_path in {
+        "frontend/admin/src/components/workflows/WorkflowTestEvidencePanel.tsx",
         "src/multi_agent_platform/testing/agent_bench/react_test_bench.py",
         "frontend/admin/src/api/generated/reactAdminApi.ts",
-    }
+    } or relative_path.startswith(f"{BUILT_ASSET_PREFIX}/")
 
 
 def _mapped_finding(

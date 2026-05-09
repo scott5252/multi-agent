@@ -20,7 +20,11 @@ export function WorkflowReferencePicker({
   onPromptChange,
 }: WorkflowReferencePickerProps) {
   return (
-    <section className="workflow-reference-picker" aria-labelledby="references-title">
+    <section
+      className="workflow-reference-picker"
+      id="workflow-references"
+      aria-labelledby="references-title"
+    >
       <div className="section-heading">
         <div>
           <p className="eyebrow">References</p>

@@ -1582,7 +1582,10 @@ textarea {
 
 .workflow-authoring,
 .workflow-reference-picker,
+.workflow-setup-wizard,
+.workflow-editor-panel,
 .workflow-graph-panel,
+.workflow-evidence-panel,
 .workflow-validation-panel,
 .workflow-publish-panel,
 .workflow-revision-panel,
@@ -1603,6 +1606,9 @@ textarea {
 .workflow-section-rail,
 .workflow-form,
 .workflow-reference-picker,
+.workflow-setup-wizard,
+.workflow-editor-panel,
+.workflow-evidence-panel,
 .workflow-validation-panel,
 .workflow-publish-panel,
 .workflow-revision-panel,
@@ -1617,6 +1623,7 @@ textarea {
 }
 
 .workflow-section-rail a,
+.workflow-setup-step,
 .reference-card,
 .workflow-node-list li,
 .join-policy-card,
@@ -1634,6 +1641,52 @@ textarea {
 
 .workflow-section-rail a {
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.workflow-progress {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  height: 0.75rem;
+  overflow: hidden;
+}
+
+.workflow-progress span {
+  background: var(--admin-accent);
+  display: block;
+  height: 100%;
+}
+
+.workflow-setup-actions,
+.workflow-runtime-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2);
+}
+
+.workflow-setup-step-grid {
+  display: grid;
+  gap: var(--admin-space-3);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.workflow-setup-step {
+  color: inherit;
+  min-width: 0;
+}
+
+.workflow-setup-step p,
+.workflow-runtime-launch p {
+  color: var(--admin-muted);
+  margin: 0;
+}
+
+.workflow-runtime-launch {
+  border-top: 1px solid var(--admin-border);
+  display: grid;
+  gap: var(--admin-space-3);
+  padding-top: var(--admin-space-3);
 }
 
 .workflow-section-rail small {
@@ -1674,6 +1727,165 @@ textarea {
   resize: vertical;
 }
 
+.workflow-textarea.compact {
+  min-height: 5rem;
+}
+
+.workflow-editor-toolbar,
+.workflow-item-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2);
+}
+
+.workflow-editor-grid {
+  display: grid;
+  gap: var(--admin-space-3);
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+}
+
+.workflow-editor-item {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  display: grid;
+  gap: var(--admin-space-3);
+  min-width: 0;
+  padding: var(--admin-space-3);
+}
+
+.workflow-editor-fields {
+  display: grid;
+  gap: var(--admin-space-3);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.workflow-editor-subtitle {
+  font-size: 0.95rem;
+  margin: var(--admin-space-2) 0 0;
+}
+
+.workflow-editor-empty {
+  border: 1px dashed var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-muted);
+  margin: 0;
+  padding: var(--admin-space-4);
+}
+
+.workflow-binding-grid {
+  display: grid;
+  gap: var(--admin-space-4);
+  grid-template-columns: minmax(18rem, 0.95fr) minmax(22rem, 1.4fr);
+}
+
+.workflow-binding-list,
+.workflow-binding-controls {
+  display: grid;
+  gap: var(--admin-space-3);
+}
+
+.workflow-binding-row,
+.workflow-binding-editor,
+.workflow-authorized-editor {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  display: grid;
+  gap: var(--admin-space-3);
+  min-width: 0;
+  padding: var(--admin-space-3);
+}
+
+.workflow-binding-facts {
+  display: grid;
+  gap: var(--admin-space-2);
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  margin: 0;
+}
+
+.workflow-binding-facts dt {
+  color: var(--admin-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.workflow-binding-facts dd {
+  margin: var(--admin-space-1) 0 0;
+  overflow-wrap: anywhere;
+}
+
+.workflow-authorized-editor summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: var(--admin-space-2);
+  font-weight: 700;
+}
+
+.workflow-evidence-controls {
+  align-items: end;
+  display: grid;
+  gap: var(--admin-space-3);
+  grid-template-columns: minmax(14rem, 1fr) repeat(3, max-content);
+}
+
+.workflow-evidence-grid {
+  display: grid;
+  gap: var(--admin-space-3);
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.workflow-evidence-card {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  display: grid;
+  gap: var(--admin-space-2);
+  min-width: 0;
+  padding: var(--admin-space-3);
+}
+
+.workflow-evidence-card p {
+  color: var(--admin-muted);
+  margin: 0;
+}
+
+.workflow-evidence-card small {
+  color: var(--admin-muted);
+  overflow-wrap: anywhere;
+}
+
+.dependency-warning {
+  background: var(--admin-warning-soft);
+  border: 1px solid var(--admin-warning);
+  border-radius: var(--admin-radius-sm);
+  display: grid;
+  gap: var(--admin-space-2);
+  padding: var(--admin-space-3);
+}
+
+.dependency-warning ul {
+  color: var(--admin-muted);
+  margin: 0;
+  padding-left: var(--admin-space-4);
+}
+
+.workflow-item-actions {
+  justify-content: flex-end;
+}
+
+.checkbox-row {
+  align-items: center;
+  color: var(--admin-muted);
+  display: flex;
+  font-size: 0.88rem;
+  gap: var(--admin-space-2);
+  min-height: 2.5rem;
+}
+
 .reference-controls,
 .workflow-review-grid {
   display: grid;
@@ -1695,6 +1907,7 @@ textarea {
 .publish-evidence-grid p,
 .revision-list p,
 .workflow-validation-panel p,
+.workflow-evidence-panel p,
 .workflow-publish-panel p,
 .workflow-json-panel p {
   color: var(--admin-muted);
@@ -1707,6 +1920,7 @@ textarea {
 .validation-list small,
 .publish-evidence-grid small,
 .revision-list small,
+.workflow-evidence-panel small,
 .workflow-json-panel small {
   color: var(--admin-muted);
   overflow-wrap: anywhere;
@@ -2789,6 +3003,17 @@ textarea {
 
   .workflow-flow-canvas {
     height: 20rem;
+  }
+
+  .workflow-editor-grid,
+  .workflow-editor-fields,
+  .workflow-binding-grid,
+  .workflow-evidence-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-item-actions {
+    justify-content: stretch;
   }
 
   .agent-graph-layout {

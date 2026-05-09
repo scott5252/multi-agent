@@ -285,6 +285,39 @@ describe("DesignReviewWorkspacePage", () => {
     expect(screen.queryByText(/raw prompt/i)).not.toBeInTheDocument();
   });
 
+  it("selects a published workflow from setup handoff query links", async () => {
+    const customWorkflowId = "99999999-9999-4999-8999-999999999999";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          ...liveEnvelope(),
+          workflow_options: [
+            ...liveEnvelope().workflow_options,
+            {
+              display_version: "v2",
+              label: "custom-launch-workflow v2",
+              status: "published",
+              tenant_id: tenantId,
+              workflow_key: "custom-launch-workflow",
+              workflow_version_bundle_id: customWorkflowId,
+            },
+          ],
+        }),
+      }),
+    );
+
+    render(
+      <DesignReviewWorkspacePage
+        workspaceUrl={`/admin/app/design-reviews/bootstrap.json?workflow_version_bundle_id=${customWorkflowId}`}
+      />,
+    );
+
+    await screen.findByRole("heading", { name: "Checkout flow review" });
+    expect(screen.getAllByLabelText("Workflow")[0]).toHaveValue(customWorkflowId);
+  });
+
   it("shows truthful empty state without sample records", async () => {
     vi.stubGlobal(
       "fetch",

@@ -41,7 +41,9 @@ interface UserRunPageProps {
 
 export function UserRunPage({ runId: initialRunId = null, search = "" }: UserRunPageProps) {
   const [runId, setRunId] = useState<string | null>(initialRunId);
-  const [workflowId, setWorkflowId] = useState("daily-briefing-demo");
+  const [workflowId, setWorkflowId] = useState(
+    workflowIdFromSearch(search) ?? "daily-briefing-demo",
+  );
   const [safeInput, setSafeInput] = useState("safe browser request");
   const [status, setStatus] = useState<RunStatusResponse | null>(null);
   const [timeline, setTimeline] = useState<TimelineResponse | null>(null);
@@ -73,6 +75,13 @@ export function UserRunPage({ runId: initialRunId = null, search = "" }: UserRun
   useEffect(() => {
     setRunId(initialRunId);
   }, [initialRunId]);
+
+  useEffect(() => {
+    const requestedWorkflowId = workflowIdFromSearch(search);
+    if (requestedWorkflowId) {
+      setWorkflowId(requestedWorkflowId);
+    }
+  }, [search]);
 
   useEffect(() => {
     let alive = true;
@@ -439,6 +448,11 @@ export function UserRunPage({ runId: initialRunId = null, search = "" }: UserRun
       ) : null}
     </section>
   );
+}
+
+function workflowIdFromSearch(search: string): string | null {
+  const params = new URLSearchParams(search || window.location.search);
+  return params.get("workflow_id");
 }
 
 function labelAction(action: PromptAction): string {

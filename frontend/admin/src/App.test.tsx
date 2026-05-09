@@ -456,7 +456,7 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText("Workflow builder")).toBeInTheDocument();
     });
-    expect(screen.getByText("Runtime structure")).toBeInTheDocument();
+    expect(screen.getByText("Workflow structure")).toBeInTheDocument();
     expect(screen.getByText("Evidence and decision")).toBeInTheDocument();
   });
 

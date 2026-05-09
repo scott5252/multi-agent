@@ -368,15 +368,13 @@ async def build_case_save_result(
             name=request.name,
             actor_principal_id=principal.principal_id,
             fixture={"summary": request.fixture_summary},
-            expected_contract_shape={"summary": request.expected_contract_summary},
+            expected_contract_shape={"status": request.expected_contract_summary},
             assertions=[_assertion_payload(item) for item in request.assertions],
             evaluator_prompt_ref=request.evaluator_reference_id,
         )
     else:
         existing.description = request.fixture_summary
-        existing.expected_contract_shape = {
-            "summary": request.expected_contract_summary
-        }
+        existing.expected_contract_shape = {"status": request.expected_contract_summary}
         existing.revision += 1
         case = existing
     case_summary = await _case_summary(repository=repository, case=case)

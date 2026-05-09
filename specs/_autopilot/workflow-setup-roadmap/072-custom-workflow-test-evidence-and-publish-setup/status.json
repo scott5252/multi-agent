@@ -2,10 +2,181 @@
   "schema_version": "1.0",
   "spec_number": "072",
   "title": "Custom Workflow Test Evidence And Publish Setup",
-  "state": "pending",
-  "current_phase": null,
-  "completed_phases": [],
-  "validation": "pending",
+  "state": "completed",
+  "current_phase": "validation",
+  "completed_phases": [
+    "specify",
+    "clarify",
+    "plan",
+    "tasks",
+    "analyze",
+    "implement",
+    "validation"
+  ],
+  "validation": "completed",
   "blocker": null,
-  "history": []
+  "history": [
+    {
+      "at": "2026-05-09T19:10:58Z",
+      "phase": "specify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/specify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:12:41Z",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/spec.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/checklists/requirements.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:12:41Z",
+      "phase": "clarify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/clarify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:13:23Z",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/spec.md"
+      ],
+      "auto_clarifications": [
+        "Reuse existing Test Bench services and add workflow-context adapters only where needed.",
+        "Evidence is current only for the exact workflow draft revision and required suite/case set.",
+        "Clean-tenant QA uses deterministic local safe execution modes with mocked providers/tools.",
+        "Workflow setup may show only safe evidence summaries and opaque artifact references.",
+        "Publish readiness remains backend-owned and rejects synthetic or browser-only evidence."
+      ]
+    },
+    {
+      "at": "2026-05-09T19:13:23Z",
+      "phase": "plan",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/plan.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:16:36Z",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/plan.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/research.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/data-model.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/contracts/workflow-test-evidence-publish-setup.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/quickstart.md",
+        "AGENTS.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:16:36Z",
+      "phase": "tasks",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/tasks.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:20:12Z",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/tasks.md"
+      ],
+      "summary": "Generated 51 dependency-ordered tasks covering contextual suite/case evidence setup, deterministic run launch, publish blockers, redaction, tenancy, QA docs, Playwright, curl review, and validation."
+    },
+    {
+      "at": "2026-05-09T19:20:12Z",
+      "phase": "analyze",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/analyze.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:20:57Z",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/spec.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/plan.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/tasks.md"
+      ],
+      "summary": "Analysis found no critical or high consistency gaps. Requirements map to file-specific implementation, test, QA, Playwright, redaction, tenant-isolation, and curl review tasks."
+    },
+    {
+      "at": "2026-05-09T19:20:57Z",
+      "phase": "implement",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/implement.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T20:01:32Z",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "frontend/admin/src/components/workflows/WorkflowTestEvidencePanel.tsx",
+        "frontend/admin/src/components/workflows/workflowTestEvidence.ts",
+        "frontend/admin/src/components/workflows/workflowDocumentEditor.ts",
+        "frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx",
+        "frontend/admin/src/components/workflows/WorkflowPublishPanel.tsx",
+        "frontend/admin/src/components/workflows/WorkflowValidationPanel.tsx",
+        "scripts/qa/seed_workflow_test_evidence_qa072.py",
+        "src/multi_agent_platform/admin/migration_hardening/live_data_inventory.py"
+      ],
+      "summary": "Implemented workflow test requirement normalization, evidence helpers, required evidence panel, deterministic safe run launch, publish/validation evidence anchors, QA seed data, live-data scanner classification, and documentation."
+    },
+    {
+      "at": "2026-05-09T20:01:32Z",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "output/playwright/qa072_ui/qa072-workflow-test-evidence-desktop.png",
+        "output/playwright/qa072_ui/qa072-workflow-test-evidence-mobile.png",
+        ".data/curl_test_runs/qa072-after-spec",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/qa072.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/qa072_ui.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/qa072_user_guide.md"
+      ],
+      "summary": "Focused backend and frontend tests, typecheck, generated contracts, ruff, mypy, frontend build, QA docs, Spec QA, Playwright desktop/mobile journeys, curl coverage review, and multi-agent curl regression passed."
+    }
+  ],
+  "implementation_artifacts": [
+    "frontend/admin/src/components/workflows/WorkflowTestEvidencePanel.tsx",
+    "frontend/admin/src/components/workflows/workflowTestEvidence.ts",
+    "frontend/admin/src/components/workflows/workflowDocumentEditor.ts",
+    "frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx",
+    "frontend/admin/src/components/workflows/WorkflowPublishPanel.tsx",
+    "frontend/admin/src/components/workflows/WorkflowValidationPanel.tsx",
+    "scripts/qa/seed_workflow_test_evidence_qa072.py",
+    "src/multi_agent_platform/admin/migration_hardening/live_data_inventory.py"
+  ],
+  "validation_artifacts": [
+    "output/playwright/qa072_ui/qa072-workflow-test-evidence-desktop.png",
+    "output/playwright/qa072_ui/qa072-workflow-test-evidence-mobile.png",
+    ".data/curl_test_runs/qa072-after-spec",
+    "specs/072-custom-workflow-test-evidence-and-publish-setup/qa072.md",
+    "specs/072-custom-workflow-test-evidence-and-publish-setup/qa072_ui.md",
+    "specs/072-custom-workflow-test-evidence-and-publish-setup/qa072_user_guide.md"
+  ],
+  "curl_testing_coverage": {
+    "updated": false,
+    "decision": "No curl_testing.md update required because Spec 072 reuses existing workflow builder, Test Bench, /admin/agent-tests, and publish gate route families.",
+    "covered_sections": [
+      "10.1-10.9 /admin/agent-tests",
+      "18.4 React workflow URL and full document save scenarios",
+      "18.6 React test bench URL scenarios"
+    ]
+  }
 }

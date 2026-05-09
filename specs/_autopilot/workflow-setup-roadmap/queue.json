@@ -3,7 +3,7 @@
   "roadmap_file": "docs/workflow_setup_specs.md",
   "react_ui2_context_file": "docs/react_ui2.md",
   "spec_range": "069..073",
-  "next_spec": "069",
+  "next_spec": null,
   "specs": [
     {
       "number": "069",
@@ -14,16 +14,16 @@
       "validation_file": "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/validation.yml",
       "feature_dir": "specs/069-workflow-document-authoring-contracts-and-mutation-apis",
       "branch": "codex/069-workflow-document-authoring-contracts-and-mutation-apis",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "070",
@@ -34,16 +34,16 @@
       "validation_file": "specs/_autopilot/workflow-setup-roadmap/070-react-workflow-graph-and-agent-role-builder/validation.yml",
       "feature_dir": "specs/070-react-workflow-graph-and-agent-role-builder",
       "branch": "codex/070-react-workflow-graph-and-agent-role-builder",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "071",
@@ -54,16 +54,16 @@
       "validation_file": "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui/validation.yml",
       "feature_dir": "specs/071-prompt-profile-creation-and-per-agent-binding-ui",
       "branch": "codex/071-prompt-profile-creation-and-per-agent-binding-ui",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "072",
@@ -74,16 +74,16 @@
       "validation_file": "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/validation.yml",
       "feature_dir": "specs/072-custom-workflow-test-evidence-and-publish-setup",
       "branch": "codex/072-custom-workflow-test-evidence-and-publish-setup",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     },
     {
       "number": "073",
@@ -94,16 +94,16 @@
       "validation_file": "specs/_autopilot/workflow-setup-roadmap/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch/validation.yml",
       "feature_dir": "specs/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
       "branch": "codex/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch",
-      "status": "pending",
+      "status": "completed",
       "phases": {
-        "specify": "pending",
-        "clarify": "pending",
-        "plan": "pending",
-        "tasks": "pending",
-        "analyze": "pending",
-        "implement": "pending"
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
       },
-      "validation": "pending"
+      "validation": "completed"
     }
   ],
   "run_contract": {

@@ -1,10 +1,12 @@
 # multi-agent Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-05-07
+Auto-generated from all feature plans. Last updated: 2026-05-09
 
 ## Active Technologies
 - Python 3.12; TypeScript strict mode on Node.js `>=20.19.0 <26` + FastAPI, Pydantic v2, SQLAlchemy 2 async ORM, PostgreSQL 16+, React 19, Vite, Vitest, Testing Library, Playwright, pytest, Ruff, mypy, uv (codex/048-live-data-inventory-and-mock-guardrails)
 - Existing workflow registry, validation, version bundle, sharing, artifact, audit, and test-bench tables in PostgreSQL; no new migration planned unless implementation discovers a missing durable field (codex/048-live-data-inventory-and-mock-guardrails)
+- Python 3.12; TypeScript strict mode on Node.js `>=20.19.0 <26` + FastAPI, Pydantic v2, SQLAlchemy 2 async ORM, Alembic, PostgreSQL 16+, React 19, Vite, Vitest, Testing Library, Playwright, existing Admin React shell/workflow builder/generated type pipeline (codex/069-workflow-document-authoring-contracts-and-mutation-apis)
+- Existing workflow registry lineages, drafts, revisions, validation, artifact, audit, sharing, and test-bench tables remain authoritative; add revision-level idempotency fingerprint fields only if required to make React document saves durable across process restarts (codex/069-workflow-document-authoring-contracts-and-mutation-apis)
 
 - Python 3.12 across the platform.
 - TypeScript strict mode and Node.js `>=20.19.0 <26` for the React admin UI
@@ -171,6 +173,7 @@ docs/QA tests for generated guides, and Playwright validation for browser-first
 admin workflows.
 
 ## Recent Changes
+- codex/069-workflow-document-authoring-contracts-and-mutation-apis: Added Python 3.12; TypeScript strict mode on Node.js `>=20.19.0 <26` + FastAPI, Pydantic v2, SQLAlchemy 2 async ORM, Alembic, PostgreSQL 16+, React 19, Vite, Vitest, Testing Library, Playwright, existing Admin React shell/workflow builder/generated type pipeline
 - codex/048-live-data-inventory-and-mock-guardrails: Added Python 3.12; TypeScript strict mode on Node.js `>=20.19.0 <26` + FastAPI, Pydantic v2, SQLAlchemy 2 async ORM, PostgreSQL 16+, React 19, Vite, Vitest, Testing Library, Playwright, pytest, Ruff, mypy, uv
 
 - 033-react-agent-and-workflow-test-bench: Planned additive React test bench
@@ -247,5 +250,5 @@ admin workflows.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the latest plan:
-`specs/068-durable-agent-interaction-evidence-and-replay-graph/plan.md`
+`specs/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch/plan.md`
 <!-- SPECKIT END -->

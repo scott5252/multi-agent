@@ -1,8 +1,338 @@
 {
   "schema_version": "1.0",
-  "state": "prepared",
-  "current_spec": "069",
-  "completed_specs": [],
+  "state": "completed",
+  "current_spec": null,
+  "completed_specs": [
+    "069",
+    "070",
+    "071",
+    "072",
+    "073"
+  ],
   "blocked": null,
-  "history": []
+  "history": [
+    {
+      "at": "2026-05-09T15:55:15.373Z",
+      "spec": "069",
+      "phase": "specify",
+      "status": "in_progress",
+      "note": "Started Spec 069 specify phase."
+    },
+    {
+      "at": "2026-05-09T15:57:43.016Z",
+      "spec": "069",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/spec.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/checklists/requirements.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T15:57:43.016Z",
+      "spec": "069",
+      "phase": "clarify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/clarify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T15:58:31.031Z",
+      "spec": "069",
+      "phase": "clarify",
+      "status": "completed",
+      "note": "Recorded five autopilot clarifications in spec.md."
+    },
+    {
+      "at": "2026-05-09T15:58:31.031Z",
+      "spec": "069",
+      "phase": "plan",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/plan.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T16:03:16.108Z",
+      "spec": "069",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/plan.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/research.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/data-model.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/contracts/workflow-document-authoring.md",
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/quickstart.md",
+        "AGENTS.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T16:03:16.108Z",
+      "spec": "069",
+      "phase": "tasks",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/tasks.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T16:05:11.642Z",
+      "spec": "069",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/069-workflow-document-authoring-contracts-and-mutation-apis/tasks.md"
+      ],
+      "task_count": 58
+    },
+    {
+      "at": "2026-05-09T16:05:11.642Z",
+      "spec": "069",
+      "phase": "analyze",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/069-workflow-document-authoring-contracts-and-mutation-apis/analyze.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T16:08:32Z",
+      "spec": "069",
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Analysis completed with 0 critical blockers after task remediation."
+    },
+    {
+      "at": "2026-05-09T17:06:03Z",
+      "spec": "069",
+      "phase": "implement",
+      "status": "completed",
+      "note": "Implemented full workflow document save contracts, durable idempotency, safe validation, React save payloads, QA docs, and curl coverage."
+    },
+    {
+      "at": "2026-05-09T17:06:03Z",
+      "spec": "069",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "output/playwright/qa069_ui/qa069-workflow-setup-smoke.png",
+        ".data/curl_test_runs/qa069-after-spec"
+      ],
+      "note": "QA docs, generated Spec QA, Playwright, and multi-agent curl regression passed."
+    },
+    {
+      "at": "2026-05-09T18:13:07Z",
+      "spec": "070",
+      "phase": "implement",
+      "status": "completed",
+      "note": "Implemented React role, contract, graph topology, join, approval, subworkflow, layout, save/revert, and keyboard-readable workflow structure controls."
+    },
+    {
+      "at": "2026-05-09T18:13:07Z",
+      "spec": "070",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "output/playwright/qa070_ui/qa070-workflow-graph-role-desktop.png",
+        "output/playwright/qa070_ui/qa070-workflow-graph-role-mobile.png",
+        ".data/curl_test_runs/qa070-after-spec"
+      ],
+      "note": "QA docs, Spec QA, Playwright desktop/mobile journeys, curl coverage review, and multi-agent curl regression passed."
+    },
+    {
+      "at": "2026-05-09T19:08:54Z",
+      "spec": "071",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "frontend/admin/src/components/workflows/WorkflowPromptProfileBinder.tsx",
+        "frontend/admin/src/components/workflows/workflowPromptProfileBinding.ts",
+        "frontend/admin/src/api/client.ts",
+        "src/multi_agent_platform/admin/workflow_registry/reference_validation.py",
+        "scripts/qa/seed_workflow_prompt_profile_qa071.py"
+      ],
+      "note": "Implemented generated prompt/profile contracts, authorized per-agent binding controls, safe workflow prompt/profile reference persistence, redaction-safe summaries, QA docs, and validation manifest coverage."
+    },
+    {
+      "at": "2026-05-09T19:08:54Z",
+      "spec": "071",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "output/playwright/qa071_ui/qa071-prompt-profile-binding-desktop.png",
+        "output/playwright/qa071_ui/qa071-prompt-profile-binding-mobile.png",
+        ".data/curl_test_runs/qa071-after-spec"
+      ],
+      "note": "Focused tests, type checks, generated contract check, ruff, mypy, frontend build, QA docs, Spec QA, Playwright desktop/mobile journeys, curl coverage review, and multi-agent curl regression passed."
+    },
+    {
+      "at": "2026-05-09T19:10:58Z",
+      "spec": "072",
+      "phase": "specify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/specify.md"
+      ],
+      "note": "Started Spec 072 specify phase for custom workflow test evidence and publish setup."
+    },
+    {
+      "at": "2026-05-09T19:12:41Z",
+      "spec": "072",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/spec.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/checklists/requirements.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:12:41Z",
+      "spec": "072",
+      "phase": "clarify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/clarify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:13:23Z",
+      "spec": "072",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/spec.md"
+      ],
+      "note": "Recorded five autopilot clarifications for Test Bench reuse, evidence freshness, deterministic safe mode, redaction, and backend-owned publish readiness."
+    },
+    {
+      "at": "2026-05-09T19:13:23Z",
+      "spec": "072",
+      "phase": "plan",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/plan.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:16:36Z",
+      "spec": "072",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/plan.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/research.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/data-model.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/contracts/workflow-test-evidence-publish-setup.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/quickstart.md",
+        "AGENTS.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:16:36Z",
+      "spec": "072",
+      "phase": "tasks",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/tasks.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:20:12Z",
+      "spec": "072",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/tasks.md"
+      ],
+      "task_count": 51
+    },
+    {
+      "at": "2026-05-09T19:20:12Z",
+      "spec": "072",
+      "phase": "analyze",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/analyze.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:20:57Z",
+      "spec": "072",
+      "phase": "analyze",
+      "status": "completed",
+      "note": "Analysis completed with no critical or high consistency findings."
+    },
+    {
+      "at": "2026-05-09T19:20:57Z",
+      "spec": "072",
+      "phase": "implement",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/072-custom-workflow-test-evidence-and-publish-setup/implement.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T20:01:32Z",
+      "spec": "072",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "frontend/admin/src/components/workflows/WorkflowTestEvidencePanel.tsx",
+        "frontend/admin/src/components/workflows/workflowTestEvidence.ts",
+        "frontend/admin/src/components/workflows/workflowDocumentEditor.ts",
+        "frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx",
+        "frontend/admin/src/components/workflows/WorkflowPublishPanel.tsx",
+        "frontend/admin/src/components/workflows/WorkflowValidationPanel.tsx",
+        "scripts/qa/seed_workflow_test_evidence_qa072.py",
+        "src/multi_agent_platform/admin/migration_hardening/live_data_inventory.py"
+      ],
+      "note": "Implemented custom workflow test evidence setup over existing Test Bench source of truth with safe deterministic launch and publish evidence links."
+    },
+    {
+      "at": "2026-05-09T20:01:32Z",
+      "spec": "072",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "output/playwright/qa072_ui/qa072-workflow-test-evidence-desktop.png",
+        "output/playwright/qa072_ui/qa072-workflow-test-evidence-mobile.png",
+        ".data/curl_test_runs/qa072-after-spec",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/qa072.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/qa072_ui.md",
+        "specs/072-custom-workflow-test-evidence-and-publish-setup/qa072_user_guide.md"
+      ],
+      "note": "QA docs, Spec QA, Playwright desktop/mobile journeys, curl coverage review, and multi-agent curl regression passed."
+    },
+    {
+      "at": "2026-05-09T21:05:00Z",
+      "spec": "073",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "output/playwright/qa073_ui/qa073-workflow-setup-desktop.png",
+        "output/playwright/qa073_ui/qa073-workflow-setup-mobile.png",
+        ".data/curl_test_runs/qa073-after-spec"
+      ],
+      "note": "Focused frontend tests, type checks, generated contract freshness, Ruff, mypy, frontend build, QA docs, Spec QA, Playwright desktop/mobile journeys, and multi-agent curl regression passed."
+    },
+    {
+      "at": "2026-05-09T22:28:54Z",
+      "spec": "069-073",
+      "phase": "final_stability_gate",
+      "status": "completed",
+      "artifacts": [
+        ".data/curl_test_runs/workflow-setup-final",
+        "output/playwright/qa069_ui/qa069-workflow-setup-smoke.png",
+        "output/playwright/qa070_ui/qa070-workflow-graph-role-desktop.png",
+        "output/playwright/qa070_ui/qa070-workflow-graph-role-mobile.png",
+        "output/playwright/qa071_ui/qa071-prompt-profile-binding-desktop.png",
+        "output/playwright/qa071_ui/qa071-prompt-profile-binding-mobile.png",
+        "output/playwright/qa072_ui/qa072-workflow-test-evidence-desktop.png",
+        "output/playwright/qa072_ui/qa072-workflow-test-evidence-mobile.png",
+        "output/playwright/qa073_ui/qa073-workflow-setup-desktop.png",
+        "output/playwright/qa073_ui/qa073-workflow-setup-mobile.png"
+      ],
+      "note": "Queue completion, QA docs, Spec QA, Playwright journeys, Ruff, format, mypy, generated React type freshness, npm ci, frontend typecheck, full Vitest, frontend build, full pytest coverage at 90.04%, and final multi-agent curl regression all passed."
+    }
+  ]
 }

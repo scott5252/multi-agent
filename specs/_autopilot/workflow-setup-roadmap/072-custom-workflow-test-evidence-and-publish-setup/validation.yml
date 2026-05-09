@@ -21,8 +21,14 @@
   "playwright": {
     "flows": [
       {
-        "id": "qa072-workflow-setup-smoke",
+        "id": "qa072-workflow-test-evidence-desktop",
         "steps": [
+          {
+            "viewport": {
+              "width": 1440,
+              "height": 1120
+            }
+          },
           {
             "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
           },
@@ -36,16 +42,107 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Workflow"
+            "expect_text": "QA072 Workflow Test Evidence"
           },
           {
-            "screenshot": "qa072-workflow-setup-smoke.png",
+            "expect_text": "Required publish evidence"
+          },
+          {
+            "expect_text": "daily-briefing-required-suite"
+          },
+          {
+            "expect_text": "1 current, 0 stale, 0 missing across 1 required evidence item."
+          },
+          {
+            "expect_text": "Required deterministic evidence is passing for the current workflow revision."
+          },
+          {
+            "expect_text": "Required test evidence"
+          },
+          {
+            "click": "button:has-text(\"Add safe case\")"
+          },
+          {
+            "expect_text": "Case result"
+          },
+          {
+            "click": "button:has-text(\"Launch deterministic run\")"
+          },
+          {
+            "expect_text": "Run result"
+          },
+          {
+            "expect_text": "Review evidence setup"
+          },
+          {
+            "screenshot": "qa072-workflow-test-evidence-desktop.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa072-workflow-test-evidence-mobile",
+        "steps": [
+          {
+            "viewport": {
+              "width": 390,
+              "height": 900
+            }
+          },
+          {
+            "goto": "/admin/app/workflows?workflow_draft_id=72727272-6669-4672-8672-000000000072"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "QA072 Workflow Test Evidence"
+          },
+          {
+            "expect_text": "Required publish evidence"
+          },
+          {
+            "expect_text": "daily-briefing-required-suite"
+          },
+          {
+            "expect_text": "Launch deterministic run"
+          },
+          {
+            "screenshot": "qa072-workflow-test-evidence-mobile.png",
             "full_page": true
           }
         ]
       }
     ]
   },
+  "playwright_pre_commands": [
+    {
+      "id": "seed-workflow-test-evidence",
+      "command": "uv run python scripts/qa/seed_workflow_test_evidence_qa072.py",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    }
+  ],
+  "extra_commands": [
+    {
+      "id": "seed-workflow-test-evidence",
+      "command": "uv run python scripts/qa/seed_workflow_test_evidence_qa072.py",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "workflow-builder-current-evidence",
+      "command": "curl --fail --silent -H 'X-Local-Principal: tenant-admin-acme' 'http://127.0.0.1:8000/admin/app/workflows/drafts/72727272-6669-4672-8672-000000000072/detail.json?tenant_id=11111111-1111-1111-1111-111111111111' | jq -e '.draft.document.test_requirements[0].latest_result_status == \"passed\" and .publish_readiness.required_evidence[0].status == \"ready\"'",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "workflow-builder-cross-tenant-denied",
+      "command": "test \"$(curl --silent --output /tmp/qa072-cross-tenant.json --write-out '%{http_code}' -H 'X-Local-Principal: tenant-admin-globex' 'http://127.0.0.1:8000/admin/app/workflows/drafts/72727272-6669-4672-8672-000000000072/detail.json?tenant_id=22222222-2222-2222-2222-222222222222')\" = \"403\"",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    }
+  ],
   "extra_quality_commands": [
     {
       "id": "generated-react-types-fresh",

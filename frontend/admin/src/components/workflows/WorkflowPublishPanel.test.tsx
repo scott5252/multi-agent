@@ -32,6 +32,9 @@ describe("WorkflowPublishPanel", () => {
     expect(screen.getByText("Evidence and decision")).toBeInTheDocument();
     expect(screen.getByText("artifact-ref-qa030-stale-evidence"))
       .toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Review evidence setup/ }),
+    ).toHaveAttribute("href", "/admin/agent-tests/ui");
 
     await userEvent.click(
       screen.getByRole("button", { name: /Check publish gate/ }),

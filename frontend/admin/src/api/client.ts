@@ -102,12 +102,28 @@ import {
   type MutationResult,
   type OperationsWorkbenchEnvelope,
   type PolicyHistoryList,
+  type ProfileActivationRequest,
+  type ProfileCreate,
+  type ProfileDraftDetail,
+  type ProfileDraftSave,
   type ProfileGovernanceList,
   type ProfileResolutionPreview,
   type ProfileSaveRequest,
+  type ProfileSummary,
+  type ProfileValidationResult,
+  type ProfileVersionDetail,
+  type PromptDraftDetail,
+  type PromptDraftSave,
   type PromptGovernanceList,
+  type PromptLineageCreate,
+  type PromptLineageSummary,
+  type PromptPublishRequest,
   type PromptPreviewRequest,
+  type PromptRuntimePreviewRequest,
+  type PromptRuntimePreviewResponse,
   type PromptSaveRequest,
+  type PromptValidationResult,
+  type PromptVersionDetail,
   type ProviderCredentialReferenceRequest,
   type ProviderGovernanceList,
   type PrincipalLinkRequest,
@@ -660,6 +676,99 @@ export async function previewRouting(
   payload: RoutingPreviewRequest,
 ): Promise<GovernanceMutationResult> {
   return postGovernanceMutation(previewUrl, payload);
+}
+
+export async function fetchPromptLineages(
+  promptsUrl: string,
+): Promise<PromptLineageSummary[]> {
+  const response = await getJson(promptsUrl);
+  const payload = (await response.json()) as { items?: PromptLineageSummary[] };
+  return payload.items ?? [];
+}
+
+export async function createPromptLineage(
+  createUrl: string,
+  payload: PromptLineageCreate,
+): Promise<PromptDraftDetail> {
+  const response = await postJson(createUrl, payload);
+  return (await response.json()) as PromptDraftDetail;
+}
+
+export async function fetchPromptDraft(
+  draftUrl: string,
+): Promise<PromptDraftDetail> {
+  const response = await getJson(draftUrl);
+  return (await response.json()) as PromptDraftDetail;
+}
+
+export async function savePromptDraft(
+  draftUrl: string,
+  payload: PromptDraftSave,
+): Promise<PromptDraftDetail> {
+  const response = await putJson(draftUrl, payload);
+  return (await response.json()) as PromptDraftDetail;
+}
+
+export async function validatePromptDraft(
+  validateUrl: string,
+): Promise<PromptValidationResult> {
+  const response = await postJson(validateUrl);
+  return (await response.json()) as PromptValidationResult;
+}
+
+export async function previewPromptRuntime(
+  previewUrl: string,
+  payload: PromptRuntimePreviewRequest,
+): Promise<PromptRuntimePreviewResponse> {
+  const response = await postJson(previewUrl, payload);
+  return (await response.json()) as PromptRuntimePreviewResponse;
+}
+
+export async function publishPromptVersion(
+  publishUrl: string,
+  payload: PromptPublishRequest,
+): Promise<PromptVersionDetail> {
+  const response = await postJson(publishUrl, payload);
+  return (await response.json()) as PromptVersionDetail;
+}
+
+export async function fetchRuntimeProfiles(
+  profilesUrl: string,
+): Promise<ProfileSummary[]> {
+  const response = await getJson(profilesUrl);
+  const payload = (await response.json()) as { items?: ProfileSummary[] };
+  return payload.items ?? [];
+}
+
+export async function createRuntimeProfile(
+  createUrl: string,
+  payload: ProfileCreate,
+): Promise<ProfileDraftDetail> {
+  const response = await postJson(createUrl, payload);
+  return (await response.json()) as ProfileDraftDetail;
+}
+
+export async function saveRuntimeProfileDraft(
+  draftUrl: string,
+  payload: ProfileDraftSave,
+): Promise<ProfileDraftDetail> {
+  const response = await putJson(draftUrl, payload);
+  return (await response.json()) as ProfileDraftDetail;
+}
+
+export async function validateRuntimeProfileDraft(
+  validateUrl: string,
+): Promise<ProfileValidationResult> {
+  const response = await postJson(validateUrl);
+  return (await response.json()) as ProfileValidationResult;
+}
+
+export async function activateRuntimeProfile(
+  activateUrl: string,
+  payload: ProfileActivationRequest,
+): Promise<ProfileVersionDetail> {
+  const response = await postJson(activateUrl, payload);
+  return (await response.json()) as ProfileVersionDetail;
 }
 
 export async function fetchSkillLifecycleDashboard(
@@ -1404,6 +1513,23 @@ async function postJson(url: string, payload?: unknown): Promise<Response> {
             "Content-Type": "application/json",
           },
     method: "POST",
+  });
+  if (!response.ok) {
+    const detail = await safeErrorDetail(response);
+    throw new Error(detail);
+  }
+  return response;
+}
+
+async function putJson(url: string, payload: unknown): Promise<Response> {
+  const response = await fetch(url, {
+    body: JSON.stringify(payload),
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
   });
   if (!response.ok) {
     const detail = await safeErrorDetail(response);

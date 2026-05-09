@@ -122,6 +122,13 @@ class WorkflowDraftRevision(Base):
     authoring_document_json: Mapped[dict[str, object]] = mapped_column(JSON)
     document_sha256: Mapped[str] = mapped_column(String(64))
     change_summary: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    react_save_idempotency_key: Mapped[str | None] = mapped_column(
+        String(160), nullable=True
+    )
+    react_save_scope_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    react_save_payload_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
     created_by_principal_id: Mapped[UUID] = mapped_column(
         ForeignKey("principal_identities.principal_identity_id")
     )

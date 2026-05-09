@@ -236,8 +236,13 @@ export function DesignReviewWorkspacePage({
       const payload = (await response.json()) as WorkspaceEnvelope;
       setEnvelope(payload);
       setLoadError(null);
+      const requestedWorkflowId = workflowVersionFromSearch(url);
+      const requestedWorkflow = payload.workflow_options.find(
+        (option) => option.workflow_version_bundle_id === requestedWorkflowId,
+      );
       setWorkflowId(
-        payload.selected_session?.session.workflow_version_bundle_id ??
+        requestedWorkflow?.workflow_version_bundle_id ??
+          payload.selected_session?.session.workflow_version_bundle_id ??
           payload.workflow_options[0]?.workflow_version_bundle_id ??
           "",
       );
@@ -456,6 +461,12 @@ export function DesignReviewWorkspacePage({
       )}
     </div>
   );
+}
+
+function workflowVersionFromSearch(url: string): string | null {
+  const query = url.includes("?") ? url.slice(url.indexOf("?")) : window.location.search;
+  const params = new URLSearchParams(query);
+  return params.get("workflow_version_bundle_id");
 }
 
 function TemplateSetupPanel({

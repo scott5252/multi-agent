@@ -442,8 +442,12 @@ def _as_str_list(value: object) -> list[str]:
 
 
 def _section_for_field_path(field_path: str) -> str:
+    if field_path.startswith(("metadata", "workflow_key", "display_name")):
+        return "metadata"
     if field_path.startswith("roles"):
         return "roles"
+    if field_path.startswith(("prompt_profile_references", "skill_installations")):
+        return "references"
     if field_path.startswith("contracts"):
         return "contracts"
     if field_path.startswith("nodes") or field_path.startswith("edges"):
@@ -454,4 +458,8 @@ def _section_for_field_path(field_path: str) -> str:
         return "approvals"
     if field_path.startswith("subworkflow_refs"):
         return "subworkflows"
+    if field_path.startswith("test_requirements"):
+        return "tests"
+    if field_path.startswith("editor_annotations"):
+        return "annotations"
     return field_path.split("[", maxsplit=1)[0]

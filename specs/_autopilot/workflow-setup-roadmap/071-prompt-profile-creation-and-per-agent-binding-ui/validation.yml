@@ -21,8 +21,14 @@
   "playwright": {
     "flows": [
       {
-        "id": "qa071-workflow-setup-smoke",
+        "id": "qa071-prompt-profile-binding-desktop",
         "steps": [
+          {
+            "viewport": {
+              "width": 1440,
+              "height": 1120
+            }
+          },
           {
             "goto": "/auth/local-login?redirect_to=/admin/app/workflows"
           },
@@ -36,16 +42,105 @@
             "wait_for_load_state": "networkidle"
           },
           {
-            "expect_text": "Workflow"
+            "expect_text": "QA071 Prompt Profile Builder"
           },
           {
-            "screenshot": "qa071-workflow-setup-smoke.png",
+            "expect_text": "Per-Agent Bindings"
+          },
+          {
+            "expect_text": "Binding Matrix"
+          },
+          {
+            "expect_text": "Role Binding Controls"
+          },
+          {
+            "expect_text": "Runtime Profile"
+          },
+          {
+            "expect_text": "1/3 ready"
+          },
+          {
+            "select": {
+              "selector": "#workflow-prompt-profiles .workflow-binding-controls > label:first-child select",
+              "value": "research"
+            }
+          },
+          {
+            "click": "button:has-text(\"Activate profile reference\")"
+          },
+          {
+            "expect_text": "2/3 ready"
+          },
+          {
+            "click": "button:has-text(\"Publish prompt reference\")"
+          },
+          {
+            "click": "button:has-text(\"Save draft\")"
+          },
+          {
+            "expect_text": "Draft saved"
+          },
+          {
+            "goto": "/admin/app/workflows?workflow_draft_id=71717171-6669-4671-8671-000000000071"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "2/3 ready"
+          },
+          {
+            "expect_text": "coordinator-binding"
+          },
+          {
+            "screenshot": "qa071-prompt-profile-binding-desktop.png",
+            "full_page": true
+          }
+        ]
+      },
+      {
+        "id": "qa071-prompt-profile-binding-mobile",
+        "steps": [
+          {
+            "viewport": {
+              "width": 390,
+              "height": 900
+            }
+          },
+          {
+            "goto": "/admin/app/workflows?workflow_draft_id=71717171-6669-4671-8671-000000000071"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Per-Agent Bindings"
+          },
+          {
+            "expect_text": "Binding Matrix"
+          },
+          {
+            "expect_text": "Runtime Profile"
+          },
+          {
+            "expect_text": "2/3 ready"
+          },
+          {
+            "screenshot": "qa071-prompt-profile-binding-mobile.png",
             "full_page": true
           }
         ]
       }
     ]
   },
+  "playwright_pre_commands": [
+    {
+      "id": "seed-workflow-prompt-profile-binding",
+      "command": "uv run python scripts/qa/seed_workflow_prompt_profile_qa071.py",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    }
+  ],
   "extra_quality_commands": [
     {
       "id": "generated-react-types-fresh",

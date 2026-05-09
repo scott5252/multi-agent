@@ -2,10 +2,154 @@
   "schema_version": "1.0",
   "spec_number": "071",
   "title": "Prompt Profile Creation And Per-Agent Binding UI",
-  "state": "pending",
-  "current_phase": null,
-  "completed_phases": [],
-  "validation": "pending",
+  "state": "completed",
+  "current_phase": "validation",
+  "completed_phases": [
+    "specify",
+    "clarify",
+    "plan",
+    "tasks",
+    "analyze",
+    "implement",
+    "validation"
+  ],
+  "validation": "completed",
   "blocker": null,
-  "history": []
+  "history": [
+    {
+      "at": "2026-05-09T18:13:07Z",
+      "phase": "specify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui/specify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T18:16:53Z",
+      "phase": "specify",
+      "status": "completed",
+      "artifacts": [
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/spec.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/checklists/requirements.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T18:16:53Z",
+      "phase": "clarify",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui/clarify.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T18:17:28Z",
+      "phase": "clarify",
+      "status": "completed",
+      "artifacts": [
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/spec.md"
+      ],
+      "auto_clarifications": [
+        "Prefer existing prompt/runtime profile services and generated React contracts.",
+        "Raw prompt text may be edited only inside authorized prompt controls.",
+        "Clean-tenant QA uses deterministic fake/local readiness, not real providers.",
+        "Workflow roles store immutable prompt/profile references and safe metadata only.",
+        "Reuse comes through backend-authorized safe catalogs."
+      ]
+    },
+    {
+      "at": "2026-05-09T18:17:28Z",
+      "phase": "plan",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui/plan.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T18:21:17Z",
+      "phase": "plan",
+      "status": "completed",
+      "artifacts": [
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/plan.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/research.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/data-model.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/contracts/prompt-profile-binding-ui.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/quickstart.md",
+        "AGENTS.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T18:21:17Z",
+      "phase": "tasks",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui/tasks.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T18:23:35Z",
+      "phase": "tasks",
+      "status": "completed",
+      "artifacts": [
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/tasks.md"
+      ],
+      "summary": "Generated 55 dependency-ordered tasks covering prompt/profile contracts, creation flows, role binding, redaction, QA docs, Playwright, curl review, and validation."
+    },
+    {
+      "at": "2026-05-09T18:23:35Z",
+      "phase": "analyze",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui/analyze.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T18:24:14Z",
+      "phase": "analyze",
+      "status": "completed",
+      "artifacts": [
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/spec.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/plan.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/tasks.md"
+      ],
+      "summary": "Remediated task traceability gaps for prompt/profile stale/idempotency coverage and README/docs impact review. No remaining critical or high findings."
+    },
+    {
+      "at": "2026-05-09T18:24:14Z",
+      "phase": "implement",
+      "status": "in_progress",
+      "artifacts": [
+        "specs/_autopilot/workflow-setup-roadmap/071-prompt-profile-creation-and-per-agent-binding-ui/implement.md"
+      ]
+    },
+    {
+      "at": "2026-05-09T19:08:54Z",
+      "phase": "implement",
+      "status": "completed",
+      "artifacts": [
+        "scripts/frontend/generate_admin_react_types.py",
+        "frontend/admin/src/api/client.ts",
+        "frontend/admin/src/api/generated/reactAdminApi.ts",
+        "frontend/admin/src/components/workflows/WorkflowPromptProfileBinder.tsx",
+        "frontend/admin/src/components/workflows/workflowPromptProfileBinding.ts",
+        "src/multi_agent_platform/admin/workflow_registry/reference_validation.py",
+        "scripts/qa/seed_workflow_prompt_profile_qa071.py",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/qa071.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/qa071_ui.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/qa071_user_guide.md",
+        "specs/071-prompt-profile-creation-and-per-agent-binding-ui/pr_notes.md"
+      ],
+      "summary": "Implemented generated prompt/profile React contracts, API client helpers, per-agent binding matrix, prompt/profile reference helper coverage, workflow catalog split validation, deterministic QA seed/docs, and curl coverage review. No curl_testing.md update required because existing prompt runtime profile and React workflow route families cover the changed paths."
+    },
+    {
+      "at": "2026-05-09T19:08:54Z",
+      "phase": "validation",
+      "status": "completed",
+      "artifacts": [
+        "output/playwright/qa071_ui/qa071-prompt-profile-binding-desktop.png",
+        "output/playwright/qa071_ui/qa071-prompt-profile-binding-mobile.png",
+        ".data/curl_test_runs/qa071-after-spec"
+      ],
+      "summary": "Passed focused backend and frontend tests, generated React type freshness, ruff check, ruff format check, mypy, frontend build, QA document validation, generated Spec QA, desktop/mobile Playwright UI validation, and multi-agent curl regression."
+    }
+  ]
 }

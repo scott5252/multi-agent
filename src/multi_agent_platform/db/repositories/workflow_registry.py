@@ -138,6 +138,9 @@ class WorkflowRegistryRepository:
         document_sha256: str,
         change_summary: str | None,
         principal_identity_id: UUID,
+        react_save_idempotency_key: str | None = None,
+        react_save_scope_hash: str | None = None,
+        react_save_payload_hash: str | None = None,
     ) -> WorkflowDraftRecord:
         next_revision_number = draft.current_revision_number + 1
         revision = WorkflowDraftRevision(
@@ -146,6 +149,9 @@ class WorkflowRegistryRepository:
             authoring_document_json=document_json,
             document_sha256=document_sha256,
             change_summary=change_summary,
+            react_save_idempotency_key=react_save_idempotency_key,
+            react_save_scope_hash=react_save_scope_hash,
+            react_save_payload_hash=react_save_payload_hash,
             created_by_principal_id=principal_identity_id,
         )
         self.session.add(revision)
@@ -158,6 +164,18 @@ class WorkflowRegistryRepository:
         if lineage is None:
             raise RuntimeError("workflow lineage missing")
         return WorkflowDraftRecord(lineage=lineage, draft=draft, revision=revision)
+
+    async def get_revision_by_react_save_idempotency_key(
+        self,
+        *,
+        workflow_draft_id: UUID,
+        idempotency_key: str,
+    ) -> WorkflowDraftRevision | None:
+        stmt = select(WorkflowDraftRevision).where(
+            WorkflowDraftRevision.workflow_draft_id == workflow_draft_id,
+            WorkflowDraftRevision.react_save_idempotency_key == idempotency_key,
+        )
+        return (await self.session.execute(stmt)).scalars().first()
 
     async def list_draft_revisions(
         self,

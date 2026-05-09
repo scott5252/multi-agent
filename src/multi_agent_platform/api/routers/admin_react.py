@@ -10,6 +10,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from multi_agent_platform.admin.briefing_preferences.service import (
@@ -110,8 +111,10 @@ from multi_agent_platform.admin.usage.react_usage import (
     build_usage_export_result,
 )
 from multi_agent_platform.admin.workflow_builder import (
+    blocking_authoring_findings,
     build_copy_result,
     build_create_result,
+    build_document_save_validation_result,
     build_publish_readiness,
     build_publish_result,
     build_restore_result,
@@ -122,9 +125,17 @@ from multi_agent_platform.admin.workflow_builder import (
     build_workflow_legacy_route_mappings,
     build_workflow_registry_envelope,
     build_workflow_version_detail,
+    findings_from_pydantic_error,
+    oversized_document_finding,
+    unsafe_document_findings,
+    workflow_document_digest,
+    workflow_document_payload_digest,
+    workflow_document_payload_size,
+    workflow_save_scope_hash,
 )
 from multi_agent_platform.admin.workflow_registry.service import (
     DraftConflictError,
+    IdempotencyConflictError,
     PublishConflictError,
     WorkflowAccessError,
     WorkflowNotFoundError,
@@ -309,6 +320,9 @@ from multi_agent_platform.api.schemas.workflow_registry import (
     WorkflowDraftCreateRequest as RegistryWorkflowDraftCreateRequest,
 )
 from multi_agent_platform.api.schemas.workflow_registry import (
+    WorkflowDraftDocument as RegistryWorkflowDraftDocument,
+)
+from multi_agent_platform.api.schemas.workflow_registry import (
     WorkflowDraftSaveRequest as RegistryWorkflowDraftSaveRequest,
 )
 from multi_agent_platform.api.ui.admin_console import (
@@ -397,6 +411,7 @@ REACT_SEARCH_URL = "/admin/app/search.json"
 REACT_WORKFLOWS_PATH = "/admin/app/workflows"
 REACT_WORKFLOWS_URL = "/admin/app/workflows/builder.json"
 REACT_WORKFLOWS_LOOKUPS_URL = "/admin/app/workflows/lookups.json"
+REACT_WORKFLOW_DOCUMENT_SAVE_MAX_BYTES = 750_000
 REACT_GOVERNANCE_PATH = "/admin/app/governance"
 REACT_GOVERNANCE_URL = "/admin/app/governance/bootstrap.json"
 REACT_SKILLS_PATH = "/admin/app/skills"
@@ -885,6 +900,7 @@ async def _workflow_builder_payload(
     try:
         registry_items = await service.list_workflows(principal=principal)
         selected_draft_id = workflow_draft_id
+        selected_version = None
         if selected_draft_id is None:
             selected_draft_id = next(
                 (
@@ -894,6 +910,21 @@ async def _workflow_builder_payload(
                 ),
                 None,
             )
+        if selected_draft_id is None:
+            selected_version_id = next(
+                (
+                    item.workflow_version_bundle_id
+                    for item in registry_items
+                    if item.workflow_version_bundle_id is not None
+                ),
+                None,
+            )
+            if selected_version_id is not None:
+                selected_version = await service.get_workflow_version(
+                    principal=principal,
+                    workflow_version_bundle_id=selected_version_id,
+                )
+                selected_draft_id = selected_version.published_from_draft_id
         if selected_draft_id is None:
             return build_workflow_builder_envelope(
                 scope=scope,
@@ -916,11 +947,20 @@ async def _workflow_builder_payload(
             principal=principal,
             workflow_draft_id=selected_draft_id,
         )
-        gate = await service.evaluate_workflow_publish_gate(
-            principal=principal,
-            workflow_draft_id=selected_draft_id,
-            payload=PublishGateRequest(),
-        )
+        gate = None
+        if draft.status != "published_source":
+            gate = await service.evaluate_workflow_publish_gate(
+                principal=principal,
+                workflow_draft_id=selected_draft_id,
+                payload=PublishGateRequest(),
+            )
+        if selected_version is None:
+            selected_version = (
+                await service.get_latest_published_workflow_version_for_lineage(
+                    principal=principal,
+                    workflow_lineage_id=draft.workflow_lineage_id,
+                )
+            )
     except WorkflowNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except WorkflowAccessError as exc:
@@ -936,6 +976,7 @@ async def _workflow_builder_payload(
         graph_preview=graph,
         revisions=revisions,
         publish_gate=gate,
+        version=selected_version,
     )
 
 
@@ -1296,30 +1337,167 @@ async def react_admin_workflow_builder_save(
             principal=principal,
             workflow_draft_id=draft_id,
         )
-        document = current.document.model_copy(
-            update={
-                "display_name": payload.name,
-                "description": payload.description,
-            }
-        )
+        if payload.document is not None:
+            payload_size = workflow_document_payload_size(payload.document)
+            if payload_size > REACT_WORKFLOW_DOCUMENT_SAVE_MAX_BYTES:
+                await service.record_workflow_draft_mutation_attempt(
+                    principal=principal,
+                    workflow_draft_id=draft_id,
+                    outcome="validation_error",
+                    payload={
+                        "validation_outcome": "oversized_document",
+                        "payload_digest": workflow_document_payload_digest(
+                            payload.document
+                        )[:16],
+                    },
+                )
+                return build_document_save_validation_result(
+                    revision=payload.revision,
+                    findings=(
+                        oversized_document_finding(
+                            payload_size=payload_size,
+                            limit=REACT_WORKFLOW_DOCUMENT_SAVE_MAX_BYTES,
+                        ),
+                    ),
+                    audit_reference_id=f"workflow-draft:{draft_id}:save-rejected",
+                )
+            unsafe_findings = unsafe_document_findings(payload.document)
+            if unsafe_findings:
+                await service.record_workflow_draft_mutation_attempt(
+                    principal=principal,
+                    workflow_draft_id=draft_id,
+                    outcome="validation_error",
+                    payload={
+                        "validation_outcome": "unsafe_document_text",
+                        "finding_count": str(len(unsafe_findings)),
+                    },
+                )
+                return build_document_save_validation_result(
+                    revision=payload.revision,
+                    findings=unsafe_findings,
+                    audit_reference_id=f"workflow-draft:{draft_id}:save-rejected",
+                )
+            try:
+                submitted_document = RegistryWorkflowDraftDocument.model_validate(
+                    payload.document
+                )
+            except ValidationError as exc:
+                findings = findings_from_pydantic_error(exc)
+                await service.record_workflow_draft_mutation_attempt(
+                    principal=principal,
+                    workflow_draft_id=draft_id,
+                    outcome="validation_error",
+                    payload={
+                        "validation_outcome": "document_shape",
+                        "finding_count": str(len(findings)),
+                    },
+                )
+                return build_document_save_validation_result(
+                    revision=payload.revision,
+                    findings=findings,
+                    audit_reference_id=f"workflow-draft:{draft_id}:save-rejected",
+                )
+            display_name = payload.name or submitted_document.display_name
+            description = (
+                payload.description
+                if payload.description is not None
+                else submitted_document.description
+            )
+            document = submitted_document.model_copy(
+                update={
+                    "display_name": display_name,
+                    "description": description,
+                }
+            )
+        else:
+            display_name = payload.name or current.display_name
+            description = (
+                payload.description
+                if payload.description is not None
+                else current.description
+            )
+            document = current.document.model_copy(
+                update={
+                    "display_name": display_name,
+                    "description": description,
+                }
+            )
+        blocking_findings = blocking_authoring_findings(document)
+        if blocking_findings:
+            await service.record_workflow_draft_mutation_attempt(
+                principal=principal,
+                workflow_draft_id=draft_id,
+                outcome="validation_error",
+                payload={
+                    "validation_outcome": "authoring_rules",
+                    "finding_count": str(len(blocking_findings)),
+                    "document_digest": workflow_document_digest(document)[:16],
+                },
+            )
+            return build_document_save_validation_result(
+                revision=payload.revision,
+                findings=blocking_findings,
+                audit_reference_id=f"workflow-draft:{draft_id}:save-rejected",
+            )
         base_revision = int(payload.revision)
         if payload.force_stale:
             base_revision = max(base_revision - 1, -1)
-        saved = await service.save_workflow_draft(
+        payload_hash = workflow_document_payload_digest(
+            {
+                "change_summary": payload.change_summary,
+                "client_context": payload.client_context,
+                "document": document.model_dump(mode="json"),
+            }
+        )
+        outcome = await service.save_workflow_draft_for_react(
             principal=principal,
             workflow_draft_id=draft_id,
             payload=RegistryWorkflowDraftSaveRequest(
                 base_revision_number=base_revision,
-                display_name=payload.name,
-                description=payload.description,
+                display_name=display_name,
+                description=description,
                 document=document,
-                change_summary="Admin workflow draft save",
+                change_summary=payload.change_summary or "Workflow document save",
             ),
+            react_save_idempotency_key=payload.idempotency_key,
+            react_save_scope_hash=workflow_save_scope_hash(
+                tenant_id=str(scope.tenant_id) if scope.tenant_id is not None else None,
+                principal_id=principal.principal_id or "unknown-principal",
+                workflow_draft_id=str(draft_id),
+                revision=str(base_revision),
+            ),
+            react_save_payload_hash=payload_hash,
         )
     except ValueError as exc:
         raise HTTPException(
             status_code=409, detail="workflow draft revision is stale"
         ) from exc
+    except IdempotencyConflictError:
+        return build_document_save_validation_result(
+            revision=payload.revision,
+            findings=(
+                oversized_document_finding(
+                    payload_size=0,
+                    limit=REACT_WORKFLOW_DOCUMENT_SAVE_MAX_BYTES,
+                ).model_copy(
+                    update={
+                        "finding_id": "idempotency.key.conflict",
+                        "category": "idempotency",
+                        "section": "metadata",
+                        "field_path": "idempotency_key",
+                        "message": (
+                            "Idempotency key was reused for a different workflow "
+                            "document save."
+                        ),
+                        "recommended_action": (
+                            "Generate a new idempotency key for the changed save."
+                        ),
+                        "evidence_reference_id": None,
+                    }
+                ),
+            ),
+            audit_reference_id=f"workflow-draft:{draft_id}:save-rejected",
+        )
     except DraftConflictError:
         current = await service.get_workflow_draft(
             principal=principal,
@@ -1342,7 +1520,18 @@ async def react_admin_workflow_builder_save(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except WorkflowAccessError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
-    return build_save_result(draft=saved)
+    refreshed = await _workflow_builder_payload(
+        scope=scope,
+        principal=principal,
+        service=service,
+        workflow_draft_id=draft_id,
+    )
+    return build_save_result(
+        draft=outcome.draft,
+        editor_state=refreshed.draft,
+        idempotency_key=payload.idempotency_key,
+        replayed=outcome.replayed,
+    )
 
 
 @router.post(

@@ -23,6 +23,7 @@ describe("WorkflowSectionForm", () => {
     const onChange = vi.fn();
     const onSave = vi.fn();
     const onForceStale = vi.fn();
+    const onRevert = vi.fn();
 
     render(
       <WorkflowSectionForm
@@ -33,6 +34,7 @@ describe("WorkflowSectionForm", () => {
         mutationResult={acceptedWorkflowMutation}
         onChange={onChange}
         onForceStale={onForceStale}
+        onRevert={onRevert}
         onSave={onSave}
         saving={false}
         sections={workflowBuilderEnvelope.sections}

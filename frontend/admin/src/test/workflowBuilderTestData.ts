@@ -445,6 +445,140 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
   },
   draft: {
     description: "Prepare a safe daily intelligence briefing for a tenant.",
+    document: {
+      approval_gates: [
+        {
+          approval_gate_key: "manager-approval",
+          approver_scope: "tenant_admin",
+          decision_contract_key: "approval-decision",
+          display_name: "Manager approval",
+          resume_behavior: "continue",
+        },
+      ],
+      contracts: [
+        {
+          contract_key: "request",
+          contract_kind: "workflow_input",
+          json_schema: { type: "object" },
+        },
+        {
+          contract_key: "result",
+          contract_kind: "workflow_output",
+          json_schema: { type: "object" },
+        },
+        {
+          contract_key: "approval-decision",
+          contract_kind: "approval_decision",
+          json_schema: { type: "object" },
+        },
+      ],
+      description: "Prepare a safe daily intelligence briefing for a tenant.",
+      display_name: "Daily briefing workflow",
+      edges: [
+        {
+          edge_key: "edge-start-calendar",
+          edge_type: "success",
+          source_node_key: "start",
+          target_node_key: "calendar",
+        },
+        {
+          edge_key: "edge-calendar-join",
+          edge_type: "success",
+          source_node_key: "calendar",
+          target_node_key: "join",
+        },
+      ],
+      editor_annotations: {
+        collapsed_sections: [],
+        graph_layout: {},
+        section_notes: {},
+      },
+      entry_node_key: "start",
+      join_policies: [
+        {
+          inbound_edge_keys: ["edge-calendar-join"],
+          join_policy_key: "wait_for_required_branches",
+          required_branches: ["calendar"],
+          strategy: "all_success",
+        },
+      ],
+      nodes: [
+        {
+          display_name: "Start briefing",
+          node_key: "start",
+          node_type: "role",
+          role_key: "coordinator",
+        },
+        {
+          display_name: "Calendar branch",
+          node_key: "calendar",
+          node_type: "role",
+          role_key: "calendar",
+        },
+        {
+          display_name: "Join branches",
+          join_policy_key: "wait_for_required_branches",
+          node_key: "join",
+          node_type: "join",
+        },
+      ],
+      prompt_profile_references: [
+        {
+          agent_kind: "agent",
+          agent_key: "coordinator",
+          prompt_reference_version_ids: [],
+          prompt_version_ids: [],
+          readiness_status: "ready",
+          reference_key: "profile-briefing-safe",
+          resolution_digest: "profile:briefing-safe",
+          role_key: "coordinator",
+          source_scope: "tenant",
+        },
+      ],
+      roles: [
+        {
+          display_name: "Coordinator",
+          graph_node_keys: ["start"],
+          input_contract_key: "request",
+          output_contract_key: "result",
+          profile_reference_key: "profile-briefing-safe",
+          prompt_reference_keys: ["profile-briefing-safe"],
+          purpose: "Coordinate the briefing workflow.",
+          role_key: "coordinator",
+        },
+        {
+          display_name: "Calendar analyst",
+          graph_node_keys: ["calendar"],
+          input_contract_key: "request",
+          output_contract_key: "result",
+          purpose: "Summarize calendar context.",
+          role_key: "calendar",
+        },
+      ],
+      subworkflow_refs: [
+        {
+          alias: "weather-enrichment",
+          compatibility_status: "compatible",
+          display_name: "Weather enrichment",
+          input_contract_key: "request",
+          output_contract_key: "result",
+          workflow_version_ref: "subworkflow-weather-v1",
+        },
+      ],
+      test_requirements: [
+        {
+          freshness_policy: "latest_revision",
+          latest_result_id: "run-qa030-stale",
+          latest_result_status: "stale",
+          requirement_key: "daily-briefing-required-suite",
+          safe_summary: "Repository-backed test evidence is stale for this draft.",
+          suite_id: "suite-briefing-required",
+          target_type: "workflow_draft",
+        },
+      ],
+      workflow_key: "daily-briefing-workflow",
+      workflow_kind: "main_workflow",
+    },
     graph: {
       accessibility_summary:
         "Graph details are also available through keyboard-accessible node and edge lists.",
@@ -537,9 +671,26 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
       "Prompt, profile, provider route, skill, and test evidence selected.",
     revision: "draft-rev-qa030-current",
     roles_summary: "Coordinator plus calendar and weather sub-agent roles.",
+    section_summaries: [
+      {
+        href: null,
+        label: "Metadata",
+        section_id: "metadata",
+        status: "ready",
+        summary: "Name, description, tags, and Daily Briefing pattern.",
+      },
+      {
+        href: null,
+        label: "Graph",
+        section_id: "graph",
+        status: "warning",
+        summary: "Nodes, edges, fan-out, joins, and approval gates.",
+      },
+    ],
     status: "ready",
     tenant_label: "Acme",
     workflow_draft_id: "00000000-0000-0000-0000-000000000030",
+    workflow_draft_revision_id: "33333333-3333-4333-8333-000000000030",
     workflow_lineage_id: "11111111-1111-1111-1111-000000000030",
   },
   legacy_routes: [
@@ -747,7 +898,9 @@ export const workflowBuilderEnvelope: WorkflowBuilderEnvelope = {
       {
         category: "required_test_evidence",
         evidence_reference_id: "evidence-qa030-required-suite",
+        field_path: "test_requirements",
         finding_id: "finding-required-evidence",
+        graph_element_id: null,
         href: "/admin/agent-tests/ui",
         message: "Required Daily briefing test evidence is stale.",
         recommended_action: "Run the required test suite and refresh evidence.",
@@ -776,6 +929,7 @@ export const acceptedWorkflowMutation: BuilderMutationResult = {
   audit_reference_id: "audit-workflow-save-qa030",
   confirmation: null,
   field_errors: [],
+  editor_state: null,
   idempotency: null,
   next_action: null,
   publish_readiness: workflowBuilderEnvelope.publish_readiness,

@@ -126,10 +126,18 @@ def find_repo_root(explicit: Path | None) -> Path:
     cwd = Path.cwd().resolve()
     candidates.extend([cwd, *cwd.parents])
     for candidate in candidates:
+        has_architecture_doc = any(
+            (candidate / architecture_doc).exists()
+            for architecture_doc in (
+                "system_architecture.md",
+                "README.md",
+                "docs/architecture.md",
+            )
+        )
         if (
             (candidate / "pyproject.toml").exists()
             and (candidate / "curl_testing.md").exists()
-            and (candidate / "system_architecture.md").exists()
+            and has_architecture_doc
         ):
             return candidate
     raise RuntimeError("Could not find repository root containing curl_testing.md")

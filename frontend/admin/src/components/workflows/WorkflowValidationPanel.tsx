@@ -20,7 +20,11 @@ export function WorkflowValidationPanel({
   validation,
 }: WorkflowValidationPanelProps) {
   return (
-    <section className="workflow-validation-panel" aria-labelledby="validation-title">
+    <section
+      className="workflow-validation-panel"
+      id="workflow-validation"
+      aria-labelledby="validation-title"
+    >
       <div className="section-heading">
         <div>
           <p className="eyebrow">Validation</p>
@@ -60,6 +64,22 @@ export function WorkflowValidationPanel({
               </div>
               <p>{finding.message}</p>
               <small>{finding.recommended_action}</small>
+              {finding.href || finding.field_path?.startsWith("test_requirements") ? (
+                <a
+                  className="inline-link"
+                  href={
+                    finding.field_path?.startsWith("test_requirements")
+                      ? "#workflow-test-evidence"
+                      : finding.href ?? "#workflow-validation"
+                  }
+                >
+                  Open section
+                </a>
+              ) : null}
+              {finding.field_path ? <small>{finding.field_path}</small> : null}
+              {finding.graph_element_id ? (
+                <small>{finding.graph_element_id}</small>
+              ) : null}
               {finding.evidence_reference_id ? (
                 <small>{finding.evidence_reference_id}</small>
               ) : null}

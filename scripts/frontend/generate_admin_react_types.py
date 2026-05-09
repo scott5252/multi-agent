@@ -115,8 +115,17 @@ from multi_agent_platform.api.schemas.admin_workflow_builder import (
     WorkflowBuilderEnvelope,
     WorkflowDraftCopyActionRequest,
     WorkflowDraftCreateActionRequest,
+    WorkflowDraftSaveRequest,
     WorkflowReferenceCatalog,
     WorkflowRevisionRestoreActionRequest,
+)
+from multi_agent_platform.api.schemas.agent_profiles import (
+    ActivationRequest,
+    ProfileCreate,
+    ProfileDraftDetail,
+    ProfileDraftSave,
+    ProfileSummary,
+    ProfileVersionDetail,
 )
 from multi_agent_platform.api.schemas.auth import (
     LocalLoginEnvelope,
@@ -138,6 +147,19 @@ from multi_agent_platform.api.schemas.channel_runs import (
     RunResultResponse,
     RunStatusResponse,
     TimelineResponse,
+)
+from multi_agent_platform.api.schemas.prompts import (
+    PromptDraftDetail,
+    PromptDraftSave,
+    PromptLineageCreate,
+    PromptLineageSummary,
+    PromptPreviewRequest,
+    PromptPreviewResponse,
+    PromptVersionDetail,
+    PublishRequest,
+)
+from multi_agent_platform.api.schemas.prompts import (
+    ValidationResult as PromptValidationResult,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -170,6 +192,22 @@ def schema_payload() -> dict[str, Any]:
         "WorkflowDraftCreateActionRequest": (
             WorkflowDraftCreateActionRequest.model_json_schema()
         ),
+        "WorkflowDraftSaveRequest": WorkflowDraftSaveRequest.model_json_schema(),
+        "PromptLineageCreate": PromptLineageCreate.model_json_schema(),
+        "PromptDraftSave": PromptDraftSave.model_json_schema(),
+        "PromptDraftDetail": PromptDraftDetail.model_json_schema(),
+        "PromptLineageSummary": PromptLineageSummary.model_json_schema(),
+        "PromptVersionDetail": PromptVersionDetail.model_json_schema(),
+        "PromptPreviewRequest": PromptPreviewRequest.model_json_schema(),
+        "PromptPreviewResponse": PromptPreviewResponse.model_json_schema(),
+        "PromptPublishRequest": PublishRequest.model_json_schema(),
+        "PromptValidationResult": PromptValidationResult.model_json_schema(),
+        "ProfileCreate": ProfileCreate.model_json_schema(),
+        "ProfileDraftSave": ProfileDraftSave.model_json_schema(),
+        "ProfileDraftDetail": ProfileDraftDetail.model_json_schema(),
+        "ProfileSummary": ProfileSummary.model_json_schema(),
+        "ProfileVersionDetail": ProfileVersionDetail.model_json_schema(),
+        "ProfileActivationRequest": ActivationRequest.model_json_schema(),
         "WorkflowRevisionRestoreActionRequest": (
             WorkflowRevisionRestoreActionRequest.model_json_schema()
         ),
@@ -338,6 +376,7 @@ export type AdminMutationStatus =
   | "accepted"
   | "validation_error"
   | "stale_conflict"
+  | "idempotent_replay"
   | "replayed"
   | "confirmation_required"
   | "dependency_unavailable"
@@ -1422,6 +1461,8 @@ export interface ValidationFinding {{
   severity: WorkflowBuilderSeverity;
   category: string;
   section: string;
+  field_path: string | null;
+  graph_element_id: string | null;
   message: string;
   recommended_action: string;
   href: string | null;
@@ -1479,6 +1520,7 @@ export interface WorkflowJsonInspector {{
 
 export interface WorkflowDraftDocument {{
   workflow_draft_id: string;
+  workflow_draft_revision_id: string;
   workflow_lineage_id: string;
   revision: string;
   name: string;
@@ -1488,14 +1530,19 @@ export interface WorkflowDraftDocument {{
   metadata_summary: string;
   roles_summary: string;
   references_summary: string;
+  document: Record<string, unknown>;
+  section_summaries: BuilderSection[];
   graph: WorkflowGraphPreview;
 }}
 
 export interface WorkflowDraftSaveRequest {{
   revision: string;
   idempotency_key: string;
-  name: string;
-  description: string;
+  name: string | null;
+  description: string | null;
+  document: Record<string, unknown> | null;
+  change_summary: string | null;
+  client_context: Record<string, string>;
   selected_prompt_ref: string | null;
   selected_profile_ref: string | null;
   join_policy: string;
@@ -1542,8 +1589,185 @@ export interface WorkflowPublishRequest {{
   ready_fixture: boolean;
 }}
 
+export interface PromptVariableDeclaration {{
+  name: string;
+  purpose: string;
+  required: boolean;
+  allowed_value_category: string;
+  safety_classification: string;
+  sample_guidance: string;
+  display_order: number;
+}}
+
+export interface FixtureValueSet {{
+  fixture_set_id: string;
+  label: string;
+  values_by_variable: Record<string, string>;
+}}
+
+export interface PromptLineageCreate {{
+  scope_type: ReactAdminScopeType;
+  tenant_id: string | null;
+  slug: string;
+  display_name: string;
+  purpose: string;
+}}
+
+export interface PromptDraftSave {{
+  expected_revision_number: number;
+  prompt_title: string;
+  purpose: string;
+  usage_notes: string;
+  template_content: string;
+  variables: PromptVariableDeclaration[];
+  fixture_sets: FixtureValueSet[];
+}}
+
+export interface PromptRuntimeValidationFinding {{
+  code: string;
+  severity: "blocking" | "advisory";
+  message: string;
+  field: string | null;
+  section?: string;
+}}
+
+export interface PromptValidationResult {{
+  validation_result_id: string | null;
+  status: "passed" | "failed";
+  blocking_issue_count: number;
+  advisory_issue_count: number;
+  findings: PromptRuntimeValidationFinding[];
+}}
+
+export interface PromptDraftDetail {{
+  prompt_lineage_id: string;
+  prompt_draft_id: string;
+  current_revision_number: number;
+  prompt_title: string | null;
+  purpose: string | null;
+  usage_notes: string;
+  template_content: string;
+  variables: PromptVariableDeclaration[];
+  fixture_sets: FixtureValueSet[];
+  latest_validation: PromptValidationResult | null;
+}}
+
+export interface PromptLineageSummary {{
+  prompt_lineage_id: string;
+  scope_type: string;
+  tenant_id: string | null;
+  slug: string;
+  display_name: string;
+  purpose: string;
+  status: string;
+  latest_published_prompt_version_id: string | null;
+  validation_status: string | null;
+}}
+
+export interface PromptVersionDetail {{
+  prompt_version_id: string;
+  prompt_lineage_id: string;
+  display_version: string;
+  status: string;
+  template_content_sha256: string;
+  safe_summary: Record<string, unknown>;
+}}
+
+export interface PromptRuntimePreviewRequest {{
+  fixture_set_id: string;
+}}
+
+export interface PromptRuntimePreviewResponse {{
+  rendered_preview: string;
+  redaction_categories: string[];
+  missing_variables: string[];
+}}
+
+export interface PromptPublishRequest {{
+  reason: string;
+}}
+
+export interface ProfileCreate {{
+  scope_type: ReactAdminScopeType;
+  tenant_id: string | null;
+  agent_key: string;
+  agent_kind: "agent" | "sub_agent";
+  display_name: string;
+  purpose: string;
+}}
+
+export interface ProfileDraftSave {{
+  expected_revision_number: number;
+  purpose: string;
+  prompt_references: Array<Record<string, unknown>>;
+  model_routing_hints: Record<string, unknown>;
+  memory_scope_policy: Record<string, unknown>;
+  skill_requirements: Array<Record<string, unknown>>;
+  tool_policy_expectations: Array<Record<string, unknown>>;
+  output_contract_expectations: Record<string, unknown>;
+  test_suite_requirements: Array<Record<string, unknown>>;
+}}
+
+export interface ProfileValidationFinding {{
+  code: string;
+  severity: "blocking" | "advisory";
+  message: string;
+  section: string;
+}}
+
+export interface ProfileValidationResult {{
+  validation_result_id: string | null;
+  status: "passed" | "failed";
+  blocking_issue_count: number;
+  advisory_issue_count: number;
+  findings: ProfileValidationFinding[];
+}}
+
+export interface ProfileDraftDetail {{
+  agent_runtime_profile_id: string;
+  agent_profile_draft_id: string;
+  current_revision_number: number;
+  purpose: string | null;
+  prompt_references: Array<Record<string, unknown>>;
+  model_routing_hints: Record<string, unknown>;
+  memory_scope_policy: Record<string, unknown>;
+  skill_requirements: Array<Record<string, unknown>>;
+  tool_policy_expectations: Array<Record<string, unknown>>;
+  output_contract_expectations: Record<string, unknown>;
+  test_suite_requirements: Array<Record<string, unknown>>;
+  latest_validation: ProfileValidationResult | null;
+}}
+
+export interface ProfileSummary {{
+  agent_runtime_profile_id: string;
+  scope_type: string;
+  tenant_id: string | null;
+  agent_key: string;
+  agent_kind: string;
+  display_name: string;
+  purpose: string;
+  status: string;
+  active_profile_version_id: string | null;
+  validation_status: string | null;
+}}
+
+export interface ProfileVersionDetail {{
+  agent_profile_version_id: string;
+  agent_runtime_profile_id: string;
+  agent_key: string;
+  agent_kind: string;
+  display_version: string;
+  status: string;
+  safe_summary: Record<string, unknown>;
+}}
+
+export interface ProfileActivationRequest {{
+  reason: string;
+}}
+
 export interface BuilderMutationResult extends MutationResult {{
   revision: string | null;
+  editor_state: WorkflowDraftDocument | null;
   validation: WorkflowValidationSummary | null;
   publish_readiness: WorkflowPublishReadiness | null;
 }}

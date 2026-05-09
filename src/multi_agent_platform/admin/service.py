@@ -24,6 +24,7 @@ from multi_agent_platform.storage.base import StorageProvider
 
 if TYPE_CHECKING:
     from multi_agent_platform.admin.workflow_registry.service import (
+        WorkflowDraftSaveOutcome,
         WorkflowRegistryService,
     )
     from multi_agent_platform.api.schemas.workflow_editor import (
@@ -200,6 +201,40 @@ class AdminService:
             payload=payload,
         )
 
+    async def save_workflow_draft_for_react(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        payload: WorkflowDraftSaveRequest,
+        react_save_idempotency_key: str,
+        react_save_scope_hash: str,
+        react_save_payload_hash: str,
+    ) -> WorkflowDraftSaveOutcome:
+        return await self.workflow_registry_service().save_draft_for_react(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            payload=payload,
+            react_save_idempotency_key=react_save_idempotency_key,
+            react_save_scope_hash=react_save_scope_hash,
+            react_save_payload_hash=react_save_payload_hash,
+        )
+
+    async def record_workflow_draft_mutation_attempt(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_draft_id: UUID,
+        outcome: str,
+        payload: dict[str, str] | None = None,
+    ) -> None:
+        await self.workflow_registry_service().record_draft_mutation_attempt(
+            principal=principal,
+            workflow_draft_id=workflow_draft_id,
+            outcome=outcome,
+            payload=payload,
+        )
+
     async def validate_workflow_draft(
         self,
         *,
@@ -233,6 +268,18 @@ class AdminService:
         return await self.workflow_registry_service().get_version(
             principal=principal,
             workflow_version_bundle_id=workflow_version_bundle_id,
+        )
+
+    async def get_latest_published_workflow_version_for_lineage(
+        self,
+        *,
+        principal: PrincipalContext,
+        workflow_lineage_id: UUID,
+    ) -> WorkflowVersionResponse | None:
+        service = self.workflow_registry_service()
+        return await service.get_latest_published_version_for_lineage(
+            principal=principal,
+            workflow_lineage_id=workflow_lineage_id,
         )
 
     async def get_workflow_editor_lookups(

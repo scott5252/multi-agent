@@ -26,6 +26,17 @@ class FakeWorkflowRegistryService:
             "version_id": workflow_version_bundle_id,
         }
 
+    async def get_latest_published_version_for_lineage(
+        self,
+        *,
+        principal,
+        workflow_lineage_id,
+    ):
+        return {
+            "lineage_id": workflow_lineage_id,
+            "principal": principal.principal_id,
+        }
+
     async def create_sharing_grant(
         self,
         *,
@@ -96,6 +107,12 @@ async def test_validate_publish_version_and_grant_delegate_to_registry_service()
         principal=principal,
         workflow_version_bundle_id=uuid4(),
     )
+    latest_version_result = (
+        await admin_service.get_latest_published_workflow_version_for_lineage(
+            principal=principal,
+            workflow_lineage_id=uuid4(),
+        )
+    )
     grant_result = await admin_service.create_workflow_sharing_grant(
         principal=principal,
         workflow_version_bundle_id=uuid4(),
@@ -105,6 +122,7 @@ async def test_validate_publish_version_and_grant_delegate_to_registry_service()
     assert validate_result["principal"] == "platform-admin"
     assert publish_result["payload"]["validation_result_id"] == "validation-1"
     assert version_result["principal"] == "platform-admin"
+    assert latest_version_result["principal"] == "platform-admin"
     assert grant_result["payload"]["grantee_tenant_id"] == "tenant-1"
 
 

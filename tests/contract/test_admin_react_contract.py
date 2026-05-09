@@ -40,6 +40,20 @@ def test_openapi_contains_react_admin_contracts() -> None:
     assert "/admin/app/workflows/drafts/{workflow_draft_id}/save" in schema["paths"]
     assert "/admin/app/workflows/drafts/{workflow_draft_id}/validate" in schema["paths"]
     assert "/admin/app/workflows/drafts/{workflow_draft_id}/publish" in schema["paths"]
+    save_schema = schema["components"]["schemas"][
+        "multi_agent_platform__api__schemas__admin_workflow_builder__"
+        "WorkflowDraftSaveRequest"
+    ]
+    assert "document" in save_schema["properties"]
+    assert "client_context" in save_schema["properties"]
+    draft_schema = schema["components"]["schemas"][
+        "multi_agent_platform__api__schemas__admin_workflow_builder__"
+        "WorkflowDraftDocument"
+    ]
+    assert "document" in draft_schema["properties"]
+    assert "section_summaries" in draft_schema["properties"]
+    mutation_schema = schema["components"]["schemas"]["BuilderMutationResult"]
+    assert "editor_state" in mutation_schema["properties"]
     assert (
         "/admin/app/workflows/versions/{workflow_version_bundle_id}/detail.json"
         in schema["paths"]
