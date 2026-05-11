@@ -3,16 +3,11 @@
 Review date: 2026-05-10
 
 This guide shows how to configure and test the Design Reviewer Council scenario
-from a clean local install using the Admin browser UI. The primary path is to
-build a tenant-owned reusable `Design Reviewer Council` workflow draft in
+from a clean local install using the Admin browser UI. The path is to build a
+tenant-owned reusable `Design Reviewer Council` workflow draft from scratch in
 Workflow Registry, verify its workflow structure and test evidence, publish the
 workflow, use the runtime launch and Design Reviews handoff links, create a
 design review session, and launch a review round.
-
-The Design Reviews page also exposes a built-in Council template action. Treat
-that action as an optional shortcut or recovery path, not as a requirement for
-all workflows. Custom workflows can be created from scratch in Workflow
-Registry without starting from a predefined template.
 
 After opening the local Admin login page, do not navigate by editing the
 browser address bar. Use the UI links, left navigation, command search,
@@ -44,6 +39,12 @@ The council reviews the request with five reviewer perspectives:
 4. Accessibility Reviewer
 5. Engineering And API Reviewer
 
+Use reviewer keys `product-fit`, `ux-interaction`, `visual-system`,
+`accessibility`, and `engineering-api` for coordinator verdicts. Use workflow
+role keys `product-fit-reviewer`, `ux-interaction-reviewer`,
+`visual-design-system-reviewer`, `accessibility-reviewer`, and
+`engineering-api-reviewer` for the authored workflow roles.
+
 The recommended quorum policy is `Four of five, no blockers`. A review passes
 when at least four reviewers approve and the aggregate blocker count is zero.
 If quorum is not met, the session records a revision path or pauses for a
@@ -57,7 +58,7 @@ records needed for the Design Reviewer Council scenario:
 
 - The Acme tenant used by the local-principal Admin UI.
 - A tenant-owned reusable `Design Reviewer Council` workflow draft, built in the
-  browser or optionally installed from the built-in shortcut.
+  browser from scratch.
 - A required Test Bench suite for the council workflow.
 - Current publish-gate evidence for the council workflow draft.
 - Browser-visible workflow setup state: full-document saves, section summaries,
@@ -67,13 +68,11 @@ records needed for the Design Reviewer Council scenario:
 - A design review session, one launched review round, runtime graph evidence,
   and an approved handoff after the API completion test.
 
-The build-first path performs the scenario-specific configuration through
-Workflow Registry, workflow builder controls, and Agent Tests. You should not
-create workflow JSON by hand, update the browser URL, or insert council
-workflow/test records manually. The built-in template action can still create
-or refresh the canonical council workflow and evidence when you want a shortcut.
-The only manual database seed below is the clean-install Acme tenant row that
-the local principal references.
+The browser path performs the scenario-specific configuration through Workflow
+Registry, workflow builder controls, and Agent Tests. You should not create
+workflow JSON by hand, update the browser URL, or insert council workflow/test
+records manually. The only manual database seed below is the clean-install Acme
+tenant row that the local principal references.
 
 ## Step 0 - Prepare A Clean Local System
 
@@ -164,11 +163,10 @@ you want launched workflow runs to move through runtime processing. The API
 test uses `jq` to construct request payloads and read response fields.
 
 Clean-system screen expectation: before Step 3 runs, `Design Reviews` should
-show no user-created sessions and the council template may be `not installed`.
-`Workflow Registry` may be empty or may show unrelated local drafts, but it
-should not require you to edit the browser URL. `Agent Tests` will not show the
-council required suite until you create evidence through the workflow builder or
-use the optional template action.
+show no user-created sessions. `Workflow Registry` may be empty or may show
+unrelated local drafts, but it should not require you to edit the browser URL.
+`Agent Tests` will not show the council required suite until you create
+evidence through the workflow builder.
 
 ## Step 1 - Sign In And Confirm Scope
 
@@ -195,9 +193,9 @@ On-page actions:
 Explanation: This step gives the browser a tenant-admin principal with access
 to tenant-scoped workflow, test, and design review setup. The Design Reviews
 workspace requires tenant scope, so the `Acme` scope must be visible before the
-workflow create and optional template actions will be enabled. The local login
-card writes the local principal cookie and returns to Admin automatically. The
-scope dropdown is the safe UI control for changing tenant context.
+workflow create and design review actions will be enabled. The local login card
+writes the local principal cookie and returns to Admin automatically. The scope
+dropdown is the safe UI control for changing tenant context.
 
 Screen check:
 
@@ -218,8 +216,8 @@ On-page actions:
    asks you to inspect, validate, publish, or launch from the council workflow.
    Inside the registry, open workflows with row buttons such as `Open draft`.
 3. Under `Workflows`, locate `Design Reviews`. Click this link when the guide
-   asks you to use the optional council template shortcut, create a review
-   session, launch a review round, or inspect handoff state.
+   asks you to create a review session, launch a review round, or inspect
+   handoff state.
 4. When the workflow builder opens Design Reviews through `Select in Design
    Reviews`, use that button. It carries the selected published workflow for
    you; do not type a Design Reviews URL.
@@ -250,59 +248,47 @@ Screen check:
 - Console Home includes `Current notices`, `Start here`, and `Authorized
   destinations` panels that reflect backend navigation decisions.
 
-## Step 3 - Build Or Install The Council Workflow
+## Step 3 - Build The Council Workflow From Scratch
 
-![Design Reviewer template readiness](../docs/assets/design-reviewer-example/admin-ui/design-review-template-wide.png)
+![Workflow setup page for the Design Reviewer Council graph](../docs/assets/design-reviewer-example/admin-ui/workflows-wide.png)
 
 On-page actions:
 
 1. Click `Workflow Registry` in the left navigation.
-2. Click `Create workflow`. Wait for the create result to appear, then click the
-   result's `Open draft` link.
-3. In the draft form, change `Name` to `Design Reviewer Council`.
-4. Change `Description` so it mentions council review, five reviewer
-   perspectives, quorum synthesis, and development handoff.
-5. Near the top of the builder, click `Apply three-agent starter` once. This
-   gives the draft a safe editable baseline for roles, contracts, graph nodes,
-   joins, and prompt/profile references.
-6. Click `Save draft` and wait for the saved or accepted message.
-7. Use the builder controls in the next steps to turn the starter into the
-   council workflow: one lead/intake role, five reviewer roles, one quorum join,
-   synthesis, handoff, and terminal completion. Save after each meaningful group
-   of edits.
-8. If you want the shortcut instead of building the draft manually, click
-   `Design Reviews`, find the `Council template` panel, and click `Install
-   template`. If the panel already exists and says `Refresh evidence`, click it
-   only when the template is stale, evidence is pending, or you want to refresh
-   the required deterministic evidence.
-9. Wait for any mutation message or status text to say the workflow was saved,
-   accepted, ready, or published. Do not navigate away while a button is busy.
-10. If you used the shortcut, confirm the `Council template` card shows a
-    workflow revision, `Publish gate`, required `Evidence`, and safe evidence
-    `Modes`. If you are building first, confirm the builder shows a saved
-    revision and a `Required publish evidence` section.
+2. Click `Create workflow` in the `Registry` panel. This opens or reveals the
+   `Create workflow` panel.
+3. In the `Create workflow` panel, click `Create draft`. Wait for the create
+   result to appear, then click the result's `Open draft` link. If the registry
+   row opens automatically, stay on the opened draft.
+4. In the draft form, change `Name` to `Design Reviewer Council`.
+5. Change `Description` to this safe summary:
 
-Explanation: The learning path builds the reusable council workflow as a normal
-tenant-owned workflow draft. In the current product, that is the user-authored
-template: a workflow draft and later a published version that can be selected
-for many design review sessions. The `Council template` panel remains useful
-for demos, clean-install recovery, and evidence refreshes, but workflows do not
-need a predefined template to exist before users can create them. The UI shows
-truthful states such as `not installed`, `evidence pending`, `stale`, `ready`,
-or `published`; it does not invent sessions or reviewer results. If the
-template shortcut button is disabled, check that the top bar still shows the
-Acme tenant scope and that the Acme tenant seed from Step 0 exists.
+   ```text
+   Runs a five-perspective design review council with intake, reviewer fanout,
+   four-of-five quorum, synthesis, and development handoff.
+   ```
+
+6. Leave `Apply three-agent starter` unused. This tutorial builds the council
+   roles, contracts, joins, and graph edges manually through the controls below.
+7. Click `Save draft` and wait for the saved or accepted message.
+8. Confirm the builder shows the saved draft revision, a `Custom workflow launch
+   checklist`, and a `Required publish evidence` section.
+9. If the page shows a different draft after save, use the `Registry` list,
+   find `Design Reviewer Council`, and click its `Open draft` action.
+
+Explanation: This creates the durable workflow draft that the rest of the guide
+edits in the browser. The initial draft may contain placeholder coordinator
+content; Step 5 replaces that placeholder content with the full council
+structure. Do not edit raw JSON, type internal Admin paths into the address bar,
+or create workflow records directly in the database.
 
 Screen check:
 
-- The Workflow Registry create flow exposes `Create workflow`, `Open draft`,
-  `Apply three-agent starter`, and `Save draft`.
-- If you use the optional shortcut, the Design Reviews page has summary cards
-  for `Sessions`, `In review`, `Needs decision`, `Approved`, and `Template`.
-- If you use the optional shortcut, the `Council template` panel shows `Publish
-  gate`, `Evidence`, `Modes`, and `Revision`.
-- The optional template action button is `Install template` before first setup
-  and `Refresh evidence` after setup exists.
+- The Workflow Registry create flow exposes `Create workflow`, `Create draft`,
+  `Open draft`, and `Save draft`.
+- The selected draft form exposes `Name`, `Description`, and `Join policy`.
+- A successful save result is redaction-safe and refers to the current draft
+  revision.
 
 ## Step 4 - Open The Workflow Draft And Review The Save Contract
 
@@ -342,8 +328,7 @@ Exact duplicate saves replay idempotently, same-key different-payload saves
 return safe validation findings, and stale saves return recovery guidance. If
 the registry opens a different draft first, use the `Design Reviewer Council`
 row action named `Open draft`. If no council draft is visible, return to Step 3
-and either build the draft from `Create workflow` or use the optional
-`Install template` shortcut.
+and build the draft from `Create workflow`.
 
 Screen check:
 
@@ -369,32 +354,110 @@ On-page actions:
    section name.
 5. Treat the checklist as progress guidance only. Backend validation, Test Bench
    evidence, and publish readiness remain the release source of truth.
-6. If this is the build-first path and the draft is still sparse, click `Apply
-   three-agent starter` once. If the draft already has Council roles from your
-   earlier build or the optional installer, leave the starter unchanged.
-7. Scroll to `Roles`. Use `Add role`, duplicate, move, and remove controls until
-   the draft represents one lead/intake role, five reviewer roles, synthesis,
-   handoff, and terminal completion. Keep the reviewer names aligned with the
-   five perspectives listed in the Scenario section.
-8. In each role card, set or review the role key, display name, kind, purpose,
-   responsibilities, input/output contracts, prompt/profile references, skill
-   bindings, and graph node references. Use expand/collapse controls if the
-   card is collapsed.
-9. Scroll to `Contracts`. Use `Add contract` or duplicate controls until request,
-   reviewer output, quorum decision, synthesis, handoff, and final result
-   boundaries are represented as contract cards.
-10. Scroll to `Graph topology`. Use `Add node`, `Add join node`, and `Add edge`
-    to build the entry node, role nodes, reviewer fanout, review quorum join,
-    synthesis, handoff, and complete node. Use the text lists when the canvas is
-    too dense.
-11. Scroll to `Joins` and `Approvals`. Configure the quorum join for the council
-    policy and confirm any approval controls show approver scope, decision
-    contract, resume behavior, and safe reviewer instructions.
-12. Click `Save draft` after each substantial group of role, contract, graph, or
-    join edits. Wait for the saved/accepted message before continuing.
-13. If you used the optional installed template instead of building, use this
-    step as an inspection pass and leave fields unchanged unless you are making
-    an intentional edit.
+6. Scroll to `Contracts`. Use the existing contract cards first, then click
+   `Add contract` until there are six contract cards. Set these visible fields:
+
+   | Key | Name | Kind | Schema type | Producers | Consumers |
+   | --- | --- | --- | --- | --- | --- |
+   | `design-review-request` | `Design review request` | `workflow_input` | `object` | `requester` | `council-intake,product-fit-reviewer,ux-interaction-reviewer,visual-design-system-reviewer,accessibility-reviewer,engineering-api-reviewer` |
+   | `reviewer-verdict` | `Reviewer verdict` | `data_contract` | `object` | `product-fit-reviewer,ux-interaction-reviewer,visual-design-system-reviewer,accessibility-reviewer,engineering-api-reviewer` | `review-quorum,quorum-synthesizer` |
+   | `quorum-decision` | `Quorum decision` | `approval_decision` | `object` | `review-quorum` | `quorum-synthesizer` |
+   | `synthesis-summary` | `Synthesis summary` | `handoff` | `object` | `quorum-synthesizer` | `development-handoff` |
+   | `development-handoff` | `Development handoff` | `handoff` | `object` | `development-handoff` | `complete` |
+   | `workflow-result` | `Workflow result` | `workflow_output` | `object` | `complete` | `requester` |
+
+7. In each contract card, use `Compatibility notes` for a short safe statement.
+   For example, on `reviewer-verdict`, write `Safe verdict, score, blocker
+   count, feedback summary, and output digest only`.
+8. Click `Save draft` and wait for the saved/accepted message.
+9. Scroll to `Roles`. Use the existing role card for the intake role, then click
+   `Add role` until there are eight role cards. Set these fields:
+
+   | Key | Name | Kind | Input contract | Output contract |
+   | --- | --- | --- | --- | --- |
+   | `council-intake` | `Council Intake Lead` | `agent` | `design-review-request` | `design-review-request` |
+   | `product-fit-reviewer` | `Product Fit Reviewer` | `agent` | `design-review-request` | `reviewer-verdict` |
+   | `ux-interaction-reviewer` | `UX And Interaction Reviewer` | `agent` | `design-review-request` | `reviewer-verdict` |
+   | `visual-design-system-reviewer` | `Visual And Design System Reviewer` | `agent` | `design-review-request` | `reviewer-verdict` |
+   | `accessibility-reviewer` | `Accessibility Reviewer` | `agent` | `design-review-request` | `reviewer-verdict` |
+   | `engineering-api-reviewer` | `Engineering And API Reviewer` | `agent` | `design-review-request` | `reviewer-verdict` |
+   | `quorum-synthesizer` | `Quorum Synthesizer` | `agent` | `quorum-decision` | `synthesis-summary` |
+   | `development-handoff` | `Development Handoff Author` | `agent` | `synthesis-summary` | `development-handoff` |
+
+10. For each role card, fill `Purpose` and `Responsibilities` with safe,
+    browser-visible summaries. Use one responsibility per line. The minimum
+    expected responsibilities are:
+
+    | Role key | Responsibilities |
+    | --- | --- |
+    | `council-intake` | `Confirm the request summary is safe to review` and `Route one immutable revision to each reviewer` |
+    | `product-fit-reviewer` | `Evaluate product fit` and `Flag blocker count and safe rationale` |
+    | `ux-interaction-reviewer` | `Evaluate primary interaction path` and `Flag usability blockers` |
+    | `visual-design-system-reviewer` | `Evaluate visual hierarchy and design system fit` and `Flag visual blockers` |
+    | `accessibility-reviewer` | `Evaluate keyboard, contrast, and readable-list paths` and `Flag accessibility blockers` |
+    | `engineering-api-reviewer` | `Evaluate implementation and API feasibility` and `Flag engineering blockers` |
+    | `quorum-synthesizer` | `Count approvals and blockers` and `Produce a safe synthesis summary` |
+    | `development-handoff` | `Prepare approved revision summary, digest, and artifact references` and `Keep handoff content safe for audit` |
+
+11. Leave `Prompt refs`, `Profile reference`, and `Skill refs` unchanged for
+    now if they are empty. Step 6 binds prompt and runtime profile references
+    through the dedicated matrix.
+12. Click `Save draft` and wait for the saved/accepted message.
+13. Scroll to `Joins, Approvals, And Subworkflows`. In `Join Policies`, use
+    `Add join` if no join exists. Configure one join policy with these values:
+
+    | Field | Value |
+    | --- | --- |
+    | `Key` | `review-quorum` |
+    | `Strategy` | `quorum` |
+    | `Inbound edges` | `edge-product-quorum,edge-ux-quorum,edge-visual-quorum,edge-accessibility-quorum,edge-engineering-quorum` |
+    | `Required branches` | `product-fit,ux-interaction,visual-system,accessibility,engineering-api` |
+    | `Quorum` | `4` |
+    | `Timeout seconds` | `900` |
+    | `Failure behavior` | `manual_resolution` |
+    | `Output contract` | `quorum-decision` |
+
+14. Leave `Approval Gates` and `Subworkflow References` empty for this scenario
+    unless a later product requirement explicitly asks for them.
+15. Click `Save draft` and wait for the saved/accepted message.
+16. Scroll to `Graph Topology`. Use the existing node for intake, then click
+    `Add node` and `Add join node` until the topology contains these nodes:
+
+    | Key | Name | Type | Role or join policy |
+    | --- | --- | --- | --- |
+    | `intake` | `Intake` | `role` | `Council Intake Lead` |
+    | `product-fit-review` | `Product fit review` | `role` | `Product Fit Reviewer` |
+    | `ux-interaction-review` | `UX interaction review` | `role` | `UX And Interaction Reviewer` |
+    | `visual-system-review` | `Visual system review` | `role` | `Visual And Design System Reviewer` |
+    | `accessibility-review` | `Accessibility review` | `role` | `Accessibility Reviewer` |
+    | `engineering-api-review` | `Engineering API review` | `role` | `Engineering And API Reviewer` |
+    | `review-quorum` | `Review quorum` | `join` | `review-quorum` |
+    | `synthesize-decision` | `Synthesize decision` | `role` | `Quorum Synthesizer` |
+    | `handoff` | `Development handoff` | `role` | `Development Handoff Author` |
+    | `complete` | `Complete` | `terminal` | none |
+
+17. In `Entry node`, select `Intake`.
+18. In the `Edges` area, click `Add edge` until there are thirteen edge cards.
+    Configure each edge as follows:
+
+    | Key | Source | Target | Contract | Type | Branch label |
+    | --- | --- | --- | --- | --- | --- |
+    | `edge-intake-product` | `Intake` | `Product fit review` | `design-review-request` | `success` | `product-fit` |
+    | `edge-intake-ux` | `Intake` | `UX interaction review` | `design-review-request` | `success` | `ux-interaction` |
+    | `edge-intake-visual` | `Intake` | `Visual system review` | `design-review-request` | `success` | `visual-system` |
+    | `edge-intake-accessibility` | `Intake` | `Accessibility review` | `design-review-request` | `success` | `accessibility` |
+    | `edge-intake-engineering` | `Intake` | `Engineering API review` | `design-review-request` | `success` | `engineering-api` |
+    | `edge-product-quorum` | `Product fit review` | `Review quorum` | `reviewer-verdict` | `success` | `product-fit` |
+    | `edge-ux-quorum` | `UX interaction review` | `Review quorum` | `reviewer-verdict` | `success` | `ux-interaction` |
+    | `edge-visual-quorum` | `Visual system review` | `Review quorum` | `reviewer-verdict` | `success` | `visual-system` |
+    | `edge-accessibility-quorum` | `Accessibility review` | `Review quorum` | `reviewer-verdict` | `success` | `accessibility` |
+    | `edge-engineering-quorum` | `Engineering API review` | `Review quorum` | `reviewer-verdict` | `success` | `engineering-api` |
+    | `edge-quorum-synthesis` | `Review quorum` | `Synthesize decision` | `quorum-decision` | `success` | `quorum-passed` |
+    | `edge-synthesis-handoff` | `Synthesize decision` | `Development handoff` | `synthesis-summary` | `success` | `approved` |
+    | `edge-handoff-complete` | `Development handoff` | `Complete` | `workflow-result` | `success` | `complete` |
+
+19. Leave `Loop type` empty and `Failure path` unchecked on all listed edges.
+20. Click `Save draft` and wait for the saved/accepted message.
 
 ![Workflow graph and role builder](../output/playwright/qa070_ui/qa070-workflow-graph-role-desktop.png)
 
@@ -445,19 +508,30 @@ On-page actions:
 4. Review the prompt reference and runtime profile reference fields for the
    selected role. They should show reference keys, version labels, readiness,
    and safe summaries only.
-5. If a role already shows ready prompt/profile references, do not change it.
-   Continue to the next role.
-6. If a role is incomplete and you are authorized to update it, use the visible
-   prompt/profile controls to select or generate safe references. Then click
-   `Save draft` and wait for the saved/accepted message.
-7. If you need to author or inspect prompt/profile records directly, use the
+5. For each role, if `Prompt` is `Missing`, either choose an authorized prompt
+   from `Authorized prompt` and click `Bind selected prompt`, or type a safe
+   role-specific title in `Prompt title` and click `Publish prompt reference`.
+6. For each role, if `Profile` is `Missing`, either choose an authorized
+   profile from `Authorized profile` and click `Bind selected profile`, or type
+   a safe role-specific name in `Profile name`, confirm `Model routing hint` is
+   acceptable for local deterministic testing, and click `Activate profile
+   reference`.
+7. Repeat the role selector/dropdown pass until the `Binding Matrix` shows
+   ready prompt and profile references for `council-intake`,
+   `product-fit-reviewer`, `ux-interaction-reviewer`,
+   `visual-design-system-reviewer`, `accessibility-reviewer`,
+   `engineering-api-reviewer`, `quorum-synthesizer`, and
+   `development-handoff`.
+8. Click `Save draft` and wait for the saved/accepted message. After save,
+   confirm the readiness badge near `Per-Agent Bindings` shows all roles ready.
+9. If you need to author or inspect prompt/profile records directly, use the
    left navigation links `Prompt Library`, `Agent Profiles`, or `Configuration`
    rather than editing the browser URL.
-8. Leave prompt editor disclosures closed for screenshots unless the review is
+10. Leave prompt editor disclosures closed for screenshots unless the review is
    explicitly about prompt authoring. The workflow setup screenshots should not
-   show raw prompt template content.
-9. After any binding change, reload with the browser refresh button and confirm
-   the binding matrix still shows the saved state.
+   show raw prompt content.
+11. After any binding change, reload with the browser refresh button and confirm
+    the binding matrix still shows the saved state.
 
 Explanation: Spec 071 moves prompt/profile readiness into the workflow setup
 path. The matrix is meant to help reviewers see whether every role has the
@@ -482,9 +556,8 @@ On-page actions:
 2. Read the evidence summary at the top of the section. It should tell you
    whether evidence is current, missing, stale, failed, queued, running, or
    blocked.
-3. If you built the workflow first and no suite is attached, click `Create
-   suite`. Wait for the suite result, then confirm the new required evidence
-   requirement appears on the draft.
+3. If no suite is attached, click `Create suite`. Wait for the suite result,
+   then confirm the new required evidence requirement appears on the draft.
 4. If an authorized `Design Reviewer Council Required Evidence` suite already
    exists in the selector, click `Attach suite` only when it is not already
    attached.
@@ -523,19 +596,13 @@ On-page actions:
 
 1. If you clicked `Open Agent Tests`, confirm the `Agent Tests` workspace opens
    from the link. The left navigation should still show the Acme scope.
-2. In `Reusable suites`, find the suite for the Council workflow. If you used
-   the optional installer it may be named `Design Reviewer Council Required
-   Evidence`; if you built it first it may be named from the workflow display
-   name.
+2. In `Reusable suites`, find the suite for the Council workflow. It may be
+   named from the workflow display name.
 3. Click `Open suite` on that suite card or row.
 4. In `Suite and case forms`, confirm the suite is required for publish and is
    bound to the current council workflow draft revision.
-5. Review the case list. A build-first suite should include at least the safe
-   workflow contract smoke case you created from the builder. The optional
-   installed suite may also include broader scenario coverage for quorum
-   success, revision-required, blocking-issue, manual-resolution, retry, cancel,
-   approved-handoff, cross-tenant-denial, redaction, Admin live-data, and
-   model-safe-boundary behavior.
+5. Review the case list. The suite should include at least the safe workflow
+   contract smoke case you created from the builder.
 6. In `Run launcher`, choose a safe mode such as `Mock model` for deterministic
    local evidence. Do not choose a live provider mode for this tutorial.
 7. Return to `Workflow Registry` through the left navigation when finished.
@@ -805,15 +872,12 @@ Use these checks if a clean install does not match the tutorial screens:
   tenant seed in Step 0 succeeded and sign in again with `Acme Tenant Admin`.
 - If `Create workflow` is disabled, use the scope dropdown to return to Acme
   tenant scope and confirm you are not signed in as a platform-only principal.
-- If the optional `Install template` shortcut is disabled, use the same scope
-  checks and confirm the Acme tenant seed from Step 0 exists.
 - If `Workflow` is empty in `New session`, return to `Workflow Registry`, open
   the `Design Reviewer Council` draft, and complete the publish buttons in
   Step 8.
 - If `Agent Tests` does not show the required suite, return to the council draft
   and use `Create suite`, `Add safe case`, and `Launch deterministic run` in
-  `Required publish evidence`. You can also use the optional `Install template`
-  or `Refresh evidence` shortcut from `Design Reviews`.
+  `Required publish evidence`.
 - If `Open runtime launch` does not prefill a workflow, return to `Workflow
   Registry`, open the council draft, and confirm the workflow is published in
   Step 8.
@@ -838,10 +902,10 @@ URL.
 On-page actions:
 
 1. Click `Workflow Registry` in the left navigation.
-2. If no `Design Reviewer Council` row exists, click `Create workflow`, open the
-   created draft, set the name and description for the Council scenario, click
-   `Apply three-agent starter`, expand the draft into the five-reviewer council
-   structure with the builder controls, and click `Save draft`.
+2. If no `Design Reviewer Council` row exists, click `Create workflow`, click
+   `Create draft`, open the created draft, set the name and description for the
+   Council scenario, create the contracts, roles, quorum join, graph nodes, and
+   graph edges listed in Step 5, and click `Save draft`.
 3. If a `Design Reviewer Council` row already exists, click its `Open draft`
    action.
 4. Confirm `Custom workflow launch checklist`, `Per-Agent Bindings`, and
@@ -876,14 +940,12 @@ On-page actions:
 
 Explanation: This UI test verifies the user can navigate the entire scenario
 through links, buttons, dropdowns, and row actions. It covers workflow creation,
-template-like reuse through a published workflow, setup panels, evidence setup,
-publish-gate visibility, runtime launch prefill, Design Reviews handoff,
-session creation, round launch, runtime graph navigation, and safe evidence
-inspection. The optional built-in Council template shortcut can be used to
-recover a known baseline, but it is not required for the UI test. The current
-browser UI does not provide a form for entering reviewer verdicts directly. Use
-the API test below to complete a round with deterministic verdicts, then refresh
-the UI to see the approved handoff.
+manual council configuration, setup panels, evidence setup, publish-gate
+visibility, runtime launch prefill, Design Reviews handoff, session creation,
+round launch, runtime graph navigation, and safe evidence inspection. The
+current browser UI does not provide a form for entering reviewer verdicts
+directly. Use the API test below to complete a round with deterministic
+verdicts, then refresh the UI to see the approved handoff.
 
 Expected result:
 
@@ -916,9 +978,9 @@ export WORKFLOW_VERSION_BUNDLE_ID="$(
     "${BASE_URL}/admin/app/design-reviews/bootstrap.json?tenant_id=${TENANT_ID}" \
   | jq -r '
       if ([.workflow_options[]
-        | select(.workflow_key == "design-reviewer-council")] | length) > 0
+        | select((.label // "") | test("Design Reviewer Council"; "i"))] | length) > 0
       then [.workflow_options[]
-        | select(.workflow_key == "design-reviewer-council")][0]
+        | select((.label // "") | test("Design Reviewer Council"; "i"))][0]
       else .workflow_options[0]
       end
       | .workflow_version_bundle_id // empty' \
@@ -1030,12 +1092,13 @@ curl -sS \
 ```
 
 Explanation: The first call reads the same Design Reviews bootstrap data that
-the browser uses and extracts the published workflow option. It prefers the
-built-in `design-reviewer-council` key when present, otherwise it uses the most
-recent published workflow option, which matches the build-first path in a clean
-tenant. The session call creates a tenant-scoped review session for the scenario
-request, and the launch call creates one coordinator-owned review round. The
-complete call supplies four approved verdicts, one non-blocking
+the browser uses and extracts the published workflow option. It prefers an
+option whose label contains `Design Reviewer Council`, otherwise it uses the
+first published workflow option, which matches a clean tenant after this guide
+has published only the council workflow. The session call creates a
+tenant-scoped review session for the scenario request, and the launch call
+creates one coordinator-owned review round. The complete call supplies four
+approved verdicts, one non-blocking
 changes-requested verdict, and a safe synthesis summary, which should satisfy
 the four-of-five quorum policy. After the API test finishes, return to the
 browser, click `Design Reviews`, click `Refresh`, select the API-created
