@@ -1689,6 +1689,209 @@ textarea {
   padding-top: var(--admin-space-3);
 }
 
+.workflow-onboarding-page {
+  height: calc(100vh - 8.5rem);
+  margin-top: var(--admin-space-4);
+  min-height: 39rem;
+}
+
+.workflow-onboarding-shell {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.workflow-onboarding-header,
+.workflow-onboarding-footer {
+  align-items: center;
+  display: flex;
+  gap: var(--admin-space-3);
+  justify-content: space-between;
+  padding: var(--admin-space-4) var(--admin-space-5);
+}
+
+.workflow-onboarding-header {
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.workflow-onboarding-header h1,
+.wizard-step-panel h2,
+.wizard-paged-card h3 {
+  margin: 0;
+}
+
+.workflow-onboarding-header p,
+.wizard-step-panel p,
+.wizard-paged-card p {
+  color: var(--admin-muted);
+  margin: var(--admin-space-1) 0 0;
+}
+
+.workflow-onboarding-header-actions,
+.workflow-onboarding-footer,
+.wizard-inline-actions,
+.wizard-resource-links,
+.wizard-launch-grid {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2);
+}
+
+.workflow-onboarding-frame {
+  display: grid;
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.workflow-onboarding-rail {
+  background: var(--admin-surface-raised);
+  border-right: 1px solid var(--admin-border);
+  display: grid;
+  gap: var(--admin-space-2);
+  grid-auto-rows: minmax(0, 1fr);
+  min-height: 0;
+  padding: var(--admin-space-3);
+}
+
+.workflow-onboarding-step {
+  align-items: center;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: var(--admin-space-1);
+  justify-items: start;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+}
+
+.workflow-onboarding-step.active {
+  border-color: var(--admin-accent);
+  box-shadow: inset 0 0 0 1px var(--admin-accent);
+}
+
+.workflow-onboarding-step span {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.workflow-onboarding-body {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--admin-space-4);
+}
+
+.wizard-step-panel {
+  display: grid;
+  gap: var(--admin-space-3);
+  height: 100%;
+  min-height: 0;
+}
+
+.wizard-form-grid,
+.wizard-stat-grid {
+  display: grid;
+  gap: var(--admin-space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wizard-form-grid label {
+  color: var(--admin-muted);
+  display: grid;
+  font-size: 0.82rem;
+  font-weight: 700;
+  gap: var(--admin-space-1);
+}
+
+.wizard-form-grid .wide {
+  grid-column: 1 / -1;
+}
+
+.wizard-form-grid input,
+.wizard-form-grid select,
+.wizard-form-grid textarea {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-ink);
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+}
+
+.wizard-form-grid textarea {
+  resize: none;
+}
+
+.wizard-stat-grid div,
+.wizard-paged-card {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  min-width: 0;
+  padding: var(--admin-space-3);
+}
+
+.wizard-stat-grid span {
+  color: var(--admin-muted);
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.wizard-stat-grid strong {
+  display: block;
+  margin-top: var(--admin-space-1);
+  overflow-wrap: anywhere;
+}
+
+.wizard-graph-list {
+  display: grid;
+  gap: var(--admin-space-2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wizard-graph-list span {
+  background: var(--admin-info-soft);
+  border: 1px solid #b7cce3;
+  border-radius: var(--admin-radius-sm);
+  overflow-wrap: anywhere;
+  padding: 0.45rem 0.6rem;
+}
+
+.wizard-paged-card {
+  align-items: start;
+  display: grid;
+  gap: var(--admin-space-3);
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.wizard-mutation {
+  color: var(--admin-muted);
+  font-size: 0.86rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wizard-mutation.accepted,
+.wizard-mutation.idempotent_replay {
+  color: var(--admin-success);
+}
+
+.wizard-mutation.validation_error,
+.wizard-mutation.stale_conflict {
+  color: var(--admin-danger);
+}
+
 .workflow-section-rail small {
   color: var(--admin-muted);
   grid-column: 1 / -1;
@@ -2970,6 +3173,36 @@ textarea {
 
   .content-shell {
     padding: var(--admin-space-4);
+  }
+
+  .workflow-onboarding-page {
+    height: auto;
+    min-height: 0;
+  }
+
+  .workflow-onboarding-shell {
+    min-height: 42rem;
+  }
+
+  .workflow-onboarding-frame,
+  .wizard-form-grid,
+  .wizard-graph-list,
+  .wizard-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-onboarding-rail {
+    border-bottom: 1px solid var(--admin-border);
+    border-right: 0;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(8rem, 1fr);
+    overflow-x: auto;
+  }
+
+  .workflow-onboarding-header,
+  .workflow-onboarding-footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .topbar-side,

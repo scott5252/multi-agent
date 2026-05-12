@@ -1,0 +1,42 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 079 - Non-Scrolling Wizard QA, Docs, And Guardrails",
+    "spec_number": "079",
+    "spec_slug": "non-scrolling-wizard-qa-docs-and-guardrails",
+    "feature_dir": "specs/079-non-scrolling-wizard-qa-docs-and-guardrails",
+    "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/079-non-scrolling-wizard-qa-docs-and-guardrails",
+    "branch": "codex/079-non-scrolling-wizard-qa-docs-and-guardrails",
+    "qa_id": "qa079",
+    "qa_label": "QA079",
+    "qa_database": "multi_agent_platform_qa079",
+    "qa_env_file": "specs/079-non-scrolling-wizard-qa-docs-and-guardrails/.env.qa079",
+    "artifact_root": ".data/qa079-artifacts",
+    "playwright_output_dir": "output/playwright/qa079_ui",
+    "manual_qa_user_guide": "specs/079-non-scrolling-wizard-qa-docs-and-guardrails/qa079_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa079-after-spec",
+    "roadmap_file": "docs/wizard_ui.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa079-autopilot-smoke"
+    ],
+    "required_quality_commands": [
+      "generated-react-types-fresh",
+      "frontend-install-deps",
+      "frontend-typecheck",
+      "frontend-vitest",
+      "frontend-build"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review"
+    ]
+  }
+}

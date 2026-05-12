@@ -6,8 +6,8 @@ production-like installation. It is written for administrators and operators who
 do not write code every day, but it stays precise about the current system so
 that setup decisions are repeatable.
 
-This document reflects the repository state reviewed on May 9, 2026. It covers
-feature specifications 001 through 073, the Python code under
+This document reflects the repository state reviewed on May 11, 2026. It covers
+feature specifications 001 through 079, the Python code under
 `src/multi_agent_platform`, and the Admin browser implementation under
 `frontend/admin`.
 
@@ -36,8 +36,8 @@ The fastest path to a working system is:
 8. Start the API server.
 9. Open `/admin/app` through the local login screen.
 10. Configure model providers, prompts, agent profiles, skill diagnostics,
-   workflows, briefing preferences, tests, channels, and operational
-   monitoring.
+   workflows, onboarding wizards, briefing preferences, tests, channels, and
+   operational monitoring.
 
 The platform is meant to be administered through the browser first. APIs are
 available for automation, but most setup steps can be completed through the
@@ -120,6 +120,14 @@ Some areas are intentionally lighter in the current code:
   The browser remains a guided authoring surface; the backend remains the
   source of truth for revision checks, idempotency, validation, publish
   readiness, evidence freshness, authorization, and redaction.
+- Console Home now includes an authorized `Set up workflow` action that opens
+  the fixed-frame workflow onboarding wizard at
+  `/admin/app/workflows/onboarding`. Use it when a tenant admin wants to start
+  from arbitrary scenario intent rather than first learning workflow registry
+  internals. The wizard creates or resumes durable drafts through existing
+  workflow APIs, keeps generated roles/contracts/graph/evidence editable, and
+  preserves backend-owned validation, publish readiness, launch eligibility,
+  tenant scope, and redaction.
 
 These notes are not warnings to avoid the system. They are the boundaries to
 know when moving from local evaluation to a production deployment.
@@ -348,6 +356,28 @@ areas:
   checklist-driven workflow creation, three-agent starter, evidence setup,
   validation, publish, runtime launch prefill, Design Reviews workflow
   selection, mobile layout checks, and tenant isolation.
+- Spec 074, Console Home onboarding wizard entry and fixed-frame shell:
+  authorized `Set up workflow` quick action, tenant-scoped onboarding route,
+  bounded step rail/body/footer, resume and exit behavior, and 1280 x 800
+  no-scroll shell guardrails.
+- Spec 075, generic scenario intake and durable draft blueprint:
+  scenario-neutral intake, workflow key normalization, durable draft creation,
+  editable generic blueprint generation, revision-safe saves, and tutorial
+  label guardrails.
+- Spec 076, stepwise agents, contracts, and graph configuration: bounded
+  agent, contract, graph, join, approval, and review steps with paged
+  collections and backend validation summaries.
+- Spec 077, resource readiness, bindings, and evidence configuration:
+  prompt/profile summaries, provider/skill/channel readiness, required Test
+  Bench evidence attachment, deterministic evidence state, and safe freshness
+  display.
+- Spec 078, publish, launch, and operational verification finish:
+  validation, publish blockers, confirmation, published bundle refresh,
+  runtime launch links, Design Reviews handoff, operations, and graph evidence
+  links.
+- Spec 079, non-scrolling wizard QA, docs, and guardrails: QA documents,
+  validation manifests, Playwright no-scroll journeys, screenshot evidence,
+  redaction sweeps, hard-coded tutorial terminology scans, and final docs.
 
 ## 1. Overview
 
@@ -367,10 +397,12 @@ The system has several major capabilities:
 - Workflow registry and workflow builder pages for creating draft workflows,
   validating graphs and references, reviewing revisions, and publishing
   immutable workflow bundles.
-- A checklist-driven custom workflow setup path for tenant admins: create a
-  draft, apply a three-agent starter, bind prompt/profile references, attach
-  required deterministic evidence, validate, publish, and open runtime launch
-  or Design Reviews handoff surfaces.
+- A Console Home-launched generic workflow onboarding path for tenant admins:
+  choose `Set up workflow`, describe an arbitrary scenario, create or resume a
+  durable draft, review bounded agents/contracts/graph/resource/evidence steps,
+  validate, publish, and open runtime launch or Design Reviews handoff
+  surfaces. The older checklist-driven builder path remains available for
+  advanced editing.
 - Published workflow graph execution for role nodes, sub-agent nodes, joins,
   approvals, terminal nodes, parallel fanout, partial failures, and durable
   checkpoint/resume evidence.
@@ -436,6 +468,8 @@ A complete local setup has:
 - At least one workflow draft that validates and publishes.
 - A complete workflow setup path that can be verified through the browser
   without raw JSON edits.
+- The `Set up workflow` onboarding action visible on Console Home for
+  authorized workflow principals.
 - Current passing test-bench evidence for any workflow draft that declares
   required suites.
 - Optional skill packages and tenant installations.
@@ -566,6 +600,10 @@ Important browser pages:
 - `/admin/app/workflows` - workflow registry, guided builder, custom workflow
   setup checklist, graph/role authoring, prompt/profile binding, required
   evidence setup, validation, publish, and launch handoff.
+- `/admin/app/workflows/onboarding` - generic workflow onboarding wizard
+  launched from Console Home through `Set up workflow`. Use this first when a
+  tenant admin wants step-by-step setup from scenario intent to draft,
+  evidence, publish, and launch without raw JSON editing.
 - `/admin/app/design-reviews` - Design Review Council sessions, reusable
   template readiness, review rounds, manual decisions, quorum evidence, and
   handoff references.
@@ -589,10 +627,10 @@ Important browser pages:
 
 ### Admin UI Visual Tour
 
-The screenshots below were captured from the running local server on May 8-9,
+The screenshots below were captured from the running local server on May 8-11,
 2026 with Playwright at desktop viewports. The workflow setup screenshots for
-Specs 069 through 073 are captured from the focused Playwright QA runs under
-`output/playwright/qa069_ui` through `output/playwright/qa073_ui`. The Admin
+Specs 069 through 079 are captured from the focused Playwright QA runs under
+`output/playwright/qa069_ui` through `output/playwright/qa079_ui`. The Admin
 pages use the `tenant-admin-acme` local principal so tenant-scoped controls and
 records are visible. If a Markdown viewer scales a screenshot down, open the
 image directly.
@@ -643,14 +681,46 @@ Common shell elements appear on nearly every Admin page:
 - Refresh reloads the home envelope from the backend.
 - Current notices lists actionable system notices for the active scope. An
   empty notice state means there are no active notices.
-- Start here contains quick-action links for common workflows: review
-  workflows, search runs, check routing, review providers, manage skills, open
-  test bench, manage access, and review usage.
+- Start here contains quick-action links for common workflows: set up a
+  workflow, review workflows, search runs, check routing, review providers,
+  manage skills, open test bench, manage access, and review usage.
+- Set up workflow opens the generic onboarding wizard. It preserves the active
+  tenant scope and is shown only when backend navigation says the principal may
+  use workflow registry actions.
 - Authorized destinations lists every workspace the principal can open in the
   current scope. Each card states the destination purpose and provides an
   Open button.
 - The page intentionally shows only destinations allowed by backend
   authorization.
+
+#### Workflow Onboarding Wizard
+
+Use `Set up workflow` on Console Home when you want a guided, generic setup
+path before opening the advanced workflow builder. The wizard is mounted at
+`/admin/app/workflows/onboarding`, but reviewers should reach it by clicking
+the visible Console Home action after local login.
+
+- Scenario intake captures a neutral workflow name, key, purpose, launch mode,
+  expected inputs, expected outputs, coordination style, approval needs,
+  optional channel preference, and evidence preference.
+- Create durable draft uses the existing workflow draft create action. The
+  draft is persisted in the workflow registry and can be reopened in the
+  advanced editor.
+- Draft, Agents, Contracts, Graph, Resources, Evidence, Publish, and Launch
+  steps stay inside a fixed frame with a step rail and footer actions. Large
+  collections are summarized or paged instead of requiring vertical scrolling.
+- The generated blueprint is generic and editable. It should not mention
+  tutorial scenarios as default product behavior.
+- Resource readiness, validation, publish readiness, required evidence
+  freshness, tenant scope, authorization, and launch eligibility remain
+  backend-owned. Browser progress is only a summary.
+- Evidence setup attaches required Test Bench suites through the existing
+  workflow save action and keeps raw transcripts out of wizard summaries.
+- Launch links open authorized Admin workspaces such as user runs, Design
+  Reviews, operations, or graph evidence with tenant scope preserved.
+- At a 1280 x 800 viewport, the page, wizard body, and footer should remain
+  usable without vertical scrolling, clipped controls, overlapping text, or
+  hidden buttons.
 
 #### Operations And Run Debug
 
@@ -1556,54 +1626,68 @@ preference context pinned at creation time.
 
 ### Workflow Setup From Start To Finish
 
-Use `/admin/app/workflows` for the guided React browser flow. Older workflow
-browser links should redirect into this workspace or return safe non-Jinja
-responses. A tenant admin can now complete the full custom workflow setup
-journey from this page without raw JSON editing.
+Use Console Home `Set up workflow` for the generic onboarding path, especially
+from a clean tenant or when the user wants to describe an arbitrary scenario
+before seeing advanced workflow controls. The action opens
+`/admin/app/workflows/onboarding` with the active tenant scope preserved. The
+wizard captures scenario intent, creates or resumes a durable draft, pages
+agents/contracts/graph/resource summaries inside a 1280 x 800 fixed frame,
+attaches required evidence when available, validates, publishes, and links to
+runtime, Design Reviews, operations, or graph evidence surfaces through visible
+Admin links.
 
-1. Create a new workflow draft from the workflow registry.
-2. Open the new draft from the create result.
-3. Review the Custom workflow launch checklist near the top of the builder.
-4. Fill in metadata such as name, description, owner, tenant visibility, and
+Use `/admin/app/workflows` for the full builder and advanced guided browser
+flow. Older workflow browser links should redirect into this workspace or
+return safe non-Jinja responses. A tenant admin can complete the custom
+workflow setup journey from these pages without raw JSON editing.
+
+1. Start from Console Home and select `Set up workflow`, or open Workflows when
+   you already know which draft to edit.
+2. Enter a neutral workflow scenario, review the suggested workflow key, and
+   create or resume the durable draft.
+3. Open the new draft from the create result or use the Advanced editor link
+   when you need the full builder.
+4. Review the Custom workflow launch checklist near the top of the builder.
+5. Fill in metadata such as name, description, owner, tenant visibility, and
    intended business use.
-5. Apply the three-agent starter when you want a complete baseline. It creates
+6. Apply the three-agent starter when you want a complete baseline. It creates
    coordinator, research, and synthesis roles plus starter contracts, role
    nodes, a join node, edges, prompt/profile references, and a join policy.
-6. Adjust role cards through visible controls for role key, name, kind,
+7. Adjust role cards through visible controls for role key, name, kind,
    purpose, responsibilities, contracts, prompt/profile references, skill
    bindings, and graph node references.
-7. Define input, output, approval-decision, handoff, artifact, memory,
+8. Define input, output, approval-decision, handoff, artifact, memory,
    tool-access, or data contracts so the workflow has clear boundaries.
-8. Edit graph topology with entry node, node, edge, edge-contract, branch,
+9. Edit graph topology with entry node, node, edge, edge-contract, branch,
    retry, and layout controls.
-9. Configure approval gates for human review points.
-10. Configure join policies for parallel work, such as `all_success`, `quorum`,
+10. Configure approval gates for human review points.
+11. Configure join policies for parallel work, such as `all_success`, `quorum`,
     `first_success`, or `manual_resolution`.
-11. Add subworkflow references only to authorized published workflow versions.
-12. Use the Per-Agent Bindings area to attach prompt and runtime profile
+12. Add subworkflow references only to authorized published workflow versions.
+13. Use the Per-Agent Bindings area to attach prompt and runtime profile
     references to each role. Safe reference keys and readiness badges are shown;
     raw prompt bodies and credential values are not.
-13. Attach model routing overrides only where they are necessary.
-14. Attach skill installations and tool policies needed by each step.
-15. Use Required publish evidence to create or attach a Test Bench suite, add a
+14. Attach model routing overrides only where they are necessary.
+15. Attach skill installations and tool policies needed by each step.
+16. Use Required publish evidence to create or attach a Test Bench suite, add a
     safe deterministic case, and launch a deterministic run for the current
     draft revision.
-16. Save the draft. The save route stores the complete workflow document with a
+17. Save the draft. The save route stores the complete workflow document with a
     revision token and idempotency key.
-17. Validate the draft and review backend-owned findings.
-18. Resolve reference errors, missing skill versions, missing prompt/profile
+18. Validate the draft and review backend-owned findings.
+19. Resolve reference errors, missing skill versions, missing prompt/profile
     grants, invalid edges, missing evidence, stale evidence, and contract
     problems through the linked sections.
-19. Review the publish gate page or the publish section in the builder.
-20. Prepare and confirm publish only when validation and current required
+20. Review the publish gate page or the publish section in the builder.
+21. Prepare and confirm publish only when validation and current required
     evidence are ready.
-21. Inspect the immutable published bundle detail page and Agent Communication
+22. Inspect the immutable published bundle detail page and Agent Communication
     Graph.
-22. Open runtime launch from the workflow handoff. The workflow field is
+23. Open runtime launch from the workflow handoff. The workflow field is
     prefilled, but a run starts only after the operator submits Start Run.
-23. Open Design Reviews from the workflow handoff if the published workflow
+24. Open Design Reviews from the workflow handoff if the published workflow
     should be used as a review workflow selection.
-24. Start a run through the Web UI, Web API, or Telegram after channel setup.
+25. Start a run through the Web UI, Web API, or Telegram after channel setup.
 
 Workflow validation is intentionally strict. It checks graph structure,
 reference visibility, exact skill versions, secret-like text markers, approval

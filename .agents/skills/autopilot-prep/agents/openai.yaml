@@ -1,0 +1,4 @@
+interface:
+  display_name: "Autopilot Prep"
+  short_description: "Prepare Spec Kit roadmap queues"
+  default_prompt: "Use $autopilot-prep to prepare a Spec Kit autopilot roadmap from docs/wizard_ui.md."

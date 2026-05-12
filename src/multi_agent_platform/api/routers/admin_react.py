@@ -5134,7 +5134,7 @@ _HOME_WORKSPACE_COPY: dict[str, str] = {
 
 def _console_home_from_shell(*, shell: AdminShellContext) -> ConsoleHomeEnvelope:
     nav_items = _console_home_navigation_items(shell)
-    quick_actions = _console_home_quick_actions(nav_items)
+    quick_actions = _console_home_quick_actions(nav_items, shell.active_scope)
     attention_items = _console_home_attention(shell)
     return ConsoleHomeEnvelope(
         page_id="console-home",
@@ -5205,9 +5205,24 @@ def _console_home_navigation_items(
 
 def _console_home_quick_actions(
     nav_items: tuple[ReactAdminNavigationItem, ...],
+    scope: AdminScope,
 ) -> tuple[ConsoleHomeQuickAction, ...]:
     by_id = {item.item_id: item for item in nav_items}
     actions: list[ConsoleHomeQuickAction] = []
+    workflow_item = by_id.get("workflow_registry")
+    if workflow_item is not None:
+        actions.append(
+            ConsoleHomeQuickAction(
+                action_id="workflow_onboarding",
+                label="Set up workflow",
+                summary=(
+                    "Launch guided setup for a generic workflow from scenario "
+                    "intake through publish and launch."
+                ),
+                href=_with_tenant_query("/admin/app/workflows/onboarding", scope),
+                group=workflow_item.group,
+            )
+        )
     for item_id in _HOME_QUICK_ACTION_IDS:
         item = by_id.get(item_id)
         if item is None:

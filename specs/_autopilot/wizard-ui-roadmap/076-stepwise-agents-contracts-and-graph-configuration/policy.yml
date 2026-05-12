@@ -1,0 +1,42 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 076 - Stepwise Agents, Contracts, And Graph Configuration",
+    "spec_number": "076",
+    "spec_slug": "stepwise-agents-contracts-and-graph-configuration",
+    "feature_dir": "specs/076-stepwise-agents-contracts-and-graph-configuration",
+    "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/076-stepwise-agents-contracts-and-graph-configuration",
+    "branch": "codex/076-stepwise-agents-contracts-and-graph-configuration",
+    "qa_id": "qa076",
+    "qa_label": "QA076",
+    "qa_database": "multi_agent_platform_qa076",
+    "qa_env_file": "specs/076-stepwise-agents-contracts-and-graph-configuration/.env.qa076",
+    "artifact_root": ".data/qa076-artifacts",
+    "playwright_output_dir": "output/playwright/qa076_ui",
+    "manual_qa_user_guide": "specs/076-stepwise-agents-contracts-and-graph-configuration/qa076_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa076-after-spec",
+    "roadmap_file": "docs/wizard_ui.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa076-autopilot-smoke"
+    ],
+    "required_quality_commands": [
+      "generated-react-types-fresh",
+      "frontend-install-deps",
+      "frontend-typecheck",
+      "frontend-vitest",
+      "frontend-build"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review"
+    ]
+  }
+}

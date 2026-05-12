@@ -1,0 +1,114 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 079 - Non-Scrolling Wizard QA, Docs, And Guardrails",
+    "spec_number": "079",
+    "spec_slug": "non-scrolling-wizard-qa-docs-and-guardrails",
+    "feature_dir": "specs/079-non-scrolling-wizard-qa-docs-and-guardrails",
+    "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/079-non-scrolling-wizard-qa-docs-and-guardrails",
+    "branch": "codex/079-non-scrolling-wizard-qa-docs-and-guardrails",
+    "qa_id": "qa079",
+    "qa_label": "QA079",
+    "qa_database": "multi_agent_platform_qa079",
+    "qa_env_file": "specs/079-non-scrolling-wizard-qa-docs-and-guardrails/.env.qa079",
+    "artifact_root": ".data/qa079-artifacts",
+    "playwright_output_dir": "output/playwright/qa079_ui",
+    "manual_qa_user_guide": "specs/079-non-scrolling-wizard-qa-docs-and-guardrails/qa079_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa079-after-spec",
+    "roadmap_file": "docs/wizard_ui.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa079-onboarding-smoke",
+        "steps": [
+          {
+            "viewport": {
+              "width": 1280,
+              "height": 800
+            }
+          },
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"tenant-admin-acme\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Set up workflow"
+          },
+          {
+            "click": "text=Set up workflow"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_url": "**/admin/app/workflows/onboarding**"
+          },
+          {
+            "expect_text": "Set up workflow"
+          },
+          {
+            "expect_text": "Scenario intake"
+          },
+          {
+            "screenshot": "qa079-onboarding-1280x800.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  },
+  "extra_quality_commands": [
+    {
+      "id": "generated-react-types-fresh",
+      "command": "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "frontend-install-deps",
+      "command": "cd frontend/admin && npm ci",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-typecheck",
+      "command": "cd frontend/admin && npm run typecheck",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-vitest",
+      "command": "cd frontend/admin && npm test",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-build",
+      "command": "cd frontend/admin && npm run build",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    }
+  ],
+  "post_spec_validation": {
+    "curl_testing": {
+      "file": "curl_testing.md",
+      "require_update_when_public_api_changes": true,
+      "require_commands_for_new_route_families": true,
+      "evidence_note": "Record curl_testing.md sections covering new or changed APIs in this spec's status.json. If no API changed, record that decision."
+    },
+    "curl_test": {
+      "skill": "multi-agent-curl-test",
+      "database": "multi_agent_curl_test",
+      "command": "if ! docker info >/dev/null 2>&1; then command -v open >/dev/null 2>&1 && open -a Docker || true; for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done; fi; docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+    }
+  }
+}

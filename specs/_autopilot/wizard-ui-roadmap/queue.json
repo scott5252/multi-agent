@@ -1,0 +1,200 @@
+{
+  "schema_version": "1.0",
+  "roadmap_file": "docs/wizard_ui.md",
+  "autopilot_root": "specs/_autopilot/wizard-ui-roadmap",
+  "spec_range": "074..079",
+  "next_spec": null,
+  "specs": [
+    {
+      "number": "074",
+      "title": "Console Home Onboarding Wizard Entry And Fixed-Frame Shell",
+      "slug": "console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+      "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+      "autopilot_file": "specs/_autopilot/wizard-ui-roadmap/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell/autopilot.yml",
+      "validation_file": "specs/_autopilot/wizard-ui-roadmap/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell/validation.yml",
+      "feature_dir": "specs/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+      "branch": "codex/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+      "status": "completed",
+      "phases": {
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
+      },
+      "validation": "completed"
+    },
+    {
+      "number": "075",
+      "title": "Generic Scenario Intake And Durable Draft Blueprint",
+      "slug": "generic-scenario-intake-and-durable-draft-blueprint",
+      "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/075-generic-scenario-intake-and-durable-draft-blueprint",
+      "autopilot_file": "specs/_autopilot/wizard-ui-roadmap/075-generic-scenario-intake-and-durable-draft-blueprint/autopilot.yml",
+      "validation_file": "specs/_autopilot/wizard-ui-roadmap/075-generic-scenario-intake-and-durable-draft-blueprint/validation.yml",
+      "feature_dir": "specs/075-generic-scenario-intake-and-durable-draft-blueprint",
+      "branch": "codex/075-generic-scenario-intake-and-durable-draft-blueprint",
+      "status": "completed",
+      "phases": {
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
+      },
+      "validation": "completed"
+    },
+    {
+      "number": "076",
+      "title": "Stepwise Agents, Contracts, And Graph Configuration",
+      "slug": "stepwise-agents-contracts-and-graph-configuration",
+      "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/076-stepwise-agents-contracts-and-graph-configuration",
+      "autopilot_file": "specs/_autopilot/wizard-ui-roadmap/076-stepwise-agents-contracts-and-graph-configuration/autopilot.yml",
+      "validation_file": "specs/_autopilot/wizard-ui-roadmap/076-stepwise-agents-contracts-and-graph-configuration/validation.yml",
+      "feature_dir": "specs/076-stepwise-agents-contracts-and-graph-configuration",
+      "branch": "codex/076-stepwise-agents-contracts-and-graph-configuration",
+      "status": "completed",
+      "phases": {
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
+      },
+      "validation": "completed"
+    },
+    {
+      "number": "077",
+      "title": "Resource Readiness, Bindings, And Evidence Configuration",
+      "slug": "resource-readiness-bindings-and-evidence-configuration",
+      "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/077-resource-readiness-bindings-and-evidence-configuration",
+      "autopilot_file": "specs/_autopilot/wizard-ui-roadmap/077-resource-readiness-bindings-and-evidence-configuration/autopilot.yml",
+      "validation_file": "specs/_autopilot/wizard-ui-roadmap/077-resource-readiness-bindings-and-evidence-configuration/validation.yml",
+      "feature_dir": "specs/077-resource-readiness-bindings-and-evidence-configuration",
+      "branch": "codex/077-resource-readiness-bindings-and-evidence-configuration",
+      "status": "completed",
+      "phases": {
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
+      },
+      "validation": "completed"
+    },
+    {
+      "number": "078",
+      "title": "Publish, Launch, And Operational Verification Finish",
+      "slug": "publish-launch-and-operational-verification-finish",
+      "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/078-publish-launch-and-operational-verification-finish",
+      "autopilot_file": "specs/_autopilot/wizard-ui-roadmap/078-publish-launch-and-operational-verification-finish/autopilot.yml",
+      "validation_file": "specs/_autopilot/wizard-ui-roadmap/078-publish-launch-and-operational-verification-finish/validation.yml",
+      "feature_dir": "specs/078-publish-launch-and-operational-verification-finish",
+      "branch": "codex/078-publish-launch-and-operational-verification-finish",
+      "status": "completed",
+      "phases": {
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
+      },
+      "validation": "completed"
+    },
+    {
+      "number": "079",
+      "title": "Non-Scrolling Wizard QA, Docs, And Guardrails",
+      "slug": "non-scrolling-wizard-qa-docs-and-guardrails",
+      "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/079-non-scrolling-wizard-qa-docs-and-guardrails",
+      "autopilot_file": "specs/_autopilot/wizard-ui-roadmap/079-non-scrolling-wizard-qa-docs-and-guardrails/autopilot.yml",
+      "validation_file": "specs/_autopilot/wizard-ui-roadmap/079-non-scrolling-wizard-qa-docs-and-guardrails/validation.yml",
+      "feature_dir": "specs/079-non-scrolling-wizard-qa-docs-and-guardrails",
+      "branch": "codex/079-non-scrolling-wizard-qa-docs-and-guardrails",
+      "status": "completed",
+      "phases": {
+        "specify": "completed",
+        "clarify": "completed",
+        "plan": "completed",
+        "tasks": "completed",
+        "analyze": "completed",
+        "implement": "completed"
+      },
+      "validation": "completed"
+    }
+  ],
+  "run_contract": {
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true,
+    "update_readme_after_roadmap": true,
+    "update_user_guide_after_roadmap": true,
+    "update_curl_testing_for_new_or_changed_apis": true,
+    "run_playwright_after_every_spec": true,
+    "run_frontend_quality_after_every_spec": true
+  },
+  "final_stability_gate": {
+    "required": true,
+    "run_after_next_spec_null": true,
+    "commands": [
+      {
+        "id": "queue-complete",
+        "command": "jq -e '.next_spec == null and all(.specs[]; .status == \"completed\" and .validation == \"completed\")' specs/_autopilot/wizard-ui-roadmap/queue.json"
+      },
+      {
+        "id": "qa-docs-all",
+        "command": "set -e; for d in specs/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell specs/075-generic-scenario-intake-and-durable-draft-blueprint specs/076-stepwise-agents-contracts-and-graph-configuration specs/077-resource-readiness-bindings-and-evidence-configuration specs/078-publish-launch-and-operational-verification-finish specs/079-non-scrolling-wizard-qa-docs-and-guardrails; do bash .specify/extensions/qa-docs/scripts/bash/validate-qa-documents.sh \"$d\"; done"
+      },
+      {
+        "id": "spec-qa-all",
+        "command": "set -e; for f in specs/_autopilot/wizard-ui-roadmap/*/validation.yml; do uv run python scripts/qa/run_spec_qa.py \"$f\"; done"
+      },
+      {
+        "id": "playwright-all",
+        "command": "set -e; for f in specs/_autopilot/wizard-ui-roadmap/*/validation.yml; do uv run python scripts/qa/run_playwright_ui.py \"$f\" --start-processes; done"
+      },
+      {
+        "id": "ruff-check",
+        "command": "uv run ruff check ."
+      },
+      {
+        "id": "ruff-format-check",
+        "command": "uv run ruff format --check ."
+      },
+      {
+        "id": "mypy",
+        "command": "uv run mypy src"
+      },
+      {
+        "id": "pytest-coverage",
+        "command": "uv run pytest --cov=src/multi_agent_platform --cov-report=term-missing --cov-fail-under=90"
+      },
+      {
+        "id": "generated-react-types-fresh",
+        "command": "uv run python scripts/frontend/generate_admin_react_types.py --check"
+      },
+      {
+        "id": "frontend-install-deps",
+        "command": "cd frontend/admin && npm ci"
+      },
+      {
+        "id": "frontend-typecheck",
+        "command": "cd frontend/admin && npm run typecheck"
+      },
+      {
+        "id": "frontend-vitest",
+        "command": "cd frontend/admin && npm test"
+      },
+      {
+        "id": "frontend-build",
+        "command": "cd frontend/admin && npm run build"
+      },
+      {
+        "id": "multi-agent-curl-test-final",
+        "command": "if ! docker info >/dev/null 2>&1; then command -v open >/dev/null 2>&1 && open -a Docker || true; for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done; fi; docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir .data/curl_test_runs/wizard-ui-roadmap-final"
+      }
+    ]
+  }
+}

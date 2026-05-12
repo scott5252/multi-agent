@@ -1,0 +1,114 @@
+{
+  "extends": "../../shared/validation.base.yml",
+  "variables": {
+    "spec_title": "Spec 074 - Console Home Onboarding Wizard Entry And Fixed-Frame Shell",
+    "spec_number": "074",
+    "spec_slug": "console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+    "feature_dir": "specs/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+    "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+    "branch": "codex/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+    "qa_id": "qa074",
+    "qa_label": "QA074",
+    "qa_database": "multi_agent_platform_qa074",
+    "qa_env_file": "specs/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell/.env.qa074",
+    "artifact_root": ".data/qa074-artifacts",
+    "playwright_output_dir": "output/playwright/qa074_ui",
+    "manual_qa_user_guide": "specs/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell/qa074_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa074-after-spec",
+    "roadmap_file": "docs/wizard_ui.md"
+  },
+  "playwright": {
+    "flows": [
+      {
+        "id": "qa074-onboarding-smoke",
+        "steps": [
+          {
+            "viewport": {
+              "width": 1280,
+              "height": 800
+            }
+          },
+          {
+            "goto": "/auth/local-login?redirect_to=/admin/app"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "click": "form:has(input[value=\"tenant-admin-acme\"]) button"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_text": "Set up workflow"
+          },
+          {
+            "click": "text=Set up workflow"
+          },
+          {
+            "wait_for_load_state": "networkidle"
+          },
+          {
+            "expect_url": "**/admin/app/workflows/onboarding**"
+          },
+          {
+            "expect_text": "Set up workflow"
+          },
+          {
+            "expect_text": "Scenario intake"
+          },
+          {
+            "screenshot": "qa074-onboarding-1280x800.png",
+            "full_page": true
+          }
+        ]
+      }
+    ]
+  },
+  "extra_quality_commands": [
+    {
+      "id": "generated-react-types-fresh",
+      "command": "uv run python scripts/frontend/generate_admin_react_types.py --check",
+      "expect_exit_code": 0,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "frontend-install-deps",
+      "command": "cd frontend/admin && npm ci",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-typecheck",
+      "command": "cd frontend/admin && npm run typecheck",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-vitest",
+      "command": "cd frontend/admin && npm test",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "frontend-build",
+      "command": "cd frontend/admin && npm run build",
+      "expect_exit_code": 0,
+      "timeout_seconds": 300
+    }
+  ],
+  "post_spec_validation": {
+    "curl_testing": {
+      "file": "curl_testing.md",
+      "require_update_when_public_api_changes": true,
+      "require_commands_for_new_route_families": true,
+      "evidence_note": "Record curl_testing.md sections covering new or changed APIs in this spec's status.json. If no API changed, record that decision."
+    },
+    "curl_test": {
+      "skill": "multi-agent-curl-test",
+      "database": "multi_agent_curl_test",
+      "command": "if ! docker info >/dev/null 2>&1; then command -v open >/dev/null 2>&1 && open -a Docker || true; for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done; fi; docker info >/dev/null && docker compose up -d postgres && uv run python .agents/skills/multi-agent-curl-test/scripts/run_curl_test.py --output-dir ${curl_test_output_dir}"
+    }
+  }
+}

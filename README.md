@@ -10,13 +10,13 @@ It was prepared from:
 
 - the original architecture plan in `docs/architecture.md`
 - the expansion plan in `docs/Architecture2.md`
-- Spec Kit feature directories `001` through `073`
+- Spec Kit feature directories `001` through `079`
 - the implemented Python package under `src/multi_agent_platform`
 - the React admin workspace under `frontend/admin`
 - Alembic migrations, tests, React static assets, generated contracts, and
   project settings
 
-As of this review, specs `001` through `073` have implementation artifacts in
+As of this review, specs `001` through `079` have implementation artifacts in
 source code. Specs `020` through `025` add the current graph execution worker,
 governed skill-tool execution boundary, Telegram alias delivery persistence,
 Daily Intelligence Briefing preferences, repository-backed workflow publish
@@ -38,11 +38,15 @@ through `064` add the Design Reviewer Council domain, coordinator, Admin
 workspace, reusable template, and publish evidence gates. Specs `065` through
 `068` add safe Agent Communication Graph contracts, draft/published graph
 rendering, runtime run graph overlays, and durable interaction replay evidence.
-Specs `069` through `073` complete the custom workflow setup path with
+Specs `069` through `073` complete the advanced custom workflow setup path with
 full-document save contracts, editable role/contract/graph controls,
 per-agent prompt/profile bindings, workflow-attached Test Bench evidence,
 backend-owned validation/publish readiness, runtime launch prefill, and Design
-Reviews handoff.
+Reviews handoff. Specs `074` through `079` add the generic Console Home
+onboarding wizard: a tenant-scoped `Set up workflow` entry, scenario-neutral
+intake, editable blueprint generation, bounded agents/contracts/graph/resource
+steps, evidence attachment, validation, publish, launch handoffs, no-scroll
+QA, and docs guardrails.
 
 ## User Guide
 
@@ -59,9 +63,10 @@ made of agents and sub-agents. A non-technical description is:
    profiles, skills, custom workflows, required tests, Telegram settings and
    aliases, briefing preferences, reliability controls, and operations
    dashboards through the Admin console at `/admin/app`. The workflow builder
-   now supports checklist-guided custom workflow setup with editable agent
-   roles, contracts, graph topology, joins, approvals, prompt/profile bindings,
-   required evidence, publish, runtime launch, and Design Reviews handoff.
+   now supports Console Home-launched workflow onboarding plus
+   checklist-guided custom workflow setup with editable agent roles, contracts,
+   graph topology, joins, approvals, prompt/profile bindings, required
+   evidence, publish, runtime launch, and Design Reviews handoff.
    Older browser URLs now route through non-Jinja compatibility redirects or
    safe responses.
 2. Users send requests through Web UI, Web API, Telegram commands, or
@@ -261,6 +266,7 @@ operator visibility.
 | `071-prompt-profile-creation-and-per-agent-binding-ui` | Per-agent prompt/runtime profile binding matrix, safe reference catalogs, readiness summaries, generated reference keys, and durable save/reload through the workflow document | `frontend/admin/src/components/workflows/WorkflowPromptProfileBinder.tsx`, `frontend/admin/src/components/workflows/workflowPromptProfileBinding.ts`, `frontend/admin/src/components/workflows/WorkflowRoleEditor.tsx`, `admin/workflow_builder.py`, `api/schemas/admin_workflow_builder.py` | Reuses prompt/profile and workflow registry tables |
 | `072-custom-workflow-test-evidence-and-publish-setup` | Workflow builder evidence panel for attaching required Test Bench suites, adding safe deterministic cases, launching deterministic evidence runs, and linking blockers back to publish readiness | `frontend/admin/src/components/workflows/WorkflowTestEvidencePanel.tsx`, `frontend/admin/src/components/workflows/workflowTestEvidence.ts`, `testing/agent_bench/react_test_bench.py`, `testing/agent_bench/service.py`, `admin/workflow_registry/publish_gate.py`, `frontend/admin/src/components/workflows/WorkflowValidationPanel.tsx` | Reuses workflow registry and agent test-bench tables |
 | `073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch` | Workflow setup checklist, three-agent starter transformation, publish-state refresh, runtime launch `workflow_id` prefill, Design Reviews requested workflow selection, and mobile workflow setup checks | `frontend/admin/src/components/workflows/WorkflowSetupWizardPanel.tsx`, `frontend/admin/src/components/workflows/workflowSetupWizard.ts`, `frontend/admin/src/components/userRuns/UserRunPage.tsx`, `frontend/admin/src/components/designReviews/DesignReviewWorkspacePage.tsx`, `frontend/admin/src/components/workflows/WorkflowBuilderPage.tsx` | Reuses workflow registry, runtime channel, and design-review records |
+| `074-console-home-onboarding-wizard-entry-and-fixed-frame-shell` through `079-non-scrolling-wizard-qa-docs-and-guardrails` | Console Home `Set up workflow` action, `/admin/app/workflows/onboarding` fixed-frame wizard, scenario-neutral intake, generic editable blueprint, paged agents/contracts/graph/resource steps, evidence setup, validation, publish, launch links, and no-scroll QA/docs guardrails | `src/multi_agent_platform/api/routers/admin_react.py`, `frontend/admin/src/App.tsx`, `frontend/admin/src/components/home/ConsoleHomePage.test.tsx`, `frontend/admin/src/components/workflows/WorkflowOnboardingWizardPage.tsx`, `frontend/admin/src/components/workflows/workflowSetupWizard.ts`, `frontend/admin/src/styles/admin.css` | Reuses Console Home, workflow registry, workflow builder, Test Bench, runtime, operations, graph, and Design Reviews records |
 
 ## Repository Shape
 
@@ -691,6 +697,18 @@ subworkflow references, per-agent prompt/profile references, required Test
 Bench evidence, validation, publish, runtime launch prefill, and Design Reviews
 handoff. Backend validation, publish readiness, Test Bench evidence, tenant
 authorization, and redaction remain authoritative.
+
+Specs `074` through `079` add a generic onboarding front door for that setup
+surface. Console Home now shows an authorized `Set up workflow` quick action
+that opens `/admin/app/workflows/onboarding` with tenant scope preserved. The
+wizard accepts arbitrary scenario intent, suggests a safe workflow key,
+creates or resumes a durable draft through the existing workflow create action,
+generates editable roles/contracts/nodes/edges/joins/approval scaffolding,
+surfaces prompt/profile/resource/evidence readiness, and finishes with
+backend-owned validation, publish, and launch handoff links. The wizard is a
+bounded 1280 x 800 frame with paged collections and fixed footer actions; if a
+screen cannot fit, the product expectation is to split or page content rather
+than rely on vertical scrolling.
 
 ```mermaid
 flowchart TD
@@ -2544,7 +2562,7 @@ Tests are organized by architectural boundary:
 - `tests/fixtures`: deterministic test data and subsystem fixtures
 
 Spec-specific QA and validation artifacts for the newest implemented slices are
-under `specs/020-*` through `specs/073-*`, including QA guides, UI
+under `specs/020-*` through `specs/079-*`, including QA guides, UI
 walkthroughs, plain-language user guides, testing instructions, PR review
 notes, Playwright evidence expectations, validation manifests, and `.env.qa0xx`
 files where needed.
@@ -2616,6 +2634,12 @@ current behavior:
   or Design Reviews. The checklist and handoff links are guidance; backend
   validation, publish gates, authorization, idempotency, evidence freshness, and
   redaction remain authoritative.
+- Specs `074` through `079` add the generic Console Home onboarding wizard.
+  Tenant admins can start from `Set up workflow`, enter arbitrary scenario
+  intent, create or resume a durable draft, review bounded agents, contracts,
+  graph, resources, evidence, publish, and launch steps, and use visible
+  handoff links without editing URLs. The wizard is fixed-frame at 1280 x 800
+  and keeps API/curl validation secondary to browser-first QA.
 - Spec `021` implements a governed skill-tool execution package and diagnostics
   surface, but it does not add a dedicated persistent skill execution table.
   Diagnostics are generated through request-scoped gateway instances, while
@@ -2651,6 +2675,7 @@ current behavior:
 | Sub-agent | A nested or delegated agent role inside a workflow. Handoffs to sub-agents are explicit and contract-validated. |
 | Design Review Session | Tenant-scoped Design Reviewer Council container with safe request summary, active immutable revision, quorum policy, rounds, manual decisions, and handoff state. |
 | Agent Communication Graph | Backend-owned safe projection of draft, published, or runtime agent communication nodes, edges, references, badges, provenance, and accessible summaries. |
+| Workflow Onboarding Wizard | Console Home-launched, tenant-scoped fixed-frame setup flow at `/admin/app/workflows/onboarding` for arbitrary workflow scenarios. It creates or resumes durable drafts through existing workflow APIs and keeps validation, evidence, publish, and launch decisions backend-owned. |
 | Runtime Interaction Evidence | Durable safe-summary replay record for source-to-target runtime communication such as delegation, context transfer, result return, joins, approvals, handoffs, tool calls, and manual resolution. |
 | Principal identity | Persisted user identity metadata for Auth0, local-principal, or system actors. Passwords are not stored. |
 | User invitation | Platform-scoped or tenant-scoped invitation with normalized operational email, masked display, requested roles, status, expiry, and idempotency metadata. |

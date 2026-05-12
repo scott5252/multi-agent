@@ -69,6 +69,207 @@ OAuth tokens, private messages, email bodies, provider payloads, prompt
 transcripts, or customer-sensitive data into visible fields. Use short safe
 summaries and safe reference labels.
 
+## Guided Wizard Path For This Tutorial
+
+The new workflow setup wizard can create the first durable Daily Intelligence
+Briefing draft and walk you through setup checkpoints before you use the more
+detailed Admin pages below. Keep the existing steps in this tutorial: the
+wizard gives you the generic draft, readiness, evidence, publish, and launch
+path, and the later sections still explain the exact briefing roles, contracts,
+graph, Telegram alias, connector readiness, and operations checks.
+
+The wizard is intentionally generic. It will not automatically hard-code
+`Daily Intelligence Briefing`, Telegram aliases, briefing sections, connector
+families, or Design Reviewer terminology. Type the briefing values from this
+guide when you use the wizard, then use the detailed Workflow Registry,
+Skill Registry, Channels, and Agent Tests sections below to finish the full
+Daily Briefing configuration.
+
+### Wizard Screen 1 - Scenario Intake
+
+![Workflow wizard scenario intake](../docs/assets/workflow-onboarding-wizard/admin-ui/wizard-01-scenario.png)
+
+On-page actions:
+
+1. After signing in as `Acme Tenant Admin`, start from Console Home and click
+   `Set up workflow`.
+2. Confirm the wizard title is `Set up workflow` and the left rail shows
+   `Scenario`, `Draft`, `Agents`, `Contracts`, `Graph`, `Resources`,
+   `Evidence`, `Publish`, and `Launch`.
+3. In `Workflow name`, enter `Daily Intelligence Briefing`.
+4. Confirm `Workflow key` normalizes to a safe slug such as
+   `daily-intelligence-briefing`.
+5. In `Purpose`, enter a safe summary such as `Telegram-triggered morning
+   briefing with calendar, email, news, logistics, focus, and synthesis roles.`
+6. Set `Trigger` to `Channel or API` because the final workflow will be routed
+   from the `Morning briefing` Telegram alias.
+7. Set `Agent count` to the closest wizard starting point. The wizard creates a
+   compact generic blueprint, so choose `5`, then use Step 7 below to expand
+   the workflow to the full seven briefing roles.
+8. Set `Coordination` to `Parallel review` for scout fan-out.
+9. Keep `Evidence` on `Deterministic safe run`.
+10. In `Expected inputs`, enter `Morning briefing request from an authorized
+    linked user or browser run.`
+11. In `Desired outputs`, enter `Telegram-ready schedule, email, news,
+    logistics, and focus summary.`
+12. Click `Create durable draft`.
+
+What this screen provides: neutral intake fields, tenant-scoped draft creation,
+workflow-key normalization, generic blueprint generation, and a clear first
+mutation. It should not show raw JSON, prompt bodies, credentials, transcripts,
+email bodies, or private Telegram messages.
+
+### Wizard Screen 2 - Draft Blueprint
+
+![Workflow wizard draft blueprint](../docs/assets/workflow-onboarding-wizard/admin-ui/wizard-02-draft.png)
+
+On-page actions:
+
+1. Confirm the `Draft` rail item is active after the draft is created.
+2. Review `Name`, read-only `Workflow key`, and `Description`.
+3. Use `Refresh blueprint` only when you intentionally want the wizard to
+   regenerate generic roles, contracts, graph, and references from the scenario
+   intake values.
+4. Click `Save draft` after intentional edits.
+5. Use `Advanced editor` when you need the full Workflow Registry controls
+   described later in this guide.
+
+What this screen provides: a durable draft checkpoint. The backend draft
+revision remains the source of truth, the browser only submits save actions,
+and stale or failed saves should produce safe recovery text instead of silently
+overwriting current work.
+
+### Wizard Screen 3 - Agents
+
+![Workflow wizard agent roles](../docs/assets/workflow-onboarding-wizard/admin-ui/wizard-03-agents.png)
+
+On-page actions:
+
+1. Click `Agents` in the wizard rail.
+2. Read the visible agent card. It shows one role at a time so the wizard stays
+   bounded.
+3. Use `Previous` and `Next item` to page through the generated roles.
+4. Confirm every role summary is safe and scenario-oriented.
+5. For the complete Daily Briefing workflow, continue to Step 7 below and
+   replace or extend the generic roles with the exact briefing roles listed
+   there.
+
+What this screen provides: a compact review of agent roles and
+responsibilities without scroll-heavy lists. It is a review and checkpoint
+surface, not the full role authoring surface.
+
+### Wizard Screen 4 - Contracts
+
+![Workflow wizard contracts](../docs/assets/workflow-onboarding-wizard/admin-ui/wizard-04-contracts.png)
+
+On-page actions:
+
+1. Click `Contracts` in the wizard rail.
+2. Page through the generated input, handoff, output, and approval contracts.
+3. Confirm each card shows a display name, key, kind, and safe version or
+   summary.
+4. For the full Daily Briefing contract set, use the detailed `Contracts`
+   controls in Step 8 below.
+
+What this screen provides: a non-JSON contract review step. It helps confirm
+that the draft has durable workflow input, intermediate handoff, and workflow
+output contracts before you refine the briefing-specific schema details.
+
+### Wizard Screen 5 - Graph
+
+![Workflow wizard graph configuration](../docs/assets/workflow-onboarding-wizard/admin-ui/wizard-05-graph.png)
+
+On-page actions:
+
+1. Click `Graph` in the wizard rail.
+2. Review the node, edge, join, and approval counts.
+3. Read the edge list to confirm the generated draft uses the intended
+   coordination pattern.
+4. Click `Save graph` after intentional graph updates.
+5. Use Step 10 below to build the final briefing graph: orchestrator fan-out,
+   scout join, focus recommendation, synthesis, and terminal completion.
+
+What this screen provides: a fixed-frame graph summary that maps setup
+progress to backend validation without exposing raw document JSON. The detailed
+canvas and editable node/edge lists remain in the Workflow Registry builder.
+
+### Wizard Screen 6 - Resources
+
+![Workflow wizard resources and readiness](../docs/assets/workflow-onboarding-wizard/admin-ui/wizard-06-resources.png)
+
+On-page actions:
+
+1. Click `Resources` in the wizard rail.
+2. Review `Role bindings`, `Providers`, `Skills`, and `Suites`.
+3. Open `Prompt and profile workspace` when prompt/profile readiness needs
+   direct governance work.
+4. Open `Skill readiness workspace` when calendar, email, news, weather, or
+   commute connector readiness needs review.
+5. Open `Channel readiness workspace` when Telegram readiness, aliases, link
+   codes, or delivery diagnostics need review.
+
+What this screen provides: safe readiness counts and links to the authorized
+workspaces that own prompts, profiles, providers, skills, and channels. It
+does not display raw prompts, completions, API keys, provider headers, private
+messages, email bodies, Telegram payloads, or connector payloads.
+
+### Wizard Screen 7 - Evidence
+
+![Workflow wizard evidence configuration](../docs/assets/workflow-onboarding-wizard/admin-ui/wizard-07-evidence.png)
+
+On-page actions:
+
+1. Click `Evidence` in the wizard rail.
+2. Review `Requirements`, `Available suites`, and `Latest status`.
+3. If an authorized suite is available, click `Attach evidence`.
+4. Click `Save evidence` after the evidence requirement is attached.
+5. If no suite is available, use Step 11 below to create a safe Test Bench
+   suite, safe case, and deterministic run.
+
+What this screen provides: the publish-gate evidence checkpoint. The wizard
+can attach required evidence to the draft, but the Test Bench and backend
+publish gate still decide whether evidence is current, stale, failed, or
+missing.
+
+### Wizard Screen 8 - Publish
+
+![Workflow wizard validate and publish](../docs/assets/workflow-onboarding-wizard/admin-ui/wizard-08-publish.png)
+
+On-page actions:
+
+1. Click `Publish` in the wizard rail.
+2. Review `Validation`, `Publish gate`, and `Blockers`.
+3. Click `Run ready validation` to refresh backend validation for the current
+   draft.
+4. Read the safe validation or publish summary before continuing.
+5. Click `Publish` only when validation, evidence, and publish readiness are
+   acceptable for the current draft.
+
+What this screen provides: backend-owned readiness. The wizard does not decide
+that the Daily Briefing workflow is publishable from browser-only state; it
+displays the backend validation and publish-gate result and keeps blocker
+recovery visible.
+
+### Wizard Screen 9 - Launch
+
+![Workflow wizard launch and verify](../docs/assets/workflow-onboarding-wizard/admin-ui/wizard-09-launch.png)
+
+On-page actions:
+
+1. Click `Launch` in the wizard rail after publication.
+2. Use `Runtime launch` to open the run workspace with the workflow selection
+   prefilled. It does not start a run until `Start Run` is clicked.
+3. Use `Published graph` when it appears to inspect the immutable published
+   workflow graph.
+4. The `Review workspace` link is useful for design-review workflows. For this
+   Daily Briefing tutorial, continue through `Channels` after publish to create
+   the `Morning briefing` alias and Telegram link code.
+
+What this screen provides: authorized handoff links that preserve tenant scope
+and avoid copied identifiers. For this tutorial, `Runtime launch` proves the
+published workflow can be selected for a browser request, and the Channels
+steps below prove the Telegram alias path.
+
 ## Step 0 - Prepare A Clean Local System
 
 Local setup actions:

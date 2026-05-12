@@ -80,6 +80,10 @@ describe("App", () => {
       "href",
       "/admin/app/workflows?tenant_id=11111111-1111-1111-1111-111111111111",
     );
+    expect(screen.getByRole("link", { name: /Set up workflow/ })).toHaveAttribute(
+      "href",
+      "/admin/app/workflows/onboarding?tenant_id=11111111-1111-1111-1111-111111111111",
+    );
     expect(screen.getByText("Current notices")).toBeInTheDocument();
     expect(screen.queryByText(/Spec Kit/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/migration/i)).not.toBeInTheDocument();

@@ -17,6 +17,7 @@ import { UsagePage } from "./components/usage/UsagePage";
 import { UserRunPage } from "./components/userRuns/UserRunPage";
 import { WorkbenchPage } from "./components/workbench/WorkbenchPage";
 import { WorkflowBuilderPage } from "./components/workflows/WorkflowBuilderPage";
+import { WorkflowOnboardingWizardPage } from "./components/workflows/WorkflowOnboardingWizardPage";
 import { currentDisabledRoute, disabledRouteFallbacks } from "./routes";
 import type { ReactAdminBootstrap } from "./api/generated/reactAdminApi";
 
@@ -113,6 +114,18 @@ export function App({ bootstrapUrl = "/admin/app/bootstrap.json" }: AppProps) {
     return (
       <AdminShell bootstrap={bootstrap}>
         <WorkbenchPage workbenchUrl={`/admin/app/operations.json${window.location.search}`} />
+      </AdminShell>
+    );
+  }
+
+  if (window.location.pathname === "/admin/app/workflows/onboarding") {
+    const workflowQuery = workflowQueryString();
+    return (
+      <AdminShell bootstrap={bootstrap}>
+        <WorkflowOnboardingWizardPage
+          builderUrl={`/admin/app/workflows/builder.json${workflowQuery}`}
+          lookupsUrl={`/admin/app/workflows/lookups.json${workflowQuery}`}
+        />
       </AdminShell>
     );
   }

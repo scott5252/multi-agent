@@ -250,5 +250,5 @@ admin workflows.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the latest plan:
-`specs/073-end-to-end-custom-workflow-setup-wizard-and-runtime-launch/plan.md`
+`specs/079-non-scrolling-wizard-qa-docs-and-guardrails/plan.md`
 <!-- SPECKIT END -->

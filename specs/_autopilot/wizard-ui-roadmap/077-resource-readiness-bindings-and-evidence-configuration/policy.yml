@@ -1,0 +1,42 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 077 - Resource Readiness, Bindings, And Evidence Configuration",
+    "spec_number": "077",
+    "spec_slug": "resource-readiness-bindings-and-evidence-configuration",
+    "feature_dir": "specs/077-resource-readiness-bindings-and-evidence-configuration",
+    "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/077-resource-readiness-bindings-and-evidence-configuration",
+    "branch": "codex/077-resource-readiness-bindings-and-evidence-configuration",
+    "qa_id": "qa077",
+    "qa_label": "QA077",
+    "qa_database": "multi_agent_platform_qa077",
+    "qa_env_file": "specs/077-resource-readiness-bindings-and-evidence-configuration/.env.qa077",
+    "artifact_root": ".data/qa077-artifacts",
+    "playwright_output_dir": "output/playwright/qa077_ui",
+    "manual_qa_user_guide": "specs/077-resource-readiness-bindings-and-evidence-configuration/qa077_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa077-after-spec",
+    "roadmap_file": "docs/wizard_ui.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa077-autopilot-smoke"
+    ],
+    "required_quality_commands": [
+      "generated-react-types-fresh",
+      "frontend-install-deps",
+      "frontend-typecheck",
+      "frontend-vitest",
+      "frontend-build"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review"
+    ]
+  }
+}

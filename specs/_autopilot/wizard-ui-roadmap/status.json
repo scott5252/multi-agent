@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "state": "completed",
+  "current_spec": null,
+  "completed_specs": [
+    "074",
+    "075",
+    "076",
+    "077",
+    "078",
+    "079"
+  ],
+  "blocked": null,
+  "history": [
+    {
+      "spec_number": "074",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "Console Home Onboarding Wizard Entry And Fixed-Frame Shell completed with phase artifacts, implementation, QA docs, and validation evidence."
+    },
+    {
+      "spec_number": "075",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "Generic Scenario Intake And Durable Draft Blueprint completed with phase artifacts, implementation, QA docs, and validation evidence."
+    },
+    {
+      "spec_number": "076",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "Stepwise Agents, Contracts, And Graph Configuration completed with phase artifacts, implementation, QA docs, and validation evidence."
+    },
+    {
+      "spec_number": "077",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "Resource Readiness, Bindings, And Evidence Configuration completed with phase artifacts, implementation, QA docs, and validation evidence."
+    },
+    {
+      "spec_number": "078",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "Publish, Launch, And Operational Verification Finish completed with phase artifacts, implementation, QA docs, and validation evidence."
+    },
+    {
+      "spec_number": "079",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "Non-Scrolling Wizard QA, Docs, And Guardrails completed with phase artifacts, implementation, QA docs, and validation evidence."
+    }
+  ]
+}

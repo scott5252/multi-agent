@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "spec_number": "076",
+  "title": "Stepwise Agents, Contracts, And Graph Configuration",
+  "state": "completed",
+  "current_phase": null,
+  "completed_phases": [
+    "specify",
+    "clarify",
+    "plan",
+    "tasks",
+    "analyze",
+    "implement"
+  ],
+  "validation": "completed",
+  "blocker": null,
+  "artifacts": {
+    "feature_dir": "specs/076-stepwise-agents-contracts-and-graph-configuration",
+    "spec": "specs/076-stepwise-agents-contracts-and-graph-configuration/spec.md",
+    "plan": "specs/076-stepwise-agents-contracts-and-graph-configuration/plan.md",
+    "tasks": "specs/076-stepwise-agents-contracts-and-graph-configuration/tasks.md",
+    "qa_guide": "specs/076-stepwise-agents-contracts-and-graph-configuration/qa076.md",
+    "ui_walkthrough": "specs/076-stepwise-agents-contracts-and-graph-configuration/qa076_ui.md",
+    "qa_env": "specs/076-stepwise-agents-contracts-and-graph-configuration/.env.qa076",
+    "user_guide": "specs/076-stepwise-agents-contracts-and-graph-configuration/qa076_user_guide.md",
+    "pr_notes": "specs/076-stepwise-agents-contracts-and-graph-configuration/pr_notes.md",
+    "validation": "specs/_autopilot/wizard-ui-roadmap/076-stepwise-agents-contracts-and-graph-configuration/validation.yml"
+  },
+  "docs_decisions": {
+    "qa_documents": "created and validate-qa-documents.sh passed",
+    "curl_testing": "curl_testing.md updated for the workflow_onboarding Console Home quick action and onboarding SPA route smoke coverage",
+    "readme_user_guide": "roadmap-level README.md and user_guide.md updates remain in final documentation phase"
+  },
+  "validation_evidence": [
+    "Created spec.md, plan.md, research.md, data-model.md, quickstart.md, contracts, checklist, tasks, QA guide, UI walkthrough, env, user guide, and pr_notes artifacts.",
+    "Implemented Console Home workflow_onboarding quick action and /admin/app/workflows/onboarding React route.",
+    "Implemented generic scenario intake, editable blueprint helper, fixed-frame step rail/body/footer, paged agents/contracts/graph summaries, resource/evidence/publish/launch steps, and no-scroll CSS.",
+    "Updated curl_testing.md with Console Home quick action and onboarding SPA route smoke coverage.",
+    "Passed QA document validation for specs 074 through 079.",
+    "Passed focused wizard tests, full frontend Vitest suite, frontend typecheck, frontend build, generated React type freshness, Ruff check, Ruff format check, mypy, and focused backend Console Home route assertion with coverage disabled."
+  ],
+  "history": [
+    {
+      "phase": "specify",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "specify completed from docs/wizard_ui.md autopilot prompt and repository implementation."
+    },
+    {
+      "phase": "clarify",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "clarify completed from docs/wizard_ui.md autopilot prompt and repository implementation."
+    },
+    {
+      "phase": "plan",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "plan completed from docs/wizard_ui.md autopilot prompt and repository implementation."
+    },
+    {
+      "phase": "tasks",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "tasks completed from docs/wizard_ui.md autopilot prompt and repository implementation."
+    },
+    {
+      "phase": "analyze",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "analyze completed from docs/wizard_ui.md autopilot prompt and repository implementation."
+    },
+    {
+      "phase": "implement",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "implement completed from docs/wizard_ui.md autopilot prompt and repository implementation."
+    },
+    {
+      "phase": "validation",
+      "status": "completed",
+      "recorded_at": "2026-05-11T21:20:00-04:00",
+      "summary": "Focused validations and QA document gates passed; final roadmap stability gate tracks full regression evidence."
+    }
+  ]
+}

@@ -6,8 +6,12 @@ import {
 } from "../../test/workflowBuilderTestData";
 import { cloneWorkflowDocument } from "./workflowDocumentEditor";
 import {
+  attachWorkflowEvidenceRequirement,
+  buildGenericBlueprintDocument,
   buildThreeAgentStarterDocument,
   buildWorkflowSetupProgress,
+  DEFAULT_WORKFLOW_SCENARIO_INTAKE,
+  normalizeWorkflowKey,
 } from "./workflowSetupWizard";
 
 describe("workflowSetupWizard", () => {
@@ -86,5 +90,51 @@ describe("workflowSetupWizard", () => {
       ),
     ).toBe(true);
     expect(progress.completeCount).toBe(progress.totalCount);
+  });
+
+  it("builds a neutral arbitrary-scenario blueprint without tutorial defaults", () => {
+    const baseDocument = cloneWorkflowDocument(workflowBuilderEnvelope.draft!.document);
+    const document = buildGenericBlueprintDocument(baseDocument, {
+      ...DEFAULT_WORKFLOW_SCENARIO_INTAKE,
+      desiredOutputs: "A triaged supplier risk summary.",
+      expectedInputs: "A supplier record and a question from an operator.",
+      purpose: "Coordinate supplier risk intake for regional operators.",
+      workflowKey: "Supplier Risk Intake!!",
+      workflowName: "Supplier Risk Intake",
+    });
+
+    expect(document.workflow_key).toBe("supplier-risk-intake");
+    expect(document.display_name).toBe("Supplier Risk Intake");
+    expect(document.roles).toHaveLength(3);
+    expect(document.contracts.map((contract) => contract.contract_key)).toEqual([
+      "scenario-request",
+      "scenario-handoff",
+      "scenario-result",
+    ]);
+    expect(document.nodes.some((node) => node.node_type === "join")).toBe(true);
+    expect(JSON.stringify(document)).not.toContain("Daily Intelligence Briefing");
+    expect(JSON.stringify(document)).not.toContain("Design Reviewer Council");
+  });
+
+  it("normalizes workflow keys and attaches required evidence idempotently", () => {
+    const document = buildGenericBlueprintDocument(
+      cloneWorkflowDocument(workflowBuilderEnvelope.draft!.document),
+      DEFAULT_WORKFLOW_SCENARIO_INTAKE,
+    );
+    const withEvidence = attachWorkflowEvidenceRequirement(
+      attachWorkflowEvidenceRequirement(document, "suite-risk-required"),
+      "suite-risk-required",
+    );
+
+    expect(normalizeWorkflowKey("  Quarterly Review / Ops  ")).toBe(
+      "quarterly-review-ops",
+    );
+    const onboardingRequirements = withEvidence.test_requirements.filter(
+      (requirement) =>
+        requirement.requirement_key === "onboarding-required-evidence",
+    );
+    expect(onboardingRequirements).toHaveLength(1);
+    expect(onboardingRequirements[0].suite_id).toBe("suite-risk-required");
+    expect(onboardingRequirements[0].latest_result_status).toBe("pending");
   });
 });

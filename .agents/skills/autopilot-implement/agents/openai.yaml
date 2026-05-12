@@ -1,0 +1,4 @@
+interface:
+  display_name: "Autopilot Implement"
+  short_description: "Run prepared roadmap queues"
+  default_prompt: "Use $autopilot-implement to implement every spec in specs/_autopilot/wizard-ui-roadmap and update the docs."

@@ -12,6 +12,7 @@ import type {
 } from "./workflowDocumentEditor";
 
 export type WorkflowSetupStepKey =
+  | "scenario"
   | "metadata"
   | "agents"
   | "bindings"
@@ -38,6 +39,100 @@ export interface WorkflowSetupProgress {
   steps: WorkflowSetupStep[];
   totalCount: number;
 }
+
+export interface WorkflowScenarioIntake {
+  agentCount: number;
+  approvalNeeds: string;
+  coordinationPattern: "parallel_review" | "sequential_handoff";
+  desiredOutputs: string;
+  evidencePreference: "deterministic_safe_run" | "manual_before_publish";
+  expectedInputs: string;
+  optionalChannels: string;
+  purpose: string;
+  triggerMode: "manual_launch" | "channel_or_api";
+  workflowKey: string;
+  workflowName: string;
+}
+
+export const DEFAULT_WORKFLOW_SCENARIO_INTAKE: WorkflowScenarioIntake = {
+  agentCount: 3,
+  approvalNeeds: "No approval required before publish.",
+  coordinationPattern: "parallel_review",
+  desiredOutputs: "A safe final result with a concise operational summary.",
+  evidencePreference: "deterministic_safe_run",
+  expectedInputs: "A user request with enough context to start the workflow.",
+  optionalChannels: "Browser launch first; channels can be configured later.",
+  purpose: "Coordinate a reusable workflow for the selected tenant scenario.",
+  triggerMode: "manual_launch",
+  workflowKey: "tenant-workflow",
+  workflowName: "Tenant workflow",
+};
+
+export const WORKFLOW_ONBOARDING_STEPS: WorkflowSetupStep[] = [
+  {
+    href: "#wizard-scenario",
+    key: "scenario",
+    status: "active",
+    summary: "Describe the workflow goal, inputs, outputs, and coordination.",
+    title: "Scenario",
+  },
+  {
+    href: "#wizard-metadata",
+    key: "metadata",
+    status: "blocked",
+    summary: "Name and save the durable workflow draft.",
+    title: "Draft",
+  },
+  {
+    href: "#wizard-agents",
+    key: "agents",
+    status: "blocked",
+    summary: "Review agent roles and responsibilities one at a time.",
+    title: "Agents",
+  },
+  {
+    href: "#wizard-contracts",
+    key: "contracts",
+    status: "blocked",
+    summary: "Review input, handoff, output, and approval contracts.",
+    title: "Contracts",
+  },
+  {
+    href: "#wizard-graph",
+    key: "graph",
+    status: "blocked",
+    summary: "Check nodes, edges, joins, and approval gates.",
+    title: "Graph",
+  },
+  {
+    href: "#wizard-bindings",
+    key: "bindings",
+    status: "blocked",
+    summary: "Review prompt, profile, provider, skill, and channel readiness.",
+    title: "Resources",
+  },
+  {
+    href: "#wizard-evidence",
+    key: "evidence",
+    status: "blocked",
+    summary: "Attach required Test Bench evidence to the draft.",
+    title: "Evidence",
+  },
+  {
+    href: "#wizard-publish",
+    key: "publish",
+    status: "blocked",
+    summary: "Validate and publish through backend-owned gates.",
+    title: "Publish",
+  },
+  {
+    href: "#wizard-runtime",
+    key: "runtime",
+    status: "blocked",
+    summary: "Launch or inspect safe runtime and graph evidence.",
+    title: "Launch",
+  },
+];
 
 export function buildWorkflowSetupProgress({
   document,
@@ -185,6 +280,143 @@ export function buildWorkflowSetupProgress({
   };
 }
 
+export function normalizeWorkflowKey(value: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+  return normalized || "tenant-workflow";
+}
+
+export function intakeWithDerivedKey(
+  intake: WorkflowScenarioIntake,
+): WorkflowScenarioIntake {
+  const workflowKey = normalizeWorkflowKey(
+    intake.workflowKey || intake.workflowName || DEFAULT_WORKFLOW_SCENARIO_INTAKE.workflowKey,
+  );
+  return {
+    ...intake,
+    agentCount: Math.min(Math.max(Math.round(intake.agentCount || 3), 1), 5),
+    workflowKey,
+    workflowName: intake.workflowName.trim() || readableFromKey(workflowKey),
+  };
+}
+
+export function buildBlankWorkflowDocument(
+  intake: WorkflowScenarioIntake,
+): WorkflowEditorDocument {
+  const normalized = intakeWithDerivedKey(intake);
+  return {
+    approval_gates: [],
+    contracts: [],
+    description: normalized.purpose,
+    display_name: normalized.workflowName,
+    edges: [],
+    editor_annotations: {
+      collapsed_sections: [],
+      graph_layout: {},
+      section_notes: {},
+    },
+    entry_node_key: "intake",
+    join_policies: [],
+    nodes: [],
+    prompt_profile_references: [],
+    roles: [],
+    subworkflow_refs: [],
+    test_requirements: [],
+    workflow_key: normalized.workflowKey,
+    workflow_kind: "main_workflow",
+  };
+}
+
+export function buildGenericBlueprintDocument(
+  current: WorkflowEditorDocument,
+  intake: WorkflowScenarioIntake,
+): WorkflowEditorDocument {
+  const normalized = intakeWithDerivedKey(intake);
+  const roleKeys = buildRoleKeys(normalized.agentCount);
+  const roles = roleKeys.map((roleKey, index) =>
+    roleForScenario(roleKey, index, roleKeys.length, normalized),
+  );
+  const contracts = scenarioContracts(normalized);
+  const promptProfileReferences = roleKeys.flatMap((roleKey) => [
+    promptReference(roleKey),
+    profileReference(roleKey),
+  ]);
+  const nodes = scenarioNodes(roleKeys, normalized);
+  const edges = scenarioEdges(roleKeys, normalized);
+  const joinPolicies = scenarioJoinPolicies(roleKeys, normalized);
+  const approvalGates =
+    normalized.approvalNeeds.trim().toLowerCase().startsWith("no approval")
+      ? []
+      : [
+          {
+            approval_gate_key: "operator-approval",
+            approver_scope: "tenant_admin",
+            decision_contract_key: "approval-decision",
+            display_name: "Operator approval",
+            instructions: normalized.approvalNeeds,
+            reason: "Configured during generic workflow onboarding.",
+            resume_behavior: "resume_same_bundle",
+          },
+        ];
+
+  return {
+    ...current,
+    approval_gates: approvalGates,
+    contracts,
+    description: normalized.purpose,
+    display_name: normalized.workflowName,
+    edges,
+    editor_annotations: {
+      ...current.editor_annotations,
+      graph_layout: Object.fromEntries(
+        nodes.map((node, index) => [
+          node.node_key,
+          node.editor_position ?? { x: index * 220, y: 120 },
+        ]),
+      ),
+      section_notes: {
+        ...current.editor_annotations.section_notes,
+        onboarding: `Scenario: ${safeCompactText(normalized.purpose)}`,
+      },
+    },
+    entry_node_key: "intake",
+    join_policies: joinPolicies,
+    nodes,
+    prompt_profile_references: promptProfileReferences,
+    roles,
+    workflow_key: normalized.workflowKey,
+    workflow_kind: "main_workflow",
+  };
+}
+
+export function attachWorkflowEvidenceRequirement(
+  document: WorkflowEditorDocument,
+  suiteId: string,
+): WorkflowEditorDocument {
+  const requirement = {
+    freshness_policy: "latest_revision",
+    latest_result_id: null,
+    latest_result_status: "pending",
+    requirement_key: "onboarding-required-evidence",
+    safe_summary: "Required deterministic evidence is configured for publish gates.",
+    suite_id: suiteId,
+    target_type: "workflow_draft",
+  };
+  return {
+    ...document,
+    test_requirements: [
+      requirement,
+      ...document.test_requirements.filter(
+        (item) => item.requirement_key !== requirement.requirement_key,
+      ),
+    ],
+  };
+}
+
 export function buildThreeAgentStarterDocument(
   current: WorkflowEditorDocument,
 ): WorkflowEditorDocument {
@@ -258,6 +490,302 @@ export function buildThreeAgentStarterDocument(
     prompt_profile_references: promptProfiles,
     roles,
   };
+}
+
+function buildRoleKeys(agentCount: number): string[] {
+  if (agentCount <= 1) {
+    return ["coordinator"];
+  }
+  if (agentCount === 2) {
+    return ["intake", "delivery"];
+  }
+  const middleCount = agentCount - 2;
+  return [
+    "intake",
+    ...Array.from({ length: middleCount }, (_, index) => `workstream-${index + 1}`),
+    "synthesis",
+  ];
+}
+
+function roleForScenario(
+  roleKey: string,
+  index: number,
+  total: number,
+  intake: WorkflowScenarioIntake,
+): WorkflowRoleItem {
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  const displayName = isFirst
+    ? "Intake coordinator"
+    : isLast
+      ? "Synthesis lead"
+      : `Workstream ${index}`;
+  return {
+    display_name: displayName,
+    graph_node_keys: [roleKey],
+    input_contract_key: isFirst ? "scenario-request" : "scenario-handoff",
+    output_contract_key: isLast ? "scenario-result" : "scenario-handoff",
+    profile_reference_key: `${roleKey}-profile`,
+    prompt_reference_keys: [`${roleKey}-prompt`],
+    purpose: isFirst
+      ? `Frame incoming ${triggerLabel(intake.triggerMode)} requests for ${intake.workflowName}.`
+      : isLast
+        ? `Produce the final ${safeCompactText(intake.desiredOutputs)}.`
+        : `Handle a bounded workstream for ${safeCompactText(intake.purpose)}.`,
+    responsibilities: isFirst
+      ? ["Check launch context", "Prepare structured handoff"]
+      : isLast
+        ? ["Merge branch evidence", "Prepare safe result"]
+        : ["Review assigned input", "Return concise evidence"],
+    role_key: roleKey,
+    role_kind: "agent",
+    skill_installation_keys: [],
+  };
+}
+
+function scenarioContracts(intake: WorkflowScenarioIntake): WorkflowContractItem[] {
+  const contracts: WorkflowContractItem[] = [
+    {
+      contract_key: "scenario-request",
+      contract_kind: "workflow_input",
+      display_name: "Scenario request",
+      json_schema: {
+        properties: {
+          request: { description: safeCompactText(intake.expectedInputs), type: "string" },
+        },
+        required: ["request"],
+        type: "object",
+      },
+      semantic_version: "1.0.0",
+    },
+    {
+      contract_key: "scenario-handoff",
+      contract_kind: "handoff",
+      display_name: "Scenario handoff",
+      json_schema: {
+        properties: {
+          safe_summary: { type: "string" },
+          evidence_notes: { type: "array", items: { type: "string" } },
+        },
+        required: ["safe_summary"],
+        type: "object",
+      },
+      semantic_version: "1.0.0",
+    },
+    {
+      contract_key: "scenario-result",
+      contract_kind: "workflow_output",
+      display_name: "Scenario result",
+      json_schema: {
+        properties: {
+          result: { description: safeCompactText(intake.desiredOutputs), type: "string" },
+          status: { type: "string" },
+        },
+        required: ["result", "status"],
+        type: "object",
+      },
+      semantic_version: "1.0.0",
+    },
+  ];
+  if (!intake.approvalNeeds.trim().toLowerCase().startsWith("no approval")) {
+    contracts.push({
+      contract_key: "approval-decision",
+      contract_kind: "approval_decision",
+      display_name: "Approval decision",
+      json_schema: {
+        properties: {
+          approved: { type: "boolean" },
+          safe_reason: { type: "string" },
+        },
+        required: ["approved"],
+        type: "object",
+      },
+      semantic_version: "1.0.0",
+    });
+  }
+  return contracts;
+}
+
+function scenarioNodes(
+  roleKeys: string[],
+  intake: WorkflowScenarioIntake,
+): WorkflowNodeItem[] {
+  const roleNodes = roleKeys.map((roleKey, index) => ({
+    active: true,
+    display_name: readableFromKey(roleKey),
+    editor_position:
+      intake.coordinationPattern === "parallel_review"
+        ? { x: index === 0 ? 0 : 260, y: index === 0 ? 140 : index * 92 }
+        : { x: index * 220, y: 140 },
+    node_key: roleKey,
+    node_type: "role",
+    role_key: roleKey,
+  }));
+  const terminal: WorkflowNodeItem = {
+    active: true,
+    display_name: "Ready result",
+    editor_position: { x: 760, y: 140 },
+    node_key: "result",
+    node_type: "terminal",
+  };
+  if (intake.coordinationPattern === "parallel_review" && roleKeys.length > 2) {
+    return [
+      ...roleNodes,
+      {
+        active: true,
+        display_name: "Review join",
+        editor_position: { x: 560, y: 140 },
+        join_policy_key: "scenario-review-join",
+        node_key: "review-join",
+        node_type: "join",
+      },
+      terminal,
+    ];
+  }
+  return [...roleNodes, terminal];
+}
+
+function scenarioEdges(
+  roleKeys: string[],
+  intake: WorkflowScenarioIntake,
+): WorkflowEditorDocument["edges"] {
+  if (roleKeys.length <= 1) {
+    return [
+      {
+        branch_condition: "complete",
+        contract_key: "scenario-result",
+        edge_key: "edge-coordinator-result",
+        edge_type: "success",
+        source_node_key: roleKeys[0] ?? "coordinator",
+        target_node_key: "result",
+      },
+    ];
+  }
+  if (intake.coordinationPattern === "parallel_review" && roleKeys.length > 2) {
+    const first = roleKeys[0];
+    const branches = roleKeys.slice(1, -1);
+    const finalRole = roleKeys.at(-1) ?? "synthesis";
+    return [
+      ...branches.map((roleKey) => ({
+        branch_condition: "fan-out",
+        contract_key: "scenario-request",
+        edge_key: `edge-${first}-${roleKey}`,
+        edge_type: "parallel",
+        source_node_key: first,
+        target_node_key: roleKey,
+      })),
+      ...branches.map((roleKey) => ({
+        branch_condition: "required",
+        contract_key: "scenario-handoff",
+        edge_key: `edge-${roleKey}-join`,
+        edge_type: "join",
+        source_node_key: roleKey,
+        target_node_key: "review-join",
+      })),
+      {
+        branch_condition: "merge",
+        contract_key: "scenario-handoff",
+        edge_key: "edge-join-synthesis",
+        edge_type: "success",
+        source_node_key: "review-join",
+        target_node_key: finalRole,
+      },
+      {
+        branch_condition: "complete",
+        contract_key: "scenario-result",
+        edge_key: "edge-synthesis-result",
+        edge_type: "success",
+        source_node_key: finalRole,
+        target_node_key: "result",
+      },
+    ];
+  }
+  return [
+    ...roleKeys.slice(0, -1).map((roleKey, index) => ({
+      branch_condition: "handoff",
+      contract_key: "scenario-handoff",
+      edge_key: `edge-${roleKey}-${roleKeys[index + 1]}`,
+      edge_type: "success",
+      source_node_key: roleKey,
+      target_node_key: roleKeys[index + 1],
+    })),
+    {
+      branch_condition: "complete",
+      contract_key: "scenario-result",
+      edge_key: `edge-${roleKeys.at(-1) ?? "delivery"}-result`,
+      edge_type: "success",
+      source_node_key: roleKeys.at(-1) ?? "delivery",
+      target_node_key: "result",
+    },
+  ];
+}
+
+function scenarioJoinPolicies(
+  roleKeys: string[],
+  intake: WorkflowScenarioIntake,
+): WorkflowJoinPolicyItem[] {
+  if (intake.coordinationPattern !== "parallel_review" || roleKeys.length <= 2) {
+    return [];
+  }
+  const branches = roleKeys.slice(1, -1);
+  return [
+    {
+      failure_behavior: "block",
+      inbound_edge_keys: branches.map((roleKey) => `edge-${roleKey}-join`),
+      join_policy_key: "scenario-review-join",
+      output_merge_contract_key: "scenario-result",
+      quorum_count: null,
+      required_branches: branches,
+      strategy: "all_success",
+      timeout_seconds: null,
+    },
+  ];
+}
+
+function promptReference(roleKey: string): WorkflowPromptProfileReferenceItem {
+  return {
+    agent_kind: "agent",
+    agent_key: roleKey,
+    prompt_reference_version_ids: [],
+    prompt_version_ids: [],
+    readiness_status: "ready",
+    reference_key: `${roleKey}-prompt`,
+    resolution_digest: `prompt:${roleKey}`,
+    role_key: roleKey,
+    source_scope: "tenant",
+  };
+}
+
+function profileReference(roleKey: string): WorkflowPromptProfileReferenceItem {
+  return {
+    agent_kind: "agent",
+    agent_key: roleKey,
+    agent_profile_version_id: null,
+    prompt_reference_version_ids: [],
+    prompt_version_ids: [],
+    readiness_status: "ready",
+    reference_key: `${roleKey}-profile`,
+    resolution_digest: `profile:${roleKey}`,
+    role_key: roleKey,
+    source_scope: "tenant",
+  };
+}
+
+function triggerLabel(triggerMode: WorkflowScenarioIntake["triggerMode"]): string {
+  return triggerMode === "channel_or_api" ? "channel or API" : "manual launch";
+}
+
+function readableFromKey(value: string): string {
+  return value
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function safeCompactText(value: string): string {
+  const compact = value.replace(/\s+/g, " ").trim();
+  return compact.length > 120 ? `${compact.slice(0, 117)}...` : compact;
 }
 
 function starterContracts(): WorkflowContractItem[] {

@@ -1,0 +1,42 @@
+{
+  "extends": "../../shared/policy.base.yml",
+  "variables": {
+    "spec_title": "Spec 074 - Console Home Onboarding Wizard Entry And Fixed-Frame Shell",
+    "spec_number": "074",
+    "spec_slug": "console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+    "feature_dir": "specs/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+    "autopilot_dir": "specs/_autopilot/wizard-ui-roadmap/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+    "branch": "codex/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell",
+    "qa_id": "qa074",
+    "qa_label": "QA074",
+    "qa_database": "multi_agent_platform_qa074",
+    "qa_env_file": "specs/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell/.env.qa074",
+    "artifact_root": ".data/qa074-artifacts",
+    "playwright_output_dir": "output/playwright/qa074_ui",
+    "manual_qa_user_guide": "specs/074-console-home-onboarding-wizard-entry-and-fixed-frame-shell/qa074_user_guide.md",
+    "curl_test_output_dir": ".data/curl_test_runs/qa074-after-spec",
+    "roadmap_file": "docs/wizard_ui.md"
+  },
+  "autonomy": {
+    "auto_select_clarifications": true,
+    "minimum_confidence": 0.85,
+    "record_auto_choices_in_spec": true,
+    "continue_after_each_completed_spec": true,
+    "do_not_commit": true
+  },
+  "validation": {
+    "required_playwright_flows": [
+      "qa074-autopilot-smoke"
+    ],
+    "required_quality_commands": [
+      "generated-react-types-fresh",
+      "frontend-install-deps",
+      "frontend-typecheck",
+      "frontend-vitest",
+      "frontend-build"
+    ],
+    "required_post_spec_commands": [
+      "curl-testing-coverage-review"
+    ]
+  }
+}

@@ -2988,6 +2988,11 @@ def test_react_admin_home_is_product_facing_and_scoped(
     assert payload["scope"]["tenant_id"] == str(tenant_id)
     assert payload["quick_actions"]
     assert any(
+        item["action_id"] == "workflow_onboarding"
+        and item["href"] == f"/admin/app/workflows/onboarding?tenant_id={tenant_id}"
+        for item in payload["quick_actions"]
+    )
+    assert any(
         item["workspace_id"] == "workflow_registry" for item in payload["workspaces"]
     )
     assert "Spec" not in serialized

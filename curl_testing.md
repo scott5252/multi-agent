@@ -3187,6 +3187,9 @@ react_shell_urls=(
 for url in "${react_shell_urls[@]}"; do
   curl -sS -H "$ACME_HEADER" "$BASE_URL$url" >/dev/null
 done
+curl -sS -H "$ACME_HEADER" \
+  "$BASE_URL/admin/app/home.json?tenant_id=$ACME_TENANT_ID" \
+  | jq -e '.quick_actions[] | select(.action_id == "workflow_onboarding" and (.href | contains("/admin/app/workflows/onboarding")))'
 ```
 
 Expected `200`:
@@ -3248,6 +3251,7 @@ curl -sS -H "$ACME_HEADER" \
   | jq -e '.draft.name == "Curl React API Scenario"'
 react_workflow_urls=(
   "/admin/app/workflows?tenant_id=$ACME_TENANT_ID"
+  "/admin/app/workflows/onboarding?tenant_id=$ACME_TENANT_ID"
   "/admin/app/workflows/new?tenant_id=$ACME_TENANT_ID"
   "/admin/app/workflows/registry.json?tenant_id=$ACME_TENANT_ID"
   "/admin/app/workflows/create.json?tenant_id=$ACME_TENANT_ID"

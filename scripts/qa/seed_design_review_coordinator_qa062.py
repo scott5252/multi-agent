@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.request
+from collections.abc import Container
 from pathlib import Path
+from urllib.error import HTTPError
 from uuid import UUID
 
 from sqlalchemy import create_engine, select
@@ -68,6 +71,7 @@ def main() -> int:
             "safe_synthesis_summary": "QA062 council approves implementation handoff.",
             "idempotency_key": "qa062-seeded-complete",
         },
+        retry_statuses={404},
     )
     EVIDENCE_PATH.parent.mkdir(parents=True, exist_ok=True)
     EVIDENCE_PATH.write_text(
@@ -339,15 +343,27 @@ def _verdicts() -> list[dict[str, object]]:
     ]
 
 
-def _post_json(path: str, payload: dict[str, object]) -> dict[str, object]:
+def _post_json(
+    path: str,
+    payload: dict[str, object],
+    *,
+    retry_statuses: Container[int] = (),
+) -> dict[str, object]:
     request = urllib.request.Request(
         f"{BASE_URL}{path}",
         data=json.dumps(payload).encode("utf-8"),
         headers=HEADERS,
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=10) as response:
-        return json.loads(response.read().decode("utf-8"))
+    for attempt in range(1, 11):
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except HTTPError as exc:
+            if exc.code not in retry_statuses or attempt == 10:
+                raise
+            time.sleep(0.2)
+    raise RuntimeError("unreachable retry state")
 
 
 def _database_url() -> str:

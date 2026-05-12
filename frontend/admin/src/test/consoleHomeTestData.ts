@@ -48,6 +48,14 @@ export const consoleHomeFixture: ConsoleHomeEnvelope = {
   ],
   quick_actions: [
     {
+      action_id: "workflow_onboarding",
+      label: "Set up workflow",
+      summary:
+        "Launch guided setup for a generic workflow from scenario intake through publish and launch.",
+      href: "/admin/app/workflows/onboarding?tenant_id=11111111-1111-1111-1111-111111111111",
+      group: "Workflows",
+    },
+    {
       action_id: "workflow_registry",
       label: "Review workflows",
       summary: "Open drafts, validation results, publishing readiness, and sharing.",
